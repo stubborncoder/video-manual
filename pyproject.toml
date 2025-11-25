@@ -1,0 +1,33 @@
+[project]
+name = "video-manual"
+version = "0.1.0"
+description = "Video Manual Generator - Multi-agent platform using LangGraph"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    # LangChain & LangGraph
+    "langchain>=1.0.3",
+    "langchain-google-genai>=2.1.0",
+    "langgraph>=0.5.0",
+    "langgraph-checkpoint-sqlite>=1.0.0",
+    # Environment
+    "python-dotenv>=1.0.0",
+    # DeepAgents - for future agents
+    "deepagents>=0.2.7",
+    # Video Processing & Analysis
+    "opencv-python>=4.10.0",
+    "moviepy>=2.1.0",
+    "scenedetect[opencv]>=0.6.4",
+    # Image Processing
+    "pillow>=11.0.0",
+    # Video operations support
+    "ffmpeg-python>=0.2.0",
+    "numpy>=2.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
