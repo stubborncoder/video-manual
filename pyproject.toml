@@ -23,7 +23,13 @@ dependencies = [
     # Video operations support
     "ffmpeg-python>=0.2.0",
     "numpy>=2.0.0",
+    # CLI
+    "rich>=13.0.0",
+    "typer>=0.9.0",
 ]
+
+[project.scripts]
+video-manual = "src.cli.main:app"
 
 [build-system]
 requires = ["hatchling"]

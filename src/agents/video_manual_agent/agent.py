@@ -5,6 +5,7 @@ Uses LangGraph for workflow orchestration with SQLite checkpointing for persiste
 """
 
 import os
+import sqlite3
 from typing import Dict, Any, Optional
 from dotenv import load_dotenv
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -50,9 +51,11 @@ class VideoManualAgent:
         # Setup graph with optional checkpointer
         if use_checkpointer:
             db_path = get_checkpoint_db_path(AGENT_NAME)
-            self.checkpointer = SqliteSaver.from_conn_string(f"sqlite:///{db_path}")
+            self._conn = sqlite3.connect(str(db_path), check_same_thread=False)
+            self.checkpointer = SqliteSaver(self._conn)
             self.graph = create_video_manual_graph(checkpointer=self.checkpointer)
         else:
+            self._conn = None
             self.checkpointer = None
             self.graph = create_video_manual_graph()
 
@@ -86,12 +89,6 @@ class VideoManualAgent:
         if not os.path.exists(video_path):
             raise FileNotFoundError(f"Video file not found: {video_path}")
 
-        print(f"\n{'='*60}")
-        print(f"VIDEO MANUAL CREATOR AGENT")
-        print(f"{'='*60}\n")
-        print(f"Processing: {video_path}")
-        print(f"User: {user_id}\n")
-
         # Prepare initial state
         initial_state: VideoManualState = {
             "user_id": user_id,
@@ -116,20 +113,6 @@ class VideoManualAgent:
         # Run graph
         config = {"configurable": {"thread_id": thread_id or f"{user_id}_default"}}
         result = self.graph.invoke(initial_state, config=config)
-
-        # Print completion summary
-        if result.get("status") == "completed":
-            print(f"\n{'='*60}")
-            print(f"MANUAL CREATION COMPLETE!")
-            print(f"{'='*60}\n")
-            print(f"Manual saved to: {result.get('manual_path')}")
-            print(f"Screenshots: {len(result.get('screenshots', []))} images")
-            print(f"Output directory: {result.get('output_directory')}\n")
-        else:
-            print(f"\n{'='*60}")
-            print(f"MANUAL CREATION FAILED")
-            print(f"{'='*60}\n")
-            print(f"Error: {result.get('error')}\n")
 
         return result
 

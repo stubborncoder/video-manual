@@ -44,18 +44,15 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
     manual_id = state.get("manual_id")
     output_filename = state.get("output_filename")
 
-    print("\n=== Manual Generation Starting ===\n")
-
     # Setup user storage and get manual directory
     user_storage = UserStorage(user_id)
     user_storage.ensure_user_folders()
-    manual_dir, manual_id = user_storage.get_manual_dir(manual_id)
+    # Use output_filename if provided, otherwise derive from video name
+    video_name = output_filename or Path(video_path).name
+    manual_dir, manual_id = user_storage.get_manual_dir(manual_id, video_name=video_name)
     screenshots_dir = manual_dir / "screenshots"
 
-    print(f"Output directory: {manual_dir}")
-
     # Extract screenshots for each keyframe
-    print("Extracting screenshots at keyframes...\n")
     screenshot_paths = []
 
     for i, keyframe in enumerate(keyframes, 1):
@@ -72,14 +69,8 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
                 "timestamp": timestamp,
                 "description": keyframe.get('description', ''),
             })
-            print(f"  Figure {i}: {keyframe['timestamp_formatted']} - {keyframe.get('description', '')[:60]}...")
-        except Exception as e:
-            print(f"  Error extracting screenshot at {timestamp}s: {e}")
-
-    print(f"\nExtracted {len(screenshot_paths)} screenshots\n")
-
-    # Generate manual content using Gemini
-    print("Generating manual content with Gemini...\n")
+        except Exception:
+            pass  # Skip failed screenshots silently
 
     llm = ChatGoogleGenerativeAI(
         model=DEFAULT_GEMINI_MODEL,
@@ -109,7 +100,7 @@ Reference the screenshots appropriately throughout the manual.
     except Exception as e:
         return {
             "status": "error",
-            "error": f"Gemini API error during manual generation: {str(e)}",
+            "error": f"Manual generation API error: {str(e)}",
         }
 
     # Ensure manual_content is a string (sometimes LangChain returns a list)
@@ -129,9 +120,6 @@ Reference the screenshots appropriately throughout the manual.
             "status": "error",
             "error": f"Failed to save manual: {str(e)}",
         }
-
-    print(f"Manual saved to: {manual_path}\n")
-    print("=== Manual Generation Complete ===\n")
 
     # Return partial state update
     return {

@@ -1,5 +1,6 @@
 """LangGraph workflow definition for the Video Manual Agent."""
 
+import sqlite3
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.sqlite import SqliteSaver
 
@@ -60,5 +61,6 @@ def get_video_manual_graph():
     """
     ensure_directories()
     db_path = get_checkpoint_db_path(AGENT_NAME)
-    checkpointer = SqliteSaver.from_conn_string(f"sqlite:///{db_path}")
+    conn = sqlite3.connect(str(db_path), check_same_thread=False)
+    checkpointer = SqliteSaver(conn)
     return create_video_manual_graph(checkpointer=checkpointer)

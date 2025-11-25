@@ -39,21 +39,13 @@ def identify_keyframes_node(state: VideoManualState) -> Dict[str, Any]:
     video_analysis = state["video_analysis"]
     use_scene_detection = state.get("use_scene_detection", True)
 
-    print("\n=== Keyframe Identification Starting ===\n")
-
     # Optional: Use scene detection for initial suggestions
     scene_changes = []
     if use_scene_detection:
-        print("Detecting scene changes...")
         try:
             scene_changes = detect_scene_changes(video_path)
-            print(f"Found {len(scene_changes)} scene changes\n")
-        except Exception as e:
-            print(f"Scene detection failed (continuing without): {str(e)}\n")
+        except Exception:
             scene_changes = []
-
-    # Use Gemini to identify keyframes based on analysis
-    print("Using Gemini to identify key instructional moments...\n")
 
     llm = ChatGoogleGenerativeAI(
         model=DEFAULT_GEMINI_MODEL,
@@ -79,7 +71,7 @@ that should be captured as screenshots for the user manual.
     except Exception as e:
         return {
             "status": "error",
-            "error": f"Gemini API error during keyframe identification: {str(e)}",
+            "error": f"Keyframe identification API error: {str(e)}",
         }
 
     # Parse keyframes from response
@@ -87,9 +79,6 @@ that should be captured as screenshots for the user manual.
 
     # Filter keyframes to ensure minimum interval
     keyframes = _filter_keyframes(keyframes, KEYFRAME_MIN_INTERVAL)
-
-    print(f"Identified {len(keyframes)} keyframes\n")
-    print("=== Keyframe Identification Complete ===\n")
 
     # Return partial state update
     return {

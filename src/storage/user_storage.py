@@ -1,10 +1,34 @@
 """User storage management for videos and manuals."""
 
+import re
 from pathlib import Path
 from typing import Optional, List
 import uuid
 
 from ..config import USERS_DIR
+
+
+def slugify(text: str) -> str:
+    """Convert text to a URL/filesystem-friendly slug.
+
+    Args:
+        text: Text to convert
+
+    Returns:
+        Lowercase string with only alphanumeric chars and hyphens
+    """
+    # Convert to lowercase
+    text = text.lower()
+    # Replace spaces and underscores with hyphens
+    text = re.sub(r'[\s_]+', '-', text)
+    # Remove non-alphanumeric characters except hyphens
+    text = re.sub(r'[^a-z0-9\-]', '', text)
+    # Remove multiple consecutive hyphens
+    text = re.sub(r'-+', '-', text)
+    # Strip leading/trailing hyphens
+    text = text.strip('-')
+    # Limit length
+    return text[:50] if text else "manual"
 
 
 class UserStorage:
@@ -35,16 +59,30 @@ class UserStorage:
         self.videos_dir.mkdir(parents=True, exist_ok=True)
         self.manuals_dir.mkdir(parents=True, exist_ok=True)
 
-    def get_manual_dir(self, manual_id: Optional[str] = None) -> tuple[Path, str]:
+    def get_manual_dir(self, manual_id: Optional[str] = None, video_name: Optional[str] = None) -> tuple[Path, str]:
         """Get or create a manual output directory.
 
         Args:
-            manual_id: Optional manual ID. If not provided, generates a new UUID.
+            manual_id: Optional manual ID. If not provided, derives from video_name or generates UUID.
+            video_name: Optional video filename to derive manual ID from.
 
         Returns:
             Tuple of (manual directory path, manual_id)
         """
-        manual_id = manual_id or str(uuid.uuid4())[:8]
+        if manual_id is None:
+            if video_name:
+                # Create slug from video name (without extension)
+                base_name = Path(video_name).stem
+                manual_id = slugify(base_name)
+                # If slug already exists, append a number
+                if (self.manuals_dir / manual_id).exists():
+                    counter = 2
+                    while (self.manuals_dir / f"{manual_id}-{counter}").exists():
+                        counter += 1
+                    manual_id = f"{manual_id}-{counter}"
+            else:
+                manual_id = str(uuid.uuid4())[:8]
+
         manual_dir = self.manuals_dir / manual_id
         manual_dir.mkdir(parents=True, exist_ok=True)
         (manual_dir / "screenshots").mkdir(exist_ok=True)
@@ -98,3 +136,21 @@ class UserStorage:
         if not screenshots_dir.exists():
             return []
         return list(screenshots_dir.glob("*.png"))
+
+    def list_videos(self) -> List[Path]:
+        """List all video files in user's videos directory.
+
+        Returns:
+            List of video file paths, sorted by modification time (newest first)
+        """
+        VIDEO_EXTENSIONS = {".mp4", ".avi", ".mov", ".mkv", ".webm", ".m4v", ".flv"}
+
+        if not self.videos_dir.exists():
+            return []
+
+        videos = []
+        for ext in VIDEO_EXTENSIONS:
+            videos.extend(self.videos_dir.glob(f"*{ext}"))
+            videos.extend(self.videos_dir.glob(f"*{ext.upper()}"))
+
+        return sorted(videos, key=lambda p: p.stat().st_mtime, reverse=True)

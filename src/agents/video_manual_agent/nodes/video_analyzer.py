@@ -37,10 +37,7 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
 
     video_path = state["video_path"]
 
-    print("\n=== Video Analysis Starting ===\n")
-
     # Get video metadata
-    print("Extracting video metadata...")
     try:
         metadata = get_video_metadata(video_path)
     except Exception as e:
@@ -49,13 +46,7 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
             "error": f"Failed to extract video metadata: {str(e)}",
         }
 
-    print(f"Video: {metadata['filename']}")
-    print(f"Duration: {metadata['duration_formatted']}")
-    print(f"Resolution: {metadata['resolution']}")
-    print(f"FPS: {metadata['fps']:.2f}\n")
-
     # Read and encode video file
-    print("Reading video file...")
     try:
         with open(video_path, "rb") as video_file:
             video_data = base64.standard_b64encode(video_file.read()).decode("utf-8")
@@ -65,16 +56,11 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
             "error": f"Failed to read video file: {str(e)}",
         }
 
-    # Create Gemini model
-    print("Initializing Gemini model...")
+    # Create LLM model
     llm = ChatGoogleGenerativeAI(
         model=DEFAULT_GEMINI_MODEL,
         google_api_key=api_key,
     )
-
-    # Analyze video
-    print("\nAnalyzing video content with Gemini...\n")
-    print("(This may take several minutes for longer videos...)\n")
 
     # Use LangChain's multimodal message format
     message = HumanMessage(
@@ -96,10 +82,8 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
     except Exception as e:
         return {
             "status": "error",
-            "error": f"Gemini API error: {str(e)}",
+            "error": f"Video analysis API error: {str(e)}",
         }
-
-    print("=== Video Analysis Complete ===\n")
 
     # Return partial state update
     return {
