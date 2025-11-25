@@ -99,6 +99,17 @@ class UserStorage:
         """
         return self.videos_dir / filename
 
+    def get_manual_path(self, manual_id: str) -> Path:
+        """Get the path to a manual directory.
+
+        Args:
+            manual_id: ID of the manual
+
+        Returns:
+            Path to the manual directory
+        """
+        return self.manuals_dir / manual_id
+
     def list_manuals(self) -> List[str]:
         """List all manual IDs for this user.
 

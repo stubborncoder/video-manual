@@ -8,6 +8,7 @@ dependencies = [
     # LangChain & LangGraph
     "langchain>=1.0.3",
     "langchain-google-genai>=2.1.0",
+    "google-genai>=1.0.0",  # For Gemini Files API (newer SDK)
     "langgraph>=0.5.0",
     "langgraph-checkpoint-sqlite>=1.0.0",
     # Environment

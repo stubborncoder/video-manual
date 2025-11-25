@@ -77,16 +77,25 @@ def process_with_streaming(
     # Create agent
     agent = VideoManualAgent(use_checkpointer=True)
 
+    # Generate manual_id upfront so all nodes can use it
+    # (needed for storing optimized video in correct location)
+    storage = UserStorage(user_id)
+    storage.ensure_user_folders()
+    video_name = output_filename or video_path.name
+    manual_dir, manual_id = storage.get_manual_dir(video_name=video_name)
+
     # Prepare initial state
     initial_state: VideoManualState = {
         "user_id": user_id,
-        "manual_id": None,
+        "manual_id": manual_id,
         "video_path": str(video_path),
         "output_filename": output_filename,
         "use_scene_detection": use_scene_detection,
         "video_metadata": None,
         "video_analysis": None,
         "model_used": None,
+        "optimized_video_path": None,
+        "gemini_file_uri": None,
         "keyframes": None,
         "scene_changes": None,
         "total_keyframes": None,

@@ -24,6 +24,10 @@ class VideoManualState(TypedDict):
     video_analysis: Optional[str]  # Gemini's analysis of video content
     model_used: Optional[str]  # Which Gemini model was used
 
+    # Video optimization (for efficient Gemini upload)
+    optimized_video_path: Optional[str]  # Path to compressed video for analysis
+    gemini_file_uri: Optional[str]  # Gemini Files API URI if uploaded
+
     # Step 2: Keyframe Identification results
     keyframes: Optional[List[Dict[str, Any]]]  # List of keyframe info with timestamps
     scene_changes: Optional[List[Dict[str, Any]]]  # Detected scene changes
