@@ -65,6 +65,7 @@ class VideoManualAgent:
         user_id: str,
         output_filename: Optional[str] = None,
         use_scene_detection: bool = True,
+        output_language: str = "English",
         thread_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Create user manual from video.
@@ -74,6 +75,7 @@ class VideoManualAgent:
             user_id: User identifier for output folder location
             output_filename: Optional output filename
             use_scene_detection: Whether to use scene detection for keyframe hints
+            output_language: Target language for the manual (default: English)
             thread_id: Optional thread ID for checkpointing (enables resumption)
 
         Returns:
@@ -89,13 +91,18 @@ class VideoManualAgent:
         if not os.path.exists(video_path):
             raise FileNotFoundError(f"Video file not found: {video_path}")
 
-        # Generate manual_id upfront so all nodes can use it
-        # (needed for storing optimized video in correct location)
+        # Check for existing manual to enable caching
         from pathlib import Path
         storage = UserStorage(user_id)
         storage.ensure_user_folders()
         video_name = output_filename or Path(video_path).name
-        manual_dir, manual_id = storage.get_manual_dir(video_name=video_name)
+
+        # Try to find existing manual for this video (enables caching)
+        existing_manual_id = storage.find_existing_manual(video_name)
+        if existing_manual_id:
+            manual_dir, manual_id = storage.get_manual_dir(manual_id=existing_manual_id)
+        else:
+            manual_dir, manual_id = storage.get_manual_dir(video_name=video_name)
 
         # Prepare initial state
         initial_state: VideoManualState = {
@@ -104,6 +111,7 @@ class VideoManualAgent:
             "video_path": video_path,
             "output_filename": output_filename,
             "use_scene_detection": use_scene_detection,
+            "output_language": output_language,
             "video_metadata": None,
             "video_analysis": None,
             "model_used": None,
@@ -118,6 +126,7 @@ class VideoManualAgent:
             "output_directory": None,
             "status": "pending",
             "error": None,
+            "using_cached": None,
         }
 
         # Run graph
@@ -173,6 +182,7 @@ def create_manual_from_video_tool(
     video_path: str,
     user_id: str,
     output_filename: Optional[str] = None,
+    output_language: str = "English",
 ) -> str:
     """Tool function for creating manual from video.
 
@@ -182,12 +192,13 @@ def create_manual_from_video_tool(
         video_path: Path to video file
         user_id: User identifier for output folder location
         output_filename: Optional output filename
+        output_language: Target language for the manual (default: English)
 
     Returns:
         Summary of the manual creation process
     """
     agent = create_video_manual_agent()
-    result = agent.create_manual(video_path, user_id, output_filename)
+    result = agent.create_manual(video_path, user_id, output_filename, output_language=output_language)
 
     if result.get("status") == "error":
         return f"Error creating manual: {result.get('error')}"

@@ -18,6 +18,7 @@ class VideoManualState(TypedDict):
     video_path: str  # Path to the video file to process
     output_filename: Optional[str]  # Optional custom filename for the manual
     use_scene_detection: bool  # Whether to use scene detection for keyframes
+    output_language: Optional[str]  # Target language for manual (default: English)
 
     # Step 1: Video Analysis results
     video_metadata: Optional[Dict[str, Any]]  # FPS, duration, resolution, etc.
@@ -42,3 +43,4 @@ class VideoManualState(TypedDict):
     # Workflow status
     status: str  # "pending", "analyzing", "identifying", "generating", "completed", "error"
     error: Optional[str]  # Error message if status is "error"
+    using_cached: Optional[bool]  # Whether using cached analysis/keyframes from metadata.json

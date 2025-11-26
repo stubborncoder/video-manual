@@ -10,6 +10,8 @@ from ..config import DEFAULT_GEMINI_MODEL
 from ..prompts.system import MANUAL_GENERATOR_PROMPT
 from ..tools.video_tools import extract_screenshot_at_timestamp
 from ..state import VideoManualState
+from ..utils.language import get_language_code, get_language_name
+from ..utils.metadata import has_screenshots, add_language_generated
 from ....storage.user_storage import UserStorage
 
 
@@ -17,7 +19,17 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
     """Generate user manual from video analysis and keyframes.
 
     This is a LangGraph node that reads from state and returns a partial state update.
-    Outputs are saved to the user's folder structure.
+    Screenshots are stored in a shared folder, manuals are language-specific.
+
+    Structure:
+        {manual}/
+        ├── screenshots/           # Shared across languages
+        │   ├── figure_01_t5s.png
+        │   └── ...
+        ├── en/
+        │   └── manual.md          # References ../screenshots/
+        └── es/
+            └── manual.md
 
     Args:
         state: Current workflow state containing video_path, video_analysis, keyframes, user_id
@@ -44,33 +56,64 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
     manual_id = state.get("manual_id")
     output_filename = state.get("output_filename")
 
+    # Get language settings
+    language = state.get("output_language", "English")
+    language_code = get_language_code(language)
+    language_name = get_language_name(language)
+
     # Setup user storage and get manual directory
     user_storage = UserStorage(user_id)
     user_storage.ensure_user_folders()
     # Use output_filename if provided, otherwise derive from video name
     video_name = output_filename or Path(video_path).name
     manual_dir, manual_id = user_storage.get_manual_dir(manual_id, video_name=video_name)
+
+    # Create shared screenshots directory (at manual level, not language level)
     screenshots_dir = manual_dir / "screenshots"
+    screenshots_dir.mkdir(parents=True, exist_ok=True)
 
-    # Extract screenshots for each keyframe
+    # Create language-specific directory for manual.md only
+    lang_dir = manual_dir / language_code
+    lang_dir.mkdir(parents=True, exist_ok=True)
+
+    # Extract screenshots only if not already done
     screenshot_paths = []
+    screenshots_exist = has_screenshots(manual_dir)
 
-    for i, keyframe in enumerate(keyframes, 1):
-        timestamp = keyframe['timestamp_seconds']
-        screenshot_filename = f"figure_{i:02d}_t{int(timestamp)}s.png"
-        screenshot_path = screenshots_dir / screenshot_filename
+    if screenshots_exist:
+        print(f"Using existing screenshots: {len(list(screenshots_dir.glob('*.png')))} found")
+        # Build screenshot_paths from existing files
+        for i, keyframe in enumerate(keyframes, 1):
+            timestamp = keyframe['timestamp_seconds']
+            screenshot_filename = f"figure_{i:02d}_t{int(timestamp)}s.png"
+            screenshot_path = screenshots_dir / screenshot_filename
 
-        try:
-            extract_screenshot_at_timestamp(video_path, timestamp, str(screenshot_path))
-            screenshot_paths.append({
-                "figure_number": i,
-                "path": str(screenshot_path),
-                "relative_path": f"screenshots/{screenshot_filename}",
-                "timestamp": timestamp,
-                "description": keyframe.get('description', ''),
-            })
-        except Exception:
-            pass  # Skip failed screenshots silently
+            if screenshot_path.exists():
+                screenshot_paths.append({
+                    "figure_number": i,
+                    "path": str(screenshot_path),
+                    "relative_path": f"../screenshots/{screenshot_filename}",
+                    "timestamp": timestamp,
+                    "description": keyframe.get('description', ''),
+                })
+    else:
+        print(f"Extracting {len(keyframes)} screenshots...")
+        for i, keyframe in enumerate(keyframes, 1):
+            timestamp = keyframe['timestamp_seconds']
+            screenshot_filename = f"figure_{i:02d}_t{int(timestamp)}s.png"
+            screenshot_path = screenshots_dir / screenshot_filename
+
+            try:
+                extract_screenshot_at_timestamp(video_path, timestamp, str(screenshot_path))
+                screenshot_paths.append({
+                    "figure_number": i,
+                    "path": str(screenshot_path),
+                    "relative_path": f"../screenshots/{screenshot_filename}",
+                    "timestamp": timestamp,
+                    "description": keyframe.get('description', ''),
+                })
+            except Exception:
+                pass  # Skip failed screenshots silently
 
     llm = ChatGoogleGenerativeAI(
         model=DEFAULT_GEMINI_MODEL,
@@ -80,8 +123,12 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
     # Prepare screenshot references for the prompt
     screenshot_refs = _format_screenshot_references(screenshot_paths)
 
-    # Create generation prompt
+    # Create generation prompt with language instruction
     generation_prompt = f"""{MANUAL_GENERATOR_PROMPT}
+
+OUTPUT LANGUAGE: Write the entire manual in {language_name}.
+- Use {language_name} for all explanations, headings, and instructions
+- Keep UI element names/labels exactly as shown in screenshots (do not translate UI text)
 
 VIDEO ANALYSIS:
 {video_analysis}
@@ -90,11 +137,12 @@ AVAILABLE SCREENSHOTS:
 {screenshot_refs}
 
 Generate a comprehensive user manual in Markdown format based on the video analysis above.
-Reference the screenshots appropriately throughout the manual.
+Write the manual in {language_name}. Reference the screenshots appropriately throughout the manual.
 """
 
     try:
         # Generate manual
+        print(f"Generating manual in {language_name}...")
         response = llm.invoke(generation_prompt)
         manual_content = response.content
     except Exception as e:
@@ -107,10 +155,8 @@ Reference the screenshots appropriately throughout the manual.
     if isinstance(manual_content, list):
         manual_content = '\n'.join(str(item) for item in manual_content)
 
-    # Save manual to file
-    video_name = Path(video_path).stem
-    manual_filename = output_filename or f"manual_{video_name}"
-    manual_path = manual_dir / "manual.md"
+    # Save manual to language-specific file
+    manual_path = lang_dir / "manual.md"
 
     try:
         with open(manual_path, 'w', encoding='utf-8') as f:
@@ -121,13 +167,16 @@ Reference the screenshots appropriately throughout the manual.
             "error": f"Failed to save manual: {str(e)}",
         }
 
+    # Update metadata with generated language
+    add_language_generated(manual_dir, language_code)
+
     # Return partial state update
     return {
         "manual_id": manual_id,
         "manual_content": manual_content,
         "manual_path": str(manual_path),
         "screenshots": screenshot_paths,
-        "output_directory": str(manual_dir),
+        "output_directory": str(lang_dir),
         "status": "completed",
     }
 

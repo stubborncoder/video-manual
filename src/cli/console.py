@@ -116,13 +116,14 @@ def render_node_status(
     )
 
 
-def render_processing_header(video_path: str, user_id: str) -> Panel:
+def render_processing_header(video_path: str, user_id: str, language: str = "English") -> Panel:
     """Render the processing header with video and user info."""
     from pathlib import Path
     video_name = Path(video_path).name
 
     content = f"""[bold]Processing:[/bold] {video_name}
-[bold]User:[/bold] {user_id}"""
+[bold]User:[/bold] {user_id}
+[bold]Language:[/bold] {language}"""
 
     return Panel(
         content,
@@ -138,10 +139,11 @@ def render_full_status(
     user_id: str,
     nodes_status: Dict[str, Dict[str, Any]],
     frame_idx: int = 0,
+    language: str = "English",
 ) -> Group:
     """Render the complete status display."""
     return Group(
-        render_processing_header(video_path, user_id),
+        render_processing_header(video_path, user_id, language),
         "",
         render_node_status(nodes_status, frame_idx=frame_idx),
     )
@@ -205,12 +207,14 @@ def manuals_table(manuals: List[Dict[str, Any]]) -> Table:
         border_style="cyan",
     )
     table.add_column("ID", style="cyan")
+    table.add_column("Languages", style="green")
     table.add_column("Created", style="dim")
     table.add_column("Screenshots", justify="right")
 
     for manual in manuals:
         table.add_row(
             manual.get("id", "unknown"),
+            manual.get("languages", "-"),
             manual.get("created", "-"),
             str(manual.get("screenshots", 0)),
         )

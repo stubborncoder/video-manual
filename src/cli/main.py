@@ -69,6 +69,7 @@ def process_with_streaming(
     user_id: str,
     output_filename: Optional[str],
     use_scene_detection: bool,
+    output_language: str = "English",
 ):
     """Process video with streaming node events and animated spinner."""
     from ..agents.video_manual_agent import VideoManualAgent
@@ -77,12 +78,17 @@ def process_with_streaming(
     # Create agent
     agent = VideoManualAgent(use_checkpointer=True)
 
-    # Generate manual_id upfront so all nodes can use it
-    # (needed for storing optimized video in correct location)
+    # Check for existing manual to enable caching
     storage = UserStorage(user_id)
     storage.ensure_user_folders()
     video_name = output_filename or video_path.name
-    manual_dir, manual_id = storage.get_manual_dir(video_name=video_name)
+
+    # Try to find existing manual for this video (enables caching)
+    existing_manual_id = storage.find_existing_manual(video_name)
+    if existing_manual_id:
+        manual_dir, manual_id = storage.get_manual_dir(manual_id=existing_manual_id)
+    else:
+        manual_dir, manual_id = storage.get_manual_dir(video_name=video_name)
 
     # Prepare initial state
     initial_state: VideoManualState = {
@@ -91,6 +97,7 @@ def process_with_streaming(
         "video_path": str(video_path),
         "output_filename": output_filename,
         "use_scene_detection": use_scene_detection,
+        "output_language": output_language,
         "video_metadata": None,
         "video_analysis": None,
         "model_used": None,
@@ -105,6 +112,7 @@ def process_with_streaming(
         "output_directory": None,
         "status": "pending",
         "error": None,
+        "using_cached": None,
     }
 
     config = {"configurable": {"thread_id": f"{user_id}_{video_path.stem}"}}
@@ -156,7 +164,7 @@ def process_with_streaming(
     frame_idx = 0
     try:
         with Live(
-            render_full_status(str(video_path), user_id, nodes_status, frame_idx),
+            render_full_status(str(video_path), user_id, nodes_status, frame_idx, output_language),
             refresh_per_second=10,
             console=console,
         ) as live:
@@ -167,11 +175,11 @@ def process_with_streaming(
 
                 if done:
                     # Final update
-                    live.update(render_full_status(str(video_path), user_id, current_status, frame_idx))
+                    live.update(render_full_status(str(video_path), user_id, current_status, frame_idx, output_language))
                     break
 
                 # Update display with animated spinner
-                live.update(render_full_status(str(video_path), user_id, current_status, frame_idx))
+                live.update(render_full_status(str(video_path), user_id, current_status, frame_idx, output_language))
                 frame_idx += 1
                 time.sleep(0.1)
 
@@ -230,6 +238,11 @@ def process_video(
         "--no-scene-detection",
         help="Disable scene detection for keyframe hints",
     ),
+    language: str = typer.Option(
+        "English",
+        "--language", "-lang",
+        help="Output language for the manual (e.g., Spanish, German, 日本語)",
+    ),
     list_videos: bool = typer.Option(
         False,
         "--list", "-l",
@@ -252,7 +265,7 @@ def process_video(
         if not video.exists():
             console.print(f"[red]Error: Video file not found: {video}[/red]")
             raise typer.Exit(1)
-        process_with_streaming(video, user, output, not no_scene_detection)
+        process_with_streaming(video, user, output, not no_scene_detection, language)
         return
 
     # Otherwise, list videos from user folder
@@ -283,7 +296,7 @@ def process_video(
         raise typer.Exit(0)
 
     console.print()
-    process_with_streaming(selected_video, user, output, not no_scene_detection)
+    process_with_streaming(selected_video, user, output, not no_scene_detection, language)
 
 
 @app.command("list")
@@ -313,7 +326,11 @@ def list_manuals_cmd(
     # Build detailed manual info
     manual_details = []
     for manual_id in manuals:
+        languages = storage.list_manual_languages(manual_id)
+        # Screenshots are now shared across languages
         screenshots = storage.list_screenshots(manual_id)
+        screenshot_count = len(screenshots)
+
         manual_dir = storage.manuals_dir / manual_id
         created = "-"
         if manual_dir.exists():
@@ -324,7 +341,8 @@ def list_manuals_cmd(
         manual_details.append({
             "id": manual_id,
             "created": created,
-            "screenshots": len(screenshots),
+            "screenshots": screenshot_count,
+            "languages": ", ".join(languages) if languages else "-",
         })
 
     console.print(manuals_table(manual_details))
@@ -344,6 +362,11 @@ def view_manual(
         "--user", "-u",
         help="User ID",
     ),
+    language: str = typer.Option(
+        "en",
+        "--language", "-lang",
+        help="Language code to view (e.g., en, es, de)",
+    ),
     raw: bool = typer.Option(
         False,
         "--raw", "-r",
@@ -354,7 +377,18 @@ def view_manual(
     ensure_directories()
     storage = UserStorage(user)
 
-    content = storage.get_manual_content(manual_id)
+    # Check available languages
+    languages = storage.list_manual_languages(manual_id)
+    if languages and language not in languages:
+        console.print(f"[yellow]Language '{language}' not found for this manual.[/yellow]")
+        console.print(f"Available languages: [cyan]{', '.join(languages)}[/cyan]")
+        console.print()
+        # Try first available language as fallback
+        language = languages[0]
+        console.print(f"Showing '{language}' version instead.")
+        console.print()
+
+    content = storage.get_manual_content(manual_id, language)
 
     if content is None:
         console.print(f"[red]Manual not found: {manual_id}[/red]")

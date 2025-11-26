@@ -89,7 +89,7 @@ Format the manual in clean Markdown with:
 
 CRITICAL RULES FOR SCREENSHOTS:
 1. You MUST embed EVERY screenshot provided in the "AVAILABLE SCREENSHOTS" section
-2. Use this exact format: ![Figure N: Description](screenshots/figure_XX_tYYs.png)
+2. Use this exact format: ![Figure N: Description](../screenshots/figure_XX_tYYs.png)
 3. Place the image RIGHT AFTER the step it illustrates, not at the end of the section
 4. Use the exact filename provided in the "File:" field
 
@@ -98,7 +98,7 @@ Example of proper step with screenshot:
 1. Click inside the password field labeled "Contraseña"
 2. Type your password carefully (characters will be hidden)
 
-![Figure 2: Password field ready for input](screenshots/figure_02_t12s.png)
+![Figure 2: Password field ready for input](../screenshots/figure_02_t12s.png)
 
 Make it detailed enough that someone completely unfamiliar with the process can follow along successfully.
 """

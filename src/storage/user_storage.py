@@ -59,12 +59,36 @@ class UserStorage:
         self.videos_dir.mkdir(parents=True, exist_ok=True)
         self.manuals_dir.mkdir(parents=True, exist_ok=True)
 
-    def get_manual_dir(self, manual_id: Optional[str] = None, video_name: Optional[str] = None) -> tuple[Path, str]:
+    def find_existing_manual(self, video_name: str) -> Optional[str]:
+        """Find an existing manual for a video name.
+
+        Args:
+            video_name: Video filename to search for
+
+        Returns:
+            manual_id if found, None otherwise
+        """
+        base_name = Path(video_name).stem
+        manual_id = slugify(base_name)
+
+        # Check if manual exists
+        if (self.manuals_dir / manual_id).exists():
+            return manual_id
+        return None
+
+    def get_manual_dir(
+        self,
+        manual_id: Optional[str] = None,
+        video_name: Optional[str] = None,
+        create_new: bool = False,
+    ) -> tuple[Path, str]:
         """Get or create a manual output directory.
 
         Args:
             manual_id: Optional manual ID. If not provided, derives from video_name or generates UUID.
             video_name: Optional video filename to derive manual ID from.
+            create_new: If True, always create a new manual (append -2, -3, etc.)
+                       If False, reuse existing manual if found.
 
         Returns:
             Tuple of (manual directory path, manual_id)
@@ -74,8 +98,9 @@ class UserStorage:
                 # Create slug from video name (without extension)
                 base_name = Path(video_name).stem
                 manual_id = slugify(base_name)
-                # If slug already exists, append a number
-                if (self.manuals_dir / manual_id).exists():
+
+                # If slug already exists and we want a new one, append a number
+                if create_new and (self.manuals_dir / manual_id).exists():
                     counter = 2
                     while (self.manuals_dir / f"{manual_id}-{counter}").exists():
                         counter += 1
@@ -85,7 +110,7 @@ class UserStorage:
 
         manual_dir = self.manuals_dir / manual_id
         manual_dir.mkdir(parents=True, exist_ok=True)
-        (manual_dir / "screenshots").mkdir(exist_ok=True)
+        # Note: screenshots folder is created by manual_generator.py when needed
         return manual_dir, manual_id
 
     def get_video_path(self, filename: str) -> Path:
@@ -120,22 +145,52 @@ class UserStorage:
             return []
         return [d.name for d in self.manuals_dir.iterdir() if d.is_dir()]
 
-    def get_manual_content(self, manual_id: str) -> Optional[str]:
-        """Read the content of a manual.
+    def list_manual_languages(self, manual_id: str) -> List[str]:
+        """List available language versions for a manual.
+
+        Args:
+            manual_id: ID of the manual
+
+        Returns:
+            List of language codes (e.g., ["en", "es"])
+        """
+        manual_dir = self.manuals_dir / manual_id
+        if not manual_dir.exists():
+            return []
+
+        languages = []
+        for item in manual_dir.iterdir():
+            if item.is_dir() and (item / "manual.md").exists():
+                languages.append(item.name)
+        return sorted(languages)
+
+    def get_manual_content(self, manual_id: str, language_code: str = "en") -> Optional[str]:
+        """Read the content of a manual in a specific language.
 
         Args:
             manual_id: ID of the manual to read
+            language_code: Language code (default: "en")
 
         Returns:
             Manual content as string, or None if not found
         """
-        manual_path = self.manuals_dir / manual_id / "manual.md"
-        if manual_path.exists():
-            return manual_path.read_text(encoding="utf-8")
+        # Try language-specific path first (new structure)
+        lang_manual_path = self.manuals_dir / manual_id / language_code / "manual.md"
+        if lang_manual_path.exists():
+            return lang_manual_path.read_text(encoding="utf-8")
+
+        # Fallback to old structure (manual_id/manual.md) for backwards compatibility
+        legacy_path = self.manuals_dir / manual_id / "manual.md"
+        if legacy_path.exists():
+            return legacy_path.read_text(encoding="utf-8")
+
         return None
 
     def list_screenshots(self, manual_id: str) -> List[Path]:
         """List all screenshots for a manual.
+
+        Screenshots are stored in a shared folder at {manual}/screenshots/,
+        not per-language.
 
         Args:
             manual_id: ID of the manual
@@ -144,9 +199,9 @@ class UserStorage:
             List of screenshot file paths
         """
         screenshots_dir = self.manuals_dir / manual_id / "screenshots"
-        if not screenshots_dir.exists():
-            return []
-        return list(screenshots_dir.glob("*.png"))
+        if screenshots_dir.exists():
+            return sorted(screenshots_dir.glob("*.png"))
+        return []
 
     def list_videos(self) -> List[Path]:
         """List all video files in user's videos directory.

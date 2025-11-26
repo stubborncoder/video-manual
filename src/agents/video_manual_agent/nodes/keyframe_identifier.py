@@ -2,7 +2,8 @@
 
 import os
 import re
-from typing import Dict, Any, List
+from pathlib import Path
+from typing import Dict, Any, List, Optional
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 
@@ -10,12 +11,14 @@ from ..config import DEFAULT_GEMINI_MODEL, KEYFRAME_MIN_INTERVAL
 from ..prompts.system import KEYFRAME_IDENTIFIER_PROMPT
 from ..tools.video_tools import detect_scene_changes
 from ..state import VideoManualState
+from ..utils.metadata import has_keyframes, get_cached_keyframes, update_keyframes
 
 
 def identify_keyframes_node(state: VideoManualState) -> Dict[str, Any]:
     """Identify keyframes from video analysis.
 
     This is a LangGraph node that reads from state and returns a partial state update.
+    Supports caching of keyframes in metadata.json to avoid re-identification.
 
     Args:
         state: Current workflow state containing video_path, video_analysis, and use_scene_detection
@@ -26,6 +29,32 @@ def identify_keyframes_node(state: VideoManualState) -> Dict[str, Any]:
     # Load environment variables
     load_dotenv()
 
+    # Extract values from state
+    video_path = state["video_path"]
+    video_analysis = state["video_analysis"]
+    use_scene_detection = state.get("use_scene_detection", True)
+    user_id = state.get("user_id", "default")
+    manual_id = state.get("manual_id")
+
+    # Get manual directory for caching
+    manual_dir: Optional[Path] = None
+    if manual_id:
+        from ....storage.user_storage import UserStorage
+        storage = UserStorage(user_id)
+        manual_dir = storage.get_manual_path(manual_id)
+
+    # Check for cached keyframes
+    if manual_dir and has_keyframes(manual_dir):
+        cached_keyframes = get_cached_keyframes(manual_dir)
+        print(f"Using cached keyframes: {len(cached_keyframes)} keyframes found")
+
+        return {
+            "keyframes": cached_keyframes,
+            "scene_changes": [],
+            "total_keyframes": len(cached_keyframes),
+            "status": "identifying_complete",
+        }
+
     # Get API key
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:
@@ -33,11 +62,6 @@ def identify_keyframes_node(state: VideoManualState) -> Dict[str, Any]:
             "status": "error",
             "error": "GOOGLE_API_KEY not found in environment variables",
         }
-
-    # Extract values from state
-    video_path = state["video_path"]
-    video_analysis = state["video_analysis"]
-    use_scene_detection = state.get("use_scene_detection", True)
 
     # Optional: Use scene detection for initial suggestions
     scene_changes = []
@@ -67,6 +91,7 @@ that should be captured as screenshots for the user manual.
 
     try:
         # Get keyframe recommendations
+        print("Identifying keyframes...")
         response = llm.invoke(enhanced_prompt)
     except Exception as e:
         return {
@@ -79,6 +104,10 @@ that should be captured as screenshots for the user manual.
 
     # Filter keyframes to ensure minimum interval
     keyframes = _filter_keyframes(keyframes, KEYFRAME_MIN_INTERVAL)
+
+    # Cache keyframes in metadata
+    if manual_dir:
+        update_keyframes(manual_dir, keyframes)
 
     # Return partial state update
     return {
