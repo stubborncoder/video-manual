@@ -2,9 +2,9 @@
 
 from pathlib import Path
 from textual.app import ComposeResult
-from textual.containers import Vertical
+from textual.containers import Container, Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, DataTable, Label, Static
+from textual.widgets import Button, DataTable, Static
 from textual.binding import Binding
 
 
@@ -14,42 +14,28 @@ class VideosScreen(Screen):
     BINDINGS = [
         Binding("r", "refresh", "Refresh"),
         Binding("p", "process_selected", "Process"),
+        Binding("escape", "go_back", "Back", priority=True),
     ]
-
-    CSS = """
-    VideosScreen {
-        padding: 1;
-    }
-
-    #title {
-        text-style: bold;
-        margin-bottom: 1;
-    }
-
-    #videos-table {
-        height: 1fr;
-    }
-
-    #actions {
-        height: auto;
-        margin-top: 1;
-    }
-
-    #actions Button {
-        margin-right: 1;
-    }
-    """
 
     def __init__(self, user_id: str):
         super().__init__()
         self.user_id = user_id
 
     def compose(self) -> ComposeResult:
-        yield Static("Videos", id="title")
-        yield DataTable(id="videos-table", cursor_type="row")
-        with Vertical(id="actions"):
-            yield Button("Process Selected", id="btn-process", variant="primary")
-            yield Button("Refresh", id="btn-refresh")
+        with Container(classes="screen-container"):
+            # Header with back button
+            with Horizontal(classes="page-header"):
+                yield Button("< Back", classes="back-btn", id="btn-back")
+                yield Static("Videos", classes="title")
+
+            # Content
+            with Vertical(classes="content-area"):
+                yield DataTable(id="videos-table", cursor_type="row")
+
+            # Button bar
+            with Horizontal(classes="button-bar"):
+                yield Button("Process Selected", id="btn-process", variant="success")
+                yield Button("Refresh", id="btn-refresh")
 
     def on_mount(self) -> None:
         """Load videos on mount."""
@@ -71,25 +57,30 @@ class VideosScreen(Screen):
         for video in sorted(videos, key=lambda x: x.stat().st_mtime, reverse=True):
             stat = video.stat()
             size_mb = stat.st_size / (1024 * 1024)
-            modified = Path(video).stat().st_mtime
             from datetime import datetime
-            modified_str = datetime.fromtimestamp(modified).strftime("%Y-%m-%d %H:%M")
-
+            modified_str = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M")
             table.add_row(video.name, f"{size_mb:.1f} MB", modified_str, key=str(video))
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses."""
-        if event.button.id == "btn-process":
+        if event.button.id == "btn-back":
+            self.app.pop_screen()
+        elif event.button.id == "btn-process":
             self._process_selected()
         elif event.button.id == "btn-refresh":
             self._load_videos()
 
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        """Handle double-click to process."""
+        self._process_selected()
+
     def action_refresh(self) -> None:
-        """Refresh the video list."""
         self._load_videos()
 
+    def action_go_back(self) -> None:
+        self.app.pop_screen()
+
     def action_process_selected(self) -> None:
-        """Process the selected video."""
         self._process_selected()
 
     def _process_selected(self) -> None:
@@ -98,9 +89,6 @@ class VideosScreen(Screen):
 
         table = self.query_one("#videos-table", DataTable)
         if table.cursor_row is not None:
-            row_key = table.get_row_at(table.cursor_row)
+            row_key = table.get_row_key(table.cursor_row)
             if row_key:
-                # Get the video path from the row key
-                video_path = table.get_row_key(table.cursor_row)
-                if video_path:
-                    self.app.push_screen(ProcessVideoScreen(self.user_id, video_path=video_path))
+                self.app.push_screen(ProcessVideoScreen(self.user_id, video_path=str(row_key.value)))

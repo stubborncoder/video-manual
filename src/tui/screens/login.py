@@ -1,7 +1,7 @@
 """Login screen for user authentication."""
 
 from textual.app import ComposeResult
-from textual.containers import Container, Vertical, Center
+from textual.containers import Container, Vertical
 from textual.screen import Screen
 from textual.widgets import Button, Input, Label, Static
 from textual.validation import Length
@@ -10,93 +10,24 @@ from textual.validation import Length
 class LoginScreen(Screen):
     """Login screen for user identification."""
 
-    CSS = """
-    LoginScreen {
-        align: center middle;
-    }
-
-    #login-container {
-        width: 60;
-        height: auto;
-        border: solid $primary;
-        padding: 2 4;
-    }
-
-    #login-title {
-        text-align: center;
-        text-style: bold;
-        color: $primary;
-        margin-bottom: 1;
-    }
-
-    #login-subtitle {
-        text-align: center;
-        color: $text-muted;
-        margin-bottom: 2;
-    }
-
-    .field-label {
-        margin-top: 1;
-        margin-bottom: 0;
-    }
-
-    #user-input {
-        margin-bottom: 1;
-    }
-
-    #login-button {
-        margin-top: 2;
-        width: 100%;
-    }
-
-    #error-message {
-        color: $error;
-        text-align: center;
-        margin-top: 1;
-        display: none;
-    }
-
-    #error-message.visible {
-        display: block;
-    }
-
-    #existing-users {
-        margin-top: 2;
-        padding-top: 1;
-        border-top: solid $surface-lighten-2;
-    }
-
-    #existing-users-label {
-        color: $text-muted;
-        margin-bottom: 1;
-    }
-
-    .user-button {
-        width: 100%;
-        margin-bottom: 1;
-    }
-    """
-
     def compose(self) -> ComposeResult:
         """Compose the login screen."""
-        with Center():
-            with Container(id="login-container"):
-                yield Static("Video Manual", id="login-title")
-                yield Static("Enter your user ID to continue", id="login-subtitle")
+        with Container(id="login-box"):
+            with Vertical(id="login-header"):
+                yield Static("Video Manual", id="app-title")
+                yield Static("AI-powered video documentation", id="app-subtitle")
 
-                yield Label("User ID", classes="field-label")
+            with Vertical(id="login-form"):
+                yield Label("User ID")
                 yield Input(
-                    placeholder="Enter user ID...",
+                    placeholder="Enter your user ID...",
                     id="user-input",
                     validators=[Length(minimum=1, failure_description="User ID required")],
                 )
+                yield Button("Login", id="login-btn", variant="primary")
 
-                yield Button("Login", id="login-button", variant="primary")
-                yield Static("", id="error-message")
-
-                with Vertical(id="existing-users"):
-                    yield Label("Or select existing user:", id="existing-users-label")
-                    # Will be populated dynamically
+            with Vertical(id="user-list"):
+                yield Static("Quick Select", id="user-list-title")
 
     def on_mount(self) -> None:
         """Focus the input field and load existing users."""
@@ -108,20 +39,17 @@ class LoginScreen(Screen):
         from pathlib import Path
 
         users_dir = Path("data/users")
+        container = self.query_one("#user-list", Vertical)
+
         if users_dir.exists():
             users = [d.name for d in users_dir.iterdir() if d.is_dir()]
-            container = self.query_one("#existing-users", Vertical)
-
-            for user_id in sorted(users)[:5]:  # Show max 5 users
-                button = Button(user_id, classes="user-button", id=f"user-{user_id}")
+            for user_id in sorted(users)[:5]:
+                button = Button(user_id, classes="user-btn", id=f"user-{user_id}")
                 container.mount(button)
-
-            if not users:
-                container.display = False
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle button presses."""
-        if event.button.id == "login-button":
+        if event.button.id == "login-btn":
             self._do_login()
         elif event.button.id and event.button.id.startswith("user-"):
             user_id = event.button.id.replace("user-", "")
@@ -138,7 +66,7 @@ class LoginScreen(Screen):
         user_id = input_widget.value.strip()
 
         if not user_id:
-            self._show_error("Please enter a user ID")
+            self.notify("Please enter a user ID", severity="error")
             return
 
         self._login_user(user_id)
@@ -147,15 +75,6 @@ class LoginScreen(Screen):
         """Login with the given user ID."""
         from ...storage.user_storage import UserStorage
 
-        # Ensure user folders exist
         storage = UserStorage(user_id)
         storage.ensure_user_folders()
-
-        # Set user in app and navigate to dashboard
         self.app.set_user(user_id)
-
-    def _show_error(self, message: str) -> None:
-        """Show error message."""
-        error_widget = self.query_one("#error-message", Static)
-        error_widget.update(message)
-        error_widget.add_class("visible")

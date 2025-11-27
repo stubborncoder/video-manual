@@ -1,48 +1,10 @@
 """Dashboard screen with overview and navigation."""
 
 from textual.app import ComposeResult
-from textual.containers import Container, Horizontal, Vertical, Grid
+from textual.containers import Container, Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Button, Label, Static, DataTable
+from textual.widgets import Button, Static, DataTable
 from textual.binding import Binding
-
-
-class StatCard(Static):
-    """A card displaying a statistic."""
-
-    DEFAULT_CSS = """
-    StatCard {
-        width: 1fr;
-        height: 7;
-        border: solid $primary-darken-2;
-        padding: 1 2;
-    }
-
-    StatCard .stat-value {
-        text-style: bold;
-        color: $primary;
-        text-align: center;
-    }
-
-    StatCard .stat-label {
-        color: $text-muted;
-        text-align: center;
-    }
-    """
-
-    def __init__(self, label: str, value: str | int, **kwargs):
-        super().__init__(**kwargs)
-        self.label = label
-        self.value = str(value)
-
-    def compose(self) -> ComposeResult:
-        yield Static(self.value, classes="stat-value")
-        yield Static(self.label, classes="stat-label")
-
-    def update_value(self, value: str | int) -> None:
-        """Update the displayed value."""
-        self.value = str(value)
-        self.query_one(".stat-value", Static).update(self.value)
 
 
 class DashboardScreen(Screen):
@@ -52,52 +14,8 @@ class DashboardScreen(Screen):
         Binding("v", "go_videos", "Videos"),
         Binding("m", "go_manuals", "Manuals"),
         Binding("p", "go_projects", "Projects"),
-        Binding("n", "new_video", "New Video"),
+        Binding("n", "new_video", "Process Video"),
     ]
-
-    CSS = """
-    DashboardScreen {
-        padding: 1;
-    }
-
-    #welcome {
-        text-style: bold;
-        margin-bottom: 1;
-    }
-
-    #stats-row {
-        height: auto;
-        margin-bottom: 2;
-    }
-
-    #stats-row > StatCard {
-        margin-right: 1;
-    }
-
-    #nav-grid {
-        grid-size: 3;
-        grid-gutter: 1;
-        height: auto;
-        margin-bottom: 2;
-    }
-
-    .nav-button {
-        height: 5;
-    }
-
-    #recent-section {
-        height: 1fr;
-    }
-
-    #recent-title {
-        text-style: bold;
-        margin-bottom: 1;
-    }
-
-    #recent-table {
-        height: 1fr;
-    }
-    """
 
     def __init__(self, user_id: str):
         super().__init__()
@@ -105,27 +23,39 @@ class DashboardScreen(Screen):
 
     def compose(self) -> ComposeResult:
         """Compose the dashboard layout."""
-        yield Static(f"Welcome, {self.user_id}", id="welcome")
+        with Container(classes="screen-container"):
+            # Welcome section
+            with Vertical(id="welcome-section"):
+                yield Static(f"Welcome, {self.user_id}", id="welcome-text")
 
-        # Stats row
-        with Horizontal(id="stats-row"):
-            yield StatCard("Videos", "0", id="stat-videos")
-            yield StatCard("Manuals", "0", id="stat-manuals")
-            yield StatCard("Projects", "0", id="stat-projects")
+                with Horizontal(id="stats-grid"):
+                    with Vertical(classes="stat-card"):
+                        yield Static("0", id="stat-videos-val", classes="stat-value")
+                        yield Static("Videos", classes="stat-label")
+                    with Vertical(classes="stat-card"):
+                        yield Static("0", id="stat-manuals-val", classes="stat-value")
+                        yield Static("Manuals", classes="stat-label")
+                    with Vertical(classes="stat-card"):
+                        yield Static("0", id="stat-projects-val", classes="stat-value")
+                        yield Static("Projects", classes="stat-label")
 
-        # Navigation buttons
-        with Grid(id="nav-grid"):
-            yield Button("Videos", id="btn-videos", classes="nav-button", variant="primary")
-            yield Button("Manuals", id="btn-manuals", classes="nav-button", variant="primary")
-            yield Button("Projects", id="btn-projects", classes="nav-button", variant="primary")
-            yield Button("Process Video", id="btn-process", classes="nav-button", variant="success")
-            yield Button("Compile Project", id="btn-compile", classes="nav-button", variant="success")
-            yield Button("Settings", id="btn-settings", classes="nav-button")
+            # Main content area
+            with Horizontal(id="main-content"):
+                # Navigation panel
+                with Vertical(id="nav-panel"):
+                    yield Static("Navigation", classes="section-title")
+                    yield Button("Videos", id="btn-videos", variant="primary")
+                    yield Button("Manuals", id="btn-manuals", variant="primary")
+                    yield Button("Projects", id="btn-projects", variant="primary")
+                    yield Static("", classes="spacer")
+                    yield Static("Actions", classes="section-title")
+                    yield Button("Process Video", id="btn-process", variant="success")
+                    yield Button("Compile Project", id="btn-compile", variant="success")
 
-        # Recent activity
-        with Vertical(id="recent-section"):
-            yield Static("Recent Manuals", id="recent-title")
-            yield DataTable(id="recent-table")
+                # Recent manuals panel
+                with Vertical(id="recent-panel"):
+                    yield Static("Recent Manuals", classes="section-title")
+                    yield DataTable(id="recent-table")
 
     def on_mount(self) -> None:
         """Load dashboard data."""
@@ -143,16 +73,16 @@ class DashboardScreen(Screen):
         # Count videos
         videos_dir = Path(f"data/users/{self.user_id}/videos")
         video_count = len(list(videos_dir.glob("*.*"))) if videos_dir.exists() else 0
-        self.query_one("#stat-videos", StatCard).update_value(video_count)
+        self.query_one("#stat-videos-val", Static).update(str(video_count))
 
         # Count manuals
         manuals = storage.list_manuals()
-        self.query_one("#stat-manuals", StatCard).update_value(len(manuals))
+        self.query_one("#stat-manuals-val", Static).update(str(len(manuals)))
 
         # Count projects
         project_storage = ProjectStorage(self.user_id)
         projects = project_storage.list_projects()
-        self.query_one("#stat-projects", StatCard).update_value(len(projects))
+        self.query_one("#stat-projects-val", Static).update(str(len(projects)))
 
     def _load_recent_manuals(self) -> None:
         """Load recent manuals into the table."""
@@ -160,11 +90,11 @@ class DashboardScreen(Screen):
 
         table = self.query_one("#recent-table", DataTable)
         table.add_columns("Manual", "Language", "Created")
+        table.cursor_type = "row"
 
         storage = UserStorage(self.user_id)
         manuals = storage.list_manuals()
 
-        # Sort by date (newest first) and take top 10
         sorted_manuals = sorted(
             manuals, key=lambda x: x.get("created_at", ""), reverse=True
         )[:10]
@@ -174,28 +104,31 @@ class DashboardScreen(Screen):
                 manual.get("name", "Unknown"),
                 manual.get("language", "en"),
                 manual.get("created_at", "")[:10] if manual.get("created_at") else "-",
+                key=manual.get("id", ""),
             )
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle navigation button presses."""
-        from .videos import VideosScreen
-        from .manuals import ManualsScreen
-        from .projects import ProjectsScreen
-        from .process_video import ProcessVideoScreen
-        from .compile_project import CompileProjectScreen
-
         button_id = event.button.id
 
         if button_id == "btn-videos":
-            self.app.push_screen(VideosScreen(self.user_id))
+            self.action_go_videos()
         elif button_id == "btn-manuals":
-            self.app.push_screen(ManualsScreen(self.user_id))
+            self.action_go_manuals()
         elif button_id == "btn-projects":
-            self.app.push_screen(ProjectsScreen(self.user_id))
+            self.action_go_projects()
         elif button_id == "btn-process":
-            self.app.push_screen(ProcessVideoScreen(self.user_id))
+            self.action_new_video()
         elif button_id == "btn-compile":
+            from .compile_project import CompileProjectScreen
             self.app.push_screen(CompileProjectScreen(self.user_id))
+
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        """Handle manual selection."""
+        from .view_manual import ViewManualScreen
+        row_key = event.row_key
+        if row_key:
+            self.app.push_screen(ViewManualScreen(self.user_id, str(row_key.value)))
 
     def action_go_videos(self) -> None:
         """Navigate to videos screen."""

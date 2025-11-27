@@ -1,5 +1,6 @@
 """Main Textual application for Video Manual TUI."""
 
+from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.widgets import Footer, Header
@@ -14,42 +15,13 @@ class VideoManualApp(App):
     TITLE = "Video Manual"
     SUB_TITLE = "AI-powered video documentation"
 
-    CSS = """
-    Screen {
-        background: $surface;
-    }
-
-    #main-content {
-        height: 1fr;
-        padding: 1;
-    }
-
-    .title {
-        text-style: bold;
-        color: $primary;
-    }
-
-    .subtitle {
-        color: $text-muted;
-    }
-
-    .error {
-        color: $error;
-    }
-
-    .success {
-        color: $success;
-    }
-
-    .warning {
-        color: $warning;
-    }
-    """
+    CSS_PATH = "styles.tcss"
 
     BINDINGS = [
-        Binding("q", "quit", "Quit", show=True),
+        Binding("q", "quit", "Quit", show=True, priority=True),
         Binding("d", "go_dashboard", "Dashboard", show=True),
-        Binding("escape", "go_back", "Back", show=True),
+        Binding("escape", "go_back", "Back", show=True, priority=True),
+        Binding("?", "toggle_help", "Help", show=True),
     ]
 
     def __init__(self):
@@ -58,7 +30,7 @@ class VideoManualApp(App):
 
     def compose(self) -> ComposeResult:
         """Compose the app layout."""
-        yield Header()
+        yield Header(show_clock=True)
         yield Footer()
 
     def on_mount(self) -> None:
@@ -72,7 +44,6 @@ class VideoManualApp(App):
     def action_go_dashboard(self) -> None:
         """Navigate to dashboard."""
         if self.current_user_id:
-            # Pop all screens except login, then push dashboard
             while len(self.screen_stack) > 1:
                 self.pop_screen()
             self.push_screen(DashboardScreen(self.current_user_id))
@@ -81,6 +52,10 @@ class VideoManualApp(App):
         """Go back to previous screen."""
         if len(self.screen_stack) > 1:
             self.pop_screen()
+
+    def action_toggle_help(self) -> None:
+        """Toggle help screen."""
+        pass  # TODO: Add help screen
 
     def set_user(self, user_id: str) -> None:
         """Set the current user and navigate to dashboard."""
