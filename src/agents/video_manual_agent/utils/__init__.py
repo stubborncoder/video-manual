@@ -16,6 +16,20 @@ from .metadata import (
     add_language_generated,
     has_optimized_video,
     has_screenshots,
+    # Project organization
+    get_project_id,
+    get_chapter_id,
+    update_project_info,
+    # Tags
+    get_tags,
+    add_tag,
+    remove_tag,
+    set_tags,
+    # Version tracking
+    get_version,
+    get_version_history,
+    update_version,
+    bump_version,
 )
 
 __all__ = [
@@ -35,4 +49,18 @@ __all__ = [
     "add_language_generated",
     "has_optimized_video",
     "has_screenshots",
+    # Project organization
+    "get_project_id",
+    "get_chapter_id",
+    "update_project_info",
+    # Tags
+    "get_tags",
+    "add_tag",
+    "remove_tag",
+    "set_tags",
+    # Version tracking
+    "get_version",
+    "get_version_history",
+    "update_version",
+    "bump_version",
 ]

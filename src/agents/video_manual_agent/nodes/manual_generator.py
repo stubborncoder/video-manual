@@ -13,6 +13,7 @@ from ..state import VideoManualState
 from ..utils.language import get_language_code, get_language_name
 from ..utils.metadata import has_screenshots, add_language_generated
 from ....storage.user_storage import UserStorage
+from ....storage.version_storage import VersionStorage
 
 
 def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
@@ -154,6 +155,12 @@ Write the manual in {language_name}. Reference the screenshots appropriately thr
     # Ensure manual_content is a string (sometimes LangChain returns a list)
     if isinstance(manual_content, list):
         manual_content = '\n'.join(str(item) for item in manual_content)
+
+    # Auto-version before overwriting existing content
+    version_storage = VersionStorage(user_id, manual_id)
+    new_version = version_storage.auto_patch_before_overwrite()
+    if new_version:
+        print(f"Auto-saved previous version, now at v{new_version}")
 
     # Save manual to language-specific file
     manual_path = lang_dir / "manual.md"
