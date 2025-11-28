@@ -1,0 +1,89 @@
+"""Main FastAPI application for Video Manual Platform."""
+
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from .routes import auth_router, videos_router, manuals_router, projects_router
+from .websockets import process_video_router, compile_project_router
+from ..config import ensure_directories
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan handler."""
+    # Startup
+    ensure_directories()
+    yield
+    # Shutdown (cleanup if needed)
+
+
+def create_app(
+    cors_origins: list[str] | None = None,
+    debug: bool = False,
+) -> FastAPI:
+    """Create and configure the FastAPI application."""
+
+    app = FastAPI(
+        title="Video Manual Platform",
+        description="AI-powered platform for generating visual manuals from video content",
+        version="0.1.0",
+        lifespan=lifespan,
+        debug=debug,
+    )
+
+    # CORS middleware
+    if cors_origins is None:
+        cors_origins = [
+            "http://localhost:3000",  # Next.js dev server
+            "http://127.0.0.1:3000",
+        ]
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # REST API routes
+    app.include_router(auth_router, prefix="/api")
+    app.include_router(videos_router, prefix="/api")
+    app.include_router(manuals_router, prefix="/api")
+    app.include_router(projects_router, prefix="/api")
+
+    # WebSocket routes
+    app.include_router(process_video_router, prefix="/api")
+    app.include_router(compile_project_router, prefix="/api")
+
+    @app.get("/")
+    async def root():
+        """Root endpoint."""
+        return {
+            "name": "Video Manual Platform API",
+            "version": "0.1.0",
+            "docs": "/docs",
+        }
+
+    @app.get("/health")
+    async def health():
+        """Health check endpoint."""
+        return {"status": "healthy"}
+
+    return app
+
+
+# Default app instance
+app = create_app()
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(
+        "src.api.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+    )

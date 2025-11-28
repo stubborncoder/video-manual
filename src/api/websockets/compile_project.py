@@ -1,0 +1,233 @@
+"""WebSocket endpoint for project compilation with HITL support."""
+
+import json
+from dataclasses import asdict
+
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Cookie
+
+from ...core.runners import ProjectCompilerRunner
+from ...core.events import EventType
+from ...storage.project_storage import ProjectStorage
+
+router = APIRouter()
+
+
+@router.websocket("/ws/compile")
+async def websocket_compile_project(
+    websocket: WebSocket,
+    session_user_id: str | None = Cookie(default=None),
+    user_id: str | None = None,  # Query param fallback for cross-origin
+):
+    """
+    WebSocket endpoint for project compilation with HITL (Human-in-the-Loop).
+
+    Client sends to start:
+    {
+        "action": "start",
+        "project_id": "project-id",
+        "language": "en",
+        "model": "anthropic:claude-sonnet-4-5-20250929"  // optional
+    }
+
+    Client sends for HITL decision:
+    {
+        "action": "decision",
+        "approved": true/false,
+        "modified_args": { ... },  // optional, only if approved with changes
+        "feedback": "reason"       // optional, if rejected
+    }
+
+    Client sends for follow-up message:
+    {
+        "action": "message",
+        "content": "user message text"
+    }
+
+    Server sends events:
+    {
+        "event_type": "llm_token|tool_call|hitl_required|error|complete",
+        "timestamp": 1234567890.123,
+        "data": { ... event-specific data ... }
+    }
+    """
+    await websocket.accept()
+
+    # Check authentication (cookie or query param)
+    auth_user_id = session_user_id or user_id
+    if not auth_user_id:
+        await websocket.send_json({
+            "event_type": "error",
+            "timestamp": 0,
+            "data": {"error_message": "Not authenticated", "recoverable": False}
+        })
+        await websocket.close(code=4001)
+        return
+
+    runner: ProjectCompilerRunner | None = None
+
+    try:
+        while True:
+            message = await websocket.receive_json()
+            action = message.get("action")
+
+            if action == "start":
+                project_id = message.get("project_id")
+                if not project_id:
+                    await websocket.send_json({
+                        "event_type": "error",
+                        "timestamp": 0,
+                        "data": {"error_message": "project_id required", "recoverable": False}
+                    })
+                    continue
+
+                # Check if project exists and has manuals
+                try:
+                    storage = ProjectStorage(auth_user_id)
+                    project = storage.get_project(project_id)
+                    if not project:
+                        await websocket.send_json({
+                            "event_type": "error",
+                            "timestamp": 0,
+                            "data": {"error_message": f"Project not found: {project_id}", "recoverable": False}
+                        })
+                        continue
+
+                    manuals = storage.get_project_manuals(project_id)
+                    if not manuals:
+                        await websocket.send_json({
+                            "event_type": "error",
+                            "timestamp": 0,
+                            "data": {"error_message": "Cannot compile empty project. Add manuals first.", "recoverable": False}
+                        })
+                        continue
+                except Exception as e:
+                    await websocket.send_json({
+                        "event_type": "error",
+                        "timestamp": 0,
+                        "data": {"error_message": f"Failed to load project: {e}", "recoverable": False}
+                    })
+                    continue
+
+                # Create runner and start compilation
+                runner = ProjectCompilerRunner(auth_user_id)
+
+                for event in runner.run(project_id):
+                    event_dict = asdict(event)
+                    event_type = event_dict.pop("event_type")
+
+                    await websocket.send_json({
+                        "event_type": event_type.value if hasattr(event_type, "value") else str(event_type),
+                        "timestamp": event_dict.pop("timestamp"),
+                        "data": event_dict,
+                    })
+
+                    # If HITL required, break to wait for decision
+                    if event.event_type == EventType.HITL_REQUIRED:
+                        break
+
+                    # If complete or error, we're done
+                    if event.event_type in (EventType.COMPLETE, EventType.ERROR):
+                        await websocket.close()
+                        return
+
+            elif action == "decision":
+                if not runner:
+                    await websocket.send_json({
+                        "event_type": "error",
+                        "timestamp": 0,
+                        "data": {"error_message": "No active compilation session", "recoverable": False}
+                    })
+                    continue
+
+                if not runner.has_pending_interrupt:
+                    await websocket.send_json({
+                        "event_type": "error",
+                        "timestamp": 0,
+                        "data": {"error_message": "No pending HITL decision", "recoverable": False}
+                    })
+                    continue
+
+                # Resume with decision
+                decision = {
+                    "approved": message.get("approved", False),
+                    "modified_args": message.get("modified_args"),
+                    "feedback": message.get("feedback"),
+                }
+
+                for event in runner.resume(decision):
+                    event_dict = asdict(event)
+                    event_type = event_dict.pop("event_type")
+
+                    await websocket.send_json({
+                        "event_type": event_type.value if hasattr(event_type, "value") else str(event_type),
+                        "timestamp": event_dict.pop("timestamp"),
+                        "data": event_dict,
+                    })
+
+                    # If HITL required again, break to wait for decision
+                    if event.event_type == EventType.HITL_REQUIRED:
+                        break
+
+                    # If complete or error, we're done
+                    if event.event_type in (EventType.COMPLETE, EventType.ERROR):
+                        await websocket.close()
+                        return
+
+            elif action == "message":
+                if not runner:
+                    await websocket.send_json({
+                        "event_type": "error",
+                        "timestamp": 0,
+                        "data": {"error_message": "No active compilation session", "recoverable": False}
+                    })
+                    continue
+
+                content = message.get("content", "")
+                if not content:
+                    continue
+
+                for event in runner.send_message(content):
+                    event_dict = asdict(event)
+                    event_type = event_dict.pop("event_type")
+
+                    await websocket.send_json({
+                        "event_type": event_type.value if hasattr(event_type, "value") else str(event_type),
+                        "timestamp": event_dict.pop("timestamp"),
+                        "data": event_dict,
+                    })
+
+                    # If HITL required, break to wait for decision
+                    if event.event_type == EventType.HITL_REQUIRED:
+                        break
+
+                    # If complete or error, we're done
+                    if event.event_type in (EventType.COMPLETE, EventType.ERROR):
+                        await websocket.close()
+                        return
+
+            else:
+                await websocket.send_json({
+                    "event_type": "error",
+                    "timestamp": 0,
+                    "data": {"error_message": f"Unknown action: {action}", "recoverable": True}
+                })
+
+    except WebSocketDisconnect:
+        pass
+    except json.JSONDecodeError:
+        await websocket.send_json({
+            "event_type": "error",
+            "timestamp": 0,
+            "data": {"error_message": "Invalid JSON", "recoverable": False}
+        })
+    except Exception as e:
+        await websocket.send_json({
+            "event_type": "error",
+            "timestamp": 0,
+            "data": {"error_message": str(e), "recoverable": False}
+        })
+    finally:
+        try:
+            await websocket.close()
+        except Exception:
+            pass

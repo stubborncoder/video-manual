@@ -60,15 +60,6 @@ version_app = typer.Typer(help="Manage manual versions")
 app.add_typer(version_app, name="version")
 
 
-@app.command("tui")
-def launch_tui():
-    """Launch the interactive TUI interface."""
-    from ..tui import VideoManualApp
-
-    tui_app = VideoManualApp()
-    tui_app.run()
-
-
 def get_next_node(current_node: str) -> Optional[str]:
     """Get the next node in the workflow."""
     try:
