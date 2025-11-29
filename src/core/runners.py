@@ -232,9 +232,13 @@ class ProjectCompilerRunner:
         self._config = None
         self._thread: threading.Thread | None = None
 
-    def run(self, project_id: str) -> Iterator[ProgressEvent]:
+    def run(self, project_id: str, language: str = "en") -> Iterator[ProgressEvent]:
         """
         Run the project compiler agent and yield progress events.
+
+        Args:
+            project_id: Project identifier to compile
+            language: Language code for manual content (default: 'en')
 
         Yields:
             ProgressEvent objects including HITL interrupts
@@ -251,17 +255,38 @@ class ProjectCompilerRunner:
             )
             return
 
-        # Create agent
+        # Create agent with unique thread_id for each session
+        import uuid
         self._agent = get_compiler_agent()
-        self._config = {"configurable": {"thread_id": f"compile_{project_id}"}}
+        session_id = uuid.uuid4().hex[:8]
+        self._config = {"configurable": {"thread_id": f"compile_{project_id}_{session_id}"}}
 
-        # Initial message
+        # Build context for the agent with all required info
+        chapter_info = []
+        for ch in project.get("chapters", []):
+            chapter_info.append(f"  - {ch['title']}: {len(ch.get('manuals', []))} manual(s)")
+        chapters_summary = "\n".join(chapter_info) if chapter_info else "  No chapters"
+
+        # Initial message with full context
         initial_message = {
             "messages": [
                 {
                     "role": "user",
-                    "content": f"Please compile the project '{project['name']}' (ID: {project_id}). "
-                    f"Analyze the project structure and create a merge plan.",
+                    "content": f"""Please compile the project '{project['name']}' (ID: {project_id}).
+
+## Context
+- **User ID**: {self.user_id}
+- **Project ID**: {project_id}
+- **Language**: {language}
+- **Project Description**: {project.get('description', 'No description')}
+- **Chapters**:
+{chapters_summary}
+
+## Instructions
+1. First, call `analyze_project("{project_id}", "{self.user_id}", "{language}")` to load all manual contents
+2. Review the content and create a merge plan
+3. Present the plan for my review
+4. After approval, call `compile_manuals` with the plan""",
                 }
             ]
         }
@@ -294,15 +319,12 @@ class ProjectCompilerRunner:
             return
 
         # Build resume command based on decision
+        # Format must match what the agent expects: {"decisions": [{"type": "approve|reject", ...}]}
         if decision.get("approved", False):
-            # Use modified args if provided, otherwise original
-            tool_args = decision.get("modified_args", self._pending_interrupt.get("tool_args", {}))
-            resume_value = {"action": "approve", "args": tool_args}
+            resume_value = {"decisions": [{"type": "approve"}]}
         else:
-            resume_value = {
-                "action": "reject",
-                "feedback": decision.get("feedback", "User rejected the action"),
-            }
+            feedback = decision.get("feedback", "User rejected the action")
+            resume_value = {"decisions": [{"type": "reject", "message": feedback}]}
 
         self._pending_interrupt = None
         resume_input = Command(resume=resume_value)
@@ -331,8 +353,12 @@ class ProjectCompilerRunner:
 
     def _stream_agent(self, stream_input: Any) -> Iterator[ProgressEvent]:
         """Stream agent execution and yield events."""
+        import logging
+        logger = logging.getLogger(__name__)
+
         try:
             is_first_token = True
+            compiled_content = None
 
             for chunk in self._agent.stream(
                 stream_input,
@@ -372,36 +398,73 @@ class ProjectCompilerRunner:
                                             arguments=block.get("input", {}),
                                         )
 
+                    # Handle tool result messages
+                    elif "tool" in msg_type:
+                        content = getattr(msg, "content", None)
+                        tool_name = getattr(msg, "name", "")
+
+                        # Extract compiled content from compile_manuals result
+                        if tool_name == "compile_manuals" and content:
+                            try:
+                                import json
+                                if isinstance(content, str):
+                                    result = json.loads(content)
+                                elif isinstance(content, dict):
+                                    result = content
+                                else:
+                                    result = {}
+
+                                if "compiled_content" in result:
+                                    compiled_content = result["compiled_content"]
+                            except (json.JSONDecodeError, TypeError):
+                                pass
+
                 elif mode == "updates":
-                    if isinstance(data, dict) and "__interrupt__" in data:
+                    if not isinstance(data, dict):
+                        continue
+
+                    # Check for __interrupt__ key (standard LangGraph format)
+                    if "__interrupt__" in data:
                         interrupts = data["__interrupt__"]
                         if interrupts:
                             interrupt = interrupts[0]
+                            interrupt_id = getattr(interrupt, "id", "")
                             interrupt_value = getattr(interrupt, "value", {})
-                            tool_name = interrupt_value.get("tool_name", "")
-                            tool_args = interrupt_value.get("tool_args", {})
 
-                            self._pending_interrupt = {
-                                "id": getattr(interrupt, "id", ""),
-                                "tool_name": tool_name,
-                                "tool_args": tool_args,
-                            }
+                            # Extract action requests from deepagents format
+                            action_requests = interrupt_value.get("action_requests", [])
+                            if action_requests:
+                                action = action_requests[0]
+                                tool_name = action.get("name", "")
+                                tool_args = action.get("args", {})
+                                logger.info(f"[RUNNER] HITL required for tool: {tool_name}")
 
-                            yield HITLRequiredEvent(
-                                interrupt_id=self._pending_interrupt["id"],
-                                tool_name=tool_name,
-                                tool_args=tool_args,
-                                message=f"Approval required for {tool_name}",
-                            )
-                            return  # Stop streaming until resume
+                                self._pending_interrupt = {
+                                    "id": interrupt_id,
+                                    "tool_name": tool_name,
+                                    "tool_args": tool_args,
+                                }
+
+                                yield HITLRequiredEvent(
+                                    interrupt_id=interrupt_id,
+                                    tool_name=tool_name,
+                                    tool_args=tool_args,
+                                    message=f"Approval required for {tool_name}",
+                                )
+                                return  # Stop streaming until resume
 
             # If we got here without HITL, we're done
             if not is_first_token:
                 yield LLMTokenEvent(token="", is_first=False, is_last=True)
 
-            yield CompleteEvent(result={}, message="Compilation complete")
+            result = {}
+            if compiled_content:
+                result["compiled_content"] = compiled_content
+
+            yield CompleteEvent(result=result, message="Compilation complete")
 
         except Exception as e:
+            logger.exception(f"[RUNNER] Error: {e}")
             yield ErrorEvent(error_message=str(e), recoverable=False)
 
     @property

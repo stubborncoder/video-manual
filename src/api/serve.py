@@ -1,6 +1,13 @@
 """CLI entry point for running the API server."""
 
+import logging
 import sys
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 
 
 def main():

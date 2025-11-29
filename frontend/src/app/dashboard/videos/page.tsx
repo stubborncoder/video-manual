@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,9 +14,28 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Upload, Play, Trash2, Video, Loader2, Eye, Wand2 } from "lucide-react";
-import { videos, type VideoInfo, type UploadProgress } from "@/lib/api";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Upload, Trash2, Video, Loader2, Eye, Wand2, FileText, FolderKanban, AlertTriangle, ArrowUpRight } from "lucide-react";
+import { videos, projects, type VideoInfo, type UploadProgress, type ProjectSummary, type VideoManualInfo } from "@/lib/api";
 import { useVideoProcessing } from "@/hooks/useWebSocket";
 import { ProcessingProgress } from "@/components/processing/ProcessingProgress";
 
@@ -23,8 +43,14 @@ function getVideoStreamUrl(videoName: string): string {
   return `/api/videos/${encodeURIComponent(videoName)}/stream`;
 }
 
+// Extended video info with manual count and projects
+interface VideoWithManuals extends VideoInfo {
+  manual_count?: number;
+  projects?: { id: string; name: string }[];
+}
+
 export default function VideosPage() {
-  const [videoList, setVideoList] = useState<VideoInfo[]>([]);
+  const [videoList, setVideoList] = useState<VideoWithManuals[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVideo, setSelectedVideo] = useState<VideoInfo | null>(null);
   const [processDialogOpen, setProcessDialogOpen] = useState(false);
@@ -37,20 +63,76 @@ export default function VideosPage() {
   const [uploadProgress, setUploadProgress] = useState<UploadProgress | null>(null);
   const [uploadFileName, setUploadFileName] = useState<string>("");
 
+  // Delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [videoToDelete, setVideoToDelete] = useState<VideoInfo | null>(null);
+  const [videoManuals, setVideoManuals] = useState<VideoManualInfo[]>([]);
+  const [cascadeDelete, setCascadeDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  // Project selection state for processing
+  const [projectList, setProjectList] = useState<ProjectSummary[]>([]);
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("__default__");
+
   const { state: processingState, startProcessing, reset } = useVideoProcessing();
 
   useEffect(() => {
     loadVideos();
+    loadProjects();
   }, []);
 
   async function loadVideos() {
     try {
       const res = await videos.list();
-      setVideoList(res.videos);
+      const projectsRes = await projects.list();
+
+      // Create a map for project names
+      const projectMap = new Map<string, string>();
+      projectsRes.projects.forEach((p) => projectMap.set(p.id, p.name));
+
+      // Fetch manual counts and extract project info for each video
+      const videosWithManuals = await Promise.all(
+        res.videos.map(async (video) => {
+          try {
+            const manualsRes = await videos.getManuals(video.name);
+
+            // Extract unique projects from manuals
+            const projectIds = new Set<string>();
+            manualsRes.manuals.forEach((m) => {
+              if (m.project_id) projectIds.add(m.project_id);
+            });
+
+            const videoProjects = Array.from(projectIds)
+              .map((id) => {
+                const name = projectMap.get(id);
+                return name ? { id, name } : null;
+              })
+              .filter((p): p is { id: string; name: string } => p !== null);
+
+            return {
+              ...video,
+              manual_count: manualsRes.manual_count,
+              projects: videoProjects,
+            };
+          } catch {
+            return { ...video, manual_count: 0, projects: [] };
+          }
+        })
+      );
+      setVideoList(videosWithManuals);
     } catch (e) {
       console.error("Failed to load videos:", e);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadProjects() {
+    try {
+      const res = await projects.list();
+      setProjectList(res.projects);
+    } catch (e) {
+      console.error("Failed to load projects:", e);
     }
   }
 
@@ -82,14 +164,40 @@ export default function VideosPage() {
     }
   }
 
-  async function handleDelete(videoName: string) {
+  async function openDeleteDialog(video: VideoInfo) {
+    setVideoToDelete(video);
+    setCascadeDelete(false);
+    setDeleteDialogOpen(true);
+
+    // Fetch manuals associated with this video
     try {
-      await videos.delete(videoName);
-      toast.success("Video deleted", { description: videoName });
+      const res = await videos.getManuals(video.name);
+      setVideoManuals(res.manuals);
+    } catch {
+      setVideoManuals([]);
+    }
+  }
+
+  async function handleDelete() {
+    if (!videoToDelete) return;
+
+    setDeleting(true);
+    try {
+      await videos.delete(videoToDelete.name, cascadeDelete);
+      toast.success("Video moved to trash", {
+        description: cascadeDelete
+          ? `${videoToDelete.name} and ${videoManuals.length} manual(s)`
+          : videoToDelete.name,
+      });
+      setDeleteDialogOpen(false);
+      setVideoToDelete(null);
+      setVideoManuals([]);
       await loadVideos();
     } catch (e) {
       const message = e instanceof Error ? e.message : "Delete failed";
       toast.error("Delete failed", { description: message });
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -101,6 +209,7 @@ export default function VideosPage() {
         video_path: selectedVideo.path,
         output_language: outputLanguage,
         use_scene_detection: true,
+        project_id: selectedProjectId,
       });
     } catch (e) {
       const message = e instanceof Error ? e.message : "Processing failed";
@@ -222,12 +331,39 @@ export default function VideosPage() {
 
               <CardContent className="p-4">
                 <div className="mb-3">
-                  <p className="font-medium truncate" title={video.name}>
-                    {video.name}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p className="font-medium truncate flex-1" title={video.name}>
+                      {video.name}
+                    </p>
+                    {video.manual_count !== undefined && video.manual_count > 0 && (
+                      <Badge variant="secondary" className="ml-2 shrink-0">
+                        <FileText className="h-3 w-3 mr-1" />
+                        {video.manual_count}
+                      </Badge>
+                    )}
+                  </div>
                   <p className="text-sm text-muted-foreground">
                     {formatFileSize(video.size_bytes)}
                   </p>
+
+                  {/* Project badges */}
+                  {video.projects && video.projects.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      <span className="text-xs text-muted-foreground mr-1">In:</span>
+                      {video.projects.map((project) => (
+                        <Link href="/dashboard/projects" key={project.id}>
+                          <Badge
+                            variant="outline"
+                            className="text-xs cursor-pointer hover:bg-secondary/80 gap-0.5"
+                          >
+                            <FolderKanban className="h-3 w-3" />
+                            {project.name}
+                            <ArrowUpRight className="h-3 w-3" />
+                          </Badge>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-2">
@@ -237,6 +373,7 @@ export default function VideosPage() {
                       setProcessDialogOpen(open);
                       if (open) {
                         setSelectedVideo(video);
+                        setSelectedProjectId("__default__");
                         reset();
                       }
                     }}
@@ -273,13 +410,40 @@ export default function VideosPage() {
                             </div>
                           </div>
 
-                          <div className="space-y-2">
-                            <Label>Output Language</Label>
-                            <Input
-                              value={outputLanguage}
-                              onChange={(e) => setOutputLanguage(e.target.value)}
-                              placeholder="English"
-                            />
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            <div className="space-y-2">
+                              <Label>Output Language</Label>
+                              <Input
+                                value={outputLanguage}
+                                onChange={(e) => setOutputLanguage(e.target.value)}
+                                placeholder="English"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Add to Project</Label>
+                              <Select
+                                value={selectedProjectId}
+                                onValueChange={setSelectedProjectId}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select project" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {projectList.map((project) => (
+                                    <SelectItem key={project.id} value={project.id}>
+                                      <div className="flex items-center gap-2">
+                                        <FolderKanban className="h-4 w-4" />
+                                        {project.name}
+                                        {project.is_default && (
+                                          <span className="text-xs text-muted-foreground">(default)</span>
+                                        )}
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
 
                           <Button onClick={handleProcess} className="w-full">
@@ -296,7 +460,7 @@ export default function VideosPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleDelete(video.name)}
+                    onClick={() => openDeleteDialog(video)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -341,6 +505,92 @@ export default function VideosPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5" />
+              Delete Video?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  Are you sure you want to delete <strong>{videoToDelete?.name}</strong>?
+                  The video will be moved to trash and can be recovered within 30 days.
+                </p>
+
+                {videoManuals.length > 0 && (
+                  <div className="rounded-md border p-4 space-y-3">
+                    <div className="flex items-center gap-2 text-foreground">
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      <span className="font-medium">
+                        This video has {videoManuals.length} associated manual(s)
+                      </span>
+                    </div>
+
+                    <div className="text-sm space-y-1 max-h-32 overflow-y-auto">
+                      {videoManuals.map((manual) => (
+                        <div
+                          key={manual.manual_id}
+                          className="flex items-center gap-2 py-1"
+                        >
+                          <FileText className="h-3 w-3 text-muted-foreground" />
+                          <span className="truncate">{manual.manual_id}</span>
+                          {manual.languages.length > 0 && (
+                            <span className="text-xs text-muted-foreground">
+                              ({manual.languages.join(", ")})
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center space-x-2 pt-2 border-t">
+                      <Checkbox
+                        id="cascade"
+                        checked={cascadeDelete}
+                        onCheckedChange={(checked) =>
+                          setCascadeDelete(checked === true)
+                        }
+                      />
+                      <label
+                        htmlFor="cascade"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        Also delete associated manuals
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {cascadeDelete
+                    ? `Delete Video & ${videoManuals.length} Manual(s)`
+                    : "Delete Video"}
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -12,6 +12,7 @@ from langchain_core.tools import tool
 from ...storage.project_storage import ProjectStorage
 from ...storage.user_storage import UserStorage
 from ...storage.version_storage import VersionStorage
+from ...storage.compilation_version_storage import CompilationVersionStorage
 
 
 @tool
@@ -84,7 +85,7 @@ def compile_manuals(
     user_id: str,
     language: str,
     merge_plan: Dict[str, Any],
-) -> str:
+) -> Dict[str, Any]:
     """Execute compilation based on the approved merge plan.
 
     This tool requires human approval before execution. It will merge multiple
@@ -100,27 +101,45 @@ def compile_manuals(
             - transitions_needed: Transitions between sections (optional)
 
     Returns:
-        Path to the compiled output file
+        Dict with output_path, compiled_content, and version info
     """
     project_storage = ProjectStorage(user_id)
     user_storage = UserStorage(user_id)
+    compilation_storage = CompilationVersionStorage(user_id, project_id)
 
     project = project_storage.get_project(project_id)
     if not project:
-        return f"Error: Project not found: {project_id}"
+        return {"error": f"Project not found: {project_id}"}
 
-    # Setup compiled directories
-    compiled_dir = project_storage.projects_dir / project_id / "compiled"
-    compiled_dir.mkdir(parents=True, exist_ok=True)
-    screenshots_dir = compiled_dir / "screenshots"
+    # Auto-save previous compilation before creating new one
+    prev_version = compilation_storage.auto_save_before_compile()
+
+    # Get the current compilation directory (handles migration)
+    current_dir = compilation_storage.get_current_directory()
+    screenshots_dir = current_dir / "screenshots"
+
+    # Clear existing screenshots to avoid stale files
+    if screenshots_dir.exists():
+        shutil.rmtree(screenshots_dir)
     screenshots_dir.mkdir(parents=True, exist_ok=True)
 
-    # Build a lookup of manual contents and copy screenshots
+    # Build a lookup of manual contents, track versions, and copy screenshots
     manual_contents = {}
+    source_manuals = []
+
     for chapter in project.get("chapters", []):
         for manual_id in chapter.get("manuals", []):
             content = user_storage.get_manual_content(manual_id, language)
+            vs = VersionStorage(user_id, manual_id)
+            manual_version = vs.get_current_version()
+
             if content:
+                # Track source manual version
+                source_manuals.append({
+                    "manual_id": manual_id,
+                    "version": manual_version,
+                })
+
                 # Copy screenshots from this manual to compiled folder
                 manual_screenshots_dir = user_storage.manuals_dir / manual_id / "screenshots"
                 if manual_screenshots_dir.exists():
@@ -202,8 +221,8 @@ def compile_manuals(
     # Combine all sections
     compiled_content = "\n".join(compiled_sections)
 
-    # Save compiled markdown
-    output_file = compiled_dir / f"manual_{language}.md"
+    # Save compiled markdown to current directory
+    output_file = current_dir / f"manual_{language}.md"
     output_file.write_text(compiled_content, encoding='utf-8')
 
     # Save compilation report
@@ -211,14 +230,32 @@ def compile_manuals(
         "compiled_at": datetime.now().isoformat(),
         "language": language,
         "merge_plan": merge_plan,
+        "source_manuals": source_manuals,
         "source_manual_count": len(manual_contents),
         "duplicates_removed": len(duplicates),
         "transitions_added": len(transitions),
     }
-    report_file = compiled_dir / "compilation.json"
+    report_file = current_dir / "compilation.json"
     report_file.write_text(json.dumps(report, indent=2), encoding='utf-8')
 
-    return str(output_file)
+    # Save compilation to version history
+    new_version = compilation_storage.save_compilation(
+        languages=[language],
+        source_manuals=source_manuals,
+        merge_plan=merge_plan,
+        notes=f"Compiled {len(manual_contents)} manuals",
+    )
+
+    return {
+        "output_path": str(output_file),
+        "compiled_content": compiled_content,
+        "version": new_version,
+        "previous_version_saved": prev_version,
+        "source_manual_count": len(manual_contents),
+        "source_manuals": source_manuals,
+        "duplicates_removed": len(duplicates),
+        "transitions_added": len(transitions),
+    }
 
 
 def _count_sections(content: str) -> int:

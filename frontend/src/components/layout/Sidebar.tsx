@@ -6,7 +6,7 @@ import {
   Video,
   FileText,
   FolderKanban,
-  Settings,
+  Trash2,
   LogOut,
   Home,
 } from "lucide-react";
@@ -20,6 +20,7 @@ const navItems = [
   { href: "/dashboard/videos", label: "Videos", icon: Video },
   { href: "/dashboard/manuals", label: "Manuals", icon: FileText },
   { href: "/dashboard/projects", label: "Projects", icon: FolderKanban },
+  { href: "/dashboard/trash", label: "Trash", icon: Trash2 },
 ];
 
 export function Sidebar() {

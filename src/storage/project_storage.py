@@ -10,6 +10,11 @@ import uuid
 from ..config import USERS_DIR
 
 
+# Default project constants
+DEFAULT_PROJECT_ID = "__default__"
+DEFAULT_CHAPTER_ID = "__uncategorized__"
+
+
 def slugify(text: str) -> str:
     """Convert text to a URL/filesystem-friendly slug.
 
@@ -147,8 +152,15 @@ class ProjectStorage:
         Args:
             project_id: Project identifier
             delete_manuals: If True, also delete manuals in the project
+
+        Raises:
+            ValueError: If project not found or is the default project
         """
         import shutil
+
+        # Prevent deletion of default project
+        if self.is_default_project(project_id):
+            raise ValueError("Cannot delete the default project")
 
         project = self.get_project(project_id)
         if not project:
@@ -196,6 +208,70 @@ class ProjectStorage:
                     projects.append(project)
 
         return sorted(projects, key=lambda p: p.get("updated_at", ""), reverse=True)
+
+    def ensure_default_project(self) -> Dict[str, Any]:
+        """Ensure default project exists, creating it if necessary.
+
+        The default project is a special project that:
+        - Has a fixed ID of "__default__"
+        - Cannot be deleted
+        - Is marked with is_default=True
+        - Has a default "Uncategorized" chapter
+
+        Returns:
+            The default project data
+        """
+        self.ensure_projects_dir()
+
+        project = self.get_project(DEFAULT_PROJECT_ID)
+        if project:
+            return project
+
+        # Create default project
+        project_dir = self.projects_dir / DEFAULT_PROJECT_ID
+        project_dir.mkdir(parents=True, exist_ok=True)
+        (project_dir / "exports").mkdir(exist_ok=True)
+
+        now = datetime.now().isoformat()
+        project_data = {
+            "id": DEFAULT_PROJECT_ID,
+            "name": "My Manuals",
+            "description": "Default project for new manuals",
+            "is_default": True,
+            "created_at": now,
+            "updated_at": now,
+            "default_language": "en",
+            "chapters": [
+                {
+                    "id": DEFAULT_CHAPTER_ID,
+                    "title": "Uncategorized",
+                    "description": "Manuals not assigned to a specific chapter",
+                    "order": 0,
+                    "manuals": [],
+                }
+            ],
+            "tags": [],
+            "template_id": None,
+            "export_settings": {
+                "include_toc": True,
+                "include_chapter_covers": True,
+                "page_size": "A4",
+            },
+        }
+
+        self._save_project(DEFAULT_PROJECT_ID, project_data)
+        return project_data
+
+    def is_default_project(self, project_id: str) -> bool:
+        """Check if a project is the default project.
+
+        Args:
+            project_id: Project identifier
+
+        Returns:
+            True if this is the default project
+        """
+        return project_id == DEFAULT_PROJECT_ID
 
     # ==================== Chapter Management ====================
 

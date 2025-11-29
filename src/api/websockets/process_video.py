@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import logging
 import threading
 from dataclasses import asdict
 from pathlib import Path
@@ -10,6 +11,9 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Cookie
 
 from ...core.runners import VideoManualRunner
 from ...core.events import EventType
+from ...storage.project_storage import ProjectStorage, DEFAULT_PROJECT_ID, DEFAULT_CHAPTER_ID
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -82,9 +86,18 @@ async def websocket_process_video(
         output_filename = message.get("output_filename")
         use_scene_detection = message.get("use_scene_detection", True)
         output_language = message.get("output_language", "English")
-        project_id = message.get("project_id")
+        # Default to user's default project if not specified
+        project_id = message.get("project_id") or DEFAULT_PROJECT_ID
+        # Only use DEFAULT_CHAPTER_ID for the default project
+        # For custom projects, pass None to let add_manual_to_project create/use "Uncategorized"
         chapter_id = message.get("chapter_id")
+        if not chapter_id and project_id == DEFAULT_PROJECT_ID:
+            chapter_id = DEFAULT_CHAPTER_ID
         tags = message.get("tags", [])
+
+        # Ensure default project exists
+        project_storage = ProjectStorage(auth_user_id)
+        project_storage.ensure_default_project()
 
         # Create runner and stream events
         runner = VideoManualRunner(auth_user_id)
@@ -132,19 +145,16 @@ async def websocket_process_video(
 
                 # Add tags if specified
                 if tags and manual_id:
-                    from ...storage.project_storage import ProjectStorage
-                    project_storage = ProjectStorage(auth_user_id)
                     for tag in tags:
                         project_storage.add_tag_to_manual(manual_id, tag)
 
-                # Add to project if specified
-                if project_id and manual_id:
-                    from ...storage.project_storage import ProjectStorage
-                    project_storage = ProjectStorage(auth_user_id)
+                # Add to project (always - default project is used if none specified)
+                if manual_id:
                     try:
                         project_storage.add_manual_to_project(project_id, manual_id, chapter_id)
-                    except Exception:
-                        pass  # Ignore project assignment errors
+                        logger.info(f"Manual {manual_id} added to project {project_id}")
+                    except Exception as e:
+                        logger.error(f"Failed to add manual {manual_id} to project {project_id}: {e}")
 
         thread.join(timeout=5)
 

@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routes import auth_router, videos_router, manuals_router, projects_router
+from .routes import auth_router, videos_router, manuals_router, projects_router, trash_router, compile_stream_router
 from .websockets import process_video_router, compile_project_router
 from ..config import ensure_directories
 
@@ -37,7 +37,9 @@ def create_app(
     if cors_origins is None:
         cors_origins = [
             "http://localhost:3000",  # Next.js dev server
+            "http://localhost:3001",  # Next.js dev server (alt port)
             "http://127.0.0.1:3000",
+            "http://127.0.0.1:3001",
         ]
 
     app.add_middleware(
@@ -53,6 +55,8 @@ def create_app(
     app.include_router(videos_router, prefix="/api")
     app.include_router(manuals_router, prefix="/api")
     app.include_router(projects_router, prefix="/api")
+    app.include_router(trash_router, prefix="/api")
+    app.include_router(compile_stream_router, prefix="/api/assistant")
 
     # WebSocket routes
     app.include_router(process_video_router, prefix="/api")

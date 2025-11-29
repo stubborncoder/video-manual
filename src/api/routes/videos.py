@@ -2,12 +2,13 @@
 
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException, UploadFile, File
 from fastapi.responses import FileResponse, StreamingResponse
 
-from ..schemas import VideoInfo, VideoListResponse
-from ..dependencies import CurrentUser, UserStorageDep
+from ..schemas import VideoInfo, VideoListResponse, VideoWithManuals
+from ..dependencies import CurrentUser, UserStorageDep, TrashStorageDep
 
 router = APIRouter(prefix="/videos", tags=["videos"])
 
@@ -79,20 +80,84 @@ async def upload_video(
     )
 
 
-@router.delete("/{video_name}")
-async def delete_video(
+@router.get("/{video_name}/manuals")
+async def get_video_manuals(
     video_name: str,
     user_id: CurrentUser,
     storage: UserStorageDep,
 ) -> dict:
-    """Delete a video file."""
+    """Get all manuals associated with a video.
+
+    This is useful for showing users what will be affected
+    when deleting a video.
+    """
     video_path = storage.videos_dir / video_name
 
     if not video_path.exists():
         raise HTTPException(status_code=404, detail="Video not found")
 
-    video_path.unlink()
-    return {"status": "deleted", "video": video_name}
+    manuals = storage.get_manuals_by_video(video_name)
+    return {
+        "video_name": video_name,
+        "manual_count": len(manuals),
+        "manuals": manuals,
+    }
+
+
+@router.delete("/{video_name}")
+async def delete_video(
+    video_name: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+    trash: TrashStorageDep,
+    cascade: bool = False,
+) -> dict:
+    """Delete a video file (moves to trash).
+
+    Args:
+        video_name: Name of the video file
+        cascade: If True, also delete all associated manuals
+
+    Returns:
+        Status with list of affected manuals
+    """
+    video_path = storage.videos_dir / video_name
+
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    # Get associated manuals
+    associated_manuals = storage.get_manuals_by_video(video_name)
+    manual_ids = [m["manual_id"] for m in associated_manuals]
+
+    if cascade and manual_ids:
+        # Delete manuals first (move to trash)
+        for manual_id in manual_ids:
+            try:
+                trash.move_to_trash(
+                    item_type="manual",
+                    item_name=manual_id,
+                    cascade_deleted=True,
+                )
+            except ValueError:
+                pass  # Manual may not exist
+
+    # Move video to trash
+    trash.move_to_trash(
+        item_type="video",
+        item_name=video_name,
+        related_items=manual_ids,
+    )
+
+    # Update manual metadata to mark video as deleted
+    storage.mark_video_deleted_for_manuals(video_name)
+
+    return {
+        "status": "moved_to_trash",
+        "video": video_name,
+        "cascade": cascade,
+        "affected_manuals": manual_ids,
+    }
 
 
 @router.get("/{video_name}/stream")

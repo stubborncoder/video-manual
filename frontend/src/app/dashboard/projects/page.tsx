@@ -2,17 +2,45 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   FolderKanban,
@@ -21,27 +49,93 @@ import {
   FileDown,
   Wand2,
   Eye,
+  Edit2,
+  BookOpen,
+  GripVertical,
+  ChevronRight,
+  ChevronDown,
+  FileText,
+  Loader2,
+  Star,
+  X,
+  Settings,
+  Video,
+  AlertTriangle,
+  Image as ImageIcon,
+  History,
 } from "lucide-react";
 import {
   projects,
+  manuals,
   type ProjectSummary,
   type ProjectDetail,
+  type ChapterInfo,
+  type ManualDetail,
 } from "@/lib/api";
 import { useProjectCompiler } from "@/hooks/useWebSocket";
-import { CompilerChat } from "@/components/chat/CompilerChat";
+import { CompileSettingsDialog } from "@/components/dialogs/CompileSettingsDialog";
+import { CompilerView } from "@/components/compiler/CompilerView";
+import { CompilationVersionHistory } from "@/components/projects/CompilationVersionHistory";
+import type { CompileSettings } from "@/lib/types";
+
+// Extended project info with manual names for preview
+interface ProjectWithManuals extends ProjectSummary {
+  manual_names?: string[];
+}
+
+// Extended info for delete confirmation
+interface ProjectDeleteInfo extends ProjectSummary {
+  chapters_with_manuals?: {
+    id: string;
+    title: string;
+    manuals: string[];
+  }[];
+}
 
 export default function ProjectsPage() {
-  const [projectList, setProjectList] = useState<ProjectSummary[]>([]);
+  const [projectList, setProjectList] = useState<ProjectWithManuals[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectDesc, setNewProjectDesc] = useState("");
 
   const [selectedProject, setSelectedProject] = useState<ProjectDetail | null>(null);
-  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [projectSheetOpen, setProjectSheetOpen] = useState(false);
 
-  const [compileDialogOpen, setCompileDialogOpen] = useState(false);
+  // Edit project state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editProjectId, setEditProjectId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  // Delete project state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<ProjectDeleteInfo | null>(null);
+  const [deleteManuals, setDeleteManuals] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  // Chapter management state
+  const [addChapterDialogOpen, setAddChapterDialogOpen] = useState(false);
+  const [newChapterTitle, setNewChapterTitle] = useState("");
+  const [newChapterDesc, setNewChapterDesc] = useState("");
+  const [editChapterId, setEditChapterId] = useState<string | null>(null);
+  const [editChapterTitle, setEditChapterTitle] = useState("");
+  const [editChapterDesc, setEditChapterDesc] = useState("");
+
   const [compileProjectId, setCompileProjectId] = useState<string | null>(null);
+  const [compileProjectName, setCompileProjectName] = useState<string>("");
+  const [compileLanguage, setCompileLanguage] = useState<string>("en");
+  const [compileSettingsOpen, setCompileSettingsOpen] = useState(false);
+  const [isCompiling, setIsCompiling] = useState(false);
+
+  // Manual viewer state
+  const [viewManualOpen, setViewManualOpen] = useState(false);
+  const [selectedManual, setSelectedManual] = useState<ManualDetail | null>(null);
+  const [loadingManual, setLoadingManual] = useState(false);
+
+  // Export state
+  const [exporting, setExporting] = useState<"pdf" | "word" | "html" | null>(null);
 
   const {
     state: compilerState,
@@ -58,7 +152,26 @@ export default function ProjectsPage() {
   async function loadProjects() {
     try {
       const res = await projects.list();
-      setProjectList(res.projects);
+
+      // Fetch manual names for each project (for preview)
+      const projectsWithManuals: ProjectWithManuals[] = await Promise.all(
+        res.projects.map(async (project) => {
+          if (project.manual_count > 0) {
+            try {
+              const detail = await projects.get(project.id);
+              return {
+                ...project,
+                manual_names: detail.manuals.map((m) => m.manual_id).slice(0, 5),
+              };
+            } catch {
+              return { ...project, manual_names: [] };
+            }
+          }
+          return { ...project, manual_names: [] };
+        })
+      );
+
+      setProjectList(projectsWithManuals);
     } catch (e) {
       console.error("Failed to load projects:", e);
     } finally {
@@ -71,23 +184,71 @@ export default function ProjectsPage() {
 
     try {
       await projects.create(newProjectName.trim(), newProjectDesc.trim());
+      toast.success("Project created");
       setCreateDialogOpen(false);
       setNewProjectName("");
       setNewProjectDesc("");
       await loadProjects();
     } catch (e) {
-      console.error("Create failed:", e);
+      const message = e instanceof Error ? e.message : "Create failed";
+      toast.error("Create failed", { description: message });
     }
   }
 
-  async function handleDelete(projectId: string) {
-    if (!confirm(`Delete project ${projectId}?`)) return;
+  function openEditDialog(project: Pick<ProjectSummary, "id" | "name" | "description">) {
+    setEditProjectId(project.id);
+    setEditName(project.name);
+    setEditDescription(project.description);
+    setEditDialogOpen(true);
+  }
 
+  async function handleEdit() {
+    if (!editProjectId || !editName.trim()) return;
+
+    setSaving(true);
     try {
-      await projects.delete(projectId);
+      await projects.update(editProjectId, editName.trim(), editDescription.trim());
+      toast.success("Project updated");
+      setEditDialogOpen(false);
+      await loadProjects();
+      // Refresh detail view if open
+      if (selectedProject?.id === editProjectId) {
+        const detail = await projects.get(editProjectId);
+        setSelectedProject(detail);
+      }
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Update failed";
+      toast.error("Update failed", { description: message });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function openDeleteDialog(project: ProjectDeleteInfo) {
+    setProjectToDelete(project);
+    setDeleteManuals(false);
+    setDeleteDialogOpen(true);
+  }
+
+  async function handleDelete() {
+    if (!projectToDelete) return;
+
+    setDeleting(true);
+    try {
+      await projects.delete(projectToDelete.id, deleteManuals);
+      toast.success("Project moved to trash", {
+        description: deleteManuals
+          ? `${projectToDelete.name} and ${projectToDelete.manual_count} manual(s)`
+          : projectToDelete.name,
+      });
+      setDeleteDialogOpen(false);
+      setProjectToDelete(null);
       await loadProjects();
     } catch (e) {
-      console.error("Delete failed:", e);
+      const message = e instanceof Error ? e.message : "Delete failed";
+      toast.error("Delete failed", { description: message });
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -95,25 +256,108 @@ export default function ProjectsPage() {
     try {
       const detail = await projects.get(projectId);
       setSelectedProject(detail);
-      setDetailDialogOpen(true);
+      setProjectSheetOpen(true);
     } catch (e) {
-      console.error("Failed to load project:", e);
+      const message = e instanceof Error ? e.message : "Failed to load project";
+      toast.error("Error", { description: message });
     }
   }
 
-  async function handleCompile(projectId: string) {
-    setCompileProjectId(projectId);
-    setCompileDialogOpen(true);
-    resetCompiler();
+  // Chapter handlers
+  async function handleAddChapter() {
+    if (!selectedProject || !newChapterTitle.trim()) return;
 
     try {
-      await startCompilation({ project_id: projectId });
+      await projects.addChapter(selectedProject.id, newChapterTitle.trim(), newChapterDesc.trim());
+      toast.success("Chapter added");
+      setAddChapterDialogOpen(false);
+      setNewChapterTitle("");
+      setNewChapterDesc("");
+      // Refresh project detail
+      const detail = await projects.get(selectedProject.id);
+      setSelectedProject(detail);
     } catch (e) {
-      console.error("Compilation failed:", e);
+      const message = e instanceof Error ? e.message : "Failed to add chapter";
+      toast.error("Error", { description: message });
     }
+  }
+
+  async function handleEditChapter() {
+    if (!selectedProject || !editChapterId || !editChapterTitle.trim()) return;
+
+    try {
+      await projects.updateChapter(selectedProject.id, editChapterId, editChapterTitle.trim(), editChapterDesc.trim());
+      toast.success("Chapter updated");
+      setEditChapterId(null);
+      // Refresh project detail
+      const detail = await projects.get(selectedProject.id);
+      setSelectedProject(detail);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to update chapter";
+      toast.error("Error", { description: message });
+    }
+  }
+
+  async function handleDeleteChapter(chapterId: string) {
+    if (!selectedProject) return;
+
+    try {
+      await projects.deleteChapter(selectedProject.id, chapterId);
+      toast.success("Chapter deleted");
+      // Refresh project detail
+      const detail = await projects.get(selectedProject.id);
+      setSelectedProject(detail);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to delete chapter";
+      toast.error("Error", { description: message });
+    }
+  }
+
+  async function handleRemoveManualFromProject(manualId: string) {
+    if (!selectedProject) return;
+
+    try {
+      await projects.removeManual(selectedProject.id, manualId);
+      toast.success("Manual removed from project");
+      // Refresh project detail
+      const detail = await projects.get(selectedProject.id);
+      setSelectedProject(detail);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to remove manual";
+      toast.error("Error", { description: message });
+    }
+  }
+
+  function handleCompile(projectId: string, projectName: string) {
+    // Open settings dialog first for validation
+    setCompileProjectId(projectId);
+    setCompileProjectName(projectName);
+    setCompileSettingsOpen(true);
+  }
+
+  async function handleStartCompile(settings: CompileSettings) {
+    if (!compileProjectId) return;
+
+    // Close settings dialog and sheet, open compiler view
+    setCompileSettingsOpen(false);
+    setProjectSheetOpen(false);
+    setCompileLanguage(settings.language);
+    setIsCompiling(true);
+    resetCompiler();
+
+    // Start WebSocket compilation
+    startCompilation({ project_id: compileProjectId, language: settings.language });
+  }
+
+  function handleExitCompiler() {
+    setIsCompiling(false);
+    setCompileProjectId(null);
+    setCompileProjectName("");
+    resetCompiler();
   }
 
   async function handleExport(projectId: string, format: "pdf" | "word" | "html") {
+    setExporting(format);
     try {
       const result = await projects.export(projectId, format);
       toast.success("Export complete", {
@@ -124,7 +368,40 @@ export default function ProjectsPage() {
       toast.error("Export failed", {
         description: message,
       });
+    } finally {
+      setExporting(null);
     }
+  }
+
+  async function handleViewManual(manualId: string) {
+    setLoadingManual(true);
+    try {
+      const manual = await manuals.get(manualId);
+      setSelectedManual(manual);
+      setViewManualOpen(true);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to load manual";
+      toast.error("Error", { description: message });
+    } finally {
+      setLoadingManual(false);
+    }
+  }
+
+  // Show compiler view when compiling
+  if (isCompiling && compileProjectId) {
+    return (
+      <div className="h-[calc(100vh-4rem)]">
+        <CompilerView
+          projectId={compileProjectId}
+          projectName={compileProjectName}
+          language={compileLanguage}
+          state={compilerState}
+          onDecision={submitDecision}
+          onMessage={sendMessage}
+          onBack={handleExitCompiler}
+        />
+      </div>
+    );
   }
 
   return (
@@ -190,17 +467,68 @@ export default function ProjectsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {projectList.map((project) => (
-            <Card key={project.id}>
+            <Card key={project.id} className={project.is_default ? "border-primary/50" : ""}>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">{project.name}</CardTitle>
-                {project.description && (
-                  <CardDescription>{project.description}</CardDescription>
-                )}
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      {project.name}
+                      {project.is_default && (
+                        <Badge variant="secondary" className="shrink-0">
+                          <Star className="h-3 w-3 mr-1" />
+                          Default
+                        </Badge>
+                      )}
+                    </CardTitle>
+                    {project.description && (
+                      <CardDescription className="mt-1">{project.description}</CardDescription>
+                    )}
+                  </div>
+                  {!project.is_default && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 shrink-0"
+                      onClick={() => openEditDialog(project)}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {project.manual_count} manuals
-                </p>
+                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                  <span className="flex items-center gap-1">
+                    <FileText className="h-3 w-3" />
+                    {project.manual_count} manuals
+                  </span>
+                  {project.chapter_count !== undefined && project.chapter_count > 0 && (
+                    <span className="flex items-center gap-1">
+                      <BookOpen className="h-3 w-3" />
+                      {project.chapter_count} chapters
+                    </span>
+                  )}
+                </div>
+
+                {/* Manual names preview */}
+                {project.manual_names && project.manual_names.length > 0 && (
+                  <div className="mb-4 space-y-1">
+                    {project.manual_names.map((name) => (
+                      <div
+                        key={name}
+                        className="flex items-center gap-2 text-sm text-muted-foreground"
+                      >
+                        <ChevronRight className="h-3 w-3" />
+                        <span className="truncate">{name}</span>
+                      </div>
+                    ))}
+                    {project.manual_count > 5 && (
+                      <div className="text-xs text-muted-foreground pl-5">
+                        +{project.manual_count - 5} more...
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -211,29 +539,33 @@ export default function ProjectsPage() {
                     <Eye className="mr-2 h-4 w-4" />
                     View
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleCompile(project.id)}
-                  >
-                    <Wand2 className="mr-2 h-4 w-4" />
-                    Compile
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleExport(project.id, "pdf")}
-                  >
-                    <FileDown className="mr-2 h-4 w-4" />
-                    PDF
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDelete(project.id)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {!project.is_default && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={async () => {
+                        // Fetch full project details for tree view
+                        try {
+                          const detail = await projects.get(project.id);
+                          openDeleteDialog({
+                            ...project,
+                            chapters_with_manuals: detail.chapters.map(ch => ({
+                              id: ch.id,
+                              title: ch.title,
+                              manuals: detail.manuals
+                                .filter(m => m.chapter_id === ch.id)
+                                .map(m => m.manual_id),
+                            })),
+                          });
+                        } catch {
+                          // Fallback if fetch fails
+                          openDeleteDialog(project);
+                        }
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -241,83 +573,761 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      {/* Project Detail Dialog */}
-      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{selectedProject?.name}</DialogTitle>
-          </DialogHeader>
-
+      {/* Project Detail Sheet - Full Page Panel */}
+      <Sheet open={projectSheetOpen} onOpenChange={setProjectSheetOpen}>
+        <SheetContent side="right" fullPage className="p-0 flex flex-col">
           {selectedProject && (
-            <Tabs defaultValue="chapters">
-              <TabsList>
-                <TabsTrigger value="chapters">
-                  Chapters ({selectedProject.chapters.length})
-                </TabsTrigger>
-                <TabsTrigger value="manuals">
-                  Manuals ({selectedProject.manuals.length})
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="chapters" className="space-y-2">
-                {selectedProject.chapters.length === 0 ? (
-                  <p className="text-muted-foreground text-sm py-4">
-                    No chapters yet
-                  </p>
-                ) : (
-                  selectedProject.chapters.map((ch) => (
-                    <div
-                      key={ch.id}
-                      className="p-3 bg-muted rounded-lg"
-                    >
-                      <p className="font-medium">{ch.title}</p>
-                      {ch.description && (
-                        <p className="text-sm text-muted-foreground">
-                          {ch.description}
-                        </p>
-                      )}
-                    </div>
-                  ))
+            <>
+              {/* Header Section */}
+              <SheetHeader className="border-b p-6 pr-14 space-y-0">
+                <SheetTitle className="text-2xl font-bold flex items-center gap-2">
+                  <FolderKanban className="h-6 w-6" />
+                  {selectedProject.name}
+                  {selectedProject.is_default && (
+                    <Badge variant="secondary">
+                      <Star className="h-3 w-3 mr-1" />
+                      Default
+                    </Badge>
+                  )}
+                </SheetTitle>
+                {selectedProject.description && (
+                  <p className="text-muted-foreground mt-1">{selectedProject.description}</p>
                 )}
-              </TabsContent>
 
-              <TabsContent value="manuals" className="space-y-2">
-                {selectedProject.manuals.length === 0 ? (
-                  <p className="text-muted-foreground text-sm py-4">
-                    No manuals added yet
-                  </p>
-                ) : (
-                  selectedProject.manuals.map((m) => (
-                    <div
-                      key={m.manual_id}
-                      className="p-3 bg-muted rounded-lg"
-                    >
-                      <p className="font-medium">{m.manual_id}</p>
-                      {m.chapter_id && (
-                        <p className="text-sm text-muted-foreground">
-                          Chapter: {m.chapter_id}
-                        </p>
-                      )}
+                {/* Action Bar */}
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    onClick={() => handleCompile(selectedProject.id, selectedProject.name)}
+                    disabled={selectedProject.manuals.length === 0}
+                  >
+                    <Wand2 className="h-4 w-4 mr-2" />
+                    Compile
+                  </Button>
+
+                  {/* Export Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" disabled={selectedProject.manuals.length === 0 || exporting !== null}>
+                        {exporting ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <FileDown className="h-4 w-4 mr-2" />
+                        )}
+                        {exporting ? `Exporting ${exporting.toUpperCase()}...` : "Export"}
+                        {!exporting && <ChevronDown className="h-4 w-4 ml-2" />}
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => handleExport(selectedProject.id, "pdf")} disabled={exporting !== null}>
+                        PDF Document
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleExport(selectedProject.id, "word")} disabled={exporting !== null}>
+                        Word Document
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleExport(selectedProject.id, "html")} disabled={exporting !== null}>
+                        HTML
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  {!selectedProject.is_default && (
+                    <>
+                      <Button variant="outline" onClick={() => openEditDialog(selectedProject)}>
+                        <Edit2 className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => openDeleteDialog({
+                          ...selectedProject,
+                          manual_count: selectedProject.manuals.length,
+                          chapter_count: selectedProject.chapters.length,
+                          chapters_with_manuals: selectedProject.chapters.map(ch => ({
+                            id: ch.id,
+                            title: ch.title,
+                            manuals: selectedProject.manuals
+                              .filter(m => m.chapter_id === ch.id)
+                              .map(m => m.manual_id),
+                          })),
+                        })}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </SheetHeader>
+
+              {/* Tabs Section */}
+              <Tabs defaultValue="chapters" className="flex-1 flex flex-col overflow-hidden">
+                <div className="px-6 pt-4 border-b">
+                  <TabsList>
+                    <TabsTrigger value="chapters">
+                      <BookOpen className="h-4 w-4 mr-2" />
+                      Chapters ({selectedProject.chapters.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="manuals">
+                      <FileText className="h-4 w-4 mr-2" />
+                      Manuals ({selectedProject.manuals.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="videos">
+                      <Video className="h-4 w-4 mr-2" />
+                      Videos ({selectedProject.videos?.length || 0})
+                    </TabsTrigger>
+                    <TabsTrigger value="settings">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Export Settings
+                    </TabsTrigger>
+                    <TabsTrigger value="versions">
+                      <History className="h-4 w-4 mr-2" />
+                      Version History
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+
+                {/* Chapters Tab */}
+                <TabsContent value="chapters" className="flex-1 overflow-auto p-6 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <p className="text-sm text-muted-foreground">
+                      Organize your manuals into chapters for better structure
+                    </p>
+                    <Button size="sm" onClick={() => setAddChapterDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Chapter
+                    </Button>
+                  </div>
+
+                  {selectedProject.chapters.length === 0 ? (
+                    <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
+                      <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                      <p className="text-lg font-medium">No chapters yet</p>
+                      <p className="text-sm mt-1">Add chapters to organize your manuals</p>
                     </div>
-                  ))
-                )}
-              </TabsContent>
-            </Tabs>
+                  ) : (
+                    <div className="space-y-3">
+                      {selectedProject.chapters
+                        .sort((a, b) => a.order - b.order)
+                        .map((ch) => {
+                          const chapterManuals = selectedProject.manuals.filter(
+                            (m) => m.chapter_id === ch.id
+                          );
+                          const isEditing = editChapterId === ch.id;
+
+                          return (
+                            <Card key={ch.id} className="overflow-hidden">
+                              <CardContent className="p-4">
+                                {isEditing ? (
+                                  <div className="space-y-3">
+                                    <Input
+                                      value={editChapterTitle}
+                                      onChange={(e) => setEditChapterTitle(e.target.value)}
+                                      placeholder="Chapter title"
+                                    />
+                                    <Input
+                                      value={editChapterDesc}
+                                      onChange={(e) => setEditChapterDesc(e.target.value)}
+                                      placeholder="Description (optional)"
+                                    />
+                                    <div className="flex gap-2">
+                                      <Button size="sm" onClick={handleEditChapter}>
+                                        Save
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => setEditChapterId(null)}
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <div className="flex items-start justify-between">
+                                      <div className="flex items-center gap-3">
+                                        <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
+                                        <div>
+                                          <p className="font-semibold text-lg">{ch.title}</p>
+                                          {ch.description && (
+                                            <p className="text-sm text-muted-foreground">
+                                              {ch.description}
+                                            </p>
+                                          )}
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <Badge variant="secondary">
+                                          {chapterManuals.length} manuals
+                                        </Badge>
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-8 w-8"
+                                          onClick={() => {
+                                            setEditChapterId(ch.id);
+                                            setEditChapterTitle(ch.title);
+                                            setEditChapterDesc(ch.description);
+                                          }}
+                                        >
+                                          <Edit2 className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-8 w-8 text-destructive"
+                                          onClick={() => handleDeleteChapter(ch.id)}
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                    {chapterManuals.length > 0 && (
+                                      <div className="mt-3 ml-8 space-y-1 border-l-2 pl-4">
+                                        {chapterManuals.map((m) => (
+                                          <div
+                                            key={m.manual_id}
+                                            className="flex items-center gap-2 text-sm text-muted-foreground py-1"
+                                          >
+                                            <FileText className="h-3 w-3" />
+                                            <span className="truncate">{m.manual_id}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Manuals Tab */}
+                <TabsContent value="manuals" className="flex-1 overflow-auto p-6">
+                  {selectedProject.manuals.length === 0 ? (
+                    <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
+                      <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                      <p className="text-lg font-medium">No manuals in this project</p>
+                      <p className="text-sm mt-1">Process a video to generate manuals</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {selectedProject.manuals.map((m) => {
+                        const chapter = selectedProject.chapters.find(
+                          (ch) => ch.id === m.chapter_id
+                        );
+                        return (
+                          <Card key={m.manual_id} className="overflow-hidden">
+                            <CardContent className="p-4">
+                              <div className="flex items-start gap-3 min-w-0">
+                                <FileText className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium truncate">{m.manual_id}</p>
+                                  {chapter && (
+                                    <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+                                      <BookOpen className="h-3 w-3" />
+                                      {chapter.title}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex gap-2 mt-3">
+                                <Button
+                                  size="sm"
+                                  className="flex-1"
+                                  onClick={() => handleViewManual(m.manual_id)}
+                                  disabled={loadingManual}
+                                >
+                                  {loadingManual ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <Eye className="h-4 w-4 mr-2" />
+                                  )}
+                                  View
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleRemoveManualFromProject(m.manual_id)}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Videos Tab */}
+                <TabsContent value="videos" className="flex-1 overflow-auto p-6">
+                  {!selectedProject.videos || selectedProject.videos.length === 0 ? (
+                    <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
+                      <Video className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                      <p className="text-lg font-medium">No videos in this project</p>
+                      <p className="text-sm mt-1">Videos are automatically linked when you generate manuals</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                      {selectedProject.videos.map((v) => (
+                        <Card key={v.path} className={`overflow-hidden ${!v.exists ? "border-amber-500/50" : ""}`}>
+                          {/* Video Thumbnail */}
+                          <div className="relative aspect-video bg-muted">
+                            {v.exists ? (
+                              <video
+                                src={`/api/videos/${encodeURIComponent(v.name)}/stream`}
+                                className="w-full h-full object-cover"
+                                muted
+                                preload="metadata"
+                                onMouseEnter={(e) => e.currentTarget.play()}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.pause();
+                                  e.currentTarget.currentTime = 0;
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full h-full flex flex-col items-center justify-center text-amber-500">
+                                <AlertTriangle className="h-8 w-8 mb-2" />
+                                <span className="text-sm">Video deleted</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <CardContent className="p-4">
+                            <p className="font-medium truncate" title={v.name}>
+                              {v.name}
+                            </p>
+                            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                              <FileText className="h-3.5 w-3.5" />
+                              {v.manual_count} manual{v.manual_count !== 1 ? 's' : ''} generated
+                            </p>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Export Settings Tab */}
+                <TabsContent value="settings" className="flex-1 overflow-auto p-6">
+                  <div className="max-w-2xl space-y-6">
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Export Options</h3>
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between p-4 border rounded-lg">
+                          <div>
+                            <p className="font-medium">Include Table of Contents</p>
+                            <p className="text-sm text-muted-foreground">
+                              Add a navigable table of contents to the exported document
+                            </p>
+                          </div>
+                          <Checkbox defaultChecked />
+                        </div>
+                        <div className="flex items-center justify-between p-4 border rounded-lg">
+                          <div>
+                            <p className="font-medium">Include Chapter Covers</p>
+                            <p className="text-sm text-muted-foreground">
+                              Add a cover page before each chapter
+                            </p>
+                          </div>
+                          <Checkbox defaultChecked />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Quick Export</h3>
+                      <div className="flex gap-3">
+                        <Button
+                          variant="outline"
+                          onClick={() => handleExport(selectedProject.id, "pdf")}
+                          disabled={selectedProject.manuals.length === 0 || exporting !== null}
+                        >
+                          {exporting === "pdf" ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <FileDown className="h-4 w-4 mr-2" />
+                          )}
+                          {exporting === "pdf" ? "Exporting..." : "Export PDF"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleExport(selectedProject.id, "word")}
+                          disabled={selectedProject.manuals.length === 0 || exporting !== null}
+                        >
+                          {exporting === "word" ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <FileDown className="h-4 w-4 mr-2" />
+                          )}
+                          {exporting === "word" ? "Exporting..." : "Export Word"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleExport(selectedProject.id, "html")}
+                          disabled={selectedProject.manuals.length === 0 || exporting !== null}
+                        >
+                          {exporting === "html" ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <FileDown className="h-4 w-4 mr-2" />
+                          )}
+                          {exporting === "html" ? "Exporting..." : "Export HTML"}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* Version History Tab */}
+                <TabsContent value="versions" className="flex-1 overflow-auto p-6">
+                  <CompilationVersionHistory projectId={selectedProject.id} />
+                </TabsContent>
+              </Tabs>
+            </>
           )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Add Chapter Dialog */}
+      <Dialog open={addChapterDialogOpen} onOpenChange={setAddChapterDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Chapter</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Title</Label>
+              <Input
+                value={newChapterTitle}
+                onChange={(e) => setNewChapterTitle(e.target.value)}
+                placeholder="Chapter title"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Input
+                value={newChapterDesc}
+                onChange={(e) => setNewChapterDesc(e.target.value)}
+                placeholder="Optional description"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddChapterDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddChapter} disabled={!newChapterTitle.trim()}>
+              Add Chapter
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Compile Dialog */}
-      <Dialog open={compileDialogOpen} onOpenChange={setCompileDialogOpen}>
-        <DialogContent className="max-w-3xl">
+      {/* Edit Project Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Compile Project</DialogTitle>
+            <DialogTitle>Edit Project</DialogTitle>
           </DialogHeader>
-          <CompilerChat
-            state={compilerState}
-            onDecision={submitDecision}
-            onMessage={sendMessage}
-          />
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Project name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Optional description"
+                rows={3}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEdit} disabled={saving || !editName.trim()}>
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Project Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Delete Project?
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  You are about to delete this project. It will be moved to trash where it can be recovered within 30 days.
+                </p>
+
+                {/* Project Tree View */}
+                {projectToDelete && (
+                  <div className="rounded-lg border bg-muted/30 p-4 max-h-[300px] overflow-auto">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3">Project Contents</p>
+
+                    {/* Project Root */}
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-foreground font-medium">
+                        <FolderKanban className="h-5 w-5 text-primary" />
+                        <span>{projectToDelete.name}</span>
+                      </div>
+
+                      {/* Description */}
+                      {projectToDelete.description && (
+                        <p className="text-sm text-muted-foreground ml-7 mb-2">{projectToDelete.description}</p>
+                      )}
+
+                      {/* Chapters with manuals */}
+                      {projectToDelete.chapters_with_manuals && projectToDelete.chapters_with_manuals.length > 0 ? (
+                        <div className="ml-4 border-l-2 border-muted-foreground/20 pl-4 space-y-2 mt-2">
+                          {projectToDelete.chapters_with_manuals.map((chapter) => (
+                            <div key={chapter.id} className="space-y-1">
+                              {/* Chapter */}
+                              <div className="flex items-center gap-2 text-foreground">
+                                <BookOpen className="h-4 w-4 text-blue-500" />
+                                <span className="font-medium">{chapter.title}</span>
+                                <span className="text-xs text-muted-foreground">
+                                  ({chapter.manuals.length} manual{chapter.manuals.length !== 1 ? 's' : ''})
+                                </span>
+                              </div>
+
+                              {/* Manuals in chapter */}
+                              {chapter.manuals.length > 0 && (
+                                <div className="ml-4 border-l-2 border-muted-foreground/20 pl-4 space-y-1">
+                                  {chapter.manuals.map((manualId) => (
+                                    <div key={manualId} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                      <FileText className="h-3.5 w-3.5" />
+                                      <span className="truncate">{manualId}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground ml-7 italic">No chapters or manuals</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Manual handling option */}
+                {projectToDelete && projectToDelete.manual_count > 0 && (
+                  <div className="rounded-lg border border-amber-500/50 bg-amber-500/10 p-4 space-y-3">
+                    <p className="font-medium text-foreground">
+                      What should happen to the {projectToDelete.manual_count} manual{projectToDelete.manual_count !== 1 ? 's' : ''}?
+                    </p>
+
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="deleteManuals"
+                          checked={!deleteManuals}
+                          onChange={() => setDeleteManuals(false)}
+                          className="h-4 w-4"
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Keep manuals</p>
+                          <p className="text-xs text-muted-foreground">Move them to the default project</p>
+                        </div>
+                      </label>
+
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="deleteManuals"
+                          checked={deleteManuals}
+                          onChange={() => setDeleteManuals(true)}
+                          className="h-4 w-4"
+                        />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Delete manuals</p>
+                          <p className="text-xs text-muted-foreground">Move them to trash with the project</p>
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {deleteManuals ? "Delete Project & Manuals" : "Delete Project"}
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Compile Settings Dialog */}
+      {selectedProject && (
+        <CompileSettingsDialog
+          open={compileSettingsOpen}
+          onOpenChange={setCompileSettingsOpen}
+          projectId={compileProjectId || selectedProject.id}
+          projectName={selectedProject.name}
+          onStartCompile={handleStartCompile}
+        />
+      )}
+
+
+      {/* Manual Viewer Dialog */}
+      <Dialog open={viewManualOpen} onOpenChange={setViewManualOpen}>
+        <DialogContent className="sm:max-w-6xl w-[90vw] max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader className="shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              {selectedManual?.id}
+            </DialogTitle>
+            {selectedManual && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <ImageIcon className="h-4 w-4" />
+                {selectedManual.screenshots.length} screenshots
+              </div>
+            )}
+          </DialogHeader>
+
+          {selectedManual && (
+            <Tabs defaultValue="content" className="flex-1 flex flex-col overflow-hidden">
+              <TabsList className="shrink-0 w-fit">
+                <TabsTrigger value="content">Content</TabsTrigger>
+                <TabsTrigger value="screenshots">
+                  Screenshots ({selectedManual.screenshots.length})
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="content" className="flex-1 overflow-y-auto mt-4 pr-2">
+                <div className="prose prose-sm dark:prose-invert max-w-none pb-4">
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      img: ({ src, alt }) => {
+                        const srcStr = typeof src === "string" ? src : "";
+                        const filename = srcStr.split("/").pop() || srcStr;
+                        const apiUrl = `/api/manuals/${selectedManual.id}/screenshots/${filename}`;
+                        return (
+                          <span className="block my-4">
+                            <img
+                              src={apiUrl}
+                              alt={alt || "Screenshot"}
+                              className="rounded-lg border shadow-sm w-full"
+                            />
+                            {alt && (
+                              <span className="block text-center text-sm text-muted-foreground mt-2">
+                                {alt}
+                              </span>
+                            )}
+                          </span>
+                        );
+                      },
+                      h1: ({ children }) => (
+                        <h1 className="text-2xl font-bold mt-6 mb-3 first:mt-0 pb-2 border-b">{children}</h1>
+                      ),
+                      h2: ({ children }) => (
+                        <h2 className="text-xl font-semibold mt-6 mb-3">{children}</h2>
+                      ),
+                      h3: ({ children }) => (
+                        <h3 className="text-lg font-medium mt-4 mb-2">{children}</h3>
+                      ),
+                      p: ({ children }) => (
+                        <p className="my-3 leading-7 text-foreground/90">{children}</p>
+                      ),
+                      ul: ({ children }) => (
+                        <ul className="my-3 ml-6 list-disc space-y-1">{children}</ul>
+                      ),
+                      ol: ({ children }) => (
+                        <ol className="my-3 ml-6 list-decimal space-y-1">{children}</ol>
+                      ),
+                      li: ({ children }) => (
+                        <li className="leading-7">{children}</li>
+                      ),
+                      code: ({ children, className }) => {
+                        const isInline = !className;
+                        return isInline ? (
+                          <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>
+                        ) : (
+                          <pre className="bg-muted p-4 rounded-lg overflow-x-auto my-4">
+                            <code className="text-sm font-mono">{children}</code>
+                          </pre>
+                        );
+                      },
+                      pre: ({ children }) => <>{children}</>,
+                      blockquote: ({ children }) => (
+                        <blockquote className="border-l-4 border-primary/50 bg-muted/50 pl-4 pr-4 py-2 my-4 italic rounded-r-lg">
+                          {children}
+                        </blockquote>
+                      ),
+                      strong: ({ children }) => (
+                        <strong className="font-semibold text-foreground">{children}</strong>
+                      ),
+                    }}
+                  >
+                    {selectedManual.content}
+                  </ReactMarkdown>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="screenshots" className="flex-1 overflow-y-auto mt-4 pr-2">
+                <div className="grid grid-cols-1 gap-4 pb-4">
+                  {selectedManual.screenshots.map((screenshot, idx) => (
+                    <div key={idx} className="border rounded-lg overflow-hidden shadow-sm">
+                      <img
+                        src={`/api/manuals/${selectedManual.id}/screenshots/${screenshot.split("/").pop()}`}
+                        alt={`Screenshot ${idx + 1}`}
+                        className="w-full"
+                      />
+                      <div className="px-4 py-2 text-sm text-muted-foreground bg-muted/50 flex items-center justify-between">
+                        <span className="font-medium">Step {idx + 1}</span>
+                        <span className="text-xs">{screenshot.split("/").pop()}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
         </DialogContent>
       </Dialog>
     </div>

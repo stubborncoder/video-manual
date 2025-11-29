@@ -158,16 +158,45 @@ export function useProjectCompiler() {
 
   const wsRef = useRef<WebSocket | null>(null);
 
+  // Batch token updates to avoid exceeding React's update limit
+  const tokenBufferRef = useRef<string>("");
+  const rafRef = useRef<number | null>(null);
+
+  const flushTokenBuffer = useCallback(() => {
+    if (tokenBufferRef.current) {
+      const tokens = tokenBufferRef.current;
+      tokenBufferRef.current = "";
+      setState((prev) => ({
+        ...prev,
+        status: "processing",
+        streamedText: prev.streamedText + tokens,
+      }));
+    }
+    rafRef.current = null;
+  }, []);
+
   const processEvent = useCallback((event: StreamEvent) => {
+    // Batch streaming tokens to avoid exceeding React's update limit
+    if (event.event_type === "llm_token") {
+      tokenBufferRef.current += event.data.token as string;
+      // Schedule a single update per animation frame
+      if (!rafRef.current) {
+        rafRef.current = requestAnimationFrame(flushTokenBuffer);
+      }
+      return;
+    }
+
+    // Flush any pending tokens before processing other events
+    if (tokenBufferRef.current) {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+      flushTokenBuffer();
+    }
+
     setState((prev) => {
       switch (event.event_type) {
-        case "llm_token":
-          return {
-            ...prev,
-            status: "processing",
-            streamedText: prev.streamedText + (event.data.token as string),
-          };
-
         case "tool_call":
           return {
             ...prev,
@@ -202,7 +231,7 @@ export function useProjectCompiler() {
           return prev;
       }
     });
-  }, []);
+  }, [flushTokenBuffer]);
 
   const startCompilation = useCallback(
     (request: CompileProjectRequest) => {
@@ -266,6 +295,7 @@ export function useProjectCompiler() {
         ...prev,
         status: "processing",
         pendingHITL: undefined,
+        streamedText: "", // Reset for new AI response
       }));
     }
   }, []);
@@ -286,6 +316,12 @@ export function useProjectCompiler() {
       wsRef.current.close();
       wsRef.current = null;
     }
+    // Clean up animation frame and token buffer
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    tokenBufferRef.current = "";
     setState({
       status: "idle",
       nodeDetails: {},

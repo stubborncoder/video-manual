@@ -216,7 +216,9 @@ class BaseExporter(ABC):
         screenshots_dir = self.user_storage.manuals_dir / manual_id / "screenshots"
 
         def replace_path(match):
-            alt = match.group(1)
+            # Normalize alt text (may span multiple lines)
+            alt = match.group(1).replace('\n', ' ').strip()
+            alt = re.sub(r'\s+', ' ', alt)
             path = match.group(2)
 
             # Handle ../screenshots/ paths
@@ -233,9 +235,10 @@ class BaseExporter(ABC):
                 if abs_path.exists():
                     return f"![{alt}](file://{abs_path})"
 
-            return match.group(0)
+            return f"![{alt}]({path})"
 
-        pattern = r'!\[([^\]]*)\]\(([^)]+)\)'
+        # Use [\s\S]*? to match alt text that may span multiple lines
+        pattern = r'!\[([\s\S]*?)\]\(([^)]+)\)'
         return re.sub(pattern, replace_path, content)
 
     def get_export_history(self) -> List[Dict[str, Any]]:

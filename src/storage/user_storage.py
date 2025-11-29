@@ -1,8 +1,10 @@
 """User storage management for videos and manuals."""
 
+import json
 import re
+from datetime import datetime
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 import uuid
 
 from ..config import USERS_DIR
@@ -220,3 +222,165 @@ class UserStorage:
             videos.extend(self.videos_dir.glob(f"*{ext.upper()}"))
 
         return sorted(videos, key=lambda p: p.stat().st_mtime, reverse=True)
+
+    # ==================== Video-Manual Relationship ====================
+
+    def get_manuals_by_video(self, video_name: str) -> List[Dict[str, Any]]:
+        """Find all manuals created from a specific video.
+
+        Args:
+            video_name: Name of the video file
+
+        Returns:
+            List of dicts with manual_id and metadata
+        """
+        if not self.manuals_dir.exists():
+            return []
+
+        matching_manuals = []
+        video_path_str = str(self.videos_dir / video_name)
+
+        for manual_dir in self.manuals_dir.iterdir():
+            if not manual_dir.is_dir():
+                continue
+
+            metadata_file = manual_dir / "metadata.json"
+            if not metadata_file.exists():
+                continue
+
+            try:
+                with open(metadata_file, "r", encoding="utf-8") as f:
+                    metadata = json.load(f)
+
+                # Check if this manual was created from the video
+                stored_path = metadata.get("video_path", "")
+                stored_name = Path(stored_path).name if stored_path else ""
+
+                # Match by path or by filename
+                if stored_path == video_path_str or stored_name == video_name:
+                    matching_manuals.append({
+                        "manual_id": manual_dir.name,
+                        "video_path": stored_path,
+                        "languages": metadata.get("languages_generated", []),
+                        "created_at": metadata.get("created_at"),
+                        "project_id": metadata.get("project_id"),
+                    })
+            except (json.JSONDecodeError, IOError):
+                continue
+
+        return matching_manuals
+
+    def get_manual_metadata(self, manual_id: str) -> Optional[Dict[str, Any]]:
+        """Get metadata for a specific manual.
+
+        Args:
+            manual_id: Manual identifier
+
+        Returns:
+            Metadata dict or None if not found
+        """
+        metadata_file = self.manuals_dir / manual_id / "metadata.json"
+        if not metadata_file.exists():
+            return None
+
+        try:
+            with open(metadata_file, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            return None
+
+    def update_manual_metadata(self, manual_id: str, updates: Dict[str, Any]) -> None:
+        """Update metadata for a manual.
+
+        Args:
+            manual_id: Manual identifier
+            updates: Fields to update
+        """
+        metadata_file = self.manuals_dir / manual_id / "metadata.json"
+
+        if metadata_file.exists():
+            with open(metadata_file, "r", encoding="utf-8") as f:
+                metadata = json.load(f)
+        else:
+            metadata = {}
+
+        metadata.update(updates)
+        metadata["updated_at"] = datetime.now().isoformat()
+
+        # Ensure directory exists
+        metadata_file.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(metadata_file, "w", encoding="utf-8") as f:
+            json.dump(metadata, f, indent=2, ensure_ascii=False)
+
+    def update_manual_video_status(
+        self,
+        manual_id: str,
+        video_exists: bool,
+        deleted_at: Optional[str] = None,
+    ) -> None:
+        """Update source video status in manual metadata.
+
+        Called when a video is deleted or restored to update
+        all associated manuals.
+
+        Args:
+            manual_id: Manual identifier
+            video_exists: Whether the source video exists
+            deleted_at: ISO timestamp when video was deleted (None if exists)
+        """
+        metadata = self.get_manual_metadata(manual_id)
+        if metadata is None:
+            return
+
+        # Add or update source_video status
+        video_path = metadata.get("video_path", "")
+        source_video = metadata.get("source_video", {})
+
+        source_video.update({
+            "name": Path(video_path).name if video_path else "",
+            "path": video_path,
+            "exists": video_exists,
+            "deleted_at": deleted_at,
+        })
+
+        self.update_manual_metadata(manual_id, {"source_video": source_video})
+
+    def mark_video_deleted_for_manuals(self, video_name: str) -> List[str]:
+        """Mark source video as deleted for all associated manuals.
+
+        Args:
+            video_name: Name of the deleted video
+
+        Returns:
+            List of affected manual IDs
+        """
+        manuals = self.get_manuals_by_video(video_name)
+        deleted_at = datetime.now().isoformat()
+
+        affected_ids = []
+        for manual_info in manuals:
+            manual_id = manual_info["manual_id"]
+            self.update_manual_video_status(manual_id, video_exists=False, deleted_at=deleted_at)
+            affected_ids.append(manual_id)
+
+        return affected_ids
+
+    def mark_video_restored_for_manuals(self, video_name: str) -> List[str]:
+        """Mark source video as restored for all associated manuals.
+
+        Args:
+            video_name: Name of the restored video
+
+        Returns:
+            List of affected manual IDs
+        """
+        manuals = self.get_manuals_by_video(video_name)
+
+        affected_ids = []
+        for manual_info in manuals:
+            manual_id = manual_info["manual_id"]
+            self.update_manual_video_status(manual_id, video_exists=True, deleted_at=None)
+            affected_ids.append(manual_id)
+
+        return affected_ids

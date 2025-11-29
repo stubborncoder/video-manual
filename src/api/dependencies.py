@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException, status, Cookie
 
 from ..storage.user_storage import UserStorage
 from ..storage.project_storage import ProjectStorage
+from ..storage.trash_storage import TrashStorage
 
 
 async def get_current_user(
@@ -31,8 +32,19 @@ def get_user_storage(user_id: CurrentUser) -> UserStorage:
 
 def get_project_storage(user_id: CurrentUser) -> ProjectStorage:
     """Get ProjectStorage for current user."""
-    return ProjectStorage(user_id)
+    storage = ProjectStorage(user_id)
+    # Ensure default project exists
+    storage.ensure_default_project()
+    return storage
+
+
+def get_trash_storage(user_id: CurrentUser) -> TrashStorage:
+    """Get TrashStorage for current user."""
+    storage = TrashStorage(user_id)
+    storage.ensure_trash_dirs()
+    return storage
 
 
 UserStorageDep = Annotated[UserStorage, Depends(get_user_storage)]
 ProjectStorageDep = Annotated[ProjectStorage, Depends(get_project_storage)]
+TrashStorageDep = Annotated[TrashStorage, Depends(get_trash_storage)]

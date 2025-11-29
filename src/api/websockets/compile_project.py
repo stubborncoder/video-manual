@@ -1,9 +1,13 @@
 """WebSocket endpoint for project compilation with HITL support."""
 
 import json
+import logging
+import asyncio
 from dataclasses import asdict
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Cookie
+
+logger = logging.getLogger(__name__)
 
 from ...core.runners import ProjectCompilerRunner
 from ...core.events import EventType
@@ -110,25 +114,63 @@ async def websocket_compile_project(
 
                 # Create runner and start compilation
                 runner = ProjectCompilerRunner(auth_user_id)
+                language = message.get("language", "en")
 
-                for event in runner.run(project_id):
+                logger.info(f"[WS] Starting compilation for project {project_id}, language={language}")
+
+                # Use queue to stream events from sync generator to async websocket
+                event_queue: asyncio.Queue = asyncio.Queue()
+                loop = asyncio.get_running_loop()
+
+                def run_sync_generator():
+                    """Run sync generator in thread and put events in queue."""
+                    try:
+                        for event in runner.run(project_id, language=language):
+                            future = asyncio.run_coroutine_threadsafe(
+                                event_queue.put(event), loop
+                            )
+                            future.result()  # Wait for put to complete
+                            if event.event_type in (EventType.HITL_REQUIRED, EventType.COMPLETE, EventType.ERROR):
+                                break
+                    finally:
+                        future = asyncio.run_coroutine_threadsafe(
+                            event_queue.put(None), loop  # Signal end
+                        )
+                        future.result()
+
+                # Start generator in thread
+                thread_future = loop.run_in_executor(None, run_sync_generator)
+
+                # Consume events from queue and send via websocket
+                while True:
+                    event = await event_queue.get()
+                    if event is None:
+                        break
+
                     event_dict = asdict(event)
                     event_type = event_dict.pop("event_type")
+                    event_type_str = event_type.value if hasattr(event_type, "value") else str(event_type)
+
+                    logger.info(f"[WS] Sending event: {event_type_str}")
 
                     await websocket.send_json({
-                        "event_type": event_type.value if hasattr(event_type, "value") else str(event_type),
+                        "event_type": event_type_str,
                         "timestamp": event_dict.pop("timestamp"),
                         "data": event_dict,
                     })
 
                     # If HITL required, break to wait for decision
                     if event.event_type == EventType.HITL_REQUIRED:
+                        logger.info(f"[WS] HITL required, waiting for decision")
                         break
 
                     # If complete or error, we're done
                     if event.event_type in (EventType.COMPLETE, EventType.ERROR):
+                        logger.info(f"[WS] Compilation ended with {event_type_str}")
                         await websocket.close()
                         return
+
+                await thread_future  # Wait for thread to finish
 
             elif action == "decision":
                 if not runner:

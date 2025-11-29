@@ -111,6 +111,21 @@ class WordExporter(BaseExporter):
             content: Markdown content
             manual_id: Manual identifier (for resolving image paths)
         """
+        # Normalize multi-line image syntax into single lines
+        # This handles alt text that spans multiple lines before the closing ]
+        def normalize_image(match):
+            alt = match.group(1).replace('\n', ' ').strip()
+            # Collapse multiple spaces
+            alt = re.sub(r'\s+', ' ', alt)
+            path = match.group(2)
+            return f'![{alt}]({path})'
+
+        content = re.sub(
+            r'!\[([\s\S]*?)\]\(([^)]+)\)',
+            normalize_image,
+            content
+        )
+
         lines = content.split('\n')
         i = 0
         in_code_block = False

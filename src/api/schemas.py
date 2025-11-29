@@ -34,11 +34,19 @@ class VideoListResponse(BaseModel):
 # ==================== Manuals ====================
 
 
+class SourceVideoInfo(BaseModel):
+    """Information about the source video for a manual."""
+    name: str
+    exists: bool = True
+
+
 class ManualSummary(BaseModel):
     id: str
     created_at: Optional[str] = None
     screenshot_count: int = 0
     languages: list[str] = []
+    source_video: Optional[SourceVideoInfo] = None
+    project_id: Optional[str] = None
 
 
 class ManualDetail(BaseModel):
@@ -78,6 +86,14 @@ class ProjectManualInfo(BaseModel):
     order: int
 
 
+class ProjectVideoInfo(BaseModel):
+    """Video information for a project."""
+    name: str
+    path: str
+    exists: bool = True
+    manual_count: int = 0  # Number of manuals from this video
+
+
 class ProjectSummary(BaseModel):
     id: str
     name: str
@@ -91,8 +107,10 @@ class ProjectDetail(BaseModel):
     name: str
     description: str
     created_at: str
+    is_default: bool = False
     chapters: list[ChapterInfo]
     manuals: list[ProjectManualInfo]
+    videos: list[ProjectVideoInfo] = []
 
 
 class ProjectListResponse(BaseModel):
@@ -133,6 +151,43 @@ class EventMessage(BaseModel):
     event_type: str
     timestamp: float
     data: dict[str, Any] = {}
+
+
+# ==================== Trash ====================
+
+
+class TrashItemInfo(BaseModel):
+    """Information about an item in trash."""
+    trash_id: str
+    item_type: str  # "video", "manual", "project"
+    original_name: str
+    deleted_at: str
+    expires_at: str
+    cascade_deleted: bool = False
+    related_items: list[str] = []
+
+
+class TrashListResponse(BaseModel):
+    """Response for listing trash items."""
+    items: list[TrashItemInfo]
+    stats: dict[str, int]
+
+
+class RestoreResponse(BaseModel):
+    """Response for restoring an item."""
+    restored_path: str
+    item_type: str
+    original_name: str
+
+
+class VideoWithManuals(BaseModel):
+    """Video info including associated manuals."""
+    name: str
+    path: str
+    size_bytes: int
+    modified_at: datetime
+    manual_count: int
+    manuals: list[dict[str, Any]] = []
 
 
 # ==================== Export ====================

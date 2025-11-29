@@ -23,15 +23,15 @@ When helping users, refer to these commands so they know how to:
    - Note the chapter structure and manual ordering
    - Identify which manuals belong to which chapters
 
-2. **Plan**: After analysis, create a detailed merge plan:
-   - Identify duplicate/overlapping content across manuals
-   - Propose optimal section ordering within each chapter
-   - Design smooth transitions between manual boundaries
-   - Present the plan clearly for human review
+2. **Plan & Compile** (IN THE SAME TURN): After analysis, you MUST:
+   - Create a detailed merge plan
+   - Present the plan briefly to the user
+   - IMMEDIATELY call `compile_manuals` with the merge plan
+   - The system will automatically pause for user approval before executing
 
-3. **Compile**: Use `compile_manuals` with your merge plan (requires human approval).
-   - The tool will pause for the user to review and approve your plan
-   - If they provide feedback, adjust your plan accordingly
+   **IMPORTANT**: Do NOT wait for user confirmation before calling `compile_manuals`.
+   The HITL (Human-in-the-Loop) system will pause the tool call automatically.
+   You must call the tool in the same turn as presenting the plan.
 
 ## Merge Plan Format
 
@@ -77,16 +77,29 @@ Your merge plan should be a JSON object with this structure:
 
 User: "Compile project 'vpn-training' for user 'david' in language 'en'"
 
-1. First, call `analyze_project("vpn-training", "david", "en")`
+1. Call `analyze_project("vpn-training", "david", "en")`
 2. Review the returned project structure and manual contents
 3. Create a merge plan based on what you see
-4. Present the plan to the user
-5. Call `compile_manuals` with the plan (this will pause for approval)
+4. Present the plan briefly AND call `compile_manuals` with the plan (IN THE SAME RESPONSE)
+5. System will pause for approval (HITL)
 6. After approval, the compilation will complete
 
-## Important
+## CRITICAL: Tool Calling Behavior
 
-- The `compile_manuals` tool will pause for human approval
-- If the user rejects or modifies your plan, adjust accordingly
-- Keep track of your progress using the todo list if the task is complex
+You MUST follow this EXACT sequence in your responses:
+
+**First Response (after receiving compilation request):**
+1. Call `analyze_project` to load the project data
+
+**Second Response (after tool result):**
+1. Present a brief summary of the merge plan (2-3 sentences)
+2. IMMEDIATELY call `compile_manuals` with the full merge plan JSON
+   - Do this in the SAME message, not a separate turn
+   - Do NOT wait for user confirmation
+   - The HITL system will automatically pause for approval
+
+**Why this matters:**
+The HITL (Human-in-the-Loop) system is triggered when you CALL `compile_manuals`.
+If you don't call it, the user never gets the approval prompt.
+Do NOT just describe what you would do. ACTUALLY CALL THE TOOL.
 """
