@@ -31,10 +31,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Upload, Trash2, Video, Loader2, Eye, Wand2, FileText, FolderKanban, AlertTriangle, ArrowUpRight } from "lucide-react";
+import { Upload, Trash2, Video, Loader2, Eye, Wand2, FileText, FolderKanban, AlertTriangle, ArrowUpRight, Check, ChevronsUpDown } from "lucide-react";
 import { videos, projects, type VideoInfo, type UploadProgress, type ProjectSummary, type VideoManualInfo } from "@/lib/api";
 import { useVideoProcessing } from "@/hooks/useWebSocket";
 import { ProcessingProgress } from "@/components/processing/ProcessingProgress";
@@ -73,6 +86,10 @@ export default function VideosPage() {
   // Project selection state for processing
   const [projectList, setProjectList] = useState<ProjectSummary[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("__default__");
+
+  // Project filter state
+  const [filterProjectId, setFilterProjectId] = useState<string>("__all__");
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const { state: processingState, startProcessing, reset } = useVideoProcessing();
 
@@ -225,6 +242,18 @@ export default function VideosPage() {
     return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
   }
 
+  // Filter videos by project
+  const filteredVideos = filterProjectId === "__all__"
+    ? videoList
+    : videoList.filter((video) =>
+        video.projects?.some((p) => p.id === filterProjectId)
+      );
+
+  // Get selected project name for display
+  const selectedProjectName = filterProjectId === "__all__"
+    ? "All Projects"
+    : projectList.find((p) => p.id === filterProjectId)?.name || "Select project";
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -235,7 +264,61 @@ export default function VideosPage() {
           </p>
         </div>
 
-        <div>
+        <div className="flex items-center gap-3">
+          {/* Project Filter - Searchable Combobox */}
+          <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={filterOpen}
+                className="w-[200px] justify-between"
+              >
+                <FolderKanban className="h-4 w-4 mr-2 shrink-0 text-muted-foreground" />
+                <span className="truncate">{selectedProjectName}</span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-0">
+              <Command>
+                <CommandInput placeholder="Search projects..." />
+                <CommandList>
+                  <CommandEmpty>No project found.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="__all__"
+                      onSelect={() => {
+                        setFilterProjectId("__all__");
+                        setFilterOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={`mr-2 h-4 w-4 ${filterProjectId === "__all__" ? "opacity-100" : "opacity-0"}`}
+                      />
+                      All Projects
+                    </CommandItem>
+                    {projectList.map((project) => (
+                      <CommandItem
+                        key={project.id}
+                        value={project.name}
+                        onSelect={() => {
+                          setFilterProjectId(project.id);
+                          setFilterOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={`mr-2 h-4 w-4 ${filterProjectId === project.id ? "opacity-100" : "opacity-0"}`}
+                        />
+                        {project.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
+          <div>
           <input
             type="file"
             ref={fileInputRef}
@@ -260,6 +343,7 @@ export default function VideosPage() {
               </>
             )}
           </Button>
+        </div>
         </div>
       </div>
 
@@ -287,19 +371,23 @@ export default function VideosPage() {
         <div className="text-center py-8 text-muted-foreground">
           Loading videos...
         </div>
-      ) : videoList.length === 0 ? (
+      ) : filteredVideos.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center">
             <Video className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No videos found</p>
+            <p className="text-muted-foreground">
+              {filterProjectId === "__all__" ? "No videos found" : "No videos in this project"}
+            </p>
             <p className="text-sm text-muted-foreground mt-1">
-              Upload a video to get started
+              {filterProjectId === "__all__"
+                ? "Upload a video to get started"
+                : "Process a video and assign it to this project, or select a different filter"}
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {videoList.map((video) => (
+          {filteredVideos.map((video) => (
             <Card key={video.name} className="overflow-hidden">
               {/* Video Preview */}
               <div className="relative aspect-video bg-muted">

@@ -372,9 +372,15 @@ class ProjectCompilerRunner:
                     msg, metadata = data
                     msg_type = getattr(msg, "type", "").lower()
 
+                    # Only process streaming chunks, not final messages
+                    # AIMessageChunk = streaming (delta), AIMessage = final (full, would duplicate)
+                    if "chunk" not in msg_type and "ai" in msg_type:
+                        continue
+
                     if "ai" in msg_type:
                         content = getattr(msg, "content", None)
                         if isinstance(content, str) and content:
+                            # AIMessageChunk contains delta (new tokens only)
                             yield LLMTokenEvent(
                                 token=content, is_first=is_first_token, is_last=False
                             )
@@ -463,8 +469,11 @@ class ProjectCompilerRunner:
             result = {}
             if compiled_content:
                 result["compiled_content"] = compiled_content
+                message = "Compilation complete"
+            else:
+                message = "Response complete"
 
-            yield CompleteEvent(result=result, message="Compilation complete")
+            yield CompleteEvent(result=result, message=message)
 
         except Exception as e:
             logger.exception(f"[RUNNER] Error: {e}")
@@ -702,16 +711,23 @@ Please analyze this image to help answer the user's question.""")
                 subgraphs=True,
             ):
                 namespace, mode, data = chunk
-                logger.info(f"[EDITOR RUNNER] Chunk: mode={mode}, namespace={namespace}")
+                logger.debug(f"[EDITOR RUNNER] Chunk: mode={mode}, namespace={namespace}")
 
                 if mode == "messages":
                     msg, metadata = data
                     msg_type = getattr(msg, "type", "").lower()
-                    logger.info(f"[EDITOR RUNNER] Message type: {msg_type}")
+                    logger.debug(f"[EDITOR RUNNER] Message type: {msg_type}")
+
+                    # Only process streaming chunks, not final messages
+                    # AIMessageChunk = streaming (delta), AIMessage = final (full, would duplicate)
+                    if "chunk" not in msg_type and "ai" in msg_type:
+                        logger.debug(f"[EDITOR RUNNER] Skipping final AIMessage (already streamed)")
+                        continue
 
                     if "ai" in msg_type:
                         content = getattr(msg, "content", None)
                         if isinstance(content, str) and content:
+                            # AIMessageChunk contains delta (new tokens only)
                             yield LLMTokenEvent(
                                 token=content, is_first=is_first_token, is_last=False
                             )

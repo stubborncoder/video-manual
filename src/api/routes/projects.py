@@ -781,7 +781,7 @@ async def export_compilation_version(
     user_id: CurrentUser,
     storage: ProjectStorageDep,
 ):
-    """Export a specific compilation version to PDF, Word, or HTML and download."""
+    """Export a specific compilation version to PDF, Word, or HTML."""
     from ...storage.compilation_version_storage import CompilationVersionStorage
     from ...export.compilation_exporter import export_compilation_markdown
     from pathlib import Path
@@ -827,23 +827,98 @@ async def export_compilation_version(
             user_id=user_id,
         )
 
-        # Return file for download
-        output_file = Path(output_path)
-        media_types = {
-            "pdf": "application/pdf",
-            "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "word": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "html": "text/html",
-        }
-        media_type = media_types.get(format_lower, "application/octet-stream")
+        # Return download URL
+        filename = Path(output_path).name
+        download_url = f"/api/projects/{project_id}/exports/{filename}"
 
-        return FileResponse(
-            path=str(output_file),
-            filename=output_file.name,
-            media_type=media_type,
-        )
+        return {
+            "format": format_lower,
+            "filename": filename,
+            "download_url": download_url,
+        }
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+
+
+@router.get("/{project_id}/exports")
+async def list_exports(
+    project_id: str,
+    user_id: CurrentUser,
+    storage: ProjectStorageDep,
+):
+    """List all exported files for a project."""
+    from pathlib import Path
+    from datetime import datetime
+
+    project = storage.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    export_dir = storage.projects_dir / project_id / "exports"
+    if not export_dir.exists():
+        return {"exports": []}
+
+    exports = []
+    for f in export_dir.iterdir():
+        if f.is_file() and f.suffix.lower() in (".pdf", ".docx", ".html"):
+            # Parse filename: {project_id}_{language}_v{version}_{timestamp}.{ext}
+            # Example: fico-test_en_v1.0.1_20231130_123456.pdf
+            parts = f.stem.split("_")
+            version = None
+            language = None
+            if len(parts) >= 3:
+                language = parts[1] if len(parts[1]) == 2 else None
+                for p in parts:
+                    if p.startswith("v") and "." in p:
+                        version = p[1:]  # Remove 'v' prefix
+                        break
+
+            exports.append({
+                "filename": f.name,
+                "format": f.suffix[1:].lower(),  # Remove dot
+                "size_bytes": f.stat().st_size,
+                "created_at": datetime.fromtimestamp(f.stat().st_mtime).isoformat(),
+                "version": version,
+                "language": language,
+                "download_url": f"/api/projects/{project_id}/exports/{f.name}",
+            })
+
+    # Sort by creation time, newest first
+    exports.sort(key=lambda x: x["created_at"], reverse=True)
+
+    return {"exports": exports}
+
+
+@router.get("/{project_id}/exports/{filename}")
+async def download_export(
+    project_id: str,
+    filename: str,
+    user_id: CurrentUser,
+    storage: ProjectStorageDep,
+):
+    """Download an exported file."""
+    project = storage.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    export_path = storage.projects_dir / project_id / "exports" / filename
+    if not export_path.exists():
+        raise HTTPException(status_code=404, detail="Export file not found")
+
+    # Determine media type from extension
+    suffix = export_path.suffix.lower()
+    media_types = {
+        ".pdf": "application/pdf",
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".html": "text/html",
+    }
+    media_type = media_types.get(suffix, "application/octet-stream")
+
+    return FileResponse(
+        path=str(export_path),
+        filename=filename,
+        media_type=media_type,
+    )

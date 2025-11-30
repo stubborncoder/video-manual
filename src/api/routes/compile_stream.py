@@ -115,7 +115,25 @@ async def compile_project_stream(
                 # Handle HITL approval/rejection
                 tool_call_id = command.get("toolCallId", "")
                 result = command.get("result", {})
-                logger.info(f"[Compile] Tool result for {tool_call_id}: {result}")
+                approved = result.get("approved", False)
+                logger.info(f"[Compile] Tool result for {tool_call_id}: approved={approved}")
+
+                if not approved:
+                    # User rejected - add a message explaining the rejection
+                    # and return early without running compilation
+                    rejection_msg = (
+                        "I understand you've decided not to proceed with the compilation. "
+                        "If you'd like to make changes to the merge plan, please let me know what adjustments you'd like."
+                    )
+                    # Update state with rejection message
+                    if controller.state is None:
+                        controller.state = {"messages": []}
+                    controller.state["messages"].append({
+                        "type": "ai",
+                        "content": rejection_msg,
+                    })
+                    logger.info(f"[Compile] User rejected compilation, returning early")
+                    return  # Exit without running the agent
 
         # If no explicit message, send the initial compilation request
         if not input_messages and not request.state:
@@ -153,18 +171,18 @@ async def compile_project_stream(
         logger.info(f"[Compile] Starting LangGraph stream for project {project_id}")
 
         # Stream events from LangGraph using append_langgraph_event
-        # This updates controller.state.messages in LangChain format
+        # Use only "messages" mode to avoid duplicate messages from "updates"
         async for event in agent.astream(
             input_state,
             config=config,
-            stream_mode=["messages", "updates"],
+            stream_mode="messages",
             subgraphs=True,
         ):
-            namespace, event_type, chunk = event
+            namespace, chunk = event
             append_langgraph_event(
                 controller.state,
                 namespace,
-                event_type,
+                "messages",
                 chunk
             )
 

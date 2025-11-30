@@ -201,14 +201,16 @@ export function CompilerView({
             Language: {language.toUpperCase()} | Status:{" "}
             <Badge
               variant={
-                state.status === "complete"
+                state.status === "complete" && compiledContent
                   ? "default"
                   : state.status === "error"
                   ? "destructive"
                   : "secondary"
               }
             >
-              {state.status}
+              {state.status === "complete" && !compiledContent
+                ? "in progress"
+                : state.status}
             </Badge>
           </p>
         </div>
@@ -419,8 +421,8 @@ export function CompilerView({
                   </div>
                 ))}
 
-                {/* Streaming text - show directly from state */}
-                {state.status === "processing" && (
+                {/* Loading indicator - only show when processing with no text yet */}
+                {state.status === "processing" && !state.streamedText && (
                   <div className="flex gap-3 justify-start">
                     <div className="shrink-0">
                       <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
@@ -428,11 +430,7 @@ export function CompilerView({
                       </div>
                     </div>
                     <div className="bg-muted rounded-lg px-4 py-2 max-w-[80%]">
-                      {state.streamedText ? (
-                        <ChatMarkdown content={state.streamedText} />
-                      ) : (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      )}
+                      <Loader2 className="h-4 w-4 animate-spin" />
                     </div>
                   </div>
                 )}
@@ -445,8 +443,8 @@ export function CompilerView({
                   />
                 )}
 
-                {/* Completion */}
-                {state.status === "complete" && (
+                {/* Completion - only show if compiled content exists */}
+                {state.status === "complete" && compiledContent && (
                   <div className="flex gap-3 justify-start">
                     <div className="h-8 w-8 rounded-full bg-green-500/10 flex items-center justify-center">
                       <CheckCircle2 className="h-4 w-4 text-green-500" />

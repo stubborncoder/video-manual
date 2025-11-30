@@ -191,64 +191,67 @@ export function useEditorCopilot({
     (data: WSMessage) => {
       switch (data.type) {
         case "agent_thinking":
-          // Update or create streaming assistant message
-          setMessages((prev) => {
-            if (currentAssistantMessageRef.current) {
-              // Update existing streaming message
-              return prev.map((msg) =>
-                msg.id === currentAssistantMessageRef.current
+          // Check ref BEFORE setMessages to avoid race conditions
+          if (currentAssistantMessageRef.current) {
+            // Update existing streaming message
+            const existingId = currentAssistantMessageRef.current;
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === existingId
                   ? { ...msg, content: msg.content + data.content }
                   : msg
-              );
-            } else {
-              // Create new assistant message
-              const newId = generateId();
-              currentAssistantMessageRef.current = newId;
-              return [
-                ...prev,
-                {
-                  id: newId,
-                  role: "assistant" as const,
-                  content: data.content,
-                  timestamp: new Date(),
-                  isStreaming: true,
-                },
-              ];
-            }
-          });
+              )
+            );
+          } else {
+            // Create new assistant message - set ref BEFORE setMessages
+            const newId = generateId();
+            currentAssistantMessageRef.current = newId;
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: newId,
+                role: "assistant" as const,
+                content: data.content,
+                timestamp: new Date(),
+                isStreaming: true,
+              },
+            ]);
+          }
           break;
 
         case "chat_response":
-          setMessages((prev) => {
-            if (currentAssistantMessageRef.current) {
-              // Update existing message
-              return prev.map((msg) =>
-                msg.id === currentAssistantMessageRef.current
+          // Check ref BEFORE setMessages to avoid race conditions
+          if (currentAssistantMessageRef.current) {
+            // Update existing streaming message
+            const existingId = currentAssistantMessageRef.current;
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === existingId
                   ? {
                       ...msg,
                       content: data.done ? data.content : msg.content + data.content,
                       isStreaming: !data.done,
                     }
                   : msg
-              );
-            } else {
-              // Create new message
-              const newId = generateId();
-              if (!data.done) {
-                currentAssistantMessageRef.current = newId;
-              }
-              return [
-                ...prev,
-                {
-                  id: newId,
-                  role: "assistant" as const,
-                  content: data.content,
-                  timestamp: new Date(),
-                  isStreaming: !data.done,
-                },
-              ];
+              )
+            );
+          } else {
+            // Create new message - set ref BEFORE setMessages to prevent duplicates
+            const newId = generateId();
+            if (!data.done) {
+              currentAssistantMessageRef.current = newId;
             }
-          });
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: newId,
+                role: "assistant" as const,
+                content: data.content,
+                timestamp: new Date(),
+                isStreaming: !data.done,
+              },
+            ]);
+          }
 
           if (data.done) {
             currentAssistantMessageRef.current = null;

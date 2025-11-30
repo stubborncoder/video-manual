@@ -461,44 +461,43 @@ export const compilations = {
       { method: "PATCH", body: JSON.stringify({ notes, tags }) }
     ),
 
-  export: async (
+  export: (
     projectId: string,
     version: string,
     format: "pdf" | "word" | "html" = "pdf",
     language = "en"
-  ): Promise<void> => {
-    const response = await fetch(
+  ) =>
+    request<{ format: string; filename: string; download_url: string }>(
       `/api/projects/${projectId}/compilations/${version}/export`,
       {
         method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ format, language }),
       }
-    );
+    ),
+};
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: `HTTP ${response.status}` }));
-      throw new Error(error.detail || `Export failed: HTTP ${response.status}`);
-    }
+// Project Exports
+export interface ExportFile {
+  filename: string;
+  format: string;
+  size_bytes: number;
+  created_at: string;
+  version: string | null;
+  language: string | null;
+  download_url: string;
+}
 
-    // Get filename from Content-Disposition header or generate one
-    const contentDisposition = response.headers.get("Content-Disposition");
-    let filename = `compilation_v${version}_${language}.${format === "word" ? "docx" : format}`;
-    if (contentDisposition) {
-      const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
-      if (match) filename = match[1];
-    }
+export const exports = {
+  list: (projectId: string) =>
+    request<{ exports: ExportFile[] }>(`/api/projects/${projectId}/exports`),
 
-    // Trigger download
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
+  // Helper to trigger download from a URL
+  download: (url: string) => {
     const a = document.createElement("a");
     a.href = url;
-    a.download = filename;
+    a.download = "";
     document.body.appendChild(a);
     a.click();
-    window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
   },
 };
@@ -540,4 +539,4 @@ export const trash = {
   empty: () => request<{ status: string; deleted_count: number }>("/api/trash/empty", { method: "DELETE" }),
 };
 
-export default { auth, videos, manuals, manualProject, projects, compilations, trash };
+export default { auth, videos, manuals, manualProject, projects, compilations, exports, trash };

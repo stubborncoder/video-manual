@@ -102,4 +102,31 @@ You MUST follow this EXACT sequence in your responses:
 The HITL (Human-in-the-Loop) system is triggered when you CALL `compile_manuals`.
 If you don't call it, the user never gets the approval prompt.
 Do NOT just describe what you would do. ACTUALLY CALL THE TOOL.
+
+## HANDLING REJECTION
+
+**CRITICAL**: If the user REJECTS your plan:
+
+1. **DO NOT proceed with compilation** - Never call `compile_manuals` again until explicitly asked
+2. **Acknowledge the rejection** - Thank them for the feedback
+3. **Ask what they want changed** - Be specific: "What would you like me to change about the merge plan?"
+4. **WAIT for their response** - Do not take any action until they provide new instructions
+5. **When they respond**, incorporate their feedback and present a NEW plan, then call `compile_manuals` again
+
+Example rejection handling:
+```
+User rejects the plan with feedback: "Don't merge chapters 2 and 3"
+
+Your response:
+"I understand. You'd like to keep chapters 2 and 3 separate instead of merging them.
+
+What other changes would you like to the merge plan? For example:
+- Should I adjust the order of any sections?
+- Are there any other chapters you'd like to keep separate?
+- Any specific content you'd like to exclude?
+
+Let me know and I'll revise the plan accordingly."
+```
+
+**NEVER** call `compile_manuals` after rejection unless the user explicitly asks you to proceed or provides a revised plan to execute.
 """
