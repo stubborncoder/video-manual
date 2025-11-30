@@ -255,9 +255,9 @@ export function CompilationVersionHistory({ projectId }: CompilationVersionHisto
     setPendingExport(null);
 
     try {
-      const result = await compilations.export(projectId, version, format, language);
+      await compilations.export(projectId, version, format, language);
       toast.success("Export complete", {
-        description: `Exported as ${format.toUpperCase()} (${language})`,
+        description: `Downloaded ${format.toUpperCase()} (${language})`,
       });
     } catch (e) {
       const message = e instanceof Error ? e.message : "Export failed";

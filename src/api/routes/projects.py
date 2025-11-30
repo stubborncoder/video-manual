@@ -780,10 +780,11 @@ async def export_compilation_version(
     request: CompilationExportRequest,
     user_id: CurrentUser,
     storage: ProjectStorageDep,
-) -> ExportResponse:
-    """Export a specific compilation version to PDF, Word, or HTML."""
+):
+    """Export a specific compilation version to PDF, Word, or HTML and download."""
     from ...storage.compilation_version_storage import CompilationVersionStorage
     from ...export.compilation_exporter import export_compilation_markdown
+    from pathlib import Path
 
     project = storage.get_project(project_id)
     if not project:
@@ -826,7 +827,21 @@ async def export_compilation_version(
             user_id=user_id,
         )
 
-        return ExportResponse(output_path=str(output_path), format=format_lower)
+        # Return file for download
+        output_file = Path(output_path)
+        media_types = {
+            "pdf": "application/pdf",
+            "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "word": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "html": "text/html",
+        }
+        media_type = media_types.get(format_lower, "application/octet-stream")
+
+        return FileResponse(
+            path=str(output_file),
+            filename=output_file.name,
+            media_type=media_type,
+        )
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

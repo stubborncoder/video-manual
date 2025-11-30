@@ -461,19 +461,46 @@ export const compilations = {
       { method: "PATCH", body: JSON.stringify({ notes, tags }) }
     ),
 
-  export: (
+  export: async (
     projectId: string,
     version: string,
     format: "pdf" | "word" | "html" = "pdf",
     language = "en"
-  ) =>
-    request<{ output_path: string; format: string }>(
+  ): Promise<void> => {
+    const response = await fetch(
       `/api/projects/${projectId}/compilations/${version}/export`,
       {
         method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ format, language }),
       }
-    ),
+    );
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ detail: `HTTP ${response.status}` }));
+      throw new Error(error.detail || `Export failed: HTTP ${response.status}`);
+    }
+
+    // Get filename from Content-Disposition header or generate one
+    const contentDisposition = response.headers.get("Content-Disposition");
+    let filename = `compilation_v${version}_${language}.${format === "word" ? "docx" : format}`;
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="?([^";\n]+)"?/);
+      if (match) filename = match[1];
+    }
+
+    // Trigger download
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
 };
 
 // Trash
