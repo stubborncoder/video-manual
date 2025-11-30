@@ -765,3 +765,70 @@ async def update_compilation_version(
         raise HTTPException(status_code=404, detail="Version not found")
 
     return {"message": "Version updated", "version": version}
+
+
+class CompilationExportRequest(BaseModel):
+    """Request to export a compilation version."""
+    format: str = "pdf"
+    language: str = "en"
+
+
+@router.post("/{project_id}/compilations/{version}/export")
+async def export_compilation_version(
+    project_id: str,
+    version: str,
+    request: CompilationExportRequest,
+    user_id: CurrentUser,
+    storage: ProjectStorageDep,
+) -> ExportResponse:
+    """Export a specific compilation version to PDF, Word, or HTML."""
+    from ...storage.compilation_version_storage import CompilationVersionStorage
+    from ...export.compilation_exporter import export_compilation_markdown
+
+    project = storage.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    compilation_storage = CompilationVersionStorage(user_id, project_id)
+    version_info = compilation_storage.get_version(version)
+
+    if not version_info:
+        raise HTTPException(status_code=404, detail="Version not found")
+
+    # Check if language exists
+    if request.language not in version_info.get("languages", []):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Language '{request.language}' not available for this version"
+        )
+
+    # Get compilation content
+    content = compilation_storage.get_version_content(version, request.language)
+    if not content:
+        raise HTTPException(status_code=404, detail="Content not found")
+
+    # Get screenshots directory for this version
+    version_dir = compilation_storage.get_version_directory(version)
+    screenshots_dir = version_dir / "screenshots" if version_dir else None
+
+    format_lower = request.format.lower()
+
+    try:
+        output_path = export_compilation_markdown(
+            content=content,
+            format=format_lower,
+            project_name=project["name"],
+            project_id=project_id,
+            version=version,
+            language=request.language,
+            screenshots_dir=screenshots_dir,
+            output_dir=storage.projects_dir / project_id / "exports",
+            user_id=user_id,
+        )
+
+        return ExportResponse(output_path=str(output_path), format=format_lower)
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")

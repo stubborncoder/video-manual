@@ -680,7 +680,7 @@ export default function ProjectsPage() {
                     </TabsTrigger>
                     <TabsTrigger value="versions">
                       <History className="h-4 w-4 mr-2" />
-                      Version History
+                      Compilations
                     </TabsTrigger>
                   </TabsList>
                 </div>

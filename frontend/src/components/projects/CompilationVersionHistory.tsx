@@ -59,6 +59,8 @@ import {
   Calendar,
   GitBranch,
   Layers,
+  Download,
+  ChevronDown,
 } from "lucide-react";
 import { compilations, type CompilationVersionSummary, type CompilationVersionDetail } from "@/lib/api";
 
@@ -90,6 +92,15 @@ export function CompilationVersionHistory({ projectId }: CompilationVersionHisto
   // Delete state
   const [deletingVersion, setDeletingVersion] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // Export state
+  const [exportingVersion, setExportingVersion] = useState<string | null>(null);
+  const [languageDialogOpen, setLanguageDialogOpen] = useState(false);
+  const [pendingExport, setPendingExport] = useState<{
+    version: string;
+    format: "pdf" | "word" | "html";
+    languages: string[];
+  } | null>(null);
 
   useEffect(() => {
     loadVersions();
@@ -218,6 +229,44 @@ export function CompilationVersionHistory({ projectId }: CompilationVersionHisto
     }
   }
 
+  function handleExportClick(version: CompilationVersionSummary, format: "pdf" | "word" | "html") {
+    if (version.languages.length === 0) {
+      toast.error("No content to export", { description: "This compilation has no languages" });
+      return;
+    }
+
+    if (version.languages.length === 1) {
+      // Single language - export directly
+      handleExport(version.version, format, version.languages[0]);
+    } else {
+      // Multiple languages - show dialog
+      setPendingExport({
+        version: version.version,
+        format,
+        languages: version.languages,
+      });
+      setLanguageDialogOpen(true);
+    }
+  }
+
+  async function handleExport(version: string, format: "pdf" | "word" | "html", language: string) {
+    setExportingVersion(version);
+    setLanguageDialogOpen(false);
+    setPendingExport(null);
+
+    try {
+      const result = await compilations.export(projectId, version, format, language);
+      toast.success("Export complete", {
+        description: `Exported as ${format.toUpperCase()} (${language})`,
+      });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Export failed";
+      toast.error("Export failed", { description: message });
+    } finally {
+      setExportingVersion(null);
+    }
+  }
+
   // Transform image URLs in markdown to use the API
   function transformImageUrl(src: string): string {
     if (!viewingVersion) return src;
@@ -263,82 +312,122 @@ export function CompilationVersionHistory({ projectId }: CompilationVersionHisto
             className={version.is_current ? "border-primary/50 bg-primary/5" : ""}
           >
             <CardContent className="p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-mono font-semibold text-lg">
-                      v{version.version}
-                    </span>
-                    {version.is_current && (
-                      <Badge className="bg-primary text-primary-foreground">
-                        <CheckCircle2 className="h-3 w-3 mr-1" />
-                        Current
-                      </Badge>
-                    )}
-                    {version.tags?.map((tag) => (
-                      <Badge key={tag} variant="secondary">
-                        <Tag className="h-3 w-3 mr-1" />
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
+              {/* Version Info */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-mono font-semibold text-lg">
+                  v{version.version}
+                </span>
+                {version.is_current && (
+                  <Badge className="bg-primary text-primary-foreground">
+                    <CheckCircle2 className="h-3 w-3 mr-1" />
+                    Current
+                  </Badge>
+                )}
+                {version.tags?.map((tag) => (
+                  <Badge key={tag} variant="secondary">
+                    <Tag className="h-3 w-3 mr-1" />
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
 
-                  <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      {formatDistanceToNow(new Date(version.created_at), { addSuffix: true })}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Languages className="h-3.5 w-3.5" />
-                      {version.languages.join(", ") || "—"}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <FileText className="h-3.5 w-3.5" />
-                      {version.source_manual_count} source manual{version.source_manual_count !== 1 ? "s" : ""}
-                    </span>
-                  </div>
+              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  {formatDistanceToNow(new Date(version.created_at), { addSuffix: true })}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Languages className="h-3.5 w-3.5" />
+                  {version.languages.join(", ") || "—"}
+                </span>
+                <span className="flex items-center gap-1">
+                  <FileText className="h-3.5 w-3.5" />
+                  {version.source_manual_count} source manual{version.source_manual_count !== 1 ? "s" : ""}
+                </span>
+              </div>
 
-                  {version.notes && (
-                    <p className="text-sm text-muted-foreground mt-2 italic">
-                      "{version.notes}"
-                    </p>
-                  )}
-                </div>
+              {version.notes && (
+                <p className="text-sm text-muted-foreground mt-2 italic">
+                  "{version.notes}"
+                </p>
+              )}
 
+              {/* Action Buttons Row */}
+              <div className="flex items-center gap-2 mt-4 pt-3 border-t">
+                {/* View Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleViewVersion(version)}
+                  disabled={version.languages.length === 0}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  View
+                </Button>
+
+                {/* Tags Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => openEditDialog(version)}
+                >
+                  <Tag className="h-4 w-4 mr-2" />
+                  Tags
+                </Button>
+
+                {/* Export Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={version.languages.length === 0 || exportingVersion === version.version}
+                    >
+                      {exportingVersion === version.version ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4 mr-2" />
+                      )}
+                      Export
+                      <ChevronDown className="h-4 w-4 ml-1" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {version.languages.length > 0 && (
-                      <DropdownMenuItem onClick={() => handleViewVersion(version)}>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Compilation
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem onClick={() => openEditDialog(version)}>
-                      <Edit2 className="h-4 w-4 mr-2" />
-                      Edit Notes/Tags
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem onClick={() => handleExportClick(version, "pdf")}>
+                      PDF Document
                     </DropdownMenuItem>
-                    {!version.is_current && (
-                      <>
-                        <DropdownMenuItem onClick={() => setRestoringVersion(version.version)}>
-                          <RotateCcw className="h-4 w-4 mr-2" />
-                          Restore
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => setDeletingVersion(version.version)}
-                          className="text-destructive focus:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </>
-                    )}
+                    <DropdownMenuItem onClick={() => handleExportClick(version, "word")}>
+                      Word Document (.docx)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExportClick(version, "html")}>
+                      HTML File
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+
+                {/* More Actions Menu (Restore/Delete) */}
+                {!version.is_current && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => setRestoringVersion(version.version)}>
+                        <RotateCcw className="h-4 w-4 mr-2" />
+                        Restore
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setDeletingVersion(version.version)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -734,6 +823,43 @@ export function CompilationVersionHistory({ projectId }: CompilationVersionHisto
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Language Selection Dialog */}
+      <Dialog open={languageDialogOpen} onOpenChange={setLanguageDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Languages className="h-5 w-5" />
+              Select Language
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              This compilation has multiple languages. Select which one to export.
+            </p>
+            {pendingExport && (
+              <div className="space-y-2">
+                {pendingExport.languages.map((lang) => (
+                  <Button
+                    key={lang}
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => handleExport(pendingExport.version, pendingExport.format, lang)}
+                  >
+                    <Languages className="h-4 w-4 mr-2" />
+                    {lang.toUpperCase()}
+                  </Button>
+                ))}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setLanguageDialogOpen(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -460,6 +460,20 @@ export const compilations = {
       `/api/projects/${projectId}/compilations/${version}`,
       { method: "PATCH", body: JSON.stringify({ notes, tags }) }
     ),
+
+  export: (
+    projectId: string,
+    version: string,
+    format: "pdf" | "word" | "html" = "pdf",
+    language = "en"
+  ) =>
+    request<{ output_path: string; format: string }>(
+      `/api/projects/${projectId}/compilations/${version}/export`,
+      {
+        method: "POST",
+        body: JSON.stringify({ format, language }),
+      }
+    ),
 };
 
 // Trash
