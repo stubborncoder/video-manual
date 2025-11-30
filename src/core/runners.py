@@ -471,3 +471,272 @@ class ProjectCompilerRunner:
     def has_pending_interrupt(self) -> bool:
         """Check if there's a pending HITL interrupt."""
         return self._pending_interrupt is not None
+
+
+class ManualEditorRunner:
+    """Runner for manual editor agent that yields progress events for chat."""
+
+    def __init__(self, user_id: str, manual_id: str, language: str = "en"):
+        self.user_id = user_id
+        self.manual_id = manual_id
+        self.language = language
+        self._agent = None
+        self._config = None
+
+    def start(self, document_content: str) -> Iterator[ProgressEvent]:
+        """
+        Start the editor agent session.
+
+        Args:
+            document_content: Current manual content
+
+        Yields:
+            Initial events (ready event)
+        """
+        import uuid
+        from ..agents.manual_editor_agent import get_editor_agent
+        from ..storage.user_storage import UserStorage
+
+        # Create agent with unique session ID
+        self._agent = get_editor_agent()
+        session_id = uuid.uuid4().hex[:8]
+        self._config = {"configurable": {"thread_id": f"editor_{self.manual_id}_{session_id}"}}
+
+        # Store document context for the agent
+        self._document_content = document_content
+
+        yield CompleteEvent(result={"status": "ready"}, message="Editor session started")
+
+    def _offset_to_line_number(self, content: str, offset: int) -> int:
+        """Convert character offset to 1-indexed line number."""
+        if offset <= 0:
+            return 1
+        # Count newlines before the offset
+        text_before = content[:offset]
+        line_number = text_before.count('\n') + 1
+        return line_number
+
+    def send_message(
+        self,
+        message: str,
+        selection: Optional[dict] = None,
+        document_content: Optional[str] = None,
+    ) -> Iterator[ProgressEvent]:
+        """
+        Send a chat message to the editor agent.
+
+        Args:
+            message: User's message/request
+            selection: Optional selected text info with keys:
+                - text: The selected text
+                - startOffset: Start position
+                - endOffset: End position
+                - context: Surrounding context
+            document_content: Current document content (updated)
+
+        Yields:
+            ProgressEvent objects for the response
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+
+        if not self._agent or not self._config:
+            yield ErrorEvent(
+                error_message="No agent session - start() must be called first",
+                recoverable=False,
+            )
+            return
+
+        # Update document content if provided
+        if document_content:
+            self._document_content = document_content
+
+        # Build context message
+        context_parts = []
+
+        # Add document content with line numbers for reference
+        lines = self._document_content.split('\n')
+        numbered_lines = [f"{i+1}: {line}" for i, line in enumerate(lines)]
+        numbered_content = '\n'.join(numbered_lines)
+        context_parts.append(f"## Current Document (with line numbers)\n\n```\n{numbered_content}\n```")
+
+        # Add selection context if present
+        if selection:
+            start_offset = selection.get('startOffset', 0)
+            end_offset = selection.get('endOffset', 0)
+
+            # Calculate line numbers from offsets
+            start_line = self._offset_to_line_number(self._document_content, start_offset)
+            end_line = self._offset_to_line_number(self._document_content, end_offset)
+
+            # Get the actual lines being selected
+            selected_lines = lines[start_line-1:end_line]
+            selected_lines_preview = '\n'.join(f"{start_line+i}: {line}" for i, line in enumerate(selected_lines))
+
+            context_parts.append(f"""## User Selection
+
+**Selected Text**: "{selection.get('text', '')}"
+**Lines {start_line} to {end_line}** (use these line numbers for replace_text or delete_text):
+```
+{selected_lines_preview}
+```""")
+
+        context = "\n\n".join(context_parts)
+
+        # Build the full message
+        full_message = f"""{context}
+
+## User Request
+
+{message}"""
+
+        user_input = {"messages": [{"role": "user", "content": full_message}]}
+
+        yield from self._stream_agent(user_input)
+
+    def _stream_agent(self, stream_input: Any) -> Iterator[ProgressEvent]:
+        """Stream agent execution and yield events."""
+        import logging
+        import json
+        from .events import PendingChangeEvent
+
+        logger = logging.getLogger(__name__)
+
+        # Track emitted change IDs to avoid duplicates
+        emitted_change_ids = set()
+
+        try:
+            is_first_token = True
+
+            for chunk in self._agent.stream(
+                stream_input,
+                config=self._config,
+                stream_mode=["messages", "updates"],
+                subgraphs=True,
+            ):
+                namespace, mode, data = chunk
+                logger.info(f"[EDITOR RUNNER] Chunk: mode={mode}, namespace={namespace}")
+
+                if mode == "messages":
+                    msg, metadata = data
+                    msg_type = getattr(msg, "type", "").lower()
+                    logger.info(f"[EDITOR RUNNER] Message type: {msg_type}")
+
+                    if "ai" in msg_type:
+                        content = getattr(msg, "content", None)
+                        if isinstance(content, str) and content:
+                            yield LLMTokenEvent(
+                                token=content, is_first=is_first_token, is_last=False
+                            )
+                            is_first_token = False
+                        elif isinstance(content, list):
+                            for block in content:
+                                if isinstance(block, dict):
+                                    if block.get("type") == "text":
+                                        text = block.get("text", "")
+                                        if text:
+                                            yield LLMTokenEvent(
+                                                token=text,
+                                                is_first=is_first_token,
+                                                is_last=False,
+                                            )
+                                            is_first_token = False
+                                    elif block.get("type") == "tool_use":
+                                        yield ToolCallEvent(
+                                            tool_name=block.get("name", ""),
+                                            tool_id=block.get("id", ""),
+                                            arguments=block.get("input", {}),
+                                        )
+
+                    # Handle tool result messages - extract pending changes
+                    elif "tool" in msg_type:
+                        content = getattr(msg, "content", None)
+                        tool_name = getattr(msg, "name", "")
+                        logger.info(f"[EDITOR RUNNER] Tool message: name={tool_name}, content_type={type(content)}, content={content}")
+
+                        # Parse tool result to extract pending change
+                        if content and tool_name in (
+                            "replace_text",
+                            "insert_text",
+                            "delete_text",
+                            "update_image_caption",
+                        ):
+                            try:
+                                if isinstance(content, str):
+                                    result = json.loads(content)
+                                elif isinstance(content, dict):
+                                    result = content
+                                else:
+                                    result = {}
+
+                                logger.info(f"[EDITOR RUNNER] Parsed tool result: {result}")
+
+                                if result.get("change_id"):
+                                    change_id = result["change_id"]
+                                    if change_id not in emitted_change_ids:
+                                        emitted_change_ids.add(change_id)
+                                        logger.info(f"[EDITOR RUNNER] Emitting PendingChangeEvent: {change_id}")
+                                        yield PendingChangeEvent(
+                                            change_id=change_id,
+                                            change_type=result.get("type", tool_name),
+                                            change_data=result,
+                                        )
+                                    else:
+                                        logger.debug(f"[EDITOR RUNNER] Skipping duplicate change_id: {change_id}")
+                                else:
+                                    logger.warning(f"[EDITOR RUNNER] No change_id in result: {result}")
+                            except (json.JSONDecodeError, TypeError) as e:
+                                logger.error(f"[EDITOR RUNNER] Failed to parse tool result: {e}")
+
+                elif mode == "updates":
+                    # Handle updates mode - tool results may come through here
+                    logger.info(f"[EDITOR RUNNER] Updates: {data}")
+                    if isinstance(data, dict):
+                        # Check for tool node updates containing results
+                        for node_name, node_data in data.items():
+                            if node_name == "tools" and isinstance(node_data, dict):
+                                messages = node_data.get("messages", [])
+                                for msg in messages:
+                                    tool_name = getattr(msg, "name", "") if hasattr(msg, "name") else ""
+                                    content = getattr(msg, "content", None) if hasattr(msg, "content") else None
+
+                                    logger.info(f"[EDITOR RUNNER] Tool update: name={tool_name}, content={content}")
+
+                                    if content and tool_name in (
+                                        "replace_text",
+                                        "insert_text",
+                                        "delete_text",
+                                        "update_image_caption",
+                                    ):
+                                        try:
+                                            if isinstance(content, str):
+                                                result = json.loads(content)
+                                            elif isinstance(content, dict):
+                                                result = content
+                                            else:
+                                                result = {}
+
+                                            if result.get("change_id"):
+                                                change_id = result["change_id"]
+                                                if change_id not in emitted_change_ids:
+                                                    emitted_change_ids.add(change_id)
+                                                    logger.info(f"[EDITOR RUNNER] Emitting PendingChangeEvent from updates: {change_id}")
+                                                    yield PendingChangeEvent(
+                                                        change_id=change_id,
+                                                        change_type=result.get("type", tool_name),
+                                                        change_data=result,
+                                                    )
+                                                else:
+                                                    logger.debug(f"[EDITOR RUNNER] Skipping duplicate change_id from updates: {change_id}")
+                                        except (json.JSONDecodeError, TypeError) as e:
+                                            logger.error(f"[EDITOR RUNNER] Failed to parse tool update: {e}")
+
+            # Signal end of response
+            if not is_first_token:
+                yield LLMTokenEvent(token="", is_first=False, is_last=True)
+
+            yield CompleteEvent(result={}, message="Response complete")
+
+        except Exception as e:
+            logger.exception(f"[EDITOR RUNNER] Error: {e}")
+            yield ErrorEvent(error_message=str(e), recoverable=False)

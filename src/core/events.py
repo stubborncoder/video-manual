@@ -13,6 +13,7 @@ class EventType(str, Enum):
     LLM_TOKEN = "llm_token"
     TOOL_CALL = "tool_call"
     HITL_REQUIRED = "hitl_required"
+    PENDING_CHANGE = "pending_change"
     ERROR = "error"
     COMPLETE = "complete"
 
@@ -85,6 +86,16 @@ class ErrorEvent(ProgressEvent):
     error_message: str = ""
     node_name: str | None = None
     recoverable: bool = False
+
+
+@dataclass
+class PendingChangeEvent(ProgressEvent):
+    """Emitted when the agent creates a pending document change."""
+
+    event_type: EventType = field(default=EventType.PENDING_CHANGE, init=False)
+    change_id: str = ""
+    change_type: str = ""  # text_replace, text_insert, text_delete, caption_update
+    change_data: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

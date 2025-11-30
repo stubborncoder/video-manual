@@ -42,7 +42,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Filter, Video, AlertCircle, ArrowUpRight } from "lucide-react";
+import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Filter, Video, AlertCircle, ArrowUpRight, Pencil } from "lucide-react";
 import { manuals, manualProject, projects, type ManualSummary, type ManualDetail, type ProjectSummary } from "@/lib/api";
 
 // Extended manual info with additional data
@@ -379,6 +379,15 @@ export default function ManualsPage() {
                     <Eye className="mr-2 h-4 w-4" />
                     View
                   </Button>
+                  <Link href={`/dashboard/manuals/${manual.id}/edit`}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      title="Edit manual"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </Link>
                   <Button
                     size="sm"
                     variant="outline"

@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -119,4 +120,30 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Text selection highlighting for manual editor */
+.prose ::selection,
+.prose *::selection {
+  background-color: #93c5fd !important; /* blue-300 */
+  color: #1e3a5f !important;
+}
+
+.dark .prose ::selection,
+.dark .prose *::selection {
+  background-color: #1e40af !important; /* blue-800 */
+  color: #dbeafe !important; /* blue-100 */
+}
+
+/* Persistent highlight for selected text in editor */
+mark.editor-selection-highlight {
+  background-color: #fde047 !important; /* yellow-300 */
+  color: #422006 !important; /* yellow-950 */
+  padding: 0.125rem 0;
+  border-radius: 0.125rem;
+}
+
+.dark mark.editor-selection-highlight {
+  background-color: #ca8a04 !important; /* yellow-600 */
+  color: #fefce8 !important; /* yellow-50 */
 }

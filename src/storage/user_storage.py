@@ -188,6 +188,33 @@ class UserStorage:
 
         return None
 
+    def save_manual_content(self, manual_id: str, content: str, language_code: str = "en") -> Path:
+        """Save manual content to disk.
+
+        Args:
+            manual_id: ID of the manual
+            content: Markdown content to save
+            language_code: Language code (default: "en")
+
+        Returns:
+            Path to the saved file
+
+        Raises:
+            FileNotFoundError: If manual directory doesn't exist
+        """
+        manual_dir = self.manuals_dir / manual_id
+        if not manual_dir.exists():
+            raise FileNotFoundError(f"Manual directory not found: {manual_id}")
+
+        # Use language-specific path (new structure)
+        lang_dir = manual_dir / language_code
+        lang_dir.mkdir(parents=True, exist_ok=True)
+
+        manual_path = lang_dir / "manual.md"
+        manual_path.write_text(content, encoding="utf-8")
+
+        return manual_path
+
     def list_screenshots(self, manual_id: str) -> List[Path]:
         """List all screenshots for a manual.
 

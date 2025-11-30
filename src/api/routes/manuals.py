@@ -10,12 +10,19 @@ from pydantic import BaseModel
 
 from ..schemas import ManualSummary, ManualDetail, ManualListResponse, SourceVideoInfo
 from ..dependencies import CurrentUser, UserStorageDep, ProjectStorageDep, TrashStorageDep
+from ...storage.version_storage import VersionStorage
 
 
 class ManualProjectAssignment(BaseModel):
     """Request to assign manual to a project."""
     project_id: str
     chapter_id: Optional[str] = None
+
+
+class ManualContentUpdate(BaseModel):
+    """Request to update manual content."""
+    content: str
+    language: str = "en"
 
 router = APIRouter(prefix="/manuals", tags=["manuals"])
 
@@ -108,6 +115,45 @@ async def get_manual_languages(
         raise HTTPException(status_code=404, detail="Manual not found")
 
     return {"manual_id": manual_id, "languages": languages}
+
+
+@router.put("/{manual_id}/content")
+async def update_manual_content(
+    manual_id: str,
+    update: ManualContentUpdate,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+) -> dict:
+    """Update manual content.
+
+    This creates a version snapshot of the current content before saving,
+    so the previous state can be restored if needed.
+    """
+    manual_dir = storage.manuals_dir / manual_id
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    try:
+        # Create a version snapshot before saving (preserves current state)
+        version_storage = VersionStorage(user_id, manual_id)
+        version_storage.auto_patch_before_overwrite(notes="Before manual save")
+
+        # Save the new content
+        saved_path = storage.save_manual_content(
+            manual_id=manual_id,
+            content=update.content,
+            language_code=update.language,
+        )
+
+        return {
+            "status": "saved",
+            "manual_id": manual_id,
+            "language": update.language,
+            "path": str(saved_path),
+            "version": version_storage.get_current_version(),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save: {str(e)}")
 
 
 @router.get("/{manual_id}/screenshots/{filename}")
@@ -274,3 +320,131 @@ async def remove_manual_tag(
     """Remove a tag from a manual."""
     project_storage.remove_tag_from_manual(manual_id, tag)
     return {"manual_id": manual_id, "removed_tag": tag}
+
+
+# ==================== Version History ====================
+
+
+@router.get("/{manual_id}/versions")
+async def list_manual_versions(
+    manual_id: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+) -> dict:
+    """List all versions for a manual."""
+    manual_dir = storage.manuals_dir / manual_id
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    version_storage = VersionStorage(user_id, manual_id)
+    versions = version_storage.list_versions()
+
+    return {
+        "manual_id": manual_id,
+        "current_version": version_storage.get_current_version(),
+        "versions": versions,
+    }
+
+
+@router.get("/{manual_id}/versions/{version}/content")
+async def get_version_content(
+    manual_id: str,
+    version: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+    language: str = "en",
+) -> dict:
+    """Get manual content for a specific version."""
+    manual_dir = storage.manuals_dir / manual_id
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    version_storage = VersionStorage(user_id, manual_id)
+    content = version_storage._get_version_content(version, language)
+
+    if content is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Version {version} not found or no content for language {language}"
+        )
+
+    return {
+        "manual_id": manual_id,
+        "version": version,
+        "language": language,
+        "content": content,
+    }
+
+
+@router.post("/{manual_id}/versions/{version}/restore")
+async def restore_manual_version(
+    manual_id: str,
+    version: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+    language: str = "en",
+) -> dict:
+    """Restore a manual to a previous version.
+
+    This creates an auto-patch of the current state before restoring.
+    """
+    manual_dir = storage.manuals_dir / manual_id
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    version_storage = VersionStorage(user_id, manual_id)
+
+    # Check if version exists
+    version_info = version_storage.get_version(version)
+    if version_info is None:
+        raise HTTPException(status_code=404, detail=f"Version {version} not found")
+
+    if version_info.get("is_current"):
+        raise HTTPException(status_code=400, detail="Cannot restore current version")
+
+    # Restore the version
+    success = version_storage.restore_version(version, language)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to restore version")
+
+    return {
+        "manual_id": manual_id,
+        "restored_version": version,
+        "language": language,
+        "new_current_version": version_storage.get_current_version(),
+    }
+
+
+@router.post("/{manual_id}/versions/snapshot")
+async def create_version_snapshot(
+    manual_id: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+    notes: str = "",
+    bump_type: str = "minor",
+) -> dict:
+    """Create a manual version snapshot.
+
+    Args:
+        bump_type: "minor" or "major" version bump
+        notes: Optional notes about this version
+    """
+    manual_dir = storage.manuals_dir / manual_id
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    if bump_type not in ("minor", "major"):
+        raise HTTPException(status_code=400, detail="bump_type must be 'minor' or 'major'")
+
+    version_storage = VersionStorage(user_id, manual_id)
+
+    try:
+        new_version = version_storage.bump_version(bump_type, notes)
+        return {
+            "manual_id": manual_id,
+            "new_version": new_version,
+            "bump_type": bump_type,
+            "notes": notes,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create snapshot: {str(e)}")

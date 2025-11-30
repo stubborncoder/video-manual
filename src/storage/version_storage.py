@@ -142,11 +142,14 @@ class VersionStorage:
 
         return snapshot_dir
 
-    def auto_patch_before_overwrite(self) -> Optional[str]:
+    def auto_patch_before_overwrite(self, notes: str = "Auto-save before changes") -> Optional[str]:
         """Create automatic patch version before content is overwritten.
 
-        This should be called by manual_generator before regenerating a manual.
+        This should be called before regenerating a manual or saving user edits.
         Only creates a snapshot if content already exists.
+
+        Args:
+            notes: Optional notes describing why this snapshot was created
 
         Returns:
             New patch version string if snapshot was created, None otherwise
@@ -166,7 +169,7 @@ class VersionStorage:
         current_version = self.get_current_version()
 
         # Create snapshot of current state
-        self._create_snapshot(current_version, notes="Auto-save before regeneration")
+        self._create_snapshot(current_version, notes=notes)
 
         # Bump to next patch version
         new_version = self._bump_version_number(current_version, "patch")
@@ -180,7 +183,7 @@ class VersionStorage:
             "version": current_version,
             "created_at": datetime.now().isoformat(),
             "snapshot_dir": f"versions/v{current_version}",
-            "notes": "Auto-save before regeneration",
+            "notes": notes,
         })
 
         version_info["number"] = new_version

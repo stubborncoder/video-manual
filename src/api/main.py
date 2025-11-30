@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .routes import auth_router, videos_router, manuals_router, projects_router, trash_router, compile_stream_router
-from .websockets import process_video_router, compile_project_router
+from .websockets import process_video_router, compile_project_router, editor_copilot_router
 from ..config import ensure_directories
 
 
@@ -61,6 +61,7 @@ def create_app(
     # WebSocket routes
     app.include_router(process_video_router, prefix="/api")
     app.include_router(compile_project_router, prefix="/api")
+    app.include_router(editor_copilot_router, prefix="/api")
 
     @app.get("/")
     async def root():
