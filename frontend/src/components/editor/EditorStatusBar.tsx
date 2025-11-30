@@ -30,6 +30,7 @@ interface EditorStatusBarProps {
   lastSavedAt: Date | null;
   isSaving: boolean;
   hasUnsavedChanges: boolean;
+  hasImageChanges?: boolean;
   unsavedChangesCount: number;
   onSave: () => void;
 
@@ -68,11 +69,14 @@ export function EditorStatusBar({
   lastSavedAt,
   isSaving,
   hasUnsavedChanges,
+  hasImageChanges = false,
   unsavedChangesCount,
   onSave,
   onOpenVersionHistory,
   lastError,
 }: EditorStatusBarProps) {
+  // Combined unsaved state
+  const hasAnyChanges = hasUnsavedChanges || hasImageChanges;
   // Update time display every 10 seconds
   const [, setTick] = useState(0);
 
@@ -155,18 +159,20 @@ export function EditorStatusBar({
             </div>
           ) : (
             <div className="flex items-center gap-1.5">
-              {lastSavedAt && !hasUnsavedChanges && (
+              {lastSavedAt && !hasAnyChanges && (
                 <Check className="h-4 w-4 text-green-500" />
               )}
               <span>{formatTimeSince(lastSavedAt)}</span>
             </div>
           )}
 
-          {hasUnsavedChanges && unsavedChangesCount > 0 && (
+          {hasAnyChanges && (
             <>
               <div className="h-4 w-px bg-border" />
               <Badge variant="secondary" className="text-xs">
-                {unsavedChangesCount} unsaved change{unsavedChangesCount !== 1 ? "s" : ""}
+                {hasImageChanges && unsavedChangesCount === 0
+                  ? "Image changes"
+                  : `${unsavedChangesCount} unsaved change${unsavedChangesCount !== 1 ? "s" : ""}${hasImageChanges ? " + images" : ""}`}
               </Badge>
             </>
           )}
@@ -179,7 +185,7 @@ export function EditorStatusBar({
               <Button
                 size="sm"
                 onClick={onSave}
-                disabled={!hasUnsavedChanges || isSaving}
+                disabled={!hasAnyChanges || isSaving}
                 className="h-7"
               >
                 {isSaving ? (

@@ -4,13 +4,18 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+import json
+import tempfile
+import shutil
+
+from fastapi import APIRouter, HTTPException, File, UploadFile, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from ..schemas import ManualSummary, ManualDetail, ManualListResponse, SourceVideoInfo
 from ..dependencies import CurrentUser, UserStorageDep, ProjectStorageDep, TrashStorageDep
 from ...storage.version_storage import VersionStorage
+from ...storage.screenshot_store import ScreenshotStore
 
 
 class ManualProjectAssignment(BaseModel):
@@ -95,11 +100,25 @@ async def get_manual(
 
     screenshots = storage.list_screenshots(manual_id)
 
+    # Get source video info from metadata
+    source_video = None
+    metadata = storage.get_manual_metadata(manual_id)
+    if metadata:
+        video_path = metadata.get("video_path", "")
+        if video_path:
+            video_name = Path(video_path).name
+            video_exists = (storage.videos_dir / video_name).exists()
+            source_video = SourceVideoInfo(
+                name=video_name,
+                exists=video_exists,
+            )
+
     return ManualDetail(
         id=manual_id,
         content=content,
         language=language,
         screenshots=[str(s) for s in screenshots],
+        source_video=source_video,
     )
 
 
@@ -170,6 +189,225 @@ async def get_screenshot(
         raise HTTPException(status_code=404, detail="Screenshot not found")
 
     return FileResponse(screenshot_path)
+
+
+@router.post("/{manual_id}/screenshots/{filename}/replace")
+async def replace_screenshot(
+    manual_id: str,
+    filename: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+    file: UploadFile = File(...),
+):
+    """Replace a screenshot with an uploaded image."""
+    from PIL import Image
+    import io
+
+    screenshot_dir = storage.manuals_dir / manual_id / "screenshots"
+    screenshot_path = screenshot_dir / filename
+
+    if not screenshot_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    # Validate it's an image
+    content_type = file.content_type or ""
+    if not content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="File must be an image")
+
+    try:
+        # Create version snapshot before replacing (includes screenshots)
+        version_storage = VersionStorage(user_id, manual_id)
+        new_version = version_storage.auto_patch_before_overwrite(
+            notes=f"Before replacing screenshot: {filename}"
+        )
+
+        # Read and validate the image
+        contents = await file.read()
+        image = Image.open(io.BytesIO(contents))
+
+        # Convert to RGB if needed (for PNG with transparency -> save as PNG)
+        if image.mode in ("RGBA", "P"):
+            # Keep as PNG
+            save_format = "PNG"
+        else:
+            # Convert to RGB for JPEG compatibility
+            image = image.convert("RGB")
+            save_format = "PNG"  # Still save as PNG for consistency
+
+        # Save the image, replacing the old one
+        image.save(screenshot_path, format=save_format, optimize=True)
+
+        return {
+            "success": True,
+            "filename": filename,
+            "url": f"/api/manuals/{manual_id}/screenshots/{filename}",
+            "version": new_version or version_storage.get_current_version(),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save image: {str(e)}")
+
+
+@router.delete("/{manual_id}/screenshots/{filename}")
+async def delete_screenshot(
+    manual_id: str,
+    filename: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+):
+    """Delete a screenshot file."""
+    screenshot_path = storage.manuals_dir / manual_id / "screenshots" / filename
+
+    if not screenshot_path.exists():
+        raise HTTPException(status_code=404, detail="Screenshot not found")
+
+    try:
+        screenshot_path.unlink()
+        return {"success": True, "filename": filename}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete: {str(e)}")
+
+
+@router.get("/{manual_id}/frames")
+async def extract_frames(
+    manual_id: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+    timestamp: float = Query(..., description="Center timestamp in seconds"),
+    window: float = Query(5.0, description="Window size in seconds (before/after)"),
+    count: int = Query(10, description="Number of frames to extract"),
+):
+    """Extract frames from source video around a timestamp.
+
+    Returns URLs to temporary frame images that can be used for screenshot replacement.
+    """
+    from ...agents.video_manual_agent.tools.video_tools import extract_screenshot_at_timestamp
+
+    # Get manual metadata to find source video
+    metadata = storage.get_manual_metadata(manual_id)
+    if not metadata:
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    # Get source video path from metadata (stored as full path)
+    video_path_str = metadata.get("video_path", "")
+    if not video_path_str:
+        raise HTTPException(status_code=400, detail="No source video associated with this manual")
+
+    video_name = Path(video_path_str).name
+    video_path = storage.videos_dir / video_name
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail="Source video not found")
+
+    # Create temp directory for frames
+    frames_dir = Path(tempfile.gettempdir()) / "manual_frames" / manual_id
+    frames_dir.mkdir(parents=True, exist_ok=True)
+
+    # Clean old frames (older than 1 hour)
+    import time
+    current_time = time.time()
+    for old_file in frames_dir.glob("*.jpg"):
+        if current_time - old_file.stat().st_mtime > 3600:
+            old_file.unlink()
+
+    # Calculate timestamps to extract
+    start_time = max(0, timestamp - window)
+    end_time = timestamp + window
+    step = (end_time - start_time) / (count - 1) if count > 1 else window
+
+    frames = []
+    for i in range(count):
+        frame_timestamp = start_time + (i * step)
+        frame_filename = f"frame_{int(frame_timestamp * 1000):08d}.jpg"
+        frame_path = frames_dir / frame_filename
+
+        try:
+            # Extract frame if not already cached (small thumbnails, video used for full preview)
+            if not frame_path.exists():
+                extract_screenshot_at_timestamp(
+                    video_path=str(video_path),
+                    timestamp_seconds=frame_timestamp,
+                    output_path=str(frame_path),
+                    max_width=320,  # Small thumbnails for frame strip
+                )
+
+            frames.append({
+                "timestamp": round(frame_timestamp, 2),
+                "url": f"/api/manuals/{manual_id}/frames/{frame_filename}",
+            })
+        except Exception as e:
+            # Skip frames that fail to extract
+            print(f"Failed to extract frame at {frame_timestamp}s: {e}")
+            continue
+
+    return {"frames": frames, "video_duration": metadata.get("video_duration", 0)}
+
+
+@router.get("/{manual_id}/frames/{filename}")
+async def get_frame(
+    manual_id: str,
+    filename: str,
+    user_id: CurrentUser,
+):
+    """Get a temporary frame image."""
+    frames_dir = Path(tempfile.gettempdir()) / "manual_frames" / manual_id
+    frame_path = frames_dir / filename
+
+    if not frame_path.exists():
+        raise HTTPException(status_code=404, detail="Frame not found")
+
+    return FileResponse(frame_path, media_type="image/jpeg")
+
+
+@router.post("/{manual_id}/screenshots/{filename}/from-frame")
+async def replace_screenshot_from_frame(
+    manual_id: str,
+    filename: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+    timestamp: float = Query(..., description="Timestamp of frame to use"),
+):
+    """Replace a screenshot with a frame extracted from the source video."""
+    from ...agents.video_manual_agent.tools.video_tools import extract_screenshot_at_timestamp
+
+    # Get manual metadata to find source video
+    metadata = storage.get_manual_metadata(manual_id)
+    if not metadata:
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    # Get source video path from metadata (stored as full path)
+    video_path_str = metadata.get("video_path", "")
+    if not video_path_str:
+        raise HTTPException(status_code=400, detail="No source video associated with this manual")
+
+    video_name = Path(video_path_str).name
+    video_path = storage.videos_dir / video_name
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail="Source video not found")
+
+    screenshot_path = storage.manuals_dir / manual_id / "screenshots" / filename
+
+    try:
+        # Create version snapshot before replacing (includes screenshots)
+        version_storage = VersionStorage(user_id, manual_id)
+        new_version = version_storage.auto_patch_before_overwrite(
+            notes=f"Before replacing screenshot from video frame: {filename} at {timestamp:.2f}s"
+        )
+
+        # Extract the frame at high resolution and save to screenshot path
+        extract_screenshot_at_timestamp(
+            video_path=str(video_path),
+            timestamp_seconds=timestamp,
+            output_path=str(screenshot_path),
+        )
+
+        return {
+            "success": True,
+            "filename": filename,
+            "timestamp": timestamp,
+            "url": f"/api/manuals/{manual_id}/screenshots/{filename}",
+            "version": new_version or version_storage.get_current_version(),
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to extract frame: {str(e)}")
 
 
 @router.delete("/{manual_id}")
@@ -374,6 +612,58 @@ async def get_version_content(
         "language": language,
         "content": content,
     }
+
+
+@router.get("/{manual_id}/versions/{version}/screenshots/{filename}")
+async def get_version_screenshot(
+    manual_id: str,
+    version: str,
+    filename: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+):
+    """Get a screenshot from a specific version.
+
+    Supports both new hash-based storage (screenshots.json) and
+    old full-copy storage (screenshots/ directory) for backward compatibility.
+    """
+    version_dir = storage.manuals_dir / manual_id / "versions" / f"v{version}"
+
+    if not version_dir.exists():
+        raise HTTPException(status_code=404, detail=f"Version {version} not found")
+
+    # Check for new hash-based mapping first
+    mapping_path = version_dir / "screenshots.json"
+    if mapping_path.exists():
+        try:
+            with open(mapping_path, "r", encoding="utf-8") as f:
+                mapping = json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            raise HTTPException(status_code=500, detail=f"Failed to read screenshot mapping: {e}")
+
+        if filename not in mapping:
+            raise HTTPException(status_code=404, detail="Screenshot not found in version")
+
+        file_meta = mapping[filename]
+        content_hash = file_meta.get("hash")
+        if not content_hash:
+            raise HTTPException(status_code=500, detail="Invalid screenshot mapping")
+
+        # Get from content-addressable store
+        store = ScreenshotStore(storage.manuals_dir / manual_id)
+        store_path = store.get_store_path(content_hash)
+
+        if not store_path.exists():
+            raise HTTPException(status_code=404, detail="Screenshot file not found in store")
+
+        return FileResponse(store_path)
+
+    # Fallback: old full-copy format
+    screenshot_path = version_dir / "screenshots" / filename
+    if screenshot_path.exists():
+        return FileResponse(screenshot_path)
+
+    raise HTTPException(status_code=404, detail="Screenshot not found")
 
 
 @router.post("/{manual_id}/versions/{version}/restore")

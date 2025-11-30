@@ -54,6 +54,7 @@ class ManualDetail(BaseModel):
     content: str
     language: str
     screenshots: list[str] = []
+    source_video: Optional[SourceVideoInfo] = None
 
 
 class ManualListResponse(BaseModel):

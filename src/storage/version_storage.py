@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any
 
 from ..config import USERS_DIR
+from .screenshot_store import ScreenshotStore
 
 
 class VersionStorage:
@@ -117,13 +118,16 @@ class VersionStorage:
                     dest_dir.mkdir(exist_ok=True)
                     shutil.copy2(manual_file, dest_dir / "manual.md")
 
-        # Copy screenshots only if they might change
-        # (for now, always copy to ensure complete snapshot)
+        # Use content-addressable storage for screenshots (deduplication)
         screenshots_dir = self.manual_dir / "screenshots"
-        if screenshots_dir.exists():
-            dest_screenshots = snapshot_dir / "screenshots"
-            if not dest_screenshots.exists():
-                shutil.copytree(screenshots_dir, dest_screenshots)
+        if screenshots_dir.exists() and any(screenshots_dir.iterdir()):
+            store = ScreenshotStore(self.manual_dir)
+            mapping = store.create_snapshot_mapping(screenshots_dir)
+
+            # Save mapping instead of copying files
+            mapping_path = snapshot_dir / "screenshots.json"
+            with open(mapping_path, "w", encoding="utf-8") as f:
+                json.dump(mapping, f, indent=2, ensure_ascii=False)
 
         # Save snapshot metadata
         metadata = self._load_metadata()
@@ -304,13 +308,29 @@ class VersionStorage:
             if source_manual.exists():
                 shutil.copy2(source_manual, dest_lang_dir / "manual.md")
 
-        # Optionally restore screenshots if they exist in snapshot
-        source_screenshots = snapshot_dir / "screenshots"
-        if source_screenshots.exists():
-            dest_screenshots = self.manual_dir / "screenshots"
+        # Restore screenshots - check for new hash-based format first
+        dest_screenshots = self.manual_dir / "screenshots"
+        mapping_path = snapshot_dir / "screenshots.json"
+
+        if mapping_path.exists():
+            # New format: restore from content-addressable store
+            with open(mapping_path, "r", encoding="utf-8") as f:
+                mapping = json.load(f)
+
+            store = ScreenshotStore(self.manual_dir)
+
+            # Clear existing screenshots
             if dest_screenshots.exists():
                 shutil.rmtree(dest_screenshots)
-            shutil.copytree(source_screenshots, dest_screenshots)
+
+            store.restore_from_mapping(mapping, dest_screenshots)
+        else:
+            # Old format: copy from screenshots directory (backward compatibility)
+            source_screenshots = snapshot_dir / "screenshots"
+            if source_screenshots.exists():
+                if dest_screenshots.exists():
+                    shutil.rmtree(dest_screenshots)
+                shutil.copytree(source_screenshots, dest_screenshots)
 
         return True
 

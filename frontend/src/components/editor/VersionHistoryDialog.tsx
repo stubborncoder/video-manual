@@ -273,7 +273,11 @@ export function VersionHistoryDialog({
                             // Convert relative screenshot paths to API URLs
                             const srcStr = typeof src === "string" ? src : "";
                             const filename = srcStr.split("/").pop() || srcStr;
-                            const apiUrl = `/api/manuals/${manualId}/screenshots/${filename}`;
+                            // Use version-specific endpoint for historical versions
+                            const isCurrentVersion = versions.find(v => v.version === previewVersion)?.is_current;
+                            const apiUrl = isCurrentVersion
+                              ? `/api/manuals/${manualId}/screenshots/${filename}`
+                              : `/api/manuals/${manualId}/versions/${previewVersion}/screenshots/${filename}`;
                             return (
                               <span className="block my-4">
                                 <img

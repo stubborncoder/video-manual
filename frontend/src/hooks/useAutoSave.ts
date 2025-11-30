@@ -61,13 +61,14 @@ export function useAutoSave(
 
   /**
    * Perform a save operation
+   * @param force - If true, save even if content hasn't changed (e.g., for image-only changes)
    * Returns { success: true } on success, or { success: false, error: Error } on failure
    */
-  const saveNow = useCallback(async (): Promise<{ success: boolean; error?: Error }> => {
+  const saveNow = useCallback(async (force?: boolean): Promise<{ success: boolean; error?: Error }> => {
     const currentContent = contentRef.current;
 
-    // Don't save if content hasn't changed
-    if (currentContent === lastSavedContentRef.current) {
+    // Don't save if content hasn't changed (unless forced)
+    if (!force && currentContent === lastSavedContentRef.current) {
       return { success: true };
     }
 

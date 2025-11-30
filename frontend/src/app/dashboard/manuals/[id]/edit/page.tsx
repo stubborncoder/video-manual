@@ -52,6 +52,17 @@ import { CopilotPanel } from "@/components/editor/CopilotPanel";
 import { PendingChangesOverlay } from "@/components/editor/PendingChangesOverlay";
 import { SelectionHighlightOverlay } from "@/components/editor/SelectionHighlightOverlay";
 import { LineNumberedTextarea } from "@/components/editor/LineNumberedTextarea";
+import { ImageLightbox } from "@/components/editor/ImageLightbox";
+import { VideoDrawer } from "@/components/editor/VideoDrawer";
+
+// Active image state for lightbox
+interface ActiveImageState {
+  url: string;
+  name: string;
+  caption: string;
+  timestamp?: number;
+  markdownRef: string; // Original markdown reference e.g., "![caption](filename.png)"
+}
 
 export default function ManualEditorPage() {
   const params = useParams();
@@ -73,6 +84,18 @@ export default function ManualEditorPage() {
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showLineNumbers, setShowLineNumbers] = useState(false);
+
+  // Image lightbox state
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [activeImage, setActiveImage] = useState<ActiveImageState | null>(null);
+  const [videoDrawerOpen, setVideoDrawerOpen] = useState(false);
+  const [selectedFrameTimestamp, setSelectedFrameTimestamp] = useState(0);
+
+  // Cache buster for images - incremented when images are replaced
+  const [imageCacheBuster, setImageCacheBuster] = useState(Date.now());
+
+  // Track if images have been changed (for save button state)
+  const [hasImageChanges, setHasImageChanges] = useState(false);
 
   // Refs for document preview
   const previewRef = useRef<HTMLDivElement>(null);          // Inner content for text selection
@@ -215,17 +238,28 @@ export default function ManualEditorPage() {
 
   // Manual save handler
   const handleSave = useCallback(async () => {
-    if (!hasUnsavedChanges || isSaving) return;
+    // Allow save if there are content changes OR image changes
+    if ((!hasUnsavedChanges && !hasImageChanges) || isSaving) return;
 
+    // If only image changes (no content changes), we don't need to call save API
+    // because the image replacement endpoint already created the version snapshot
+    if (hasImageChanges && !hasUnsavedChanges) {
+      setHasImageChanges(false);
+      toast.success("Changes saved");
+      return;
+    }
+
+    // Save content changes
     const result = await saveNow();
     if (result.success) {
+      setHasImageChanges(false); // Reset image changes flag
       toast.success("Manual saved");
     } else {
       toast.error("Save failed", {
         description: result.error?.message || "An unknown error occurred"
       });
     }
-  }, [hasUnsavedChanges, isSaving, saveNow]);
+  }, [hasUnsavedChanges, hasImageChanges, isSaving, saveNow]);
 
   // Handle undo with toast
   const handleUndo = useCallback(() => {
@@ -332,6 +366,159 @@ export default function ManualEditorPage() {
       sendMessage(content, sel);
     },
     [sendMessage]
+  );
+
+  // Handle image click - open lightbox
+  const handleImageClick = useCallback(
+    (imageUrl: string, imageName: string, caption: string) => {
+      // Build the markdown reference for this image
+      const markdownRef = `![${caption}](${imageName})`;
+
+      // Extract timestamp from filename (e.g., "figure_01_t8s.png" -> 8)
+      const timestampMatch = imageName.match(/_t(\d+)s\./);
+      const timestamp = timestampMatch ? parseInt(timestampMatch[1], 10) : undefined;
+      console.log("[ImageClick] name:", imageName, "timestampMatch:", timestampMatch, "timestamp:", timestamp);
+
+      setActiveImage({
+        url: imageUrl,
+        name: imageName,
+        caption: caption || "",
+        timestamp,
+        markdownRef,
+      });
+      setLightboxOpen(true);
+    },
+    []
+  );
+
+  // Handle caption change from lightbox
+  const handleCaptionChange = useCallback(
+    (newCaption: string) => {
+      if (!activeImage) return;
+
+      // Find and replace the markdown image reference with the new caption
+      const oldMarkdownPattern = new RegExp(
+        `!\\[([^\\]]*)\\]\\(${activeImage.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`,
+        'g'
+      );
+      const newMarkdownRef = `![${newCaption}](${activeImage.name})`;
+
+      const newContent = currentContentRef.current.replace(oldMarkdownPattern, newMarkdownRef);
+
+      if (newContent !== currentContentRef.current) {
+        recordChange(newContent, `Update caption: "${newCaption}"`);
+        setActiveImage((prev) => prev ? { ...prev, caption: newCaption, markdownRef: newMarkdownRef } : null);
+        toast.success("Caption updated");
+      }
+    },
+    [activeImage, recordChange]
+  );
+
+  // Handle image replacement (from video or upload)
+  const handleImageReplace = useCallback(
+    async (source: "video" | "upload", data: { timestamp?: number; file?: File }) => {
+      if (!activeImage) return;
+
+      try {
+        if (source === "upload" && data.file) {
+          // Upload the file to replace the screenshot
+          const formData = new FormData();
+          formData.append("file", data.file);
+
+          const response = await fetch(`/api/manuals/${manualId}/screenshots/${activeImage.name}/replace`, {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to upload image");
+          }
+
+          // Force refresh all images by updating cache buster
+          const newCacheBuster = Date.now();
+          setImageCacheBuster(newCacheBuster);
+          setActiveImage((prev) => prev ? { ...prev, url: `${activeImage.url.split('?')[0]}?t=${newCacheBuster}` } : null);
+          setHasImageChanges(true);
+          toast.success("Image replaced");
+        } else if (source === "video" && data.timestamp !== undefined) {
+          // Replace with frame from video
+          const response = await fetch(
+            `/api/manuals/${manualId}/screenshots/${activeImage.name}/from-frame?timestamp=${data.timestamp}`,
+            { method: "POST" }
+          );
+
+          if (!response.ok) {
+            throw new Error("Failed to extract frame");
+          }
+
+          // Force refresh all images by updating cache buster
+          const newCacheBuster = Date.now();
+          setImageCacheBuster(newCacheBuster);
+          setActiveImage((prev) => prev ? { ...prev, url: `${activeImage.url.split('?')[0]}?t=${newCacheBuster}` } : null);
+          setHasImageChanges(true);
+          toast.success("Image replaced from video frame");
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to replace image";
+        toast.error("Replace failed", { description: message });
+      }
+    },
+    [activeImage, manualId]
+  );
+
+  // Handle image deletion
+  const handleImageDelete = useCallback(() => {
+    if (!activeImage) return;
+
+    // Find and remove the markdown image reference
+    const imagePattern = new RegExp(
+      `!\\[([^\\]]*)\\]\\(${activeImage.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)\\n?`,
+      'g'
+    );
+
+    const newContent = currentContentRef.current.replace(imagePattern, '');
+
+    if (newContent !== currentContentRef.current) {
+      recordChange(newContent, `Delete image: ${activeImage.name}`);
+      toast.success("Image deleted");
+    }
+
+    // Close lightbox
+    setLightboxOpen(false);
+    setActiveImage(null);
+
+    // TODO: Also delete the file from the server
+    // fetch(`/api/manuals/${manualId}/screenshots/${activeImage.name}`, { method: "DELETE" });
+  }, [activeImage, recordChange]);
+
+  // Handle opening video drawer for frame selection
+  const handleOpenVideoDrawer = useCallback(() => {
+    if (!manual?.source_video?.exists) {
+      toast.error("Source video not available");
+      return;
+    }
+    setSelectedFrameTimestamp(activeImage?.timestamp || 0);
+    // Keep lightbox open, video drawer will appear on top
+    setVideoDrawerOpen(true);
+  }, [manual?.source_video, activeImage?.timestamp]);
+
+  // Handle frame selection in video drawer
+  const handleFrameSelect = useCallback((timestamp: number) => {
+    setSelectedFrameTimestamp(timestamp);
+  }, []);
+
+  // Handle confirming frame selection from video drawer
+  const handleConfirmFrame = useCallback(
+    async (timestamp: number) => {
+      if (!activeImage) return;
+
+      // Use the video frame replacement
+      await handleImageReplace("video", { timestamp });
+
+      // Close the video drawer
+      setVideoDrawerOpen(false);
+    },
+    [activeImage, handleImageReplace]
   );
 
   // Calculate total lines for overlay positioning
@@ -483,7 +670,7 @@ export default function ManualEditorPage() {
                       img: ({ src, alt }) => {
                         const srcStr = typeof src === "string" ? src : "";
                         const filename = srcStr.split("/").pop() || srcStr;
-                        const apiUrl = `/api/manuals/${manualId}/screenshots/${filename}`;
+                        const apiUrl = `/api/manuals/${manualId}/screenshots/${filename}?t=${imageCacheBuster}`;
                         return (
                           <span className="block my-6">
                             <img
@@ -491,6 +678,11 @@ export default function ManualEditorPage() {
                               alt={alt || "Screenshot"}
                               className="rounded-lg border shadow-sm w-full cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
                               title="Click to edit this screenshot"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleImageClick(apiUrl, filename, alt || "");
+                              }}
                             />
                             {alt && (
                               <span className="block text-center text-sm text-muted-foreground mt-2">
@@ -530,6 +722,7 @@ export default function ManualEditorPage() {
               lastSavedAt={lastSavedAt}
               isSaving={isSaving}
               hasUnsavedChanges={hasUnsavedChanges}
+              hasImageChanges={hasImageChanges}
               unsavedChangesCount={unsavedChangesCount}
               onSave={handleSave}
               onOpenVersionHistory={() => setShowVersionHistory(true)}
@@ -588,6 +781,37 @@ export default function ManualEditorPage() {
         language={language}
         onRestored={handleVersionRestored}
       />
+
+      {/* Image Lightbox */}
+      {activeImage && (
+        <ImageLightbox
+          open={lightboxOpen}
+          onOpenChange={setLightboxOpen}
+          imageUrl={activeImage.url}
+          imageName={activeImage.name}
+          caption={activeImage.caption}
+          manualId={manualId}
+          videoUrl={manual?.source_video?.exists ? `/api/videos/${manual.source_video.name}/stream` : undefined}
+          originalTimestamp={activeImage.timestamp}
+          onCaptionChange={handleCaptionChange}
+          onReplace={handleImageReplace}
+          onDelete={handleImageDelete}
+          onOpenVideoDrawer={handleOpenVideoDrawer}
+        />
+      )}
+
+      {/* Video Drawer for frame selection */}
+      {manual?.source_video?.exists && (
+        <VideoDrawer
+          open={videoDrawerOpen}
+          onOpenChange={setVideoDrawerOpen}
+          videoUrl={`/api/videos/${manual.source_video.name}/stream`}
+          currentTimestamp={selectedFrameTimestamp}
+          manualId={manualId}
+          onFrameSelect={handleFrameSelect}
+          onConfirmFrame={handleConfirmFrame}
+        />
+      )}
     </div>
   );
 }
