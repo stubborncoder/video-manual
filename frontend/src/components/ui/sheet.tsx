@@ -6,6 +6,27 @@ import { XIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+// Context to get sidebar collapsed state
+const SidebarCollapsedContext = React.createContext<boolean>(true);
+
+export function SheetSidebarProvider({
+  collapsed,
+  children
+}: {
+  collapsed: boolean;
+  children: React.ReactNode
+}) {
+  return (
+    <SidebarCollapsedContext.Provider value={collapsed}>
+      {children}
+    </SidebarCollapsedContext.Provider>
+  );
+}
+
+function useSidebarCollapsed() {
+  return React.useContext(SidebarCollapsedContext);
+}
+
 function Sheet({ ...props }: React.ComponentProps<typeof SheetPrimitive.Root>) {
   return <SheetPrimitive.Root data-slot="sheet" {...props} />
 }
@@ -54,15 +75,20 @@ function SheetContent({
   side?: "top" | "right" | "bottom" | "left"
   fullPage?: boolean
 }) {
+  const sidebarCollapsed = useSidebarCollapsed();
+  const leftOffset = fullPage ? (sidebarCollapsed ? "left-16" : "left-64") : "";
+
   return (
     <SheetPortal>
-      <SheetOverlay className={fullPage ? "left-64" : ""} />
+      <SheetOverlay className={leftOffset} />
       <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
           "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
           // Full page variant - spans from sidebar to right edge
-          fullPage && side === "right" &&
+          fullPage && side === "right" && sidebarCollapsed &&
+            "data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 left-16 h-full border-l",
+          fullPage && side === "right" && !sidebarCollapsed &&
             "data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 left-64 h-full border-l",
           // Standard right side
           !fullPage && side === "right" &&

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -27,6 +27,19 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -42,7 +55,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Filter, Video, AlertCircle, ArrowUpRight, Pencil } from "lucide-react";
+import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown } from "lucide-react";
 import { manuals, manualProject, projects, type ManualSummary, type ManualDetail, type ProjectSummary } from "@/lib/api";
 
 // Extended manual info with additional data
@@ -59,7 +72,12 @@ export default function ManualsPage() {
 
   // Project data
   const [projectList, setProjectList] = useState<ProjectSummary[]>([]);
-  const [filterProject, setFilterProject] = useState<string>("all");
+  const [filterProjectId, setFilterProjectId] = useState<string>("__all__");
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  // Tag filter state
+  const [filterTags, setFilterTags] = useState<string[]>([]);
+  const [tagFilterOpen, setTagFilterOpen] = useState(false);
 
   // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -239,13 +257,42 @@ export default function ManualsPage() {
     }
   }
 
-  // Filter manuals by project
-  const filteredManuals =
-    filterProject === "all"
-      ? manualList
-      : filterProject === "unassigned"
-      ? manualList.filter((m) => !m.project_id)
-      : manualList.filter((m) => m.project_id === filterProject);
+  // Collect unique tags from all manuals
+  const allTags = useMemo(() => {
+    const tags = new Set<string>();
+    manualList.forEach((m) => m.tags?.forEach((t) => tags.add(t)));
+    return Array.from(tags).sort();
+  }, [manualList]);
+
+  // Get selected project name for display
+  const selectedProjectName = filterProjectId === "__all__"
+    ? "All Projects"
+    : filterProjectId === "__unassigned__"
+    ? "Unassigned"
+    : projectList.find((p) => p.id === filterProjectId)?.name || "Select project";
+
+  // Filter manuals by project and tags
+  const filteredManuals = useMemo(() => {
+    let result = manualList;
+
+    // Filter by project
+    if (filterProjectId !== "__all__") {
+      if (filterProjectId === "__unassigned__") {
+        result = result.filter((m) => !m.project_id);
+      } else {
+        result = result.filter((m) => m.project_id === filterProjectId);
+      }
+    }
+
+    // Filter by tags (AND logic - must have all selected tags)
+    if (filterTags.length > 0) {
+      result = result.filter((m) =>
+        filterTags.every((tag) => m.tags?.includes(tag))
+      );
+    }
+
+    return result;
+  }, [manualList, filterProjectId, filterTags]);
 
   return (
     <div className="space-y-6">
@@ -257,24 +304,135 @@ export default function ManualsPage() {
           </p>
         </div>
 
-        {/* Project Filter */}
+        {/* Filters */}
         {manualList.length > 0 && (
           <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={filterProject} onValueChange={setFilterProject}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Filter by project" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Projects</SelectItem>
-                <SelectItem value="unassigned">Unassigned</SelectItem>
-                {projectList.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Project Filter - Searchable Combobox */}
+            <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={filterOpen}
+                  className="w-[200px] justify-between"
+                >
+                  <FolderKanban className="h-4 w-4 mr-2 shrink-0 text-muted-foreground" />
+                  <span className="truncate">{selectedProjectName}</span>
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[200px] p-0">
+                <Command>
+                  <CommandInput placeholder="Search projects..." />
+                  <CommandList>
+                    <CommandEmpty>No project found.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="__all__"
+                        onSelect={() => {
+                          setFilterProjectId("__all__");
+                          setFilterOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={`mr-2 h-4 w-4 ${filterProjectId === "__all__" ? "opacity-100" : "opacity-0"}`}
+                        />
+                        All Projects
+                      </CommandItem>
+                      <CommandItem
+                        value="__unassigned__"
+                        onSelect={() => {
+                          setFilterProjectId("__unassigned__");
+                          setFilterOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={`mr-2 h-4 w-4 ${filterProjectId === "__unassigned__" ? "opacity-100" : "opacity-0"}`}
+                        />
+                        Unassigned
+                      </CommandItem>
+                      {projectList.map((project) => (
+                        <CommandItem
+                          key={project.id}
+                          value={project.name}
+                          onSelect={() => {
+                            setFilterProjectId(project.id);
+                            setFilterOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={`mr-2 h-4 w-4 ${filterProjectId === project.id ? "opacity-100" : "opacity-0"}`}
+                          />
+                          {project.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
+            {/* Tag Filter - Multi-select */}
+            {allTags.length > 0 && (
+              <Popover open={tagFilterOpen} onOpenChange={setTagFilterOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={tagFilterOpen}
+                    className="w-[160px] justify-between"
+                  >
+                    <Tag className="h-4 w-4 mr-2 shrink-0 text-muted-foreground" />
+                    <span className="truncate">
+                      {filterTags.length === 0
+                        ? "All Tags"
+                        : `${filterTags.length} tag${filterTags.length > 1 ? "s" : ""}`}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[200px] p-0">
+                  <Command>
+                    <CommandInput placeholder="Search tags..." />
+                    <CommandList>
+                      <CommandEmpty>No tags found.</CommandEmpty>
+                      <CommandGroup>
+                        {filterTags.length > 0 && (
+                          <CommandItem
+                            onSelect={() => setFilterTags([])}
+                            className="text-muted-foreground"
+                          >
+                            <X className="mr-2 h-4 w-4" />
+                            Clear all
+                          </CommandItem>
+                        )}
+                        {allTags.map((tag) => {
+                          const isSelected = filterTags.includes(tag);
+                          return (
+                            <CommandItem
+                              key={tag}
+                              value={tag}
+                              onSelect={() => {
+                                setFilterTags((prev) =>
+                                  isSelected
+                                    ? prev.filter((t) => t !== tag)
+                                    : [...prev, tag]
+                                );
+                              }}
+                            >
+                              <Check
+                                className={`mr-2 h-4 w-4 ${isSelected ? "opacity-100" : "opacity-0"}`}
+                              />
+                              {tag}
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+            )}
           </div>
         )}
       </div>
@@ -301,7 +459,7 @@ export default function ManualsPage() {
           <CardContent className="py-8 text-center">
             <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground">No manuals match this filter</p>
-            <Button variant="outline" className="mt-4" onClick={() => setFilterProject("all")}>
+            <Button variant="outline" className="mt-4" onClick={() => { setFilterProjectId("__all__"); setFilterTags([]); }}>
               Show All
             </Button>
           </CardContent>
@@ -420,9 +578,9 @@ export default function ManualsPage() {
 
       {/* View Manual Sheet (Slide-over panel) */}
       <Sheet open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <SheetContent className="w-full sm:max-w-none sm:w-[70vw] lg:w-[60vw] xl:w-[50vw] overflow-hidden flex flex-col">
+        <SheetContent side="right" fullPage className="p-0 flex flex-col overflow-hidden">
           {/* Fixed Header */}
-          <SheetHeader className="border-b pb-4 shrink-0">
+          <SheetHeader className="border-b p-6 pr-14 space-y-0 shrink-0">
             <SheetTitle className="text-2xl font-bold">{selectedManual?.id}</SheetTitle>
 
             {/* Source info in header */}
@@ -449,16 +607,18 @@ export default function ManualsPage() {
           </SheetHeader>
 
           {selectedManual && (
-            <div className="flex-1 overflow-hidden flex flex-col pt-4">
+            <div className="flex-1 overflow-hidden flex flex-col">
               <Tabs defaultValue="content" className="flex-1 flex flex-col overflow-hidden">
-                <TabsList className="shrink-0 mb-4 w-fit">
+                <div className="px-6 pt-4 border-b">
+                  <TabsList className="shrink-0 mb-4 w-fit">
                   <TabsTrigger value="content">Content</TabsTrigger>
                   <TabsTrigger value="screenshots">
                     Screenshots ({selectedManual.screenshots.length})
                   </TabsTrigger>
                 </TabsList>
+                </div>
 
-                <TabsContent value="content" className="flex-1 overflow-y-auto mt-0 pr-2">
+                <TabsContent value="content" className="flex-1 overflow-y-auto mt-0 p-6">
                   <div className="prose prose-base dark:prose-invert max-w-none pb-8">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm]}
@@ -545,7 +705,7 @@ export default function ManualsPage() {
                   </div>
                 </TabsContent>
 
-                <TabsContent value="screenshots" className="flex-1 overflow-y-auto mt-0 pr-2">
+                <TabsContent value="screenshots" className="flex-1 overflow-y-auto mt-0 p-6">
                   <div className="grid grid-cols-1 gap-6 pb-8">
                     {selectedManual.screenshots.map((screenshot, idx) => (
                       <div key={idx} className="border rounded-lg overflow-hidden shadow-sm">

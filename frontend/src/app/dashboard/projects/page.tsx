@@ -32,6 +32,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -63,6 +76,8 @@ import {
   AlertTriangle,
   Image as ImageIcon,
   History,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
 import {
   projects,
@@ -136,6 +151,10 @@ export default function ProjectsPage() {
 
   // Export state
   const [exporting, setExporting] = useState<"pdf" | "word" | "html" | null>(null);
+
+  // Project filter state
+  const [filterProjectId, setFilterProjectId] = useState<string>("__all__");
+  const [filterOpen, setFilterOpen] = useState(false);
 
   const {
     state: compilerState,
@@ -387,6 +406,15 @@ export default function ProjectsPage() {
     }
   }
 
+  // Filter projects
+  const filteredProjects = filterProjectId === "__all__"
+    ? projectList
+    : projectList.filter((p) => p.id === filterProjectId);
+
+  const selectedFilterName = filterProjectId === "__all__"
+    ? "All Projects"
+    : projectList.find((p) => p.id === filterProjectId)?.name || "Select project";
+
   // Show compiler view when compiling
   if (isCompiling && compileProjectId) {
     return (
@@ -414,40 +442,95 @@ export default function ProjectsPage() {
           </p>
         </div>
 
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              New Project
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create Project</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Name</Label>
-                <Input
-                  value={newProjectName}
-                  onChange={(e) => setNewProjectName(e.target.value)}
-                  placeholder="Project name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Input
-                  value={newProjectDesc}
-                  onChange={(e) => setNewProjectDesc(e.target.value)}
-                  placeholder="Optional description"
-                />
-              </div>
-              <Button onClick={handleCreate} className="w-full">
-                Create
+        <div className="flex items-center gap-3">
+          {/* Project Filter - Searchable Combobox */}
+          <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={filterOpen}
+                className="w-[200px] justify-between"
+              >
+                <FolderKanban className="h-4 w-4 mr-2 shrink-0 text-muted-foreground" />
+                <span className="truncate">{selectedFilterName}</span>
+                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </PopoverTrigger>
+            <PopoverContent className="w-[200px] p-0">
+              <Command>
+                <CommandInput placeholder="Search projects..." />
+                <CommandList>
+                  <CommandEmpty>No project found.</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value="__all__"
+                      onSelect={() => {
+                        setFilterProjectId("__all__");
+                        setFilterOpen(false);
+                      }}
+                    >
+                      <Check
+                        className={`mr-2 h-4 w-4 ${filterProjectId === "__all__" ? "opacity-100" : "opacity-0"}`}
+                      />
+                      All Projects
+                    </CommandItem>
+                    {projectList.map((project) => (
+                      <CommandItem
+                        key={project.id}
+                        value={project.name}
+                        onSelect={() => {
+                          setFilterProjectId(project.id);
+                          setFilterOpen(false);
+                        }}
+                      >
+                        <Check
+                          className={`mr-2 h-4 w-4 ${filterProjectId === project.id ? "opacity-100" : "opacity-0"}`}
+                        />
+                        {project.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
+
+          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                New Project
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create Project</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Name</Label>
+                  <Input
+                    value={newProjectName}
+                    onChange={(e) => setNewProjectName(e.target.value)}
+                    placeholder="Project name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <Input
+                    value={newProjectDesc}
+                    onChange={(e) => setNewProjectDesc(e.target.value)}
+                    placeholder="Optional description"
+                  />
+                </div>
+                <Button onClick={handleCreate} className="w-full">
+                  Create
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {loading ? (
@@ -464,9 +547,19 @@ export default function ProjectsPage() {
             </p>
           </CardContent>
         </Card>
+      ) : filteredProjects.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <FolderKanban className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No projects match this filter</p>
+            <Button variant="outline" className="mt-4" onClick={() => setFilterProjectId("__all__")}>
+              Show All
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {projectList.map((project) => (
+          {filteredProjects.map((project) => (
             <Card key={project.id} className={project.is_default ? "border-primary/50" : ""}>
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
