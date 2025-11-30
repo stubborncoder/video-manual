@@ -274,8 +274,9 @@ export function useEditorCopilot({
         case "pending_change":
           // Add to pending changes (convert snake_case from backend to camelCase)
           const changeData = data.change;
+          const changeId = changeData.id || changeData.change_id || `change_${Date.now()}`;
           const newChange: PendingDocumentChange = {
-            id: changeData.id || changeData.change_id || `change_${Date.now()}`,
+            id: changeId,
             type: changeData.type,
             startLine: changeData.startLine ?? changeData.start_line,
             endLine: changeData.endLine ?? changeData.end_line,
@@ -287,6 +288,28 @@ export function useEditorCopilot({
           };
           setPendingChanges((prev) => [...prev, newChange]);
           onPendingChange?.(newChange);
+
+          // Also add to chat messages as a tool result
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: generateId(),
+              role: "tool_result" as const,
+              content: "",
+              timestamp: new Date(),
+              toolResult: {
+                changeId: changeId,
+                changeType: newChange.type,
+                startLine: newChange.startLine,
+                endLine: newChange.endLine,
+                afterLine: newChange.afterLine,
+                originalContent: newChange.originalContent,
+                newContent: newChange.newContent,
+                reason: newChange.reason,
+                status: newChange.status,
+              },
+            },
+          ]);
           break;
 
         case "error":
@@ -312,6 +335,14 @@ export function useEditorCopilot({
               c.id === data.change_id ? { ...c, status: "accepted" as const } : c
             )
           );
+          // Also update the tool result message status
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.toolResult?.changeId === data.change_id
+                ? { ...msg, toolResult: { ...msg.toolResult, status: "accepted" as const } }
+                : msg
+            )
+          );
           break;
 
         case "change_rejected":
@@ -319,6 +350,14 @@ export function useEditorCopilot({
           setPendingChanges((prev) =>
             prev.map((c) =>
               c.id === data.change_id ? { ...c, status: "rejected" as const } : c
+            )
+          );
+          // Also update the tool result message status
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.toolResult?.changeId === data.change_id
+                ? { ...msg, toolResult: { ...msg.toolResult, status: "rejected" as const } }
+                : msg
             )
           );
           break;

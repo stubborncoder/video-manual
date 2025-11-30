@@ -2,19 +2,33 @@
 
 import { memo } from "react";
 import ReactMarkdown from "react-markdown";
-import { Bot, User, AlertCircle, Wrench, Loader2 } from "lucide-react";
+import { Bot, User, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ToolCallMessage } from "./ToolCallMessage";
+import { ToolResultMessage } from "./ToolResultMessage";
 
-export type MessageRole = "user" | "assistant" | "system" | "tool";
+export type MessageRole = "user" | "assistant" | "system" | "tool" | "tool_result";
 
 export interface ChatMessageData {
   id: string;
   role: MessageRole;
   content: string;
   timestamp: Date;
-  /** For tool messages */
+  /** For tool call messages */
   toolName?: string;
   toolArgs?: Record<string, unknown>;
+  /** For tool result messages */
+  toolResult?: {
+    changeId: string;
+    changeType: "text_replace" | "text_insert" | "text_delete" | "caption_update";
+    startLine?: number;
+    endLine?: number;
+    afterLine?: number;
+    originalContent?: string;
+    newContent?: string;
+    reason?: string;
+    status: "pending" | "accepted" | "rejected";
+  };
   /** If this message has attached selection context */
   selectionContext?: {
     text: string;
@@ -49,7 +63,29 @@ export const ChatMessage = memo(function ChatMessage({
   const isUser = message.role === "user";
   const isAssistant = message.role === "assistant";
   const isTool = message.role === "tool";
+  const isToolResult = message.role === "tool_result";
   const isSystem = message.role === "system";
+
+  // Tool call messages use a dedicated compact component
+  if (isTool) {
+    return (
+      <ToolCallMessage
+        toolName={message.toolName || "unknown"}
+        toolArgs={message.toolArgs}
+        timestamp={message.timestamp}
+      />
+    );
+  }
+
+  // Tool result messages use a dedicated compact component
+  if (isToolResult && message.toolResult) {
+    return (
+      <ToolResultMessage
+        toolResult={message.toolResult}
+        timestamp={message.timestamp}
+      />
+    );
+  }
 
   return (
     <div
@@ -64,13 +100,11 @@ export const ChatMessage = memo(function ChatMessage({
           "shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
           isUser && "bg-primary text-primary-foreground",
           isAssistant && "bg-muted",
-          isTool && "bg-amber-100 dark:bg-amber-900/30",
           isSystem && "bg-destructive/10"
         )}
       >
         {isUser && <User className="h-4 w-4" />}
         {isAssistant && <Bot className="h-4 w-4" />}
-        {isTool && <Wrench className="h-4 w-4 text-amber-600 dark:text-amber-400" />}
         {isSystem && <AlertCircle className="h-4 w-4 text-destructive" />}
       </div>
 
@@ -91,7 +125,6 @@ export const ChatMessage = memo(function ChatMessage({
           <span className="font-medium">
             {isUser && "You"}
             {isAssistant && "Manual Editor"}
-            {isTool && `Tool: ${message.toolName}`}
             {isSystem && "System"}
           </span>
           <span>{formatTime(message.timestamp)}</span>
@@ -110,9 +143,9 @@ export const ChatMessage = memo(function ChatMessage({
           >
             <span className="text-muted-foreground">Selected: </span>
             <span className="italic">
-              "{message.selectionContext.text.length > 100
+              &quot;{message.selectionContext.text.length > 100
                 ? message.selectionContext.text.slice(0, 100) + "..."
-                : message.selectionContext.text}"
+                : message.selectionContext.text}&quot;
             </span>
           </div>
         )}
@@ -123,27 +156,12 @@ export const ChatMessage = memo(function ChatMessage({
             "inline-block rounded-lg px-3 py-2 max-w-[85%]",
             isUser && "bg-primary text-primary-foreground ml-auto",
             isAssistant && "bg-muted",
-            isTool && "bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800",
             isSystem && "bg-destructive/10 border border-destructive/20",
             message.error && "bg-destructive/10 border border-destructive/30"
           )}
         >
           {message.error ? (
             <p className="text-sm text-destructive">{message.error}</p>
-          ) : isTool ? (
-            <div className="text-sm">
-              <p className="font-medium text-amber-700 dark:text-amber-300">
-                {message.toolName}
-              </p>
-              {message.toolArgs && (
-                <pre className="mt-1 text-xs overflow-x-auto">
-                  {JSON.stringify(message.toolArgs, null, 2)}
-                </pre>
-              )}
-              {message.content && (
-                <p className="mt-1 text-muted-foreground">{message.content}</p>
-              )}
-            </div>
           ) : isUser ? (
             <p className="text-sm whitespace-pre-wrap">{message.content}</p>
           ) : (

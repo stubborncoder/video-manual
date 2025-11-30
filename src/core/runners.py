@@ -392,11 +392,14 @@ class ProjectCompilerRunner:
                                             )
                                             is_first_token = False
                                     elif block.get("type") == "tool_use":
-                                        yield ToolCallEvent(
-                                            tool_name=block.get("name", ""),
-                                            tool_id=block.get("id", ""),
-                                            arguments=block.get("input", {}),
-                                        )
+                                        # Only emit tool call when we have the input
+                                        tool_input = block.get("input")
+                                        if tool_input:
+                                            yield ToolCallEvent(
+                                                tool_name=block.get("name", ""),
+                                                tool_id=block.get("id", ""),
+                                                arguments=tool_input,
+                                            )
 
                     # Handle tool result messages
                     elif "tool" in msg_type:
@@ -642,11 +645,16 @@ class ManualEditorRunner:
                                             )
                                             is_first_token = False
                                     elif block.get("type") == "tool_use":
-                                        yield ToolCallEvent(
-                                            tool_name=block.get("name", ""),
-                                            tool_id=block.get("id", ""),
-                                            arguments=block.get("input", {}),
-                                        )
+                                        # Only emit tool call when we have the input
+                                        # During streaming, tool_use blocks may arrive
+                                        # without input first, then with input
+                                        tool_input = block.get("input")
+                                        if tool_input:
+                                            yield ToolCallEvent(
+                                                tool_name=block.get("name", ""),
+                                                tool_id=block.get("id", ""),
+                                                arguments=tool_input,
+                                            )
 
                     # Handle tool result messages - extract pending changes
                     elif "tool" in msg_type:
