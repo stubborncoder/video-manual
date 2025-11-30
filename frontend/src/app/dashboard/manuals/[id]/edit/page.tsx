@@ -54,6 +54,8 @@ import { SelectionHighlightOverlay } from "@/components/editor/SelectionHighligh
 import { LineNumberedTextarea } from "@/components/editor/LineNumberedTextarea";
 import { ImageLightbox } from "@/components/editor/ImageLightbox";
 import { VideoDrawer } from "@/components/editor/VideoDrawer";
+import { ImageContextMenu } from "@/components/editor/ImageContextMenu";
+import type { ImageContext } from "@/components/editor/ImageContextChip";
 
 // Active image state for lightbox
 interface ActiveImageState {
@@ -90,6 +92,13 @@ export default function ManualEditorPage() {
   const [activeImage, setActiveImage] = useState<ActiveImageState | null>(null);
   const [videoDrawerOpen, setVideoDrawerOpen] = useState(false);
   const [selectedFrameTimestamp, setSelectedFrameTimestamp] = useState(0);
+
+  // Direct action state (for context menu shortcuts)
+  const [directAction, setDirectAction] = useState<"annotate" | "caption" | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Image context for AI chat (similar to text selection)
+  const [imageContext, setImageContext] = useState<ImageContext | null>(null);
 
   // Cache buster for images - incremented when images are replaced
   const [imageCacheBuster, setImageCacheBuster] = useState(Date.now());
@@ -362,22 +371,22 @@ export default function ManualEditorPage() {
 
   // Handle chat message send
   const handleSendMessage = useCallback(
-    (content: string, sel: typeof selection) => {
-      sendMessage(content, sel);
+    (content: string, sel: typeof selection, imgContext?: ImageContext) => {
+      sendMessage(content, sel, imgContext);
     },
     [sendMessage]
   );
 
-  // Handle image click - open lightbox
+  // Handle image click - open lightbox or perform direct action
   const handleImageClick = useCallback(
-    (imageUrl: string, imageName: string, caption: string) => {
+    (imageUrl: string, imageName: string, caption: string, action?: "annotate" | "caption" | "full") => {
       // Build the markdown reference for this image
       const markdownRef = `![${caption}](${imageName})`;
 
       // Extract timestamp from filename (e.g., "figure_01_t8s.png" -> 8)
       const timestampMatch = imageName.match(/_t(\d+)s\./);
       const timestamp = timestampMatch ? parseInt(timestampMatch[1], 10) : undefined;
-      console.log("[ImageClick] name:", imageName, "timestampMatch:", timestampMatch, "timestamp:", timestamp);
+      console.log("[ImageClick] name:", imageName, "timestampMatch:", timestampMatch, "timestamp:", timestamp, "action:", action);
 
       setActiveImage({
         url: imageUrl,
@@ -386,10 +395,110 @@ export default function ManualEditorPage() {
         timestamp,
         markdownRef,
       });
+
+      // Set direct action if specified
+      setDirectAction(action === "annotate" ? "annotate" : action === "caption" ? "caption" : null);
       setLightboxOpen(true);
     },
     []
   );
+
+  // Handle direct upload from context menu
+  const handleDirectUpload = useCallback(
+    (imageUrl: string, imageName: string, caption: string) => {
+      // Set up the active image
+      const markdownRef = `![${caption}](${imageName})`;
+      const timestampMatch = imageName.match(/_t(\d+)s\./);
+      const timestamp = timestampMatch ? parseInt(timestampMatch[1], 10) : undefined;
+
+      setActiveImage({
+        url: imageUrl,
+        name: imageName,
+        caption: caption || "",
+        timestamp,
+        markdownRef,
+      });
+
+      // Trigger file input
+      fileInputRef.current?.click();
+    },
+    []
+  );
+
+  // Handle file input change for direct upload
+  const handleDirectFileSelect = useCallback(
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file || !activeImage) return;
+
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch(`/api/manuals/${manualId}/screenshots/${activeImage.name}/replace`, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to upload image");
+        }
+
+        // Force refresh all images
+        const newCacheBuster = Date.now();
+        setImageCacheBuster(newCacheBuster);
+        setHasImageChanges(true);
+        toast.success("Image replaced");
+      } catch (error) {
+        console.error("Failed to upload image:", error);
+        toast.error("Failed to upload image");
+      }
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      setActiveImage(null);
+    },
+    [activeImage, manualId]
+  );
+
+  // Handle direct video replacement from context menu
+  const handleDirectVideoReplace = useCallback(
+    (imageUrl: string, imageName: string, caption: string) => {
+      // Set up the active image
+      const markdownRef = `![${caption}](${imageName})`;
+      const timestampMatch = imageName.match(/_t(\d+)s\./);
+      const timestamp = timestampMatch ? parseInt(timestampMatch[1], 10) : undefined;
+
+      setActiveImage({
+        url: imageUrl,
+        name: imageName,
+        caption: caption || "",
+        timestamp,
+        markdownRef,
+      });
+
+      // Open video drawer
+      setSelectedFrameTimestamp(timestamp || 0);
+      setVideoDrawerOpen(true);
+    },
+    []
+  );
+
+  // Handle Ask AI about image from context menu
+  const handleAskAIAboutImage = useCallback(
+    (imageUrl: string, imageName: string) => {
+      // Set image context (similar to text selection) - user will type their own question
+      setImageContext({ url: imageUrl, name: imageName });
+    },
+    []
+  );
+
+  // Clear image context
+  const clearImageContext = useCallback(() => {
+    setImageContext(null);
+  }, []);
 
   // Handle caption change from lightbox
   const handleCaptionChange = useCallback(
@@ -673,17 +782,26 @@ export default function ManualEditorPage() {
                         const apiUrl = `/api/manuals/${manualId}/screenshots/${filename}?t=${imageCacheBuster}`;
                         return (
                           <span className="block my-6">
-                            <img
-                              src={apiUrl}
-                              alt={alt || "Screenshot"}
-                              className="rounded-lg border shadow-sm w-full cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-                              title="Click to edit this screenshot"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleImageClick(apiUrl, filename, alt || "");
+                            <ImageContextMenu
+                              hasVideo={!!manual?.source_video?.exists}
+                              onOpenFull={() => handleImageClick(apiUrl, filename, alt || "", "full")}
+                              onReplaceFromVideo={() => handleDirectVideoReplace(apiUrl, filename, alt || "")}
+                              onUpload={() => handleDirectUpload(apiUrl, filename, alt || "")}
+                              onAnnotate={() => handleImageClick(apiUrl, filename, alt || "", "annotate")}
+                              onEditCaption={() => handleImageClick(apiUrl, filename, alt || "", "caption")}
+                              onAskAI={() => handleAskAIAboutImage(apiUrl, filename)}
+                              onDelete={() => {
+                                // Set up active image and open lightbox to show delete confirmation
+                                handleImageClick(apiUrl, filename, alt || "", "full");
                               }}
-                            />
+                            >
+                              <img
+                                src={apiUrl}
+                                alt={alt || "Screenshot"}
+                                className="rounded-lg border shadow-sm w-full cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                                title="Click for image options"
+                              />
+                            </ImageContextMenu>
                             {alt && (
                               <span className="block text-center text-sm text-muted-foreground mt-2">
                                 {alt}
@@ -740,6 +858,8 @@ export default function ManualEditorPage() {
             pendingChanges={pendingChanges}
             selection={selection}
             onClearSelection={clearSelection}
+            imageContext={imageContext}
+            onClearImageContext={clearImageContext}
             onSendMessage={handleSendMessage}
             onStopGeneration={stopGeneration}
             onClearChat={clearChat}
@@ -797,6 +917,8 @@ export default function ManualEditorPage() {
           onReplace={handleImageReplace}
           onDelete={handleImageDelete}
           onOpenVideoDrawer={handleOpenVideoDrawer}
+          directAction={directAction}
+          onDirectActionHandled={() => setDirectAction(null)}
         />
       )}
 
@@ -812,6 +934,15 @@ export default function ManualEditorPage() {
           onConfirmFrame={handleConfirmFrame}
         />
       )}
+
+      {/* Hidden file input for direct uploads from context menu */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleDirectFileSelect}
+      />
     </div>
   );
 }

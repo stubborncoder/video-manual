@@ -79,6 +79,7 @@ class EditorCopilotSession:
         content = payload.get("content", "")
         selection = payload.get("selection")
         document_content = payload.get("document_content", "")
+        image = payload.get("image")  # {url: str, name: str}
 
         if not content:
             await self.send_event("error", message="Empty message")
@@ -93,13 +94,14 @@ class EditorCopilotSession:
             "role": "user",
             "content": content,
             "selection": selection,
+            "image": image,
         })
 
         self.is_generating = True
         self.should_cancel = False
 
         try:
-            await self._stream_agent_response(content, selection, document_content)
+            await self._stream_agent_response(content, selection, document_content, image)
         except Exception as e:
             logger.exception(f"Error generating response: {e}")
             await self.send_event("error", message=str(e))
@@ -111,6 +113,7 @@ class EditorCopilotSession:
         user_message: str,
         selection: Optional[dict],
         document_content: str,
+        image: Optional[dict] = None,
     ):
         """Stream response from the LangGraph agent."""
         loop = asyncio.get_running_loop()
@@ -123,6 +126,7 @@ class EditorCopilotSession:
                     message=user_message,
                     selection=selection,
                     document_content=document_content,
+                    image=image,
                 ):
                     future = asyncio.run_coroutine_threadsafe(
                         event_queue.put(event), loop

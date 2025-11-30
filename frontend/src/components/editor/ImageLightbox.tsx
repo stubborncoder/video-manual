@@ -1,8 +1,25 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { X, Video, Upload, Type, Trash2, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import dynamic from "next/dynamic";
+import { X, Video, Upload, Type, Trash2, ZoomIn, ZoomOut, RotateCcw, Pencil, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+// Dynamic import to avoid SSR issues with Fabric.js
+const AnnotationEditor = dynamic(
+  () => import("./AnnotationEditor").then((mod) => mod.AnnotationEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center">
+        <div className="flex items-center gap-2 text-white">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          Loading annotation editor...
+        </div>
+      </div>
+    )
+  }
+);
 import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
@@ -41,6 +58,10 @@ interface ImageLightboxProps {
   onDelete: () => void;
   /** Callback to open video drawer for frame selection */
   onOpenVideoDrawer?: () => void;
+  /** Direct action to perform when lightbox opens (from context menu shortcuts) */
+  directAction?: "annotate" | "caption" | null;
+  /** Callback to clear the direct action after it's been handled */
+  onDirectActionHandled?: () => void;
 }
 
 /**
@@ -60,13 +81,18 @@ export function ImageLightbox({
   onReplace,
   onDelete,
   onOpenVideoDrawer,
+  directAction,
+  onDirectActionHandled,
 }: ImageLightboxProps) {
   const [isEditingCaption, setIsEditingCaption] = useState(false);
   const [captionValue, setCaptionValue] = useState(caption);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [isAnnotating, setIsAnnotating] = useState(false);
+  const [openedViaDirectAction, setOpenedViaDirectAction] = useState(false);
   const captionInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hasHandledOpenRef = useRef(false);
 
   // Sync caption value when prop changes
   useEffect(() => {
@@ -81,22 +107,53 @@ export function ImageLightbox({
     }
   }, [isEditingCaption]);
 
-  // Reset zoom when opening new image
+  // Reset when lightbox closes
   useEffect(() => {
-    if (open) {
-      setZoom(1);
+    if (!open) {
+      hasHandledOpenRef.current = false;
     }
-  }, [open, imageUrl]);
+  }, [open]);
 
-  // Handle escape key
+  // Handle opening - either with direct action or normal
+  useEffect(() => {
+    if (open && !hasHandledOpenRef.current) {
+      hasHandledOpenRef.current = true;
+      setZoom(1);
+
+      if (directAction) {
+        // Handle direct action from context menu shortcuts
+        setOpenedViaDirectAction(true);
+        if (directAction === "annotate") {
+          setIsAnnotating(true);
+          setIsEditingCaption(false);
+        } else if (directAction === "caption") {
+          setIsEditingCaption(true);
+          setIsAnnotating(false);
+        }
+        // Clear the direct action after handling
+        onDirectActionHandled?.();
+      } else {
+        // Normal open - reset states
+        setIsAnnotating(false);
+        setIsEditingCaption(false);
+        setOpenedViaDirectAction(false);
+      }
+    }
+  }, [open, directAction, onDirectActionHandled]);
+
+  // Handle escape key (only when not in annotation mode)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!open) return;
+      if (!open || isAnnotating) return; // Let annotation editor handle its own Escape
 
       if (e.key === "Escape") {
         if (isEditingCaption) {
           setIsEditingCaption(false);
           setCaptionValue(caption);
+          // If opened via direct action, close the entire lightbox on cancel
+          if (openedViaDirectAction) {
+            onOpenChange(false);
+          }
         } else {
           onOpenChange(false);
         }
@@ -105,7 +162,7 @@ export function ImageLightbox({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [open, isEditingCaption, caption, onOpenChange]);
+  }, [open, isEditingCaption, isAnnotating, caption, onOpenChange, openedViaDirectAction]);
 
   // Handle caption save
   const handleCaptionSave = useCallback(() => {
@@ -113,7 +170,11 @@ export function ImageLightbox({
       onCaptionChange(captionValue.trim());
     }
     setIsEditingCaption(false);
-  }, [captionValue, caption, onCaptionChange]);
+    // If opened via direct action, close the entire lightbox after saving
+    if (openedViaDirectAction) {
+      onOpenChange(false);
+    }
+  }, [captionValue, caption, onCaptionChange, openedViaDirectAction, onOpenChange]);
 
   // Handle caption key events
   const handleCaptionKeyDown = useCallback(
@@ -125,9 +186,13 @@ export function ImageLightbox({
         e.preventDefault();
         setCaptionValue(caption);
         setIsEditingCaption(false);
+        // If opened via direct action, close the entire lightbox on cancel
+        if (openedViaDirectAction) {
+          onOpenChange(false);
+        }
       }
     },
-    [handleCaptionSave, caption]
+    [handleCaptionSave, caption, openedViaDirectAction, onOpenChange]
   );
 
   // Handle file upload
@@ -174,7 +239,49 @@ export function ImageLightbox({
   const handleZoomOut = () => setZoom((z) => Math.max(z - 0.25, 0.5));
   const handleZoomReset = () => setZoom(1);
 
+  // Handle annotation save
+  const handleAnnotationSave = useCallback(
+    async (dataUrl: string) => {
+      try {
+        // Convert data URL to blob
+        const response = await fetch(dataUrl);
+        const blob = await response.blob();
+        const file = new File([blob], imageName, { type: "image/png" });
+
+        // Use existing upload replacement flow
+        onReplace("upload", { file });
+        setIsAnnotating(false);
+
+        // If opened via direct action, close the entire lightbox after saving
+        if (openedViaDirectAction) {
+          onOpenChange(false);
+        }
+      } catch (error) {
+        console.error("Failed to save annotated image:", error);
+      }
+    },
+    [imageName, onReplace, openedViaDirectAction, onOpenChange]
+  );
+
   if (!open) return null;
+
+  // Show annotation editor if in annotation mode
+  if (isAnnotating) {
+    console.log("[ImageLightbox] Rendering AnnotationEditor with imageUrl:", imageUrl);
+    return (
+      <AnnotationEditor
+        imageUrl={imageUrl}
+        onSave={handleAnnotationSave}
+        onCancel={() => {
+          setIsAnnotating(false);
+          // If opened via direct action, close the entire lightbox
+          if (openedViaDirectAction) {
+            onOpenChange(false);
+          }
+        }}
+      />
+    );
+  }
 
   return (
     <>
@@ -320,6 +427,19 @@ export function ImageLightbox({
             className="hidden"
             onChange={handleFileSelect}
           />
+
+          {/* Annotate */}
+          <Button
+            variant="secondary"
+            onClick={() => {
+              console.log("[ImageLightbox] Annotate button clicked");
+              setIsAnnotating(true);
+            }}
+            className="gap-2"
+          >
+            <Pencil className="h-4 w-4" />
+            Annotate
+          </Button>
 
           {/* Edit Caption */}
           <Button

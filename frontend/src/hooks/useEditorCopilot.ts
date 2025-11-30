@@ -367,10 +367,10 @@ export function useEditorCopilot({
   );
 
   /**
-   * Send a chat message
+   * Send a chat message with optional image attachment
    */
   const sendMessage = useCallback(
-    (content: string, selection: TextSelection | null) => {
+    (content: string, selection: TextSelection | null, imageContext?: { url: string; name: string }) => {
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
         console.error("[EditorCopilot] WebSocket not connected");
         return;
@@ -385,6 +385,7 @@ export function useEditorCopilot({
         selectionContext: selection
           ? { text: selection.text, context: selection.context }
           : undefined,
+        imageContext: imageContext,
       };
       setMessages((prev) => [...prev, userMessage]);
 
@@ -401,6 +402,12 @@ export function useEditorCopilot({
             }
           : null,
         document_content: documentContent,
+        image: imageContext
+          ? {
+              url: imageContext.url,
+              name: imageContext.name,
+            }
+          : null,
       };
 
       wsRef.current.send(JSON.stringify(payload));

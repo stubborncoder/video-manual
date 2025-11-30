@@ -524,6 +524,7 @@ class ManualEditorRunner:
         message: str,
         selection: Optional[dict] = None,
         document_content: Optional[str] = None,
+        image: Optional[dict] = None,
     ) -> Iterator[ProgressEvent]:
         """
         Send a chat message to the editor agent.
@@ -536,11 +537,16 @@ class ManualEditorRunner:
                 - endOffset: End position
                 - context: Surrounding context
             document_content: Current document content (updated)
+            image: Optional image context with keys:
+                - url: Image URL (relative API path)
+                - name: Image filename
 
         Yields:
             ProgressEvent objects for the response
         """
         import logging
+        import base64
+        import httpx
         logger = logging.getLogger(__name__)
 
         if not self._agent or not self._config:
@@ -584,6 +590,13 @@ class ManualEditorRunner:
 {selected_lines_preview}
 ```""")
 
+        # Add image context if present
+        if image:
+            context_parts.append(f"""## Attached Image
+
+The user has attached an image: **{image.get('name', 'Unknown')}**
+Please analyze this image to help answer the user's question.""")
+
         context = "\n\n".join(context_parts)
 
         # Build the full message
@@ -593,7 +606,78 @@ class ManualEditorRunner:
 
 {message}"""
 
-        user_input = {"messages": [{"role": "user", "content": full_message}]}
+        # Build message content - either simple text or multimodal with image
+        if image:
+            # Fetch and encode image for Claude vision
+            from langchain_core.messages import HumanMessage
+
+            image_data = None
+            media_type = "image/png"
+
+            try:
+                # The URL is a relative API path, we need to read from local storage
+                from ..storage.user_storage import UserStorage
+                storage = UserStorage(self.user_id)
+                screenshot_path = storage.manuals_dir / self.manual_id / "screenshots" / image.get('name', '')
+
+                if screenshot_path.exists():
+                    with open(screenshot_path, 'rb') as f:
+                        image_bytes = f.read()
+
+                    # Check image size (5MB limit)
+                    image_size_mb = len(image_bytes) / (1024 * 1024)
+                    if image_size_mb > 5:
+                        logger.error(f"[EDITOR RUNNER] Image too large: {image_size_mb:.2f}MB (max 5MB)")
+                        yield ErrorEvent(
+                            error_message=f"Image too large: {image_size_mb:.2f}MB. Maximum is 5MB.",
+                            recoverable=True,
+                        )
+                        return
+
+                    image_data = base64.standard_b64encode(image_bytes).decode('utf-8')
+
+                    # Detect media type
+                    name_lower = image.get('name', '').lower()
+                    if name_lower.endswith('.jpg') or name_lower.endswith('.jpeg'):
+                        media_type = "image/jpeg"
+                    elif name_lower.endswith('.gif'):
+                        media_type = "image/gif"
+                    elif name_lower.endswith('.webp'):
+                        media_type = "image/webp"
+
+                    logger.info(f"[EDITOR RUNNER] Loaded image: {screenshot_path}, size={len(image_bytes)} bytes")
+                else:
+                    logger.warning(f"[EDITOR RUNNER] Image not found: {screenshot_path}")
+            except Exception as e:
+                logger.error(f"[EDITOR RUNNER] Failed to load image: {e}")
+
+            if image_data:
+                # Multimodal message with image using HumanMessage
+                user_input = {
+                    "messages": [
+                        HumanMessage(
+                            content=[
+                                {
+                                    "type": "image",
+                                    "source": {
+                                        "type": "base64",
+                                        "media_type": media_type,
+                                        "data": image_data,
+                                    }
+                                },
+                                {
+                                    "type": "text",
+                                    "text": full_message
+                                }
+                            ]
+                        )
+                    ]
+                }
+            else:
+                # Fallback to text-only if image couldn't be loaded
+                user_input = {"messages": [{"role": "user", "content": full_message}]}
+        else:
+            user_input = {"messages": [{"role": "user", "content": full_message}]}
 
         yield from self._stream_agent(user_input)
 

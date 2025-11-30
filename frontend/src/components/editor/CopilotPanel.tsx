@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/tooltip";
 import { ChatMessage, type ChatMessageData } from "./ChatMessage";
 import { SelectionChip } from "./SelectionChip";
+import { ImageContextChip, type ImageContext } from "./ImageContextChip";
 import type { TextSelection } from "@/hooks/useTextSelection";
 import type { PendingDocumentChange } from "@/hooks/useEditorCopilot";
 
@@ -21,7 +22,9 @@ interface CopilotPanelProps {
   pendingChanges: PendingDocumentChange[];
   selection: TextSelection | null;
   onClearSelection: () => void;
-  onSendMessage: (content: string, selection: TextSelection | null) => void;
+  imageContext: ImageContext | null;
+  onClearImageContext: () => void;
+  onSendMessage: (content: string, selection: TextSelection | null, imageContext?: ImageContext) => void;
   onStopGeneration?: () => void;
   onClearChat?: () => void;
   onAcceptChange: (changeId: string) => void;
@@ -39,6 +42,8 @@ export function CopilotPanel({
   pendingChanges,
   selection,
   onClearSelection,
+  imageContext,
+  onClearImageContext,
   onSendMessage,
   onStopGeneration,
   onClearChat,
@@ -69,14 +74,18 @@ export function CopilotPanel({
     const content = inputValue.trim();
     if (!content || isGenerating) return;
 
-    onSendMessage(content, selection);
+    onSendMessage(content, selection, imageContext || undefined);
     setInputValue("");
 
     // Clear selection after sending
     if (selection) {
       onClearSelection();
     }
-  }, [inputValue, selection, isGenerating, onSendMessage, onClearSelection]);
+    // Clear image context after sending
+    if (imageContext) {
+      onClearImageContext();
+    }
+  }, [inputValue, selection, imageContext, isGenerating, onSendMessage, onClearSelection, onClearImageContext]);
 
   // Handle keyboard shortcuts
   const handleKeyDown = useCallback(
@@ -89,12 +98,12 @@ export function CopilotPanel({
     [handleSend]
   );
 
-  // Focus textarea when selection changes
+  // Focus textarea when selection or image context changes
   useEffect(() => {
-    if (selection && textareaRef.current) {
+    if ((selection || imageContext) && textareaRef.current) {
       textareaRef.current.focus();
     }
-  }, [selection]);
+  }, [selection, imageContext]);
 
   const hasMessages = messages.length > 0;
 
@@ -159,6 +168,11 @@ export function CopilotPanel({
             <SelectionChip selection={selection} onClear={onClearSelection} />
           )}
 
+          {/* Image context chip */}
+          {imageContext && (
+            <ImageContextChip imageContext={imageContext} onClear={onClearImageContext} />
+          )}
+
           {/* Input + buttons */}
           <div className="flex gap-2">
             <Textarea
@@ -169,6 +183,8 @@ export function CopilotPanel({
               placeholder={
                 isPaused
                   ? "Switch to Preview mode to use the assistant..."
+                  : imageContext
+                  ? "Ask about this image..."
                   : selection
                   ? "What would you like to do with this selection?"
                   : "Ask the AI to help edit your manual..."

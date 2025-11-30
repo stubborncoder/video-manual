@@ -34,6 +34,11 @@ export interface ChatMessageData {
     text: string;
     context: string;
   };
+  /** If this message has an attached image */
+  imageContext?: {
+    url: string;
+    name: string;
+  };
   /** Whether the message is still streaming */
   isStreaming?: boolean;
   /** Error state */
@@ -147,6 +152,25 @@ export const ChatMessage = memo(function ChatMessage({
                 ? message.selectionContext.text.slice(0, 100) + "..."
                 : message.selectionContext.text}&quot;
             </span>
+          </div>
+        )}
+
+        {/* Image context (for user messages with attached images) */}
+        {message.imageContext && (
+          <div
+            className={cn(
+              "rounded overflow-hidden border",
+              isUser && "ml-auto max-w-[200px]"
+            )}
+          >
+            <img
+              src={message.imageContext.url}
+              alt={message.imageContext.name}
+              className="w-full h-auto"
+            />
+            <div className="text-xs text-muted-foreground px-2 py-1 bg-muted/50 truncate">
+              {message.imageContext.name}
+            </div>
           </div>
         )}
 
