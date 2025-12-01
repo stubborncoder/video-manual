@@ -386,9 +386,17 @@ export default function VideosPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredVideos.map((video) => (
-            <Card key={video.name} className="overflow-hidden">
+            <Card
+              key={video.name}
+              className="
+                group overflow-hidden flex flex-col
+                transition-all duration-300 ease-out
+                hover:shadow-lg hover:-translate-y-1
+                hover:border-primary/30
+              "
+            >
               {/* Video Preview */}
               <div className="relative aspect-video bg-muted">
                 <video
@@ -402,51 +410,53 @@ export default function VideosPage() {
                     e.currentTarget.currentTime = 0;
                   }}
                 />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 hover:opacity-100 transition-opacity">
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
                   <Button
                     size="icon"
                     variant="secondary"
-                    className="rounded-full"
+                    className="rounded-full h-12 w-12"
                     onClick={() => {
                       setSelectedVideo(video);
                       setPreviewDialogOpen(true);
                     }}
                   >
-                    <Eye className="h-5 w-5" />
+                    <Eye className="h-6 w-6" />
                   </Button>
                 </div>
+                {/* Manual count badge overlay */}
+                {video.manual_count !== undefined && video.manual_count > 0 && (
+                  <div className="absolute top-3 right-3">
+                    <Badge variant="secondary" className="bg-background/90 backdrop-blur-sm">
+                      <FileText className="h-3 w-3 mr-1" />
+                      {video.manual_count} manual{video.manual_count > 1 ? "s" : ""}
+                    </Badge>
+                  </div>
+                )}
               </div>
 
-              <CardContent className="p-4">
-                <div className="mb-3">
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium truncate flex-1" title={video.name}>
-                      {video.name}
-                    </p>
-                    {video.manual_count !== undefined && video.manual_count > 0 && (
-                      <Badge variant="secondary" className="ml-2 shrink-0">
-                        <FileText className="h-3 w-3 mr-1" />
-                        {video.manual_count}
-                      </Badge>
-                    )}
-                  </div>
+              <CardContent className="p-4 flex-1 flex flex-col">
+                <div className="flex-1">
+                  {/* Title */}
+                  <p className="font-display text-lg tracking-tight truncate" title={video.name}>
+                    {video.name}
+                  </p>
+
+                  {/* Size */}
                   <p className="text-sm text-muted-foreground">
                     {formatFileSize(video.size_bytes)}
                   </p>
 
                   {/* Project badges */}
                   {video.projects && video.projects.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      <span className="text-xs text-muted-foreground mr-1">In:</span>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-3">
                       {video.projects.map((project) => (
                         <Link href="/dashboard/projects" key={project.id}>
                           <Badge
                             variant="outline"
-                            className="text-xs cursor-pointer hover:bg-secondary/80 gap-0.5"
+                            className="text-xs cursor-pointer hover:bg-primary/10 hover:border-primary/30 transition-colors gap-1"
                           >
-                            <FolderKanban className="h-3 w-3" />
+                            <FolderKanban className="h-3 w-3 text-primary" />
                             {project.name}
-                            <ArrowUpRight className="h-3 w-3" />
                           </Badge>
                         </Link>
                       ))}
@@ -454,7 +464,7 @@ export default function VideosPage() {
                   )}
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 mt-4">
                   <Dialog
                     open={processDialogOpen && selectedVideo?.name === video.name}
                     onOpenChange={(open) => {
@@ -549,6 +559,7 @@ export default function VideosPage() {
                     size="sm"
                     variant="outline"
                     onClick={() => openDeleteDialog(video)}
+                    className="opacity-60 hover:opacity-100 hover:border-destructive hover:text-destructive transition-all"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

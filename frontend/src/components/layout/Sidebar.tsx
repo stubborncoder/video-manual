@@ -11,7 +11,10 @@ import {
   Home,
   PanelLeftClose,
   PanelLeft,
+  Sun,
+  Moon,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -36,6 +39,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { collapsed, toggleCollapsed } = useSidebar();
+  const { theme, setTheme } = useTheme();
 
   const handleLogout = async () => {
     try {
@@ -118,7 +122,7 @@ export function Sidebar() {
 
         {/* Footer */}
         <div className="p-2 space-y-1">
-          {/* Toggle button */}
+          {/* Toggle sidebar */}
           {collapsed ? (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -140,6 +144,35 @@ export function Sidebar() {
             >
               <PanelLeftClose className="mr-2 h-4 w-4" />
               Collapse
+            </Button>
+          )}
+
+          {/* Theme toggle */}
+          {collapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-center px-2"
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                >
+                  <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                Toggle {theme === "dark" ? "light" : "dark"} mode
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-muted-foreground"
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            >
+              <Sun className="mr-2 h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute ml-0 h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <span className="ml-6">{theme === "dark" ? "Light" : "Dark"} Mode</span>
             </Button>
           )}
 

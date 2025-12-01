@@ -106,7 +106,8 @@ export interface ProcessingState {
 
 // Video processing request
 export interface ProcessVideoRequest {
-  video_path: string;
+  video_path?: string;  // Required for new manual from video
+  manual_id?: string;   // Required for add-language flow (loads video from metadata)
   output_filename?: string;
   use_scene_detection?: boolean;
   output_language?: string;

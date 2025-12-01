@@ -55,8 +55,16 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2 } from "lucide-react";
 import { manuals, manualProject, projects, type ManualSummary, type ManualDetail, type ProjectSummary } from "@/lib/api";
+import { useVideoProcessing } from "@/hooks/useWebSocket";
+import { ProcessingProgress } from "@/components/processing/ProcessingProgress";
 
 // Extended manual info with additional data
 interface ManualWithProject extends ManualSummary {
@@ -69,6 +77,8 @@ export default function ManualsPage() {
   const [loading, setLoading] = useState(true);
   const [selectedManual, setSelectedManual] = useState<ManualDetail | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [viewingLanguage, setViewingLanguage] = useState<string>("en");
+  const [viewingManualId, setViewingManualId] = useState<string | null>(null);
 
   // Project data
   const [projectList, setProjectList] = useState<ProjectSummary[]>([]);
@@ -95,6 +105,13 @@ export default function ManualsPage() {
   const [manualForTags, setManualForTags] = useState<ManualWithProject | null>(null);
   const [manualTags, setManualTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
+
+  // Generate language state
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+  const [manualToGenerate, setManualToGenerate] = useState<ManualWithProject | null>(null);
+  const [generateLanguage, setGenerateLanguage] = useState("English");
+  const [overrideWarningOpen, setOverrideWarningOpen] = useState(false);
+  const { state: processingState, startProcessing, reset: resetProcessing } = useVideoProcessing();
 
   useEffect(() => {
     loadManuals();
@@ -144,13 +161,27 @@ export default function ManualsPage() {
     }
   }
 
-  async function handleView(manualId: string, language = "en") {
+  async function handleView(manualId: string, language: string) {
     try {
       const manual = await manuals.get(manualId, language);
       setSelectedManual(manual);
+      setViewingManualId(manualId);
+      setViewingLanguage(language);
       setViewDialogOpen(true);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to load manual";
+      toast.error("Load failed", { description: message });
+    }
+  }
+
+  async function handleLanguageChange(language: string) {
+    if (!viewingManualId) return;
+    try {
+      const manual = await manuals.get(viewingManualId, language);
+      setSelectedManual(manual);
+      setViewingLanguage(language);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to load language";
       toast.error("Load failed", { description: message });
     }
   }
@@ -254,6 +285,57 @@ export default function ManualsPage() {
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to remove tag";
       toast.error("Error", { description: message });
+    }
+  }
+
+  // Generate language functions
+  function openGenerateDialog(manual: ManualWithProject) {
+    setManualToGenerate(manual);
+    setGenerateLanguage("English");
+    resetProcessing();
+    setGenerateDialogOpen(true);
+  }
+
+  // Language code mapping (simplified - backend handles full mapping)
+  function getLanguageCode(language: string): string {
+    const map: Record<string, string> = {
+      english: "en", spanish: "es", french: "fr", german: "de",
+      italian: "it", portuguese: "pt", dutch: "nl", russian: "ru",
+      chinese: "zh", japanese: "ja", korean: "ko", arabic: "ar",
+    };
+    return map[language.toLowerCase()] || language.toLowerCase().slice(0, 2);
+  }
+
+  async function handleGenerate() {
+    if (!manualToGenerate) return;
+
+    // Check if language already exists
+    const langCode = getLanguageCode(generateLanguage);
+    const existingLangs = manualToGenerate.languages || [];
+    if (existingLangs.includes(langCode)) {
+      setOverrideWarningOpen(true);
+      return;
+    }
+
+    await startGeneration();
+  }
+
+  async function startGeneration() {
+    if (!manualToGenerate) return;
+
+    setOverrideWarningOpen(false);
+
+    try {
+      await startProcessing({
+        manual_id: manualToGenerate.id,
+        output_language: generateLanguage,
+        use_scene_detection: true,
+      });
+      // Reload manuals after completion
+      await loadManuals();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Generation failed";
+      toast.error("Generation failed", { description: message });
     }
   }
 
@@ -465,92 +547,140 @@ export default function ManualsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredManuals.map((manual) => (
-            <Card key={manual.id}>
-              <CardHeader className="pb-2">
+            <Card
+              key={manual.id}
+              className="
+                group relative overflow-hidden flex flex-col
+                transition-all duration-300 ease-out
+                hover:shadow-lg hover:-translate-y-1
+                hover:border-primary/30
+              "
+            >
+              {/* Subtle gradient overlay on hover */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+              <CardHeader className="pb-0 relative">
                 <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="text-base truncate flex-1">{manual.id}</CardTitle>
+                  {/* Editorial title with serif font */}
+                  <CardTitle className="font-display text-lg tracking-tight leading-tight truncate flex-1">
+                    {manual.id}
+                  </CardTitle>
+
+                  {/* Edit button - reveals on hover */}
+                  <Link href={`/dashboard/manuals/${manual.id}/edit`}>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="Edit manual"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </Link>
                 </div>
 
-                {/* Source video info */}
-                {manual.source_video && (
-                  <div className="flex items-center gap-1 text-sm mt-1">
-                    <Video className="h-3 w-3 text-muted-foreground" />
+                {/* Source, Project & Languages info */}
+                <div className="space-y-1.5 mt-2">
+                  {/* Source video info */}
+                  {manual.source_video && (
                     <Link
                       href="/dashboard/videos"
-                      className="text-muted-foreground hover:text-foreground truncate flex items-center gap-1"
+                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group/link"
                     >
-                      {manual.source_video.name}
+                      <Video className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{manual.source_video.name}</span>
                       {!manual.source_video.exists && (
-                        <Badge variant="destructive" className="text-xs px-1 py-0">
+                        <Badge variant="destructive" className="text-xs px-1.5 py-0">
                           <AlertCircle className="h-3 w-3 mr-0.5" />
                           deleted
                         </Badge>
                       )}
                     </Link>
-                  </div>
-                )}
-
-                {/* Project info */}
-                {manual.project_name && manual.project_id && (
-                  <Link href="/dashboard/projects">
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mt-1">
-                      <FolderKanban className="h-3 w-3" />
-                      <span className="truncate">{manual.project_name}</span>
-                      <ArrowUpRight className="h-3 w-3" />
-                    </div>
-                  </Link>
-                )}
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm text-muted-foreground mb-3">
-                  <p className="flex items-center gap-2">
-                    <ImageIcon className="h-4 w-4" />
-                    {manual.screenshot_count} screenshots
-                  </p>
-                  <p>Languages: {manual.languages.join(", ") || "en"}</p>
-                  {manual.created_at && (
-                    <p>
-                      Created: {new Date(manual.created_at).toLocaleDateString()}
-                    </p>
                   )}
+
+                  {/* Project info */}
+                  {manual.project_name && manual.project_id && (
+                    <Link
+                      href="/dashboard/projects"
+                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <FolderKanban className="h-3.5 w-3.5 shrink-0 text-primary" />
+                      <span className="truncate">{manual.project_name}</span>
+                      <ArrowUpRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </Link>
+                  )}
+
+                  {/* Languages */}
+                  <div className="flex items-center gap-1.5">
+                    {(manual.languages.length > 0 ? manual.languages : ["en"]).map((lang) => (
+                      <Badge key={lang} variant="outline" className="text-xs px-1.5 py-0 font-mono uppercase">
+                        {lang}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent className="relative flex-1 flex flex-col">
+                {/* Screenshots row */}
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <ImageIcon className="h-4 w-4" />
+                  <span className="font-medium text-foreground">{manual.screenshot_count}</span>
+                  <span>screenshots</span>
                 </div>
 
                 {/* Tags */}
                 {manual.tags && manual.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mb-3">
+                  <div className="flex flex-wrap gap-1.5 mt-3">
                     {manual.tags.map((tag) => (
-                      <Badge key={tag} variant="outline" className="text-xs">
+                      <Badge key={tag} variant="secondary" className="text-xs">
                         {tag}
                       </Badge>
                     ))}
                   </div>
                 )}
 
-                <div className="flex gap-2 flex-wrap">
+                {/* Spacer to push actions to bottom */}
+                <div className="flex-1 min-h-4" />
+
+                {/* Created date - subtle */}
+                {manual.created_at && (
+                  <p className="text-xs text-muted-foreground/60 mb-3">
+                    {new Date(manual.created_at).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </p>
+                )}
+
+                {/* Actions - always at bottom */}
+                <div className="flex items-center gap-2">
                   <Button
                     size="sm"
                     className="flex-1"
-                    onClick={() => handleView(manual.id)}
+                    onClick={() => handleView(manual.id, manual.languages[0] || "en")}
                   >
                     <Eye className="mr-2 h-4 w-4" />
-                    View
+                    View Manual
                   </Button>
-                  <Link href={`/dashboard/manuals/${manual.id}/edit`}>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      title="Edit manual"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </Link>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openGenerateDialog(manual)}
+                    title="Generate in another language"
+                    className="opacity-70 hover:opacity-100 transition-opacity"
+                  >
+                    <Wand2 className="h-4 w-4" />
+                  </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onClick={() => openAssignDialog(manual)}
                     title="Assign to project"
+                    className="opacity-70 hover:opacity-100 transition-opacity"
                   >
                     <FolderKanban className="h-4 w-4" />
                   </Button>
@@ -559,6 +689,7 @@ export default function ManualsPage() {
                     variant="outline"
                     onClick={() => openTagsDialog(manual)}
                     title="Manage tags"
+                    className="opacity-70 hover:opacity-100 transition-opacity"
                   >
                     <Tag className="h-4 w-4" />
                   </Button>
@@ -566,6 +697,7 @@ export default function ManualsPage() {
                     size="sm"
                     variant="outline"
                     onClick={() => openDeleteDialog(manual)}
+                    className="opacity-60 hover:opacity-100 hover:border-destructive hover:text-destructive transition-all"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -585,7 +717,7 @@ export default function ManualsPage() {
 
             {/* Source info in header */}
             {selectedManual && (
-              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mt-2">
+              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-2">
                 {manualList.find((m) => m.id === selectedManual.id)?.source_video && (
                   <span className="flex items-center gap-1.5 bg-muted px-2.5 py-1 rounded-md">
                     <Video className="h-4 w-4" />
@@ -602,6 +734,38 @@ export default function ManualsPage() {
                   <ImageIcon className="h-4 w-4" />
                   {selectedManual.screenshots.length} screenshots
                 </span>
+
+                {/* Language Switcher */}
+                {(() => {
+                  const currentManual = manualList.find((m) => m.id === selectedManual.id);
+                  if (!currentManual || currentManual.languages.length <= 1) return null;
+                  return (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <button className="flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1 rounded-md hover:bg-primary/20 transition-colors">
+                          <Globe className="h-4 w-4" />
+                          {viewingLanguage.toUpperCase()}
+                          <ChevronDown className="h-3 w-3" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start">
+                        {currentManual.languages.map((lang) => (
+                          <DropdownMenuItem
+                            key={lang}
+                            onClick={() => handleLanguageChange(lang)}
+                            className={`cursor-pointer ${lang === viewingLanguage ? "bg-accent" : ""}`}
+                          >
+                            <Globe className="mr-2 h-4 w-4" />
+                            {lang.toUpperCase()}
+                            {lang === viewingLanguage && (
+                              <Check className="ml-auto h-4 w-4" />
+                            )}
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  );
+                })()}
               </div>
             )}
           </SheetHeader>
@@ -890,6 +1054,105 @@ export default function ManualsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Generate Language Dialog */}
+      <Dialog open={generateDialogOpen} onOpenChange={(open) => {
+        if (!open && processingState.status === "processing") return; // Prevent closing while processing
+        setGenerateDialogOpen(open);
+        if (!open) resetProcessing();
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Wand2 className="h-5 w-5" />
+              Generate Language
+            </DialogTitle>
+          </DialogHeader>
+
+          {processingState.status === "idle" ? (
+            <div className="space-y-4">
+              {/* Manual Info */}
+              <div className="p-4 bg-muted rounded-lg">
+                <p className="font-medium">{manualToGenerate?.id}</p>
+                <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                  {manualToGenerate?.source_video && (
+                    <span className="flex items-center gap-1.5">
+                      <Video className="h-4 w-4" />
+                      {manualToGenerate.source_video.name}
+                    </span>
+                  )}
+                  {manualToGenerate?.project_name && (
+                    <span className="flex items-center gap-1.5">
+                      <FolderKanban className="h-4 w-4" />
+                      {manualToGenerate.project_name}
+                    </span>
+                  )}
+                </div>
+                {/* Existing languages */}
+                {manualToGenerate?.languages && manualToGenerate.languages.length > 0 && (
+                  <div className="flex items-center gap-2 mt-3">
+                    <span className="text-xs text-muted-foreground">Existing:</span>
+                    {manualToGenerate.languages.map((lang) => (
+                      <Badge key={lang} variant="outline" className="text-xs font-mono uppercase">
+                        {lang}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Output Language</Label>
+                  <Input
+                    value={generateLanguage}
+                    onChange={(e) => setGenerateLanguage(e.target.value)}
+                    placeholder="English"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Project</Label>
+                  <Input
+                    value={manualToGenerate?.project_name || "Default Project"}
+                    disabled
+                    className="bg-muted"
+                  />
+                </div>
+              </div>
+
+              <Button onClick={handleGenerate} className="w-full">
+                <Wand2 className="mr-2 h-4 w-4" />
+                Generate Manual
+              </Button>
+            </div>
+          ) : (
+            <ProcessingProgress state={processingState} />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Override Warning Dialog */}
+      <AlertDialog open={overrideWarningOpen} onOpenChange={setOverrideWarningOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-500" />
+              Language Already Exists
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              A manual in <strong>{generateLanguage}</strong> already exists for this manual.
+              Regenerating will replace the existing version. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={startGeneration}>
+              Override Existing
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

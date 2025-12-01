@@ -40,98 +40,141 @@ export default function DashboardPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">
+        <h1 className="font-display text-4xl tracking-tight">Dashboard</h1>
+        <p className="text-muted-foreground mt-1">
           Welcome to Video Manual Platform
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Videos</CardTitle>
-            <Video className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {loading ? "..." : stats.videoCount}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Available for processing
-            </p>
-          </CardContent>
-        </Card>
+      {/* Stat Cards */}
+      <div className="grid gap-6 md:grid-cols-3">
+        <Link href="/dashboard/videos">
+          <Card className="group transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-primary/30 cursor-pointer">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Videos</p>
+                  <p className="font-display text-4xl tracking-tight">
+                    {loading ? "..." : stats.videoCount}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Available for processing
+                  </p>
+                </div>
+                <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                  <Video className="h-6 w-6" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Manuals</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {loading ? "..." : stats.manualCount}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Generated manuals
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/manuals">
+          <Card className="group transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-primary/30 cursor-pointer">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Manuals</p>
+                  <p className="font-display text-4xl tracking-tight">
+                    {loading ? "..." : stats.manualCount}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Generated manuals
+                  </p>
+                </div>
+                <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                  <FileText className="h-6 w-6" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Projects</CardTitle>
-            <FolderKanban className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {loading ? "..." : stats.projectCount}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Organized collections
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/projects">
+          <Card className="group transition-all duration-300 hover:shadow-lg hover:-translate-y-1 hover:border-primary/30 cursor-pointer">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">Projects</p>
+                  <p className="font-display text-4xl tracking-tight">
+                    {loading ? "..." : stats.projectCount}
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Organized collections
+                  </p>
+                </div>
+                <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                  <FolderKanban className="h-6 w-6" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      {/* Quick Actions & Getting Started */}
+      <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
+            <CardTitle className="font-display text-xl">Quick Actions</CardTitle>
             <CardDescription>
               Common tasks to get started
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <Link href="/dashboard/videos">
-              <Button variant="outline" className="w-full justify-start">
-                <Plus className="mr-2 h-4 w-4" />
-                Process a Video
-              </Button>
+          <CardContent className="space-y-3">
+            <Link href="/dashboard/videos" className="block">
+              <div className="group flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent hover:border-primary/30 transition-all">
+                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                  <Video className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">Process a Video</p>
+                  <p className="text-sm text-muted-foreground">Generate a manual from video</p>
+                </div>
+                <Plus className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
             </Link>
-            <Link href="/dashboard/projects">
-              <Button variant="outline" className="w-full justify-start">
-                <Plus className="mr-2 h-4 w-4" />
-                Create a Project
-              </Button>
+            <Link href="/dashboard/projects" className="block">
+              <div className="group flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent hover:border-primary/30 transition-all">
+                <div className="flex items-center justify-center h-10 w-10 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                  <FolderKanban className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-medium">Create a Project</p>
+                  <p className="text-sm text-muted-foreground">Organize manuals together</p>
+                </div>
+                <Plus className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
             </Link>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Getting Started</CardTitle>
+            <CardTitle className="font-display text-xl">Getting Started</CardTitle>
             <CardDescription>
               How to use the platform
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2 text-sm text-muted-foreground">
-            <p>1. Upload or select a video from your videos folder</p>
-            <p>2. Process it to generate a step-by-step manual</p>
-            <p>3. Organize manuals into projects</p>
-            <p>4. Compile projects into unified documents</p>
-            <p>5. Export to PDF, Word, or HTML</p>
+          <CardContent>
+            <ol className="space-y-3">
+              {[
+                "Upload or select a video from your videos folder",
+                "Process it to generate a step-by-step manual",
+                "Organize manuals into projects",
+                "Compile projects into unified documents",
+                "Export to PDF, Word, or HTML",
+              ].map((step, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary text-xs font-semibold shrink-0">
+                    {i + 1}
+                  </span>
+                  <span className="text-sm text-muted-foreground pt-0.5">{step}</span>
+                </li>
+              ))}
+            </ol>
           </CardContent>
         </Card>
       </div>
