@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="burgundy">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Manual - Classic Editorial Design</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    /* Layout System */
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 var(--space-6);
+    }
+
+    .container-narrow {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 var(--space-6);
+    }
+
+    .container-text {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    /* Navigation */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: var(--z-sticky);
+      background-color: var(--color-background);
+      border-bottom: var(--border-width-medium) solid var(--color-border);
+      backdrop-filter: blur(12px);
+      background-color: color-mix(in srgb, var(--color-background) 95%, transparent);
+    }
+
+    .nav-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 88px;
+    }
+
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-lg);
+      font-weight: var(--weight-bold);
+      color: var(--color-text);
+      text-decoration: none;
+      letter-spacing: var(--tracking-tight);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: var(--space-8);
+      list-style: none;
+      align-items: center;
+    }
+
+    .nav-link {
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-medium);
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      letter-spacing: var(--tracking-wide);
+      transition: color var(--transition-fast);
+    }
+
+    .nav-link:hover {
+      color: var(--color-text);
+    }
+
+    /* Palette Switcher */
+    .palette-switcher {
+      position: relative;
+    }
+
+    .palette-button {
+      width: 40px;
+      height: 40px;
+      border: var(--border-width-thin) solid var(--color-border);
+      background-color: var(--color-surface);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-semibold);
+      color: var(--color-text-secondary);
+    }
+
+    .palette-button:hover {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    .palette-dropdown {
+      position: absolute;
+      top: calc(100% + var(--space-2));
+      right: 0;
+      background-color: var(--color-surface-elevated);
+      border: var(--border-width-thin) solid var(--color-border);
+      box-shadow: var(--shadow-lg);
+      min-width: 180px;
+      display: none;
+      z-index: var(--z-dropdown);
+    }
+
+    .palette-dropdown.active {
+      display: block;
+    }
+
+    .palette-option {
+      padding: var(--space-3) var(--space-4);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      cursor: pointer;
+      transition: background-color var(--transition-fast);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .palette-option:last-child {
+      border-bottom: none;
+    }
+
+    .palette-option:hover {
+      background-color: var(--color-neutral-100);
+    }
+
+    .palette-option.active {
+      background-color: var(--color-accent-light);
+    }
+
+    .palette-swatch {
+      width: 20px;
+      height: 20px;
+      border: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .palette-name {
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-medium);
+      color: var(--color-text);
+    }
+
+    /* Theme Toggle */
+    .theme-toggle {
+      width: 40px;
+      height: 40px;
+      border: var(--border-width-thin) solid var(--color-border);
+      background-color: var(--color-surface);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--color-accent);
+    }
+
+    .theme-icon {
+      width: 18px;
+      height: 18px;
+      color: var(--color-text);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: var(--space-32) 0 var(--space-40);
+      border-bottom: var(--border-width-statement) solid var(--color-accent);
+      background: linear-gradient(180deg,
+        var(--color-background) 0%,
+        color-mix(in srgb, var(--color-accent-50) 30%, var(--color-background)) 100%);
+    }
+
+    .hero-content {
+      max-width: 900px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .hero-label {
+      display: inline-block;
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-widest);
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: var(--space-8);
+      padding-bottom: var(--space-2);
+      border-bottom: var(--border-width-medium) solid var(--color-accent);
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-2xl);
+      font-weight: var(--weight-bold);
+      line-height: var(--leading-tight);
+      letter-spacing: var(--tracking-tighter);
+      color: var(--color-text);
+      margin-bottom: var(--space-8);
+    }
+
+    .hero-subtitle {
+      font-family: var(--font-display);
+      font-size: var(--text-body-xl);
+      font-style: italic;
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-12);
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: var(--space-4);
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Features Section */
+    .features {
+      padding: var(--space-40) 0;
+      background-color: var(--color-surface);
+    }
+
+    .features-header {
+      text-align: center;
+      margin-bottom: var(--space-20);
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .features-label {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-widest);
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: var(--space-4);
+    }
+
+    .features-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-lg);
+      font-weight: var(--weight-semibold);
+      line-height: var(--leading-tight);
+      margin-bottom: var(--space-6);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-16);
+    }
+
+    .feature-card {
+      padding: var(--space-10);
+      border-left: var(--border-width-statement) solid var(--color-border);
+      transition: all var(--transition-base);
+    }
+
+    .feature-card:hover {
+      border-left-color: var(--color-accent);
+      transform: translateX(4px);
+    }
+
+    .feature-number {
+      font-family: var(--font-display);
+      font-size: var(--text-display-md);
+      font-weight: var(--weight-normal);
+      color: var(--color-accent);
+      margin-bottom: var(--space-4);
+      opacity: 0.4;
+    }
+
+    .feature-title {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-xl);
+      font-weight: var(--weight-semibold);
+      margin-bottom: var(--space-4);
+      line-height: var(--leading-snug);
+    }
+
+    .feature-description {
+      font-size: var(--text-body-lg);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+    }
+
+    /* Pull Quote Section */
+    .quote-section {
+      padding: var(--space-40) 0;
+      background-color: var(--color-accent-50);
+      border-top: var(--border-width-medium) solid var(--color-accent);
+      border-bottom: var(--border-width-medium) solid var(--color-accent);
+    }
+
+    .quote-content {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .large-quote {
+      font-family: var(--font-display);
+      font-size: var(--text-display-md);
+      font-style: italic;
+      font-weight: var(--weight-normal);
+      line-height: var(--leading-snug);
+      color: var(--color-text);
+      margin-bottom: var(--space-8);
+      text-align: center;
+    }
+
+    .quote-attribution {
+      text-align: center;
+      font-size: var(--text-body-lg);
+      color: var(--color-text-secondary);
+    }
+
+    .quote-author {
+      font-weight: var(--weight-semibold);
+      color: var(--color-text);
+    }
+
+    /* Process Section */
+    .process {
+      padding: var(--space-40) 0;
+    }
+
+    .process-header {
+      text-align: center;
+      margin-bottom: var(--space-24);
+    }
+
+    .process-label {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-widest);
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: var(--space-4);
+    }
+
+    .process-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-lg);
+      font-weight: var(--weight-semibold);
+      line-height: var(--leading-tight);
+    }
+
+    .process-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-8);
+    }
+
+    .process-step {
+      text-align: center;
+      padding: var(--space-8);
+      border: var(--border-width-thin) solid var(--color-border);
+      background-color: var(--color-surface);
+      transition: all var(--transition-base);
+    }
+
+    .process-step:hover {
+      border-color: var(--color-accent);
+      box-shadow: var(--shadow-md);
+    }
+
+    .process-step-number {
+      font-family: var(--font-display);
+      font-size: var(--text-display-xl);
+      font-weight: var(--weight-normal);
+      color: var(--color-accent);
+      margin-bottom: var(--space-4);
+      opacity: 0.3;
+    }
+
+    .process-step-title {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-lg);
+      font-weight: var(--weight-semibold);
+      margin-bottom: var(--space-3);
+    }
+
+    .process-step-description {
+      font-size: var(--text-body-md);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+    }
+
+    /* CTA Section */
+    .cta {
+      padding: var(--space-40) 0;
+      background-color: var(--color-accent);
+      color: white;
+      text-align: center;
+    }
+
+    .cta-content {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .cta-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-lg);
+      font-weight: var(--weight-bold);
+      line-height: var(--leading-tight);
+      margin-bottom: var(--space-8);
+      color: white;
+    }
+
+    .cta-description {
+      font-size: var(--text-body-xl);
+      line-height: var(--leading-relaxed);
+      opacity: 0.95;
+      margin-bottom: var(--space-10);
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: var(--space-4);
+      justify-content: center;
+    }
+
+    /* Footer */
+    .footer {
+      padding: var(--space-20) 0 var(--space-12);
+      background-color: var(--color-surface);
+      border-top: var(--border-width-medium) solid var(--color-border);
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: var(--space-16);
+      margin-bottom: var(--space-16);
+    }
+
+    .footer-brand {
+      max-width: 400px;
+    }
+
+    .footer-logo {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-xl);
+      font-weight: var(--weight-bold);
+      color: var(--color-text);
+      margin-bottom: var(--space-4);
+    }
+
+    .footer-tagline {
+      font-size: var(--text-body-md);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+    }
+
+    .footer-section-title {
+      font-family: var(--font-body);
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-wider);
+      text-transform: uppercase;
+      color: var(--color-text);
+      margin-bottom: var(--space-4);
+    }
+
+    .footer-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .footer-link {
+      font-size: var(--text-body-sm);
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      transition: color var(--transition-fast);
+    }
+
+    .footer-link:hover {
+      color: var(--color-accent);
+    }
+
+    .footer-bottom {
+      padding-top: var(--space-8);
+      border-top: var(--border-width-thin) solid var(--color-border);
+      text-align: center;
+      font-size: var(--text-body-sm);
+      color: var(--color-text-secondary);
+    }
+
+    /* Button Styles */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-body);
+      font-size: var(--text-body-md);
+      font-weight: var(--weight-medium);
+      line-height: 1;
+      text-decoration: none;
+      border: var(--border-width-medium) solid transparent;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      padding: var(--space-4) var(--space-8);
+      letter-spacing: var(--tracking-wide);
+    }
+
+    .btn-primary {
+      background-color: var(--color-accent);
+      border-color: var(--color-accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--color-accent-hover);
+      border-color: var(--color-accent-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border-color: var(--color-border-strong);
+      color: var(--color-text);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    .btn-white {
+      background-color: white;
+      border-color: white;
+      color: var(--color-accent);
+    }
+
+    .btn-white:hover {
+      background-color: transparent;
+      border-color: white;
+      color: white;
+    }
+
+    .btn-lg {
+      padding: var(--space-5) var(--space-10);
+      font-size: var(--text-body-lg);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .process-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        gap: var(--space-4);
+      }
+
+      .hero {
+        padding: var(--space-20) 0 var(--space-24);
+      }
+
+      .features,
+      .process,
+      .cta {
+        padding: var(--space-24) 0;
+      }
+
+      .quote-section {
+        padding: var(--space-24) 0;
+      }
+
+      .process-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-cta,
+      .cta-buttons {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .nav-container {
+        height: 64px;
+      }
+
+      .nav-links {
+        gap: var(--space-2);
+      }
+
+      .nav-link {
+        display: none;
+      }
+
+      .nav-link.mobile-visible {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="container">
+      <div class="nav-container">
+        <a href="#" class="nav-logo">Video Manual</a>
+        <ul class="nav-links">
+          <li><a href="#features" class="nav-link">Features</a></li>
+          <li><a href="#process" class="nav-link">Process</a></li>
+          <li>
+            <div class="palette-switcher">
+              <button class="palette-button" id="paletteButton" aria-label="Switch color palette">
+                <span>P</span>
+              </button>
+              <div class="palette-dropdown" id="paletteDropdown">
+                <div class="palette-option active" data-palette="burgundy">
+                  <div class="palette-swatch" style="background-color: #722F37;"></div>
+                  <span class="palette-name">Burgundy</span>
+                </div>
+                <div class="palette-option" data-palette="navy">
+                  <div class="palette-swatch" style="background-color: #1B365D;"></div>
+                  <span class="palette-name">Navy</span>
+                </div>
+                <div class="palette-option" data-palette="forest">
+                  <div class="palette-swatch" style="background-color: #1B4332;"></div>
+                  <span class="palette-name">Forest</span>
+                </div>
+                <div class="palette-option" data-palette="charcoal">
+                  <div class="palette-swatch" style="background-color: #36454F;"></div>
+                  <span class="palette-name">Charcoal</span>
+                </div>
+                <div class="palette-option" data-palette="sepia">
+                  <div class="palette-swatch" style="background-color: #704214;"></div>
+                  <span class="palette-name">Sepia</span>
+                </div>
+              </div>
+            </div>
+          </li>
+          <li>
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+              <svg class="theme-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+              </svg>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <span class="hero-label">Classic Editorial Design</span>
+        <h1 class="hero-title">Transform Video into Timeless Documentation</h1>
+        <p class="hero-subtitle">
+          Create comprehensive, beautifully crafted visual manuals from your video content with our AI-powered platform that brings magazine-quality design to technical documentation.
+        </p>
+        <div class="hero-cta">
+          <a href="#" class="btn btn-primary btn-lg">Begin Your Journey</a>
+          <a href="#" class="btn btn-secondary btn-lg">Explore Examples</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="features">
+    <div class="container-narrow">
+      <div class="features-header">
+        <div class="features-label">Capabilities</div>
+        <h2 class="features-title">Sophisticated Tools for Professional Documentation</h2>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-number">I</div>
+          <h3 class="feature-title">Intelligent Video Analysis</h3>
+          <p class="feature-description">
+            Our advanced AI meticulously examines your video content, extracting key moments, identifying critical actions, and generating eloquent descriptions that capture the essence of each step.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-number">II</div>
+          <h3 class="feature-title">Editorial-Grade Generation</h3>
+          <p class="feature-description">
+            Transform analyzed content into publication-quality manuals with refined typography, elegant layouts, and sophisticated visual hierarchy that rivals premium print publications.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-number">III</div>
+          <h3 class="feature-title">Refined Text Editor</h3>
+          <p class="feature-description">
+            Polish your documentation with our elegant editor featuring AI-assisted writing, classical formatting options, and collaborative tools designed for discerning professionals.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-number">IV</div>
+          <h3 class="feature-title">Comprehensive Compilation</h3>
+          <p class="feature-description">
+            Organize multiple manuals into cohesive collections with custom sequencing, chapter divisions, and export capabilities that maintain visual excellence across all formats.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-number">V</div>
+          <h3 class="feature-title">Multi-Format Publishing</h3>
+          <p class="feature-description">
+            Export your documentation in various formats including premium PDF, responsive HTML, and structured Markdown, each maintaining the refined aesthetic of the original.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-number">VI</div>
+          <h3 class="feature-title">Collaborative Workflow</h3>
+          <p class="feature-description">
+            Enable seamless teamwork with version control, editorial comments, and real-time synchronization that preserves the integrity of your documentation.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quote Section -->
+  <section class="quote-section">
+    <div class="container">
+      <div class="quote-content">
+        <blockquote class="large-quote">
+          "The finest documentation reads like a well-crafted story, guiding readers through complexity with elegance and clarity."
+        </blockquote>
+        <p class="quote-attribution">
+          <span class="quote-author">Dr. Eleanor Whitfield</span>, Professor of Technical Communication
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Process Section -->
+  <section id="process" class="process">
+    <div class="container-narrow">
+      <div class="process-header">
+        <div class="process-label">Methodology</div>
+        <h2 class="process-title">From Video to Manual in Four Refined Steps</h2>
+      </div>
+      <div class="process-grid">
+        <div class="process-step">
+          <div class="process-step-number">1</div>
+          <h3 class="process-step-title">Upload</h3>
+          <p class="process-step-description">
+            Submit your video content in any standard format. We support files up to 2GB with seamless processing.
+          </p>
+        </div>
+        <div class="process-step">
+          <div class="process-step-number">2</div>
+          <h3 class="process-step-title">Analyze</h3>
+          <p class="process-step-description">
+            Our AI examines your video, extracting frames and generating detailed, articulate descriptions.
+          </p>
+        </div>
+        <div class="process-step">
+          <div class="process-step-number">3</div>
+          <h3 class="process-step-title">Refine</h3>
+          <p class="process-step-description">
+            Review and perfect the generated manual with our sophisticated editor and AI copilot.
+          </p>
+        </div>
+        <div class="process-step">
+          <div class="process-step-number">4</div>
+          <h3 class="process-step-title">Publish</h3>
+          <p class="process-step-description">
+            Export in your preferred format and share with your audience, maintaining quality throughout.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta">
+    <div class="container">
+      <div class="cta-content">
+        <h2 class="cta-title">Elevate Your Documentation</h2>
+        <p class="cta-description">
+          Join discerning professionals who demand excellence in their technical documentation.
+          Begin your complimentary trial today.
+        </p>
+        <div class="cta-buttons">
+          <a href="#" class="btn btn-white btn-lg">Start Free Trial</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="footer-logo">Video Manual</div>
+          <p class="footer-tagline">
+            Sophisticated AI-powered platform for creating exceptional visual documentation from video content.
+          </p>
+        </div>
+        <div>
+          <h4 class="footer-section-title">Product</h4>
+          <ul class="footer-links">
+            <li><a href="#" class="footer-link">Features</a></li>
+            <li><a href="#" class="footer-link">Pricing</a></li>
+            <li><a href="#" class="footer-link">Use Cases</a></li>
+            <li><a href="#" class="footer-link">Documentation</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-section-title">Company</h4>
+          <ul class="footer-links">
+            <li><a href="#" class="footer-link">About</a></li>
+            <li><a href="#" class="footer-link">Journal</a></li>
+            <li><a href="#" class="footer-link">Careers</a></li>
+            <li><a href="#" class="footer-link">Contact</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-section-title">Legal</h4>
+          <ul class="footer-links">
+            <li><a href="#" class="footer-link">Privacy</a></li>
+            <li><a href="#" class="footer-link">Terms</a></li>
+            <li><a href="#" class="footer-link">Security</a></li>
+            <li><a href="#" class="footer-link">Compliance</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        2025 Video Manual. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Palette Switcher
+    const html = document.documentElement;
+    const paletteButton = document.getElementById('paletteButton');
+    const paletteDropdown = document.getElementById('paletteDropdown');
+    const paletteOptions = document.querySelectorAll('.palette-option');
+
+    // Load saved palette
+    const currentPalette = localStorage.getItem('palette') || 'burgundy';
+    html.setAttribute('data-palette', currentPalette);
+    updateActivePalette(currentPalette);
+
+    // Toggle dropdown
+    paletteButton.addEventListener('click', function(e) {
+      e.stopPropagation();
+      paletteDropdown.classList.toggle('active');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function() {
+      paletteDropdown.classList.remove('active');
+    });
+
+    // Handle palette selection
+    paletteOptions.forEach(option => {
+      option.addEventListener('click', function() {
+        const palette = this.getAttribute('data-palette');
+        html.setAttribute('data-palette', palette);
+        localStorage.setItem('palette', palette);
+        updateActivePalette(palette);
+        paletteDropdown.classList.remove('active');
+      });
+    });
+
+    function updateActivePalette(palette) {
+      paletteOptions.forEach(option => {
+        if (option.getAttribute('data-palette') === palette) {
+          option.classList.add('active');
+        } else {
+          option.classList.remove('active');
+        }
+      });
+    }
+
+    // Theme Toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    html.setAttribute('data-theme', currentTheme);
+    updateThemeIcon(currentTheme);
+
+    function updateThemeIcon(theme) {
+      const icon = themeToggle.querySelector('.theme-icon');
+      if (theme === 'dark') {
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>';
+      } else {
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>';
+      }
+    }
+
+    themeToggle.addEventListener('click', function() {
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      updateThemeIcon(newTheme);
+    });
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const href = this.getAttribute('href');
+        if (href !== '#' && href !== '') {
+          e.preventDefault();
+          const target = document.querySelector(href);
+          if (target) {
+            target.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>

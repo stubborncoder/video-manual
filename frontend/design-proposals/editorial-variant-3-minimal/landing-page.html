@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="ink" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Manual - Minimal Editorial</title>
+  <link rel="stylesheet" href="design-system.css">
+</head>
+<body>
+
+  <!-- Theme Controls -->
+  <div class="theme-controls">
+    <div class="palette-dot active" data-palette="ink" title="Ink"></div>
+    <div class="palette-dot" data-palette="stone" title="Stone"></div>
+    <div class="palette-dot" data-palette="moss" title="Moss"></div>
+    <div class="palette-dot" data-palette="clay" title="Clay"></div>
+    <div class="palette-dot" data-palette="slate" title="Slate"></div>
+    <button class="theme-toggle" id="themeToggle">
+      <span id="themeLabel">Light</span>
+    </button>
+  </div>
+
+  <!-- Navigation - Minimal -->
+  <nav style="padding: var(--space-8) 0; border-bottom: var(--border-width) solid var(--border-light);">
+    <div class="container flex justify-between items-center">
+      <a href="#" class="link text-xl serif font-medium">Video Manual</a>
+      <div class="flex gap-8">
+        <a href="#features" class="link text-sm">Features</a>
+        <a href="#pricing" class="link text-sm">Pricing</a>
+        <a href="#contact" class="link text-sm">Contact</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero - Maximum Breathing Room -->
+  <section class="section-lg">
+    <div class="container container-narrow text-center">
+      <h1 class="text-5xl serif font-medium mb-8" style="max-width: 800px; margin-left: auto; margin-right: auto;">
+        Transform video into visual manuals
+      </h1>
+      <p class="text-lg mb-16" style="color: var(--text-secondary); max-width: 540px; margin-left: auto; margin-right: auto;">
+        AI-powered platform that generates step-by-step visual manuals from video content.
+      </p>
+      <div class="flex gap-4 justify-center">
+        <a href="#" class="btn btn-primary">Get Started</a>
+        <a href="#" class="btn">Learn More</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Spacer -->
+  <div style="height: var(--space-64);"></div>
+
+  <!-- Features - Minimal Grid -->
+  <section id="features" class="section">
+    <div class="container container-wide">
+      <div class="text-center mb-24">
+        <span class="label mb-4">Features</span>
+        <h2 class="text-3xl serif font-medium">Elegant simplicity</h2>
+      </div>
+
+      <div class="grid grid-3">
+        <!-- Feature 1 -->
+        <div class="card-minimal">
+          <span class="label mb-4">01</span>
+          <h3 class="text-xl serif font-medium mb-4">AI Analysis</h3>
+          <p class="text-base" style="color: var(--text-secondary);">
+            Advanced computer vision analyzes your video content, identifying key steps and actions automatically.
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="card-minimal">
+          <span class="label mb-4">02</span>
+          <h3 class="text-xl serif font-medium mb-4">Visual Documentation</h3>
+          <p class="text-base" style="color: var(--text-secondary);">
+            Generates clear, step-by-step visual guides with screenshots and detailed descriptions.
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="card-minimal">
+          <span class="label mb-4">03</span>
+          <h3 class="text-xl serif font-medium mb-4">Export Anywhere</h3>
+          <p class="text-base" style="color: var(--text-secondary);">
+            Export your manuals in multiple formats: PDF, Markdown, or HTML for maximum flexibility.
+          </p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="card-minimal">
+          <span class="label mb-4">04</span>
+          <h3 class="text-xl serif font-medium mb-4">Intelligent Editing</h3>
+          <p class="text-base" style="color: var(--text-secondary);">
+            Refine and customize generated content with an intuitive editor built for precision.
+          </p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="card-minimal">
+          <span class="label mb-4">05</span>
+          <h3 class="text-xl serif font-medium mb-4">Team Collaboration</h3>
+          <p class="text-base" style="color: var(--text-secondary);">
+            Share manuals with your team, collect feedback, and iterate together seamlessly.
+          </p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="card-minimal">
+          <span class="label mb-4">06</span>
+          <h3 class="text-xl serif font-medium mb-4">Version Control</h3>
+          <p class="text-base" style="color: var(--text-secondary);">
+            Track changes over time and maintain a complete history of your documentation.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Spacer -->
+  <div style="height: var(--space-64);"></div>
+
+  <!-- How It Works - Large Typography -->
+  <section class="section">
+    <div class="container container-narrow">
+      <div class="mb-24">
+        <span class="label mb-4">Process</span>
+        <h2 class="text-3xl serif font-medium">How it works</h2>
+      </div>
+
+      <div class="flex flex-col gap-24">
+        <!-- Step 1 -->
+        <div>
+          <div class="flex items-center gap-6 mb-6">
+            <span class="text-4xl serif font-light" style="color: var(--text-tertiary);">01</span>
+            <h3 class="text-2xl serif font-medium">Upload your video</h3>
+          </div>
+          <p class="text-lg" style="color: var(--text-secondary); margin-left: 88px;">
+            Simply drag and drop your video file or paste a URL. We support all common video formats and streaming platforms.
+          </p>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Step 2 -->
+        <div>
+          <div class="flex items-center gap-6 mb-6">
+            <span class="text-4xl serif font-light" style="color: var(--text-tertiary);">02</span>
+            <h3 class="text-2xl serif font-medium">AI processes content</h3>
+          </div>
+          <p class="text-lg" style="color: var(--text-secondary); margin-left: 88px;">
+            Our AI analyzes the video, identifies key moments, extracts visual frames, and generates clear step-by-step descriptions.
+          </p>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Step 3 -->
+        <div>
+          <div class="flex items-center gap-6 mb-6">
+            <span class="text-4xl serif font-light" style="color: var(--text-tertiary);">03</span>
+            <h3 class="text-2xl serif font-medium">Review and refine</h3>
+          </div>
+          <p class="text-lg" style="color: var(--text-secondary); margin-left: 88px;">
+            Edit the generated manual, adjust descriptions, reorder steps, or add additional notes using our intuitive editor.
+          </p>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Step 4 -->
+        <div>
+          <div class="flex items-center gap-6 mb-6">
+            <span class="text-4xl serif font-light" style="color: var(--text-tertiary);">04</span>
+            <h3 class="text-2xl serif font-medium">Export and share</h3>
+          </div>
+          <p class="text-lg" style="color: var(--text-secondary); margin-left: 88px;">
+            Download your manual in PDF, Markdown, or HTML format. Share it with your team or publish it to your documentation platform.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Spacer -->
+  <div style="height: var(--space-64);"></div>
+
+  <!-- Pricing - Clean and Simple -->
+  <section id="pricing" class="section">
+    <div class="container container-wide">
+      <div class="text-center mb-24">
+        <span class="label mb-4">Pricing</span>
+        <h2 class="text-3xl serif font-medium">Simple, transparent pricing</h2>
+      </div>
+
+      <div class="grid grid-3">
+        <!-- Free -->
+        <div class="card">
+          <div class="mb-8">
+            <span class="label mb-4">Free</span>
+            <div class="flex items-baseline gap-2 mb-2">
+              <span class="text-4xl serif font-medium">$0</span>
+              <span class="text-sm" style="color: var(--text-tertiary);">per month</span>
+            </div>
+          </div>
+          <ul class="flex flex-col gap-4 mb-8" style="list-style: none;">
+            <li class="text-sm">5 manuals per month</li>
+            <li class="text-sm">Video up to 10 minutes</li>
+            <li class="text-sm">PDF export</li>
+            <li class="text-sm">Basic editing</li>
+          </ul>
+          <a href="#" class="btn w-full">Start Free</a>
+        </div>
+
+        <!-- Pro -->
+        <div class="card" style="border-color: var(--border);">
+          <div class="mb-8">
+            <span class="label mb-4">Professional</span>
+            <div class="flex items-baseline gap-2 mb-2">
+              <span class="text-4xl serif font-medium">$29</span>
+              <span class="text-sm" style="color: var(--text-tertiary);">per month</span>
+            </div>
+          </div>
+          <ul class="flex flex-col gap-4 mb-8" style="list-style: none;">
+            <li class="text-sm">Unlimited manuals</li>
+            <li class="text-sm">Video up to 60 minutes</li>
+            <li class="text-sm">All export formats</li>
+            <li class="text-sm">Advanced editing</li>
+            <li class="text-sm">Team collaboration</li>
+            <li class="text-sm">Priority support</li>
+          </ul>
+          <a href="#" class="btn btn-primary w-full">Get Started</a>
+        </div>
+
+        <!-- Enterprise -->
+        <div class="card">
+          <div class="mb-8">
+            <span class="label mb-4">Enterprise</span>
+            <div class="flex items-baseline gap-2 mb-2">
+              <span class="text-4xl serif font-medium">Custom</span>
+            </div>
+          </div>
+          <ul class="flex flex-col gap-4 mb-8" style="list-style: none;">
+            <li class="text-sm">Everything in Pro</li>
+            <li class="text-sm">Unlimited video length</li>
+            <li class="text-sm">Custom branding</li>
+            <li class="text-sm">API access</li>
+            <li class="text-sm">SSO integration</li>
+            <li class="text-sm">Dedicated support</li>
+          </ul>
+          <a href="#" class="btn w-full">Contact Sales</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Spacer -->
+  <div style="height: var(--space-64);"></div>
+
+  <!-- CTA - Centered and Spacious -->
+  <section class="section">
+    <div class="container container-narrow text-center">
+      <h2 class="text-4xl serif font-medium mb-8">
+        Ready to transform your videos?
+      </h2>
+      <p class="text-lg mb-12" style="color: var(--text-secondary); max-width: 480px; margin-left: auto; margin-right: auto;">
+        Start creating beautiful visual manuals today. No credit card required.
+      </p>
+      <a href="#" class="btn btn-primary">Get Started Free</a>
+    </div>
+  </section>
+
+  <!-- Spacer -->
+  <div style="height: var(--space-64);"></div>
+
+  <!-- Footer - Minimal -->
+  <footer style="padding: var(--space-16) 0; border-top: var(--border-width) solid var(--border-light);">
+    <div class="container">
+      <div class="grid grid-4 mb-16">
+        <div>
+          <h4 class="text-sm font-medium mb-6">Product</h4>
+          <div class="flex flex-col gap-3">
+            <a href="#" class="link text-sm" style="color: var(--text-secondary);">Features</a>
+            <a href="#" class="link text-sm" style="color: var(--text-secondary);">Pricing</a>
+            <a href="#" class="link text-sm" style="color: var(--text-secondary);">Documentation</a>
+          </div>
+        </div>
+        <div>
+          <h4 class="text-sm font-medium mb-6">Company</h4>
+          <div class="flex flex-col gap-3">
+            <a href="#" class="link text-sm" style="color: var(--text-secondary);">About</a>
+            <a href="#" class="link text-sm" style="color: var(--text-secondary);">Blog</a>
+            <a href="#" class="link text-sm" style="color: var(--text-secondary);">Careers</a>
+          </div>
+        </div>
+        <div>
+          <h4 class="text-sm font-medium mb-6">Legal</h4>
+          <div class="flex flex-col gap-3">
+            <a href="#" class="link text-sm" style="color: var(--text-secondary);">Privacy</a>
+            <a href="#" class="link text-sm" style="color: var(--text-secondary);">Terms</a>
+            <a href="#" class="link text-sm" style="color: var(--text-secondary);">Security</a>
+          </div>
+        </div>
+        <div>
+          <h4 class="text-sm font-medium mb-6">Connect</h4>
+          <div class="flex flex-col gap-3">
+            <a href="#" class="link text-sm" style="color: var(--text-secondary);">Twitter</a>
+            <a href="#" class="link text-sm" style="color: var(--text-secondary);">GitHub</a>
+            <a href="#" class="link text-sm" style="color: var(--text-secondary);">LinkedIn</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-between items-center" style="padding-top: var(--space-8); border-top: var(--border-width) solid var(--border-light);">
+        <p class="text-sm" style="color: var(--text-tertiary);">
+          © 2024 Video Manual. All rights reserved.
+        </p>
+        <p class="text-xs" style="color: var(--text-tertiary);">
+          Made with care
+        </p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript for Theme Controls -->
+  <script>
+    // Get elements
+    const html = document.documentElement;
+    const paletteDots = document.querySelectorAll('.palette-dot');
+    const themeToggle = document.getElementById('themeToggle');
+    const themeLabel = document.getElementById('themeLabel');
+
+    // Get stored preferences
+    const storedPalette = localStorage.getItem('palette') || 'ink';
+    const storedTheme = localStorage.getItem('theme') || 'light';
+
+    // Apply stored preferences
+    html.setAttribute('data-palette', storedPalette);
+    html.setAttribute('data-theme', storedTheme);
+    themeLabel.textContent = storedTheme === 'light' ? 'Light' : 'Dark';
+
+    // Update active palette dot
+    paletteDots.forEach(dot => {
+      if (dot.dataset.palette === storedPalette) {
+        dot.classList.add('active');
+      } else {
+        dot.classList.remove('active');
+      }
+    });
+
+    // Palette switching
+    paletteDots.forEach(dot => {
+      dot.addEventListener('click', () => {
+        const palette = dot.dataset.palette;
+        html.setAttribute('data-palette', palette);
+        localStorage.setItem('palette', palette);
+
+        // Update active state
+        paletteDots.forEach(d => d.classList.remove('active'));
+        dot.classList.add('active');
+      });
+    });
+
+    // Theme toggle (light/dark)
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      themeLabel.textContent = newTheme === 'light' ? 'Light' : 'Dark';
+    });
+
+    // Smooth scrolling for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const href = this.getAttribute('href');
+        if (href !== '#') {
+          e.preventDefault();
+          const target = document.querySelector(href);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

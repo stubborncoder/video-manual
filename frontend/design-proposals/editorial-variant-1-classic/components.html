@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="burgundy">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Components - Classic Editorial Design System</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    body {
+      background-color: var(--color-neutral-50);
+      padding: var(--space-12) var(--space-6);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* Header */
+    .page-header {
+      text-align: center;
+      padding: var(--space-16) 0;
+      border-bottom: var(--border-width-statement) solid var(--color-accent);
+      margin-bottom: var(--space-16);
+    }
+
+    .page-label {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-widest);
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: var(--space-4);
+    }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-xl);
+      font-weight: var(--weight-bold);
+      line-height: var(--leading-tight);
+      color: var(--color-text);
+      margin-bottom: var(--space-6);
+    }
+
+    .page-description {
+      font-size: var(--text-body-lg);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    /* Palette Switcher */
+    .palette-switcher {
+      position: fixed;
+      top: var(--space-6);
+      right: var(--space-6);
+      background-color: var(--color-surface);
+      border: var(--border-width-thin) solid var(--color-border);
+      padding: var(--space-4);
+      box-shadow: var(--shadow-lg);
+      z-index: var(--z-fixed);
+    }
+
+    .palette-label {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-wider);
+      text-transform: uppercase;
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-3);
+    }
+
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: var(--space-2);
+      margin-bottom: var(--space-4);
+    }
+
+    .palette-swatch {
+      width: 36px;
+      height: 36px;
+      border: var(--border-width-thin) solid var(--color-border);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .palette-swatch:hover {
+      transform: scale(1.1);
+      border-color: var(--color-accent);
+    }
+
+    .palette-swatch.active {
+      border-width: var(--border-width-medium);
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-accent);
+    }
+
+    .theme-toggle {
+      width: 100%;
+      padding: var(--space-3);
+      border: var(--border-width-thin) solid var(--color-border);
+      background-color: var(--color-surface);
+      cursor: pointer;
+      font-size: var(--text-body-sm);
+      color: var(--color-text-secondary);
+      transition: all var(--transition-fast);
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    /* Component Section */
+    .component-section {
+      margin-bottom: var(--space-20);
+    }
+
+    .section-header {
+      margin-bottom: var(--space-8);
+      padding-bottom: var(--space-4);
+      border-bottom: var(--border-width-medium) solid var(--color-accent);
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-sm);
+      font-weight: var(--weight-semibold);
+      color: var(--color-text);
+    }
+
+    .section-description {
+      font-size: var(--text-body-md);
+      color: var(--color-text-secondary);
+      margin-top: var(--space-2);
+    }
+
+    .component-showcase {
+      background-color: var(--color-surface);
+      padding: var(--space-12);
+      border: var(--border-width-thin) solid var(--color-border);
+      margin-bottom: var(--space-8);
+    }
+
+    /* Typography Components */
+    .typography-grid {
+      display: grid;
+      gap: var(--space-8);
+    }
+
+    .type-sample {
+      padding-bottom: var(--space-6);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .type-sample:last-child {
+      border-bottom: none;
+    }
+
+    .type-label {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-medium);
+      color: var(--color-text-tertiary);
+      margin-bottom: var(--space-3);
+      letter-spacing: var(--tracking-wider);
+    }
+
+    /* Buttons */
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: var(--space-6);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-body);
+      font-size: var(--text-body-md);
+      font-weight: var(--weight-medium);
+      line-height: 1;
+      text-decoration: none;
+      border: var(--border-width-medium) solid transparent;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      padding: var(--space-4) var(--space-8);
+      letter-spacing: var(--tracking-wide);
+    }
+
+    .btn-primary {
+      background-color: var(--color-accent);
+      border-color: var(--color-accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--color-accent-hover);
+      border-color: var(--color-accent-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border-color: var(--color-border-strong);
+      color: var(--color-text);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    .btn-ghost {
+      background-color: transparent;
+      border-color: transparent;
+      color: var(--color-text-secondary);
+    }
+
+    .btn-ghost:hover {
+      color: var(--color-accent);
+      background-color: var(--color-neutral-100);
+    }
+
+    .btn-lg {
+      padding: var(--space-5) var(--space-10);
+      font-size: var(--text-body-lg);
+    }
+
+    /* Cards */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--space-8);
+    }
+
+    .card {
+      background-color: var(--color-surface);
+      border: var(--border-width-thin) solid var(--color-border);
+      transition: all var(--transition-base);
+    }
+
+    .card:hover {
+      border-color: var(--color-accent);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .card-image {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: linear-gradient(135deg, var(--color-neutral-100) 0%, var(--color-neutral-200) 100%);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .card-body {
+      padding: var(--space-6);
+    }
+
+    .card-label {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-wider);
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: var(--space-2);
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-lg);
+      font-weight: var(--weight-semibold);
+      color: var(--color-text);
+      margin-bottom: var(--space-3);
+    }
+
+    .card-description {
+      font-size: var(--text-body-sm);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+    }
+
+    /* Forms */
+    .form-group {
+      margin-bottom: var(--space-6);
+    }
+
+    .form-label {
+      display: block;
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-wider);
+      text-transform: uppercase;
+      color: var(--color-text);
+      margin-bottom: var(--space-2);
+    }
+
+    .form-input,
+    .form-textarea,
+    .form-select {
+      width: 100%;
+      padding: var(--space-4);
+      border: var(--border-width-medium) solid var(--color-border);
+      background-color: var(--color-surface);
+      color: var(--color-text);
+      font-family: var(--font-body);
+      font-size: var(--text-body-md);
+      transition: all var(--transition-fast);
+    }
+
+    .form-input:focus,
+    .form-textarea:focus,
+    .form-select:focus {
+      outline: none;
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px var(--color-accent-light);
+    }
+
+    .form-textarea {
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    .form-help {
+      font-size: var(--text-body-sm);
+      color: var(--color-text-tertiary);
+      margin-top: var(--space-2);
+    }
+
+    /* Editorial Components */
+    .pullquote {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-xl);
+      font-style: italic;
+      font-weight: var(--weight-normal);
+      line-height: var(--leading-snug);
+      border-left: var(--border-width-statement) solid var(--color-accent);
+      padding-left: var(--space-8);
+      color: var(--color-text);
+      margin: var(--space-8) 0;
+    }
+
+    .callout {
+      padding: var(--space-8);
+      background-color: var(--color-accent-50);
+      border-left: var(--border-width-statement) solid var(--color-accent);
+      margin: var(--space-8) 0;
+    }
+
+    .callout-title {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-md);
+      font-weight: var(--weight-semibold);
+      color: var(--color-text);
+      margin-bottom: var(--space-4);
+    }
+
+    .callout-content {
+      font-size: var(--text-body-md);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .palette-switcher {
+        position: static;
+        margin-bottom: var(--space-8);
+      }
+
+      .palette-grid {
+        grid-template-columns: repeat(5, 1fr);
+      }
+
+      .button-grid,
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Palette Switcher -->
+  <div class="palette-switcher">
+    <div class="palette-label">Palette</div>
+    <div class="palette-grid">
+      <button class="palette-swatch active" data-palette="burgundy" style="background-color: #722F37;" aria-label="Burgundy"></button>
+      <button class="palette-swatch" data-palette="navy" style="background-color: #1B365D;" aria-label="Navy"></button>
+      <button class="palette-swatch" data-palette="forest" style="background-color: #1B4332;" aria-label="Forest"></button>
+      <button class="palette-swatch" data-palette="charcoal" style="background-color: #36454F;" aria-label="Charcoal"></button>
+      <button class="palette-swatch" data-palette="sepia" style="background-color: #704214;" aria-label="Sepia"></button>
+    </div>
+    <button class="theme-toggle" id="themeToggle">Toggle Theme</button>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <header class="page-header">
+      <div class="page-label">Design System</div>
+      <h1 class="page-title">Classic Editorial Components</h1>
+      <p class="page-description">
+        A comprehensive collection of components designed for timeless, sophisticated documentation with multiple switchable color palettes.
+      </p>
+    </header>
+
+    <!-- Typography -->
+    <section class="component-section">
+      <div class="section-header">
+        <h2 class="section-title">Typography</h2>
+        <p class="section-description">Classic serif and sans-serif combinations for editorial excellence</p>
+      </div>
+      <div class="component-showcase">
+        <div class="typography-grid">
+          <div class="type-sample">
+            <div class="type-label">Display 2XL (88px)</div>
+            <h1 class="display-2xl">The Art of Documentation</h1>
+          </div>
+          <div class="type-sample">
+            <div class="type-label">Display XL (72px)</div>
+            <h1 class="display-xl">Classic Editorial Design</h1>
+          </div>
+          <div class="type-sample">
+            <div class="type-label">Display LG (60px)</div>
+            <h2 class="display-lg">Timeless Typography</h2>
+          </div>
+          <div class="type-sample">
+            <div class="type-label">Heading XL (32px)</div>
+            <h3 class="heading-xl">Sophisticated Layouts</h3>
+          </div>
+          <div class="type-sample">
+            <div class="type-label">Heading LG (24px)</div>
+            <h4 class="heading-lg">Professional Documentation</h4>
+          </div>
+          <div class="type-sample">
+            <div class="type-label">Body XL (20px)</div>
+            <p class="body-xl">
+              Large body text for introductions and important content. Designed for excellent readability and visual hierarchy.
+            </p>
+          </div>
+          <div class="type-sample">
+            <div class="type-label">Body LG (18px)</div>
+            <p class="body-lg">
+              Standard large body text with generous line height for comfortable reading across all screen sizes.
+            </p>
+          </div>
+          <div class="type-sample">
+            <div class="type-label">Label (Uppercase)</div>
+            <span class="label-lg">Featured Article</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Buttons -->
+    <section class="component-section">
+      <div class="section-header">
+        <h2 class="section-title">Buttons</h2>
+        <p class="section-description">Clean, refined button styles with clear visual hierarchy</p>
+      </div>
+      <div class="component-showcase">
+        <div class="button-grid">
+          <button class="btn btn-primary">Primary Button</button>
+          <button class="btn btn-secondary">Secondary Button</button>
+          <button class="btn btn-ghost">Ghost Button</button>
+          <button class="btn btn-primary btn-lg">Large Primary</button>
+          <button class="btn btn-secondary btn-lg">Large Secondary</button>
+          <button class="btn btn-ghost btn-lg">Large Ghost</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cards -->
+    <section class="component-section">
+      <div class="section-header">
+        <h2 class="section-title">Cards</h2>
+        <p class="section-description">Editorial-style cards for content presentation</p>
+      </div>
+      <div class="component-showcase">
+        <div class="card-grid">
+          <div class="card">
+            <div class="card-image"></div>
+            <div class="card-body">
+              <div class="card-label">Tutorial</div>
+              <h3 class="card-title">Getting Started Guide</h3>
+              <p class="card-description">
+                A comprehensive introduction to the platform's core features and capabilities.
+              </p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-image"></div>
+            <div class="card-body">
+              <div class="card-label">Documentation</div>
+              <h3 class="card-title">Advanced Configuration</h3>
+              <p class="card-description">
+                Detailed instructions for customizing and optimizing your setup.
+              </p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-image"></div>
+            <div class="card-body">
+              <div class="card-label">Reference</div>
+              <h3 class="card-title">API Documentation</h3>
+              <p class="card-description">
+                Complete reference for developers and technical users.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Forms -->
+    <section class="component-section">
+      <div class="section-header">
+        <h2 class="section-title">Form Elements</h2>
+        <p class="section-description">Clean, accessible form components</p>
+      </div>
+      <div class="component-showcase">
+        <form>
+          <div class="form-group">
+            <label class="form-label" for="input-name">Full Name</label>
+            <input type="text" id="input-name" class="form-input" placeholder="Enter your name">
+            <p class="form-help">Your full legal name as it appears on official documents</p>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="input-email">Email Address</label>
+            <input type="email" id="input-email" class="form-input" placeholder="email@example.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="select-category">Category</label>
+            <select id="select-category" class="form-select">
+              <option>Select a category</option>
+              <option>Tutorial</option>
+              <option>Guide</option>
+              <option>Reference</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="textarea-description">Description</label>
+            <textarea id="textarea-description" class="form-textarea" placeholder="Enter a detailed description"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Submit Form</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Editorial Components -->
+    <section class="component-section">
+      <div class="section-header">
+        <h2 class="section-title">Editorial Components</h2>
+        <p class="section-description">Special components for magazine-style layouts</p>
+      </div>
+      <div class="component-showcase">
+        <blockquote class="pullquote">
+          "The finest documentation reads like a well-crafted story, guiding readers through complexity with elegance and clarity."
+        </blockquote>
+
+        <div class="callout">
+          <h3 class="callout-title">Important Notice</h3>
+          <div class="callout-content">
+            This is a callout box designed to draw attention to important information, warnings, or helpful tips throughout your documentation.
+          </div>
+        </div>
+
+        <p class="dropcap">
+          This paragraph demonstrates the dropcap effect, where the first letter is significantly larger and serves as a visual entry point to the content. This classic editorial technique adds sophistication and draws the reader's attention.
+        </p>
+
+        <hr class="divider">
+
+        <p class="section-label">Section Label</p>
+        <p class="byline">Written by Editorial Team • January 15, 2025</p>
+      </div>
+    </section>
+
+    <!-- Color Palettes -->
+    <section class="component-section">
+      <div class="section-header">
+        <h2 class="section-title">Color Palettes</h2>
+        <p class="section-description">Five distinct palettes, each with light and dark modes</p>
+      </div>
+      <div class="component-showcase">
+        <div style="display: grid; gap: var(--space-8);">
+          <div>
+            <h4 class="heading-md" style="margin-bottom: var(--space-4);">Burgundy (Default)</h4>
+            <p style="margin-bottom: var(--space-4); color: var(--color-text-secondary);">
+              Deep burgundy (#722F37) with cream backgrounds. Sophisticated and authoritative.
+            </p>
+            <div style="display: flex; gap: var(--space-2);">
+              <div style="width: 60px; height: 60px; background-color: #722F37; border: var(--border-width-thin) solid var(--color-border);"></div>
+              <div style="width: 60px; height: 60px; background-color: #8B4049; border: var(--border-width-thin) solid var(--color-border);"></div>
+              <div style="width: 60px; height: 60px; background-color: #FFFBF5; border: var(--border-width-thin) solid var(--color-border);"></div>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="heading-md" style="margin-bottom: var(--space-4);">Navy</h4>
+            <p style="margin-bottom: var(--space-4); color: var(--color-text-secondary);">
+              Classic navy blue (#1B365D) with warm whites. Traditional and professional.
+            </p>
+            <div style="display: flex; gap: var(--space-2);">
+              <div style="width: 60px; height: 60px; background-color: #1B365D; border: var(--border-width-thin) solid var(--color-border);"></div>
+              <div style="width: 60px; height: 60px; background-color: #2D5280; border: var(--border-width-thin) solid var(--color-border);"></div>
+              <div style="width: 60px; height: 60px; background-color: #FAFAF8; border: var(--border-width-thin) solid var(--color-border);"></div>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="heading-md" style="margin-bottom: var(--space-4);">Forest</h4>
+            <p style="margin-bottom: var(--space-4); color: var(--color-text-secondary);">
+              Deep hunter green (#1B4332) with parchment tones. Natural and grounded.
+            </p>
+            <div style="display: flex; gap: var(--space-2);">
+              <div style="width: 60px; height: 60px; background-color: #1B4332; border: var(--border-width-thin) solid var(--color-border);"></div>
+              <div style="width: 60px; height: 60px; background-color: #2D6A4F; border: var(--border-width-thin) solid var(--color-border);"></div>
+              <div style="width: 60px; height: 60px; background-color: #F9FAF8; border: var(--border-width-thin) solid var(--color-border);"></div>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="heading-md" style="margin-bottom: var(--space-4);">Charcoal</h4>
+            <p style="margin-bottom: var(--space-4); color: var(--color-text-secondary);">
+              Rich charcoal (#36454F) with warm grays. Modern and refined.
+            </p>
+            <div style="display: flex; gap: var(--space-2);">
+              <div style="width: 60px; height: 60px; background-color: #36454F; border: var(--border-width-thin) solid var(--color-border);"></div>
+              <div style="width: 60px; height: 60px; background-color: #546672; border: var(--border-width-thin) solid var(--color-border);"></div>
+              <div style="width: 60px; height: 60px; background-color: #F9F9F8; border: var(--border-width-thin) solid var(--color-border);"></div>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="heading-md" style="margin-bottom: var(--space-4);">Sepia</h4>
+            <p style="margin-bottom: var(--space-4); color: var(--color-text-secondary);">
+              Warm sepia tones (#704214) with aged paper feel. Vintage and scholarly.
+            </p>
+            <div style="display: flex; gap: var(--space-2);">
+              <div style="width: 60px; height: 60px; background-color: #704214; border: var(--border-width-thin) solid var(--color-border);"></div>
+              <div style="width: 60px; height: 60px; background-color: #9D6B2F; border: var(--border-width-thin) solid var(--color-border);"></div>
+              <div style="width: 60px; height: 60px; background-color: #FBF9F7; border: var(--border-width-thin) solid var(--color-border);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const html = document.documentElement;
+
+    // Palette Switcher
+    const paletteSwatches = document.querySelectorAll('.palette-swatch');
+    const currentPalette = localStorage.getItem('palette') || 'burgundy';
+    html.setAttribute('data-palette', currentPalette);
+    updateActivePalette(currentPalette);
+
+    paletteSwatches.forEach(swatch => {
+      swatch.addEventListener('click', function() {
+        const palette = this.getAttribute('data-palette');
+        html.setAttribute('data-palette', palette);
+        localStorage.setItem('palette', palette);
+        updateActivePalette(palette);
+      });
+    });
+
+    function updateActivePalette(palette) {
+      paletteSwatches.forEach(swatch => {
+        if (swatch.getAttribute('data-palette') === palette) {
+          swatch.classList.add('active');
+        } else {
+          swatch.classList.remove('active');
+        }
+      });
+    }
+
+    // Theme Toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    html.setAttribute('data-theme', currentTheme);
+    updateThemeLabel(currentTheme);
+
+    function updateThemeLabel(theme) {
+      themeToggle.textContent = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
+    }
+
+    themeToggle.addEventListener('click', function() {
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      updateThemeLabel(newTheme);
+    });
+  </script>
+</body>
+</html>

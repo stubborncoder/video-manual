@@ -558,30 +558,46 @@ export default function ProjectsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredProjects.map((project) => (
-            <Card key={project.id} className={project.is_default ? "border-primary/50" : ""}>
-              <CardHeader className="pb-2">
-                <div className="flex items-start justify-between">
+            <Card
+              key={project.id}
+              className="
+                group relative overflow-hidden
+                transition-all duration-300 ease-out
+                hover:shadow-lg hover:-translate-y-1
+                hover:border-primary/30
+              "
+            >
+              {/* Subtle gradient overlay on hover */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+              <CardHeader className="pb-3 relative">
+                <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <CardTitle className="text-base flex items-center gap-2">
+                    {/* Editorial title with serif font */}
+                    <CardTitle className="font-display text-xl tracking-tight leading-tight flex items-center gap-2">
                       {project.name}
                       {project.is_default && (
-                        <Badge variant="secondary" className="shrink-0">
+                        <Badge variant="secondary" className="shrink-0 text-[10px] font-semibold">
                           <Star className="h-3 w-3 mr-1" />
                           Default
                         </Badge>
                       )}
                     </CardTitle>
+
                     {project.description && (
-                      <CardDescription className="mt-1">{project.description}</CardDescription>
+                      <CardDescription className="text-sm leading-relaxed line-clamp-2 mt-1">
+                        {project.description}
+                      </CardDescription>
                     )}
                   </div>
+
                   {!project.is_default && (
                     <Button
                       size="icon"
                       variant="ghost"
-                      className="h-8 w-8 shrink-0"
+                      className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
                       onClick={() => openEditDialog(project)}
                     >
                       <Edit2 className="h-4 w-4" />
@@ -589,53 +605,73 @@ export default function ProjectsPage() {
                   )}
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                  <span className="flex items-center gap-1">
-                    <FileText className="h-3 w-3" />
-                    {project.manual_count} manuals
-                  </span>
+
+              <CardContent className="relative space-y-4">
+                {/* Stats with visual indicators */}
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center h-8 w-8 rounded-md bg-primary/10 text-primary">
+                      <FileText className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-lg font-semibold leading-none">{project.manual_count}</span>
+                      <span className="text-xs text-muted-foreground">manuals</span>
+                    </div>
+                  </div>
+
                   {project.chapter_count !== undefined && project.chapter_count > 0 && (
-                    <span className="flex items-center gap-1">
-                      <BookOpen className="h-3 w-3" />
-                      {project.chapter_count} chapters
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-center h-8 w-8 rounded-md bg-secondary text-secondary-foreground">
+                        <BookOpen className="h-4 w-4" />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-lg font-semibold leading-none">{project.chapter_count}</span>
+                        <span className="text-xs text-muted-foreground">chapters</span>
+                      </div>
+                    </div>
                   )}
                 </div>
 
-                {/* Manual names preview */}
+                {/* Manual names preview with refined styling */}
                 {project.manual_names && project.manual_names.length > 0 && (
-                  <div className="mb-4 space-y-1">
-                    {project.manual_names.map((name) => (
-                      <div
-                        key={name}
-                        className="flex items-center gap-2 text-sm text-muted-foreground"
-                      >
-                        <ChevronRight className="h-3 w-3" />
-                        <span className="truncate">{name}</span>
-                      </div>
-                    ))}
-                    {project.manual_count > 5 && (
-                      <div className="text-xs text-muted-foreground pl-5">
-                        +{project.manual_count - 5} more...
-                      </div>
-                    )}
+                  <div className="border-t pt-3 space-y-1.5">
+                    <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                      Contents
+                    </span>
+                    <div className="space-y-1">
+                      {project.manual_names.slice(0, 3).map((name) => (
+                        <div
+                          key={name}
+                          className="flex items-center gap-2 text-sm text-muted-foreground group/item hover:text-foreground transition-colors"
+                        >
+                          <ChevronRight className="h-3 w-3 text-primary/60 group-hover/item:translate-x-0.5 transition-transform" />
+                          <span className="truncate">{name}</span>
+                        </div>
+                      ))}
+                      {project.manual_count > 3 && (
+                        <div className="text-xs text-muted-foreground/70 pl-5 italic">
+                          +{project.manual_count - 3} more
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
-                <div className="flex flex-wrap gap-2">
+                {/* Actions with refined styling */}
+                <div className="flex items-center gap-2 pt-2">
                   <Button
                     size="sm"
-                    variant="outline"
+                    className="flex-1"
                     onClick={() => handleViewDetails(project.id)}
                   >
                     <Eye className="mr-2 h-4 w-4" />
-                    View
+                    View Project
                   </Button>
                   {!project.is_default && (
                     <Button
                       size="sm"
                       variant="outline"
+                      className="opacity-60 hover:opacity-100 hover:border-destructive hover:text-destructive transition-all"
                       onClick={async () => {
                         // Fetch full project details for tree view
                         try {

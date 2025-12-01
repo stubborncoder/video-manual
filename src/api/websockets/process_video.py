@@ -12,6 +12,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Cookie
 from ...core.runners import VideoManualRunner
 from ...core.events import EventType
 from ...storage.project_storage import ProjectStorage, DEFAULT_PROJECT_ID, DEFAULT_CHAPTER_ID
+from ...storage.user_storage import UserStorage
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ async def websocket_process_video(
     """
     WebSocket endpoint for processing videos with real-time progress.
 
-    Client sends:
+    Client sends (from Videos page - new manual):
     {
         "action": "start",
         "video_path": "/path/to/video.mp4",
@@ -39,11 +40,29 @@ async def websocket_process_video(
         "tags": ["tag1", "tag2"]
     }
 
+    Client sends (from Manuals page - add language to existing manual):
+    {
+        "action": "start",
+        "manual_id": "existing-manual-id",
+        "output_language": "Spanish"
+    }
+
     Server sends events:
     {
         "event_type": "node_started|node_completed|error|complete",
         "timestamp": 1234567890.123,
         "data": { ... event-specific data ... }
+    }
+
+    Server sends duplicate error (when video already has manual in project):
+    {
+        "event_type": "error",
+        "data": {
+            "error_message": "Manual already exists for this video in the selected project",
+            "error_type": "duplicate_manual",
+            "existing_manual_id": "...",
+            "recoverable": false
+        }
     }
     """
     await websocket.accept()
@@ -73,7 +92,59 @@ async def websocket_process_video(
             return
 
         # Extract parameters
-        video_path = Path(message.get("video_path", ""))
+        user_storage = UserStorage(auth_user_id)
+        manual_id = message.get("manual_id")  # For add-language flow
+
+        # Determine video path and output filename based on flow type
+        if manual_id:
+            # Add-language flow: get video path from existing manual's metadata
+            metadata = user_storage.get_manual_metadata(manual_id)
+            if not metadata:
+                await websocket.send_json({
+                    "event_type": "error",
+                    "timestamp": 0,
+                    "data": {"error_message": f"Manual not found: {manual_id}", "recoverable": False}
+                })
+                await websocket.close()
+                return
+
+            video_path = Path(metadata.get("video_path", ""))
+            output_filename = manual_id  # Reuse same manual ID
+            # For add-language flow, project is already set in manual
+            project_id = metadata.get("project_id", DEFAULT_PROJECT_ID)
+            chapter_id = metadata.get("chapter_id")
+            tags = []  # Don't add new tags in add-language flow
+        else:
+            # Normal flow: process new video
+            video_path = Path(message.get("video_path", ""))
+            output_filename = message.get("output_filename")
+            # Default to user's default project if not specified
+            project_id = message.get("project_id") or DEFAULT_PROJECT_ID
+            # Only use DEFAULT_CHAPTER_ID for the default project
+            # For custom projects, pass None to let add_manual_to_project create/use "Uncategorized"
+            chapter_id = message.get("chapter_id")
+            if not chapter_id and project_id == DEFAULT_PROJECT_ID:
+                chapter_id = DEFAULT_CHAPTER_ID
+            tags = message.get("tags", [])
+
+            # Check for duplicate: video already has manual in target project
+            video_name = video_path.name
+            existing_manuals = user_storage.get_manuals_by_video(video_name)
+            for existing in existing_manuals:
+                if existing.get("project_id") == project_id:
+                    await websocket.send_json({
+                        "event_type": "error",
+                        "timestamp": 0,
+                        "data": {
+                            "error_message": "Manual already exists for this video in the selected project",
+                            "error_type": "duplicate_manual",
+                            "existing_manual_id": existing.get("manual_id"),
+                            "recoverable": False
+                        }
+                    })
+                    await websocket.close()
+                    return
+
         if not video_path.exists():
             await websocket.send_json({
                 "event_type": "error",
@@ -83,17 +154,8 @@ async def websocket_process_video(
             await websocket.close()
             return
 
-        output_filename = message.get("output_filename")
         use_scene_detection = message.get("use_scene_detection", True)
         output_language = message.get("output_language", "English")
-        # Default to user's default project if not specified
-        project_id = message.get("project_id") or DEFAULT_PROJECT_ID
-        # Only use DEFAULT_CHAPTER_ID for the default project
-        # For custom projects, pass None to let add_manual_to_project create/use "Uncategorized"
-        chapter_id = message.get("chapter_id")
-        if not chapter_id and project_id == DEFAULT_PROJECT_ID:
-            chapter_id = DEFAULT_CHAPTER_ID
-        tags = message.get("tags", [])
 
         # Ensure default project exists
         project_storage = ProjectStorage(auth_user_id)
