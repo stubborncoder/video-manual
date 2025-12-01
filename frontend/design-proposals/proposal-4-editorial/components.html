@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Components - Editorial Design System</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    body {
+      background-color: var(--color-background);
+      padding: var(--space-12) var(--space-6);
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* Page Header */
+    .page-header {
+      text-align: center;
+      margin-bottom: var(--space-20);
+      padding-bottom: var(--space-12);
+      border-bottom: var(--border-width-thick) solid var(--color-border);
+    }
+
+    .page-label {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-widest);
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: var(--space-4);
+    }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-lg);
+      font-weight: var(--weight-bold);
+      line-height: var(--leading-tight);
+      margin-bottom: var(--space-4);
+    }
+
+    .page-description {
+      font-size: var(--text-body-lg);
+      color: var(--color-text-secondary);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Theme Toggle */
+    .theme-toggle-container {
+      position: fixed;
+      top: var(--space-6);
+      right: var(--space-6);
+      z-index: 1000;
+    }
+
+    .theme-toggle {
+      width: 48px;
+      height: 48px;
+      border: var(--border-width-medium) solid var(--color-border);
+      background-color: var(--color-surface);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--color-accent);
+      transform: scale(1.05);
+    }
+
+    .theme-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--color-text);
+    }
+
+    /* Component Section */
+    .component-section {
+      margin-bottom: var(--space-24);
+    }
+
+    .section-header {
+      margin-bottom: var(--space-8);
+      padding-bottom: var(--space-6);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .section-number {
+      font-family: var(--font-display);
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-light);
+      color: var(--color-accent);
+      letter-spacing: var(--tracking-wider);
+      margin-bottom: var(--space-2);
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-sm);
+      font-weight: var(--weight-semibold);
+      line-height: var(--leading-tight);
+      margin-bottom: var(--space-3);
+    }
+
+    .section-description {
+      font-size: var(--text-body-md);
+      color: var(--color-text-secondary);
+    }
+
+    .component-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--space-8);
+    }
+
+    .component-showcase {
+      background-color: var(--color-surface);
+      border: var(--border-width-thin) solid var(--color-border);
+      padding: var(--space-8);
+    }
+
+    .showcase-label {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-medium);
+      letter-spacing: var(--tracking-wide);
+      text-transform: uppercase;
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-4);
+    }
+
+    .showcase-content {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      font-family: var(--font-body);
+      font-size: var(--text-body-md);
+      font-weight: var(--weight-medium);
+      line-height: 1;
+      text-decoration: none;
+      border: var(--border-width-medium) solid transparent;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      padding: var(--space-4) var(--space-8);
+      background: transparent;
+    }
+
+    .btn-primary {
+      background-color: var(--color-accent);
+      border-color: var(--color-accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--color-accent-hover);
+      border-color: var(--color-accent-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border-color: var(--color-border-strong);
+      color: var(--color-text);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--color-text);
+      background-color: var(--color-surface);
+    }
+
+    .btn-ghost {
+      background-color: transparent;
+      border-color: transparent;
+      color: var(--color-text-secondary);
+    }
+
+    .btn-ghost:hover {
+      color: var(--color-text);
+      background-color: var(--color-neutral-100);
+    }
+
+    .btn-text {
+      background: none;
+      border: none;
+      color: var(--color-accent);
+      padding: var(--space-2) var(--space-4);
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      text-decoration-thickness: 1px;
+    }
+
+    .btn-text:hover {
+      text-decoration-thickness: 2px;
+    }
+
+    .btn-sm {
+      padding: var(--space-2) var(--space-4);
+      font-size: var(--text-body-sm);
+    }
+
+    .btn-lg {
+      padding: var(--space-5) var(--space-10);
+      font-size: var(--text-body-lg);
+    }
+
+    .btn-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    .btn-icon-only {
+      padding: var(--space-3);
+    }
+
+    /* Cards */
+    .card {
+      background-color: var(--color-surface);
+      border: var(--border-width-thin) solid var(--color-border);
+      overflow: hidden;
+    }
+
+    .card-image {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: linear-gradient(135deg, var(--color-neutral-100) 0%, var(--color-neutral-200) 100%);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .card-content {
+      padding: var(--space-6);
+    }
+
+    .card-label {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-wider);
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: var(--space-3);
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-lg);
+      font-weight: var(--weight-semibold);
+      line-height: var(--leading-snug);
+      margin-bottom: var(--space-3);
+    }
+
+    .card-description {
+      font-size: var(--text-body-md);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-4);
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: var(--space-4);
+      border-top: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .card-meta {
+      font-size: var(--text-body-sm);
+      color: var(--color-text-tertiary);
+    }
+
+    .card:hover {
+      border-color: var(--color-accent);
+      box-shadow: var(--shadow-md);
+    }
+
+    /* Editorial Card Variant */
+    .card-editorial {
+      display: grid;
+      grid-template-columns: 1fr 2fr;
+      gap: 0;
+    }
+
+    .card-editorial .card-image {
+      aspect-ratio: 3/4;
+      border-bottom: none;
+      border-right: var(--border-width-thin) solid var(--color-border);
+    }
+
+    /* Forms */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .form-label {
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-medium);
+      letter-spacing: var(--tracking-wide);
+      color: var(--color-text);
+    }
+
+    .form-input,
+    .form-textarea,
+    .form-select {
+      font-family: var(--font-body);
+      font-size: var(--text-body-md);
+      color: var(--color-text);
+      background-color: var(--color-background);
+      border: var(--border-width-medium) solid var(--color-border);
+      padding: var(--space-3) var(--space-4);
+      transition: all var(--transition-fast);
+    }
+
+    .form-input:focus,
+    .form-textarea:focus,
+    .form-select:focus {
+      outline: none;
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px var(--color-accent-100);
+    }
+
+    .form-textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .form-help {
+      font-size: var(--text-body-sm);
+      color: var(--color-text-tertiary);
+    }
+
+    /* Navigation */
+    .nav-tabs {
+      display: flex;
+      gap: var(--space-2);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+      padding: 0;
+      list-style: none;
+    }
+
+    .nav-tab {
+      padding: var(--space-4) var(--space-6);
+      font-size: var(--text-body-md);
+      font-weight: var(--weight-medium);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      border-bottom: var(--border-width-thick) solid transparent;
+      margin-bottom: calc(-1 * var(--border-width-thin));
+      transition: all var(--transition-fast);
+    }
+
+    .nav-tab:hover {
+      color: var(--color-text);
+      background-color: var(--color-neutral-50);
+    }
+
+    .nav-tab.active {
+      color: var(--color-text);
+      border-bottom-color: var(--color-accent);
+    }
+
+    .nav-pills {
+      display: flex;
+      gap: var(--space-2);
+      padding: 0;
+      list-style: none;
+    }
+
+    .nav-pill {
+      padding: var(--space-3) var(--space-5);
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-medium);
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      border: var(--border-width-thin) solid var(--color-border);
+      transition: all var(--transition-fast);
+    }
+
+    .nav-pill:hover {
+      color: var(--color-text);
+      border-color: var(--color-text);
+    }
+
+    .nav-pill.active {
+      color: white;
+      background-color: var(--color-accent);
+      border-color: var(--color-accent);
+    }
+
+    /* Modals */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: var(--z-modal);
+      padding: var(--space-6);
+    }
+
+    .modal-content {
+      background-color: var(--color-surface);
+      border: var(--border-width-medium) solid var(--color-border);
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-xl);
+    }
+
+    .modal-header {
+      padding: var(--space-8);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-xl);
+      font-weight: var(--weight-semibold);
+    }
+
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      border: var(--border-width-thin) solid var(--color-border);
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+    }
+
+    .modal-close:hover {
+      border-color: var(--color-text);
+      background-color: var(--color-neutral-100);
+    }
+
+    .modal-body {
+      padding: var(--space-8);
+    }
+
+    .modal-footer {
+      padding: var(--space-8);
+      border-top: var(--border-width-thin) solid var(--color-border);
+      display: flex;
+      gap: var(--space-3);
+      justify-content: flex-end;
+    }
+
+    /* Alerts */
+    .alert {
+      padding: var(--space-6);
+      border-left: var(--border-width-statement) solid;
+      background-color: var(--color-background);
+      border-top: var(--border-width-thin) solid var(--color-border);
+      border-right: var(--border-width-thin) solid var(--color-border);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .alert-title {
+      font-weight: var(--weight-semibold);
+      margin-bottom: var(--space-2);
+    }
+
+    .alert-info {
+      border-left-color: var(--color-info);
+    }
+
+    .alert-success {
+      border-left-color: var(--color-success);
+    }
+
+    .alert-warning {
+      border-left-color: var(--color-warning);
+    }
+
+    .alert-error {
+      border-left-color: var(--color-error);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: var(--space-1) var(--space-3);
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-medium);
+      letter-spacing: var(--tracking-wide);
+      border: var(--border-width-thin) solid;
+    }
+
+    .badge-default {
+      background-color: var(--color-neutral-100);
+      border-color: var(--color-border);
+      color: var(--color-text-secondary);
+    }
+
+    .badge-primary {
+      background-color: var(--color-accent-50);
+      border-color: var(--color-accent-200);
+      color: var(--color-accent-700);
+    }
+
+    .badge-success {
+      background-color: #d1fae5;
+      border-color: #6ee7b7;
+      color: #065f46;
+    }
+
+    /* Skeleton */
+    .skeleton {
+      background: linear-gradient(
+        90deg,
+        var(--color-neutral-100) 0%,
+        var(--color-neutral-200) 50%,
+        var(--color-neutral-100) 100%
+      );
+      background-size: 200% 100%;
+      animation: skeleton-loading 1.5s ease-in-out infinite;
+    }
+
+    @keyframes skeleton-loading {
+      0% {
+        background-position: 200% 0;
+      }
+      100% {
+        background-position: -200% 0;
+      }
+    }
+
+    .skeleton-text {
+      height: 1em;
+      margin-bottom: var(--space-2);
+    }
+
+    .skeleton-title {
+      height: 2em;
+      width: 60%;
+      margin-bottom: var(--space-4);
+    }
+
+    .skeleton-image {
+      width: 100%;
+      aspect-ratio: 16/9;
+    }
+
+    /* Divider */
+    .divider {
+      width: 100%;
+      height: var(--border-width-thin);
+      background-color: var(--color-border);
+      margin: var(--space-8) 0;
+    }
+
+    .divider-text {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      margin: var(--space-8) 0;
+    }
+
+    .divider-text::before,
+    .divider-text::after {
+      content: '';
+      flex: 1;
+      height: var(--border-width-thin);
+      background-color: var(--color-border);
+    }
+
+    .divider-text span {
+      font-size: var(--text-body-sm);
+      color: var(--color-text-secondary);
+      letter-spacing: var(--tracking-wider);
+      text-transform: uppercase;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .component-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .card-editorial {
+        grid-template-columns: 1fr;
+      }
+
+      .card-editorial .card-image {
+        border-right: none;
+        border-bottom: var(--border-width-thin) solid var(--color-border);
+        aspect-ratio: 16/9;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Theme Toggle -->
+  <div class="theme-toggle-container">
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+      <svg class="theme-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+      </svg>
+    </button>
+  </div>
+
+  <div class="container">
+    <!-- Page Header -->
+    <header class="page-header">
+      <div class="page-label">Design System</div>
+      <h1 class="page-title">Component Library</h1>
+      <p class="page-description">
+        A collection of refined, editorial-style components for the Video Manual platform
+      </p>
+    </header>
+
+    <!-- Buttons -->
+    <section class="component-section">
+      <div class="section-header">
+        <div class="section-number">01</div>
+        <h2 class="section-title">Buttons</h2>
+        <p class="section-description">Understated, refined button styles with clear hierarchy</p>
+      </div>
+      <div class="component-grid">
+        <div class="component-showcase">
+          <div class="showcase-label">Primary Buttons</div>
+          <div class="showcase-content">
+            <button class="btn btn-primary btn-lg">Large Primary</button>
+            <button class="btn btn-primary">Default Primary</button>
+            <button class="btn btn-primary btn-sm">Small Primary</button>
+            <button class="btn btn-primary">
+              <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+              </svg>
+              With Icon
+            </button>
+          </div>
+        </div>
+
+        <div class="component-showcase">
+          <div class="showcase-label">Secondary Buttons</div>
+          <div class="showcase-content">
+            <button class="btn btn-secondary btn-lg">Large Secondary</button>
+            <button class="btn btn-secondary">Default Secondary</button>
+            <button class="btn btn-secondary btn-sm">Small Secondary</button>
+            <button class="btn btn-secondary">
+              <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              Download
+            </button>
+          </div>
+        </div>
+
+        <div class="component-showcase">
+          <div class="showcase-label">Ghost & Text Buttons</div>
+          <div class="showcase-content">
+            <button class="btn btn-ghost">Ghost Button</button>
+            <button class="btn btn-text">Text Link Button</button>
+            <button class="btn btn-secondary btn-icon-only">
+              <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cards -->
+    <section class="component-section">
+      <div class="section-header">
+        <div class="section-number">02</div>
+        <h2 class="section-title">Cards</h2>
+        <p class="section-description">Editorial-style content containers with elegant layouts</p>
+      </div>
+      <div class="component-grid">
+        <div class="component-showcase">
+          <div class="showcase-label">Standard Card</div>
+          <div class="card">
+            <div class="card-image"></div>
+            <div class="card-content">
+              <div class="card-label">Tutorial</div>
+              <h3 class="card-title">Product Setup Guide</h3>
+              <p class="card-description">
+                Step-by-step instructions for setting up and configuring the product
+              </p>
+              <div class="card-footer">
+                <span class="card-meta">2 hours ago</span>
+                <button class="btn btn-text">View Manual</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="component-showcase">
+          <div class="showcase-label">Editorial Card</div>
+          <div class="card card-editorial">
+            <div class="card-image"></div>
+            <div class="card-content">
+              <div class="card-label">Feature</div>
+              <h3 class="card-title">Advanced AI Analysis</h3>
+              <p class="card-description">
+                Discover how our AI extracts insights from video content with remarkable precision
+              </p>
+              <div class="card-footer">
+                <button class="btn btn-secondary btn-sm">Learn More</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Forms -->
+    <section class="component-section">
+      <div class="section-header">
+        <div class="section-number">03</div>
+        <h2 class="section-title">Form Elements</h2>
+        <p class="section-description">Elegant form inputs with refined styling</p>
+      </div>
+      <div class="component-grid">
+        <div class="component-showcase">
+          <div class="showcase-label">Text Inputs</div>
+          <div class="showcase-content">
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <input type="email" class="form-input" placeholder="you@example.com">
+              <span class="form-help">We'll never share your email</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Project Name</label>
+              <input type="text" class="form-input" value="Q4 Training Materials">
+            </div>
+          </div>
+        </div>
+
+        <div class="component-showcase">
+          <div class="showcase-label">Textarea & Select</div>
+          <div class="showcase-content">
+            <div class="form-group">
+              <label class="form-label">Description</label>
+              <textarea class="form-textarea" placeholder="Enter description..."></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select class="form-select">
+                <option>Tutorial</option>
+                <option>Documentation</option>
+                <option>Training</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Navigation -->
+    <section class="component-section">
+      <div class="section-header">
+        <div class="section-number">04</div>
+        <h2 class="section-title">Navigation</h2>
+        <p class="section-description">Magazine-inspired navigation components</p>
+      </div>
+      <div class="component-grid">
+        <div class="component-showcase">
+          <div class="showcase-label">Tabs Navigation</div>
+          <ul class="nav-tabs">
+            <li class="nav-tab active">Overview</li>
+            <li class="nav-tab">Videos</li>
+            <li class="nav-tab">Manuals</li>
+            <li class="nav-tab">Settings</li>
+          </ul>
+        </div>
+
+        <div class="component-showcase">
+          <div class="showcase-label">Pills Navigation</div>
+          <ul class="nav-pills">
+            <li class="nav-pill active">All</li>
+            <li class="nav-pill">Published</li>
+            <li class="nav-pill">Drafts</li>
+            <li class="nav-pill">Archived</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Alerts -->
+    <section class="component-section">
+      <div class="section-header">
+        <div class="section-number">05</div>
+        <h2 class="section-title">Alerts</h2>
+        <p class="section-description">Status messages with editorial accent borders</p>
+      </div>
+      <div class="component-grid">
+        <div class="component-showcase">
+          <div class="showcase-label">Alert Types</div>
+          <div class="showcase-content">
+            <div class="alert alert-info">
+              <div class="alert-title">Information</div>
+              <p>Your video is being processed. This may take a few minutes.</p>
+            </div>
+            <div class="alert alert-success">
+              <div class="alert-title">Success</div>
+              <p>Manual has been published successfully.</p>
+            </div>
+            <div class="alert alert-warning">
+              <div class="alert-title">Warning</div>
+              <p>You're approaching your storage limit.</p>
+            </div>
+            <div class="alert alert-error">
+              <div class="alert-title">Error</div>
+              <p>Failed to upload video. Please try again.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Badges -->
+    <section class="component-section">
+      <div class="section-header">
+        <div class="section-number">06</div>
+        <h2 class="section-title">Badges</h2>
+        <p class="section-description">Small status indicators and labels</p>
+      </div>
+      <div class="component-grid">
+        <div class="component-showcase">
+          <div class="showcase-label">Badge Variants</div>
+          <div class="showcase-content">
+            <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+              <span class="badge badge-default">Default</span>
+              <span class="badge badge-primary">Primary</span>
+              <span class="badge badge-success">Published</span>
+              <span class="badge badge-default">Draft</span>
+              <span class="badge badge-primary">Featured</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Modal Example -->
+    <section class="component-section">
+      <div class="section-header">
+        <div class="section-number">07</div>
+        <h2 class="section-title">Modal Dialog</h2>
+        <p class="section-description">Overlay dialogs for focused interactions</p>
+      </div>
+      <div class="component-grid">
+        <div class="component-showcase">
+          <div class="showcase-label">Modal Structure</div>
+          <button class="btn btn-primary" onclick="document.getElementById('exampleModal').style.display='flex'">
+            Open Modal
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Skeleton Loaders -->
+    <section class="component-section">
+      <div class="section-header">
+        <div class="section-number">08</div>
+        <h2 class="section-title">Skeleton Loaders</h2>
+        <p class="section-description">Loading states with subtle animation</p>
+      </div>
+      <div class="component-grid">
+        <div class="component-showcase">
+          <div class="showcase-label">Content Skeleton</div>
+          <div class="showcase-content">
+            <div class="skeleton skeleton-image"></div>
+            <div class="skeleton skeleton-title"></div>
+            <div class="skeleton skeleton-text"></div>
+            <div class="skeleton skeleton-text" style="width: 80%;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Dividers -->
+    <section class="component-section">
+      <div class="section-header">
+        <div class="section-number">09</div>
+        <h2 class="section-title">Dividers</h2>
+        <p class="section-description">Section separators with optional labels</p>
+      </div>
+      <div class="component-grid">
+        <div class="component-showcase">
+          <div class="showcase-label">Divider Types</div>
+          <div class="showcase-content">
+            <div class="divider"></div>
+            <div class="divider-text">
+              <span>Or Continue With</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Editorial Elements -->
+    <section class="component-section">
+      <div class="section-header">
+        <div class="section-number">10</div>
+        <h2 class="section-title">Editorial Elements</h2>
+        <p class="section-description">Typography and design elements inspired by magazines</p>
+      </div>
+      <div class="component-grid">
+        <div class="component-showcase">
+          <div class="showcase-label">Pull Quote</div>
+          <div class="pullquote">
+            "This platform has transformed how we create documentation. The AI is remarkably accurate."
+          </div>
+          <div class="byline">Sarah Chen, Head of Documentation</div>
+        </div>
+
+        <div class="component-showcase">
+          <div class="showcase-label">Section Label</div>
+          <span class="section-label">Featured Article</span>
+          <h3 class="heading-xl serif">The Future of Documentation</h3>
+          <p class="body-lg">
+            Exploring how AI is revolutionizing the way teams create and maintain technical documentation.
+          </p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Modal Example (Hidden by default) -->
+  <div id="exampleModal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Create New Manual</h3>
+        <button class="modal-close" onclick="document.getElementById('exampleModal').style.display='none'">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Manual Title</label>
+          <input type="text" class="form-input" placeholder="Enter manual title">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea class="form-textarea" placeholder="Describe your manual..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-select">
+            <option>Tutorial</option>
+            <option>Documentation</option>
+            <option>Training</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="document.getElementById('exampleModal').style.display='none'">Cancel</button>
+        <button class="btn btn-primary">Create Manual</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Theme Toggle Functionality
+    const themeToggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    html.setAttribute('data-theme', currentTheme);
+
+    function updateIcon(theme) {
+      const icon = themeToggle.querySelector('.theme-icon');
+      if (theme === 'dark') {
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>';
+      } else {
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>';
+      }
+    }
+
+    updateIcon(currentTheme);
+
+    themeToggle.addEventListener('click', function() {
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      updateIcon(newTheme);
+    });
+
+    // Close modal when clicking outside
+    document.getElementById('exampleModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        this.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

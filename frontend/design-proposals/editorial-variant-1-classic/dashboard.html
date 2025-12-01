@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="burgundy">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Video Manual</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    body {
+      background-color: var(--color-neutral-50);
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background-color: var(--color-surface);
+      border-right: var(--border-width-medium) solid var(--color-border);
+      padding: var(--space-8);
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-8);
+    }
+
+    .sidebar-header {
+      padding-bottom: var(--space-6);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .sidebar-logo {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-lg);
+      font-weight: var(--weight-bold);
+      color: var(--color-text);
+      text-decoration: none;
+      letter-spacing: var(--tracking-tight);
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .sidebar-section-title {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-widest);
+      text-transform: uppercase;
+      color: var(--color-text-secondary);
+      margin-top: var(--space-4);
+      margin-bottom: var(--space-2);
+    }
+
+    .sidebar-link {
+      padding: var(--space-3) var(--space-4);
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      font-size: var(--text-body-md);
+      font-weight: var(--weight-medium);
+      transition: all var(--transition-fast);
+      border-left: var(--border-width-thick) solid transparent;
+    }
+
+    .sidebar-link:hover {
+      color: var(--color-text);
+      background-color: var(--color-neutral-100);
+    }
+
+    .sidebar-link.active {
+      color: var(--color-accent);
+      border-left-color: var(--color-accent);
+      background-color: var(--color-accent-light);
+    }
+
+    .sidebar-footer {
+      padding-top: var(--space-6);
+      border-top: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .palette-switcher-sidebar {
+      margin-bottom: var(--space-4);
+    }
+
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: var(--space-2);
+    }
+
+    .palette-swatch-btn {
+      width: 100%;
+      aspect-ratio: 1;
+      border: var(--border-width-thin) solid var(--color-border);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      padding: 0;
+      background-color: transparent;
+    }
+
+    .palette-swatch-btn:hover {
+      transform: scale(1.1);
+      border-color: var(--color-accent);
+    }
+
+    .palette-swatch-btn.active {
+      border-width: var(--border-width-medium);
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-accent);
+    }
+
+    .theme-toggle-sidebar {
+      width: 100%;
+      padding: var(--space-3);
+      border: var(--border-width-thin) solid var(--color-border);
+      background-color: var(--color-surface);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      font-size: var(--text-body-sm);
+      color: var(--color-text-secondary);
+      transition: all var(--transition-fast);
+    }
+
+    .theme-toggle-sidebar:hover {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    /* Main Content */
+    .main {
+      overflow-y: auto;
+    }
+
+    .header {
+      padding: var(--space-8) var(--space-10);
+      background-color: var(--color-surface);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-sm);
+      font-weight: var(--weight-semibold);
+      line-height: var(--leading-tight);
+      color: var(--color-text);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: var(--space-4);
+      align-items: center;
+    }
+
+    .content {
+      padding: var(--space-10);
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-6);
+      margin-bottom: var(--space-12);
+    }
+
+    .stat-card {
+      padding: var(--space-8);
+      background-color: var(--color-surface);
+      border-left: var(--border-width-statement) solid var(--color-accent);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .stat-label {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-wider);
+      text-transform: uppercase;
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-2);
+    }
+
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: var(--text-display-md);
+      font-weight: var(--weight-semibold);
+      line-height: 1;
+      color: var(--color-text);
+      margin-bottom: var(--space-2);
+    }
+
+    .stat-change {
+      font-size: var(--text-body-sm);
+      color: var(--color-success);
+    }
+
+    /* Section Header */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-6);
+      padding-bottom: var(--space-4);
+      border-bottom: var(--border-width-medium) solid var(--color-border);
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-xl);
+      font-weight: var(--weight-semibold);
+      color: var(--color-text);
+    }
+
+    .section-action {
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-medium);
+      color: var(--color-accent);
+      text-decoration: none;
+      letter-spacing: var(--tracking-wide);
+      transition: color var(--transition-fast);
+    }
+
+    .section-action:hover {
+      color: var(--color-accent-hover);
+    }
+
+    /* Content Grid */
+    .content-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-8);
+      margin-bottom: var(--space-12);
+    }
+
+    .content-card {
+      background-color: var(--color-surface);
+      border: var(--border-width-thin) solid var(--color-border);
+      transition: all var(--transition-base);
+      cursor: pointer;
+    }
+
+    .content-card:hover {
+      border-color: var(--color-accent);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .content-card-image {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: linear-gradient(135deg, var(--color-neutral-100) 0%, var(--color-neutral-200) 100%);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .content-card-image::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" fill="none"/><path d="M0 20h40M20 0v40" stroke="%23E5DED0" stroke-width="1"/></svg>');
+      opacity: 0.2;
+    }
+
+    .content-card-body {
+      padding: var(--space-6);
+    }
+
+    .content-card-label {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-wider);
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: var(--space-2);
+    }
+
+    .content-card-title {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-lg);
+      font-weight: var(--weight-semibold);
+      line-height: var(--leading-snug);
+      color: var(--color-text);
+      margin-bottom: var(--space-3);
+    }
+
+    .content-card-description {
+      font-size: var(--text-body-sm);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-4);
+    }
+
+    .content-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: var(--space-4);
+      border-top: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .content-card-meta {
+      font-size: var(--text-body-xs);
+      color: var(--color-text-tertiary);
+    }
+
+    .content-card-status {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-medium);
+      padding: var(--space-1) var(--space-3);
+      border: var(--border-width-thin) solid var(--color-border);
+      text-transform: uppercase;
+      letter-spacing: var(--tracking-wide);
+    }
+
+    .status-published {
+      color: var(--color-success);
+      border-color: var(--color-success);
+    }
+
+    .status-draft {
+      color: var(--color-text-secondary);
+      border-color: var(--color-border);
+    }
+
+    /* Activity Feed */
+    .activity-feed {
+      background-color: var(--color-surface);
+      border: var(--border-width-thin) solid var(--color-border);
+      padding: var(--space-8);
+    }
+
+    .activity-item {
+      padding: var(--space-4) 0;
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-time {
+      font-size: var(--text-body-xs);
+      color: var(--color-text-tertiary);
+      margin-bottom: var(--space-2);
+    }
+
+    .activity-description {
+      font-size: var(--text-body-sm);
+      color: var(--color-text);
+    }
+
+    .activity-user {
+      font-weight: var(--weight-semibold);
+      color: var(--color-accent);
+    }
+
+    /* Button Styles */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-body);
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-medium);
+      line-height: 1;
+      text-decoration: none;
+      border: var(--border-width-medium) solid transparent;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      padding: var(--space-3) var(--space-6);
+      letter-spacing: var(--tracking-wide);
+    }
+
+    .btn-primary {
+      background-color: var(--color-accent);
+      border-color: var(--color-accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--color-accent-hover);
+      border-color: var(--color-accent-hover);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border-color: var(--color-border-strong);
+      color: var(--color-text);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .content-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        display: none;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .header-title {
+        font-size: var(--text-heading-xl);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <a href="#" class="sidebar-logo">Video Manual</a>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#" class="sidebar-link active">Dashboard</a>
+        <a href="#" class="sidebar-link">Manuals</a>
+        <a href="#" class="sidebar-link">Compilations</a>
+        <a href="#" class="sidebar-link">Videos</a>
+
+        <div class="sidebar-section-title">Tools</div>
+        <a href="#" class="sidebar-link">Editor</a>
+        <a href="#" class="sidebar-link">Analytics</a>
+        <a href="#" class="sidebar-link">Export</a>
+
+        <div class="sidebar-section-title">Settings</div>
+        <a href="#" class="sidebar-link">Account</a>
+        <a href="#" class="sidebar-link">Team</a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="palette-switcher-sidebar">
+          <div class="sidebar-section-title">Color Palette</div>
+          <div class="palette-grid">
+            <button class="palette-swatch-btn active" data-palette="burgundy"
+                    style="background-color: #722F37;" aria-label="Burgundy palette"></button>
+            <button class="palette-swatch-btn" data-palette="navy"
+                    style="background-color: #1B365D;" aria-label="Navy palette"></button>
+            <button class="palette-swatch-btn" data-palette="forest"
+                    style="background-color: #1B4332;" aria-label="Forest palette"></button>
+            <button class="palette-swatch-btn" data-palette="charcoal"
+                    style="background-color: #36454F;" aria-label="Charcoal palette"></button>
+            <button class="palette-swatch-btn" data-palette="sepia"
+                    style="background-color: #704214;" aria-label="Sepia palette"></button>
+          </div>
+        </div>
+
+        <button class="theme-toggle-sidebar" id="themeToggle">
+          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+          </svg>
+          <span id="themeLabel">Dark Mode</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <header class="header">
+        <div class="header-content">
+          <h1 class="header-title">Dashboard</h1>
+          <div class="header-actions">
+            <button class="btn btn-secondary">Upload Video</button>
+            <button class="btn btn-primary">New Manual</button>
+          </div>
+        </div>
+      </header>
+
+      <div class="content">
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Manuals</div>
+            <div class="stat-value">24</div>
+            <div class="stat-change">+3 this month</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Published</div>
+            <div class="stat-value">18</div>
+            <div class="stat-change">+2 this month</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">In Progress</div>
+            <div class="stat-value">6</div>
+            <div class="stat-change">Active work</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Views</div>
+            <div class="stat-value">1.2K</div>
+            <div class="stat-change">+156 this week</div>
+          </div>
+        </div>
+
+        <!-- Recent Manuals -->
+        <div class="section-header">
+          <h2 class="section-title">Recent Manuals</h2>
+          <a href="#" class="section-action">View All →</a>
+        </div>
+
+        <div class="content-grid">
+          <div class="content-card">
+            <div class="content-card-image"></div>
+            <div class="content-card-body">
+              <div class="content-card-label">Tutorial</div>
+              <h3 class="content-card-title">Getting Started with Advanced Features</h3>
+              <p class="content-card-description">
+                A comprehensive guide to unlocking the full potential of our platform's advanced capabilities.
+              </p>
+              <div class="content-card-footer">
+                <span class="content-card-meta">Updated 2 days ago</span>
+                <span class="content-card-status status-published">Published</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="content-card">
+            <div class="content-card-image"></div>
+            <div class="content-card-body">
+              <div class="content-card-label">Guide</div>
+              <h3 class="content-card-title">Installation and Setup Procedures</h3>
+              <p class="content-card-description">
+                Step-by-step instructions for installing and configuring the system properly.
+              </p>
+              <div class="content-card-footer">
+                <span class="content-card-meta">Updated 5 days ago</span>
+                <span class="content-card-status status-published">Published</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="content-card">
+            <div class="content-card-image"></div>
+            <div class="content-card-body">
+              <div class="content-card-label">Manual</div>
+              <h3 class="content-card-title">Troubleshooting Common Issues</h3>
+              <p class="content-card-description">
+                Solutions to frequently encountered problems and their resolutions.
+              </p>
+              <div class="content-card-footer">
+                <span class="content-card-meta">Updated 1 week ago</span>
+                <span class="content-card-status status-draft">Draft</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="section-header">
+          <h2 class="section-title">Recent Activity</h2>
+          <a href="#" class="section-action">View All →</a>
+        </div>
+
+        <div class="activity-feed">
+          <div class="activity-item">
+            <div class="activity-time">2 hours ago</div>
+            <div class="activity-description">
+              <span class="activity-user">Sarah Mitchell</span> published "Advanced Configuration Guide"
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-time">5 hours ago</div>
+            <div class="activity-description">
+              <span class="activity-user">James Anderson</span> updated "Installation Procedures"
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-time">1 day ago</div>
+            <div class="activity-description">
+              <span class="activity-user">Emily Chen</span> created a new manual "Troubleshooting Guide"
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-time">2 days ago</div>
+            <div class="activity-description">
+              <span class="activity-user">Michael Roberts</span> exported "User Documentation" to PDF
+            </div>
+          </div>
+          <div class="activity-item">
+            <div class="activity-time">3 days ago</div>
+            <div class="activity-description">
+              <span class="activity-user">Lisa Thompson</span> added new video "System Overview"
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const html = document.documentElement;
+
+    // Palette Switcher
+    const paletteBtns = document.querySelectorAll('.palette-swatch-btn');
+    const currentPalette = localStorage.getItem('palette') || 'burgundy';
+    html.setAttribute('data-palette', currentPalette);
+    updateActivePalette(currentPalette);
+
+    paletteBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const palette = this.getAttribute('data-palette');
+        html.setAttribute('data-palette', palette);
+        localStorage.setItem('palette', palette);
+        updateActivePalette(palette);
+      });
+    });
+
+    function updateActivePalette(palette) {
+      paletteBtns.forEach(btn => {
+        if (btn.getAttribute('data-palette') === palette) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    }
+
+    // Theme Toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const themeLabel = document.getElementById('themeLabel');
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    html.setAttribute('data-theme', currentTheme);
+    updateThemeUI(currentTheme);
+
+    function updateThemeUI(theme) {
+      const icon = themeToggle.querySelector('svg path');
+      if (theme === 'dark') {
+        icon.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
+        themeLabel.textContent = 'Light Mode';
+      } else {
+        icon.setAttribute('d', 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z');
+        themeLabel.textContent = 'Dark Mode';
+      }
+    }
+
+    themeToggle.addEventListener('click', function() {
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      updateThemeUI(newTheme);
+    });
+  </script>
+</body>
+</html>

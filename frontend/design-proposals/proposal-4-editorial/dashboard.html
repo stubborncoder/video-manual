@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Video Manual</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    body {
+      background-color: var(--color-background);
+    }
+
+    /* Layout */
+    .layout {
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background-color: var(--color-surface);
+      border-right: var(--border-width-thin) solid var(--color-border);
+      padding: var(--space-6);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+
+    .sidebar-logo {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-lg);
+      font-weight: var(--weight-bold);
+      color: var(--color-text);
+      margin-bottom: var(--space-12);
+      padding-bottom: var(--space-6);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-4);
+      font-size: var(--text-body-md);
+      font-weight: var(--weight-medium);
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      transition: all var(--transition-fast);
+      border-left: var(--border-width-thick) solid transparent;
+    }
+
+    .nav-item:hover {
+      color: var(--color-text);
+      background-color: var(--color-neutral-100);
+    }
+
+    .nav-item.active {
+      color: var(--color-text);
+      background-color: var(--color-accent-50);
+      border-left-color: var(--color-accent);
+    }
+
+    .nav-icon {
+      width: 20px;
+      height: 20px;
+    }
+
+    .sidebar-footer {
+      padding-top: var(--space-6);
+      border-top: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3);
+      cursor: pointer;
+      transition: background-color var(--transition-fast);
+    }
+
+    .user-profile:hover {
+      background-color: var(--color-neutral-100);
+    }
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--color-accent-300), var(--color-accent-500));
+      border-radius: 50%;
+    }
+
+    .user-info {
+      flex: 1;
+    }
+
+    .user-name {
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-medium);
+      color: var(--color-text);
+    }
+
+    .user-email {
+      font-size: var(--text-body-xs);
+      color: var(--color-text-secondary);
+    }
+
+    /* Main Content */
+    .main {
+      padding: var(--space-8);
+      max-width: 1600px;
+    }
+
+    /* Header */
+    .header {
+      margin-bottom: var(--space-12);
+      padding-bottom: var(--space-8);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--space-6);
+    }
+
+    .page-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-md);
+      font-weight: var(--weight-semibold);
+      line-height: var(--leading-tight);
+      margin-bottom: var(--space-2);
+    }
+
+    .page-subtitle {
+      font-size: var(--text-body-lg);
+      color: var(--color-text-secondary);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: var(--space-3);
+      align-items: center;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: var(--space-6);
+      margin-bottom: var(--space-12);
+    }
+
+    .stat-card {
+      background-color: var(--color-surface);
+      border: var(--border-width-thin) solid var(--color-border);
+      padding: var(--space-8);
+      position: relative;
+      overflow: hidden;
+      transition: all var(--transition-base);
+    }
+
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: var(--border-width-thick);
+      background-color: var(--color-accent);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform var(--transition-base);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .stat-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .stat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--space-6);
+    }
+
+    .stat-label {
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-medium);
+      letter-spacing: var(--tracking-wide);
+      text-transform: uppercase;
+      color: var(--color-text-secondary);
+    }
+
+    .stat-icon {
+      width: 24px;
+      height: 24px;
+      color: var(--color-accent);
+    }
+
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: var(--text-display-sm);
+      font-weight: var(--weight-semibold);
+      line-height: 1;
+      color: var(--color-text);
+      margin-bottom: var(--space-3);
+    }
+
+    .stat-change {
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-2);
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-medium);
+    }
+
+    .stat-change.positive {
+      color: var(--color-success);
+    }
+
+    .stat-change.negative {
+      color: var(--color-error);
+    }
+
+    /* Content Grid */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: var(--space-8);
+    }
+
+    /* Activity Feed */
+    .activity-section {
+      background-color: var(--color-surface);
+      border: var(--border-width-thin) solid var(--color-border);
+      padding: var(--space-8);
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-8);
+      padding-bottom: var(--space-6);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-xl);
+      font-weight: var(--weight-semibold);
+    }
+
+    .section-action {
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-medium);
+      color: var(--color-accent);
+      text-decoration: none;
+      border-bottom: var(--border-width-thin) solid transparent;
+      transition: border-color var(--transition-fast);
+    }
+
+    .section-action:hover {
+      border-bottom-color: var(--color-accent);
+    }
+
+    .activity-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .activity-item {
+      padding: var(--space-6) 0;
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: var(--space-4);
+    }
+
+    .activity-item:last-child {
+      border-bottom: none;
+    }
+
+    .activity-icon {
+      width: 40px;
+      height: 40px;
+      background-color: var(--color-neutral-100);
+      border: var(--border-width-thin) solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .activity-icon svg {
+      width: 20px;
+      height: 20px;
+      color: var(--color-text-secondary);
+    }
+
+    .activity-content {
+      flex: 1;
+    }
+
+    .activity-title {
+      font-size: var(--text-body-md);
+      font-weight: var(--weight-medium);
+      color: var(--color-text);
+      margin-bottom: var(--space-1);
+    }
+
+    .activity-description {
+      font-size: var(--text-body-sm);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-2);
+    }
+
+    .activity-meta {
+      font-size: var(--text-body-xs);
+      color: var(--color-text-tertiary);
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+      background-color: var(--color-surface);
+      border: var(--border-width-thin) solid var(--color-border);
+      padding: var(--space-8);
+    }
+
+    .action-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .action-button {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-4);
+      background-color: var(--color-background);
+      border: var(--border-width-thin) solid var(--color-border);
+      color: var(--color-text);
+      text-decoration: none;
+      font-size: var(--text-body-md);
+      font-weight: var(--weight-medium);
+      transition: all var(--transition-fast);
+      cursor: pointer;
+    }
+
+    .action-button:hover {
+      border-color: var(--color-accent);
+      background-color: var(--color-accent-50);
+    }
+
+    .action-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--color-accent);
+    }
+
+    /* Button Styles */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      font-family: var(--font-body);
+      font-size: var(--text-body-md);
+      font-weight: var(--weight-medium);
+      line-height: 1;
+      text-decoration: none;
+      border: var(--border-width-medium) solid transparent;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      padding: var(--space-3) var(--space-6);
+      background: transparent;
+    }
+
+    .btn-primary {
+      background-color: var(--color-accent);
+      border-color: var(--color-accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--color-accent-hover);
+      border-color: var(--color-accent-hover);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border-color: var(--color-border-strong);
+      color: var(--color-text);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--color-text);
+    }
+
+    .btn-ghost {
+      border: none;
+      color: var(--color-text-secondary);
+      padding: var(--space-3);
+    }
+
+    .btn-ghost:hover {
+      color: var(--color-text);
+      background-color: var(--color-neutral-100);
+    }
+
+    .btn-icon {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* Theme Toggle */
+    .theme-toggle {
+      width: 40px;
+      height: 40px;
+      border: var(--border-width-thin) solid var(--color-border);
+      background-color: var(--color-surface);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--color-text);
+    }
+
+    .theme-icon {
+      width: 18px;
+      height: 18px;
+      color: var(--color-text);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        height: auto;
+        border-right: none;
+        border-bottom: var(--border-width-thin) solid var(--color-border);
+      }
+
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .main {
+        padding: var(--space-4);
+      }
+
+      .header-top {
+        flex-direction: column;
+        gap: var(--space-4);
+      }
+
+      .header-actions {
+        width: 100%;
+        justify-content: stretch;
+      }
+
+      .header-actions button,
+      .header-actions a {
+        flex: 1;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">Video Manual</div>
+
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+          </svg>
+          Dashboard
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+          </svg>
+          Videos
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          Manuals
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+          </svg>
+          Projects
+        </a>
+        <a href="#" class="nav-item">
+          <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          </svg>
+          Settings
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-profile">
+          <div class="user-avatar"></div>
+          <div class="user-info">
+            <div class="user-name">Sarah Chen</div>
+            <div class="user-email">sarah@example.com</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main">
+      <!-- Header -->
+      <header class="header">
+        <div class="header-top">
+          <div>
+            <h1 class="page-title">Dashboard</h1>
+            <p class="page-subtitle">Welcome back, Sarah. Here's your overview.</p>
+          </div>
+          <div class="header-actions">
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+              <svg class="theme-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+              </svg>
+            </button>
+            <button class="btn btn-secondary">
+              <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              Export
+            </button>
+            <button class="btn btn-primary">
+              <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+              </svg>
+              New Video
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Total Videos</span>
+            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <div class="stat-value">127</div>
+          <div class="stat-change positive">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+            </svg>
+            +12% from last month
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Manuals Created</span>
+            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          <div class="stat-value">342</div>
+          <div class="stat-change positive">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+            </svg>
+            +24% from last month
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Active Projects</span>
+            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+          </div>
+          <div class="stat-value">18</div>
+          <div class="stat-change positive">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
+            </svg>
+            +3 this week
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-label">Storage Used</span>
+            <svg class="stat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4"></path>
+            </svg>
+          </div>
+          <div class="stat-value">24.8 GB</div>
+          <div class="stat-change">
+            48% of 50 GB
+          </div>
+        </div>
+      </div>
+
+      <!-- Content Grid -->
+      <div class="content-grid">
+        <!-- Recent Activity -->
+        <div class="activity-section">
+          <div class="section-header">
+            <h2 class="section-title">Recent Activity</h2>
+            <a href="#" class="section-action">View All</a>
+          </div>
+          <div class="activity-list">
+            <div class="activity-item">
+              <div class="activity-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">Manual published</div>
+                <div class="activity-description">
+                  "Product Installation Guide v2.1" was published to the team library
+                </div>
+                <div class="activity-meta">2 hours ago</div>
+              </div>
+            </div>
+
+            <div class="activity-item">
+              <div class="activity-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">Video uploaded</div>
+                <div class="activity-description">
+                  "Tutorial_Setup_Process.mp4" (342 MB) uploaded successfully
+                </div>
+                <div class="activity-meta">5 hours ago</div>
+              </div>
+            </div>
+
+            <div class="activity-item">
+              <div class="activity-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">Manual edited</div>
+                <div class="activity-description">
+                  Marcus Rodriguez updated "Onboarding Process Manual"
+                </div>
+                <div class="activity-meta">Yesterday at 4:32 PM</div>
+              </div>
+            </div>
+
+            <div class="activity-item">
+              <div class="activity-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                </svg>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">Project created</div>
+                <div class="activity-description">
+                  New project "Q4 Training Materials" with 5 manuals
+                </div>
+                <div class="activity-meta">Yesterday at 2:15 PM</div>
+              </div>
+            </div>
+
+            <div class="activity-item">
+              <div class="activity-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">Export completed</div>
+                <div class="activity-description">
+                  "Complete Product Documentation.pdf" ready for download
+                </div>
+                <div class="activity-meta">2 days ago</div>
+              </div>
+            </div>
+
+            <div class="activity-item">
+              <div class="activity-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+              </div>
+              <div class="activity-content">
+                <div class="activity-title">AI analysis completed</div>
+                <div class="activity-description">
+                  "Software_Demo_Final.mp4" processed - 47 steps extracted
+                </div>
+                <div class="activity-meta">3 days ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+          <div class="section-header">
+            <h2 class="section-title">Quick Actions</h2>
+          </div>
+          <div class="action-list">
+            <a href="#" class="action-button">
+              <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+              </svg>
+              Upload New Video
+            </a>
+            <a href="#" class="action-button">
+              <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              Create Manual
+            </a>
+            <a href="#" class="action-button">
+              <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+              </svg>
+              New Project
+            </a>
+            <a href="#" class="action-button">
+              <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+              </svg>
+              Browse Templates
+            </a>
+            <a href="#" class="action-button">
+              <svg class="action-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+              </svg>
+              Invite Team Members
+            </a>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Theme Toggle Functionality
+    const themeToggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+
+    // Check for saved theme preference or default to 'light' mode
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    html.setAttribute('data-theme', currentTheme);
+
+    // Update icon based on current theme
+    function updateIcon(theme) {
+      const icon = themeToggle.querySelector('.theme-icon');
+      if (theme === 'dark') {
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>';
+      } else {
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>';
+      }
+    }
+
+    updateIcon(currentTheme);
+
+    themeToggle.addEventListener('click', function() {
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      updateIcon(newTheme);
+    });
+  </script>
+</body>
+</html>

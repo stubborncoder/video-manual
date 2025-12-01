@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="ink" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual Preview - Video Manual</title>
+  <link rel="stylesheet" href="design-system.css">
+</head>
+<body>
+
+  <!-- Theme Controls -->
+  <div class="theme-controls">
+    <div class="palette-dot active" data-palette="ink" title="Ink"></div>
+    <div class="palette-dot" data-palette="stone" title="Stone"></div>
+    <div class="palette-dot" data-palette="moss" title="Moss"></div>
+    <div class="palette-dot" data-palette="clay" title="Clay"></div>
+    <div class="palette-dot" data-palette="slate" title="Slate"></div>
+    <button class="theme-toggle" id="themeToggle">
+      <span id="themeLabel">Light</span>
+    </button>
+  </div>
+
+  <!-- Header - Minimal -->
+  <header style="padding: var(--space-6) 0; border-bottom: var(--border-width) solid var(--border-light);">
+    <div class="container flex justify-between items-center">
+      <a href="dashboard.html" class="link text-base">← Back</a>
+      <div class="flex items-center gap-4">
+        <button class="btn btn-ghost text-xs">Edit</button>
+        <button class="btn text-xs">Export</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Manual Content -->
+  <article>
+    <!-- Title Section -->
+    <section class="section-lg">
+      <div class="container container-narrow">
+        <span class="label mb-6">Development Guide</span>
+        <h1 class="text-5xl serif font-medium mb-8">
+          Complete Guide to Setting Up Development Environment
+        </h1>
+        <div class="flex items-center gap-8 mb-12" style="color: var(--text-secondary);">
+          <span class="text-sm">12:34 video</span>
+          <span class="text-sm">18 steps</span>
+          <span class="text-sm">Updated 2 hours ago</span>
+        </div>
+        <p class="text-lg" style="color: var(--text-secondary); line-height: var(--leading-loose);">
+          This comprehensive guide walks you through the process of setting up a complete development environment for modern web development. From installing essential tools to configuring your workspace, each step is clearly documented with visual references.
+        </p>
+      </div>
+    </section>
+
+    <!-- Spacer -->
+    <div style="height: var(--space-48);"></div>
+
+    <!-- Manual Steps -->
+    <section class="section">
+      <div class="container container-narrow">
+        <!-- Step 1 -->
+        <div class="mb-32">
+          <div class="flex items-center gap-6 mb-8">
+            <span class="text-3xl serif font-light" style="color: var(--text-tertiary);">01</span>
+            <h2 class="text-2xl serif font-medium">Install Node.js</h2>
+          </div>
+
+          <div style="margin-left: 72px;">
+            <!-- Screenshot placeholder -->
+            <div style="width: 100%; aspect-ratio: 16/9; background: var(--bg-secondary); border: var(--border-width) solid var(--border-light); margin-bottom: var(--space-6); display: flex; align-items: center; justify-content: center;">
+              <span class="label" style="color: var(--text-tertiary);">Screenshot</span>
+            </div>
+
+            <p class="text-base mb-6" style="line-height: var(--leading-loose); color: var(--text-secondary);">
+              Visit the official Node.js website and download the LTS (Long Term Support) version for your operating system. The LTS version ensures stability and long-term support for your development environment.
+            </p>
+
+            <div style="background: var(--bg-secondary); padding: var(--space-6); border-left: var(--border-width-thick) solid var(--border-light); margin-bottom: var(--space-6);">
+              <p class="text-sm" style="color: var(--text-secondary); font-family: monospace;">
+                $ node --version<br>
+                v20.10.0
+              </p>
+            </div>
+
+            <p class="text-sm" style="color: var(--text-tertiary);">
+              Verify the installation by running the command above in your terminal.
+            </p>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Step 2 -->
+        <div class="mb-32">
+          <div class="flex items-center gap-6 mb-8">
+            <span class="text-3xl serif font-light" style="color: var(--text-tertiary);">02</span>
+            <h2 class="text-2xl serif font-medium">Install Visual Studio Code</h2>
+          </div>
+
+          <div style="margin-left: 72px;">
+            <!-- Screenshot placeholder -->
+            <div style="width: 100%; aspect-ratio: 16/9; background: var(--bg-secondary); border: var(--border-width) solid var(--border-light); margin-bottom: var(--space-6); display: flex; align-items: center; justify-content: center;">
+              <span class="label" style="color: var(--text-tertiary);">Screenshot</span>
+            </div>
+
+            <p class="text-base mb-6" style="line-height: var(--leading-loose); color: var(--text-secondary);">
+              Download and install Visual Studio Code from the official website. VS Code is a powerful, lightweight code editor with excellent support for JavaScript, TypeScript, and modern web development.
+            </p>
+
+            <p class="text-sm" style="color: var(--text-tertiary);">
+              Available for Windows, macOS, and Linux.
+            </p>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Step 3 -->
+        <div class="mb-32">
+          <div class="flex items-center gap-6 mb-8">
+            <span class="text-3xl serif font-light" style="color: var(--text-tertiary);">03</span>
+            <h2 class="text-2xl serif font-medium">Install Essential VS Code Extensions</h2>
+          </div>
+
+          <div style="margin-left: 72px;">
+            <!-- Screenshot placeholder -->
+            <div style="width: 100%; aspect-ratio: 16/9; background: var(--bg-secondary); border: var(--border-width) solid var(--border-light); margin-bottom: var(--space-6); display: flex; align-items: center; justify-content: center;">
+              <span class="label" style="color: var(--text-tertiary);">Screenshot</span>
+            </div>
+
+            <p class="text-base mb-6" style="line-height: var(--leading-loose); color: var(--text-secondary);">
+              Open VS Code and navigate to the Extensions panel. Install the following recommended extensions to enhance your development experience:
+            </p>
+
+            <ul style="list-style: none; margin-bottom: var(--space-6);">
+              <li class="text-base mb-3" style="color: var(--text-secondary); padding-left: var(--space-4); border-left: var(--border-width) solid var(--border-light);">
+                <strong style="color: var(--text-primary);">ESLint</strong> - Identifies and reports JavaScript patterns
+              </li>
+              <li class="text-base mb-3" style="color: var(--text-secondary); padding-left: var(--space-4); border-left: var(--border-width) solid var(--border-light);">
+                <strong style="color: var(--text-primary);">Prettier</strong> - Code formatter for consistent styling
+              </li>
+              <li class="text-base mb-3" style="color: var(--text-secondary); padding-left: var(--space-4); border-left: var(--border-width) solid var(--border-light);">
+                <strong style="color: var(--text-primary);">GitLens</strong> - Enhanced Git integration
+              </li>
+              <li class="text-base" style="color: var(--text-secondary); padding-left: var(--space-4); border-left: var(--border-width) solid var(--border-light);">
+                <strong style="color: var(--text-primary);">Auto Close Tag</strong> - Automatically closes HTML/XML tags
+              </li>
+            </ul>
+
+            <p class="text-sm" style="color: var(--text-tertiary);">
+              These extensions will significantly improve your productivity and code quality.
+            </p>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Step 4 -->
+        <div class="mb-32">
+          <div class="flex items-center gap-6 mb-8">
+            <span class="text-3xl serif font-light" style="color: var(--text-tertiary);">04</span>
+            <h2 class="text-2xl serif font-medium">Configure Git</h2>
+          </div>
+
+          <div style="margin-left: 72px;">
+            <!-- Screenshot placeholder -->
+            <div style="width: 100%; aspect-ratio: 16/9; background: var(--bg-secondary); border: var(--border-width) solid var(--border-light); margin-bottom: var(--space-6); display: flex; align-items: center; justify-content: center;">
+              <span class="label" style="color: var(--text-tertiary);">Screenshot</span>
+            </div>
+
+            <p class="text-base mb-6" style="line-height: var(--leading-loose); color: var(--text-secondary);">
+              Install Git if you haven't already, then configure your user information. This information will be attached to your commits.
+            </p>
+
+            <div style="background: var(--bg-secondary); padding: var(--space-6); border-left: var(--border-width-thick) solid var(--border-light); margin-bottom: var(--space-6);">
+              <p class="text-sm" style="color: var(--text-secondary); font-family: monospace;">
+                $ git config --global user.name "Your Name"<br>
+                $ git config --global user.email "your.email@example.com"
+              </p>
+            </div>
+
+            <p class="text-sm" style="color: var(--text-tertiary);">
+              Replace the values with your actual name and email address.
+            </p>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Step 5 -->
+        <div class="mb-32">
+          <div class="flex items-center gap-6 mb-8">
+            <span class="text-3xl serif font-light" style="color: var(--text-tertiary);">05</span>
+            <h2 class="text-2xl serif font-medium">Setup Terminal Environment</h2>
+          </div>
+
+          <div style="margin-left: 72px;">
+            <!-- Screenshot placeholder -->
+            <div style="width: 100%; aspect-ratio: 16/9; background: var(--bg-secondary); border: var(--border-width) solid var(--border-light); margin-bottom: var(--space-6); display: flex; align-items: center; justify-content: center;">
+              <span class="label" style="color: var(--text-tertiary);">Screenshot</span>
+            </div>
+
+            <p class="text-base mb-6" style="line-height: var(--leading-loose); color: var(--text-secondary);">
+              Configure your terminal with a modern shell and useful aliases. For macOS and Linux, consider installing Oh My Zsh for enhanced terminal experience. Windows users can use Windows Terminal with PowerShell or WSL.
+            </p>
+
+            <p class="text-sm" style="color: var(--text-tertiary);">
+              A well-configured terminal will save you time and make your workflow more efficient.
+            </p>
+          </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- Final Note -->
+        <div class="mt-32">
+          <p class="text-lg serif font-medium mb-6">
+            You're all set
+          </p>
+          <p class="text-base" style="line-height: var(--leading-loose); color: var(--text-secondary);">
+            Your development environment is now configured and ready for modern web development. Take some time to familiarize yourself with the tools and customize them to your preferences. Happy coding!
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Spacer -->
+    <div style="height: var(--space-64);"></div>
+
+    <!-- Related Manuals -->
+    <section class="section">
+      <div class="container container-narrow">
+        <h3 class="text-lg font-medium mb-12">Related Guides</h3>
+
+        <div class="flex flex-col gap-0">
+          <!-- Related 1 -->
+          <div class="card-minimal">
+            <span class="label mb-3">Video · 9:50</span>
+            <h4 class="text-xl serif font-medium mb-3">
+              Git Workflow for Teams
+            </h4>
+            <p class="text-sm" style="color: var(--text-secondary);">
+              Establish effective Git workflows for your team
+            </p>
+          </div>
+
+          <!-- Related 2 -->
+          <div class="card-minimal">
+            <span class="label mb-3">Video · 6:30</span>
+            <h4 class="text-xl serif font-medium mb-3">
+              Responsive Design Fundamentals
+            </h4>
+            <p class="text-sm" style="color: var(--text-secondary);">
+              Master the essentials of responsive web design
+            </p>
+          </div>
+
+          <!-- Related 3 -->
+          <div class="card-minimal">
+            <span class="label mb-3">Video · 15:22</span>
+            <h4 class="text-xl serif font-medium mb-3">
+              API Authentication Implementation
+            </h4>
+            <p class="text-sm" style="color: var(--text-secondary);">
+              Comprehensive guide to implementing JWT authentication
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Spacer -->
+    <div style="height: var(--space-64);"></div>
+  </article>
+
+  <!-- Footer - Minimal -->
+  <footer style="padding: var(--space-12) 0; border-top: var(--border-width) solid var(--border-light);">
+    <div class="container flex justify-between items-center">
+      <p class="text-sm" style="color: var(--text-tertiary);">© 2024 Video Manual</p>
+      <div class="flex gap-6">
+        <a href="#" class="link text-sm" style="color: var(--text-tertiary);">Help</a>
+        <a href="#" class="link text-sm" style="color: var(--text-tertiary);">Privacy</a>
+        <a href="#" class="link text-sm" style="color: var(--text-tertiary);">Terms</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript for Theme Controls -->
+  <script>
+    // Get elements
+    const html = document.documentElement;
+    const paletteDots = document.querySelectorAll('.palette-dot');
+    const themeToggle = document.getElementById('themeToggle');
+    const themeLabel = document.getElementById('themeLabel');
+
+    // Get stored preferences
+    const storedPalette = localStorage.getItem('palette') || 'ink';
+    const storedTheme = localStorage.getItem('theme') || 'light';
+
+    // Apply stored preferences
+    html.setAttribute('data-palette', storedPalette);
+    html.setAttribute('data-theme', storedTheme);
+    themeLabel.textContent = storedTheme === 'light' ? 'Light' : 'Dark';
+
+    // Update active palette dot
+    paletteDots.forEach(dot => {
+      if (dot.dataset.palette === storedPalette) {
+        dot.classList.add('active');
+      } else {
+        dot.classList.remove('active');
+      }
+    });
+
+    // Palette switching
+    paletteDots.forEach(dot => {
+      dot.addEventListener('click', () => {
+        const palette = dot.dataset.palette;
+        html.setAttribute('data-palette', palette);
+        localStorage.setItem('palette', palette);
+
+        // Update active state
+        paletteDots.forEach(d => d.classList.remove('active'));
+        dot.classList.add('active');
+      });
+    });
+
+    // Theme toggle (light/dark)
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      themeLabel.textContent = newTheme === 'light' ? 'Light' : 'Dark';
+    });
+  </script>
+
+</body>
+</html>

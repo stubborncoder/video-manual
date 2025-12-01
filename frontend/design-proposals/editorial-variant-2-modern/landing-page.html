@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="coral" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Manual - AI-Powered Visual Documentation</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    /* Layout System */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 var(--space-6);
+    }
+
+    .container-narrow {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 var(--space-6);
+    }
+
+    /* Navigation */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: var(--z-sticky);
+      background-color: var(--color-background);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+      backdrop-filter: blur(12px);
+      background-color: rgba(255, 255, 255, 0.9);
+      transition: all var(--transition-base);
+    }
+
+    [data-theme="dark"] .nav {
+      background-color: rgba(15, 20, 25, 0.9);
+    }
+
+    .nav-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 72px;
+    }
+
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-lg);
+      font-weight: var(--weight-normal);
+      color: var(--color-text);
+      text-decoration: none;
+      letter-spacing: var(--tracking-tight);
+    }
+
+    .nav-links {
+      display: flex;
+      gap: var(--space-8);
+      list-style: none;
+      align-items: center;
+    }
+
+    .nav-link {
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-medium);
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      transition: color var(--transition-fast);
+      position: relative;
+    }
+
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background-color: var(--color-accent);
+      transition: width var(--transition-fast);
+    }
+
+    .nav-link:hover {
+      color: var(--color-text);
+    }
+
+    .nav-link:hover::after {
+      width: 100%;
+    }
+
+    .nav-controls {
+      display: flex;
+      gap: var(--space-3);
+      align-items: center;
+    }
+
+    /* Hero Section - Bold Color Blocking */
+    .hero {
+      padding: var(--space-24) 0 var(--space-32);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: var(--space-20);
+      align-items: center;
+    }
+
+    .hero-label {
+      display: inline-block;
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-bold);
+      letter-spacing: var(--tracking-widest);
+      text-transform: uppercase;
+      color: var(--color-white);
+      background-color: var(--color-accent);
+      padding: var(--space-2) var(--space-4);
+      margin-bottom: var(--space-6);
+      border-radius: var(--radius-sm);
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-xl);
+      font-weight: var(--weight-normal);
+      line-height: var(--leading-tight);
+      letter-spacing: var(--tracking-tight);
+      color: var(--color-text);
+      margin-bottom: var(--space-6);
+    }
+
+    .hero-title-accent {
+      color: var(--color-accent);
+      display: block;
+    }
+
+    .hero-description {
+      font-size: var(--text-body-xl);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-10);
+      max-width: 580px;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: var(--space-4);
+      align-items: center;
+    }
+
+    .hero-visual {
+      position: relative;
+      aspect-ratio: 4/5;
+      background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent-700) 100%);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-xl);
+    }
+
+    .hero-visual::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      animation: rotate 20s linear infinite;
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Stats Bar */
+    .stats-bar {
+      background-color: var(--color-accent);
+      color: var(--color-white);
+      padding: var(--space-8) 0;
+      margin-top: var(--space-20);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-8);
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-family: var(--font-display);
+      font-size: var(--text-display-md);
+      font-weight: var(--weight-normal);
+      margin-bottom: var(--space-2);
+    }
+
+    .stat-label {
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-medium);
+      letter-spacing: var(--tracking-wide);
+      text-transform: uppercase;
+      opacity: 0.9;
+    }
+
+    /* Features Section - Modern Grid */
+    .features {
+      padding: var(--space-32) 0;
+    }
+
+    .features-header {
+      text-align: center;
+      margin-bottom: var(--space-20);
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .features-label {
+      color: var(--color-accent);
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-bold);
+      letter-spacing: var(--tracking-widest);
+      text-transform: uppercase;
+      margin-bottom: var(--space-4);
+    }
+
+    .features-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-lg);
+      font-weight: var(--weight-normal);
+      line-height: var(--leading-tight);
+      margin-bottom: var(--space-6);
+    }
+
+    .features-subtitle {
+      font-size: var(--text-body-lg);
+      color: var(--color-text-secondary);
+      line-height: var(--leading-relaxed);
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-8);
+    }
+
+    .feature-card {
+      background-color: var(--color-surface);
+      border: var(--border-width-thin) solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-8);
+      transition: all var(--transition-base);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--border-width-thick);
+      background-color: var(--color-accent);
+      transform: scaleX(0);
+      transition: transform var(--transition-base);
+      transform-origin: left;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--color-accent);
+    }
+
+    .feature-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .feature-icon {
+      width: 56px;
+      height: 56px;
+      background-color: var(--color-accent-soft);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: var(--space-6);
+      border: var(--border-width-thin) solid var(--color-accent);
+    }
+
+    .feature-icon svg {
+      width: 28px;
+      height: 28px;
+      color: var(--color-accent);
+    }
+
+    .feature-title {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-lg);
+      font-weight: var(--weight-normal);
+      margin-bottom: var(--space-4);
+    }
+
+    .feature-description {
+      font-size: var(--text-body-md);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+    }
+
+    /* How It Works - Asymmetric Layout */
+    .how-it-works {
+      padding: var(--space-32) 0;
+      background-color: var(--color-surface);
+    }
+
+    .hiw-header {
+      text-align: center;
+      margin-bottom: var(--space-20);
+    }
+
+    .hiw-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-lg);
+      font-weight: var(--weight-normal);
+      line-height: var(--leading-tight);
+      margin-bottom: var(--space-6);
+    }
+
+    .hiw-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-12);
+    }
+
+    .step {
+      background-color: var(--color-background);
+      border-radius: var(--radius-md);
+      padding: var(--space-10);
+      border: var(--border-width-thin) solid var(--color-border);
+      position: relative;
+      transition: all var(--transition-base);
+    }
+
+    .step:hover {
+      border-color: var(--color-accent);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .step-number {
+      font-family: var(--font-display);
+      font-size: var(--text-display-sm);
+      font-weight: var(--weight-normal);
+      color: var(--color-accent);
+      margin-bottom: var(--space-4);
+      opacity: 0.8;
+    }
+
+    .step-title {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-xl);
+      font-weight: var(--weight-normal);
+      margin-bottom: var(--space-4);
+    }
+
+    .step-description {
+      font-size: var(--text-body-md);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-6);
+    }
+
+    .step-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-2);
+    }
+
+    /* CTA Section - Bold Color Block */
+    .cta {
+      padding: 0;
+      margin: var(--space-32) 0;
+    }
+
+    .cta-inner {
+      background-color: var(--color-accent);
+      color: var(--color-white);
+      padding: var(--space-24) var(--space-12);
+      border-radius: var(--radius-md);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-inner::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .cta-inner::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -5%;
+      width: 250px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+
+    .cta-content {
+      position: relative;
+      z-index: 1;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .cta-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-md);
+      font-weight: var(--weight-normal);
+      line-height: var(--leading-tight);
+      margin-bottom: var(--space-6);
+    }
+
+    .cta-description {
+      font-size: var(--text-body-lg);
+      line-height: var(--leading-relaxed);
+      margin-bottom: var(--space-10);
+      opacity: 0.95;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: var(--space-4);
+      justify-content: center;
+    }
+
+    /* Footer */
+    .footer {
+      padding: var(--space-20) 0 var(--space-8);
+      background-color: var(--color-surface);
+      border-top: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: var(--space-16);
+      margin-bottom: var(--space-16);
+    }
+
+    .footer-brand {
+      max-width: 350px;
+    }
+
+    .footer-logo {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-lg);
+      font-weight: var(--weight-normal);
+      color: var(--color-text);
+      margin-bottom: var(--space-4);
+    }
+
+    .footer-tagline {
+      font-size: var(--text-body-md);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+    }
+
+    .footer-section-title {
+      font-family: var(--font-body);
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-bold);
+      letter-spacing: var(--tracking-wider);
+      text-transform: uppercase;
+      color: var(--color-text);
+      margin-bottom: var(--space-4);
+    }
+
+    .footer-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .footer-link {
+      font-size: var(--text-body-sm);
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      transition: color var(--transition-fast);
+    }
+
+    .footer-link:hover {
+      color: var(--color-accent);
+    }
+
+    .footer-bottom {
+      padding-top: var(--space-8);
+      border-top: var(--border-width-thin) solid var(--color-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-copyright {
+      font-size: var(--text-body-sm);
+      color: var(--color-text-secondary);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-body);
+      font-size: var(--text-body-md);
+      font-weight: var(--weight-medium);
+      line-height: 1;
+      text-decoration: none;
+      border: var(--border-width-medium) solid transparent;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      padding: var(--space-4) var(--space-8);
+      border-radius: var(--radius-sm);
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background-color: var(--color-accent);
+      border-color: var(--color-accent);
+      color: var(--color-white);
+    }
+
+    .btn-primary:hover {
+      background-color: var(--color-accent-hover);
+      border-color: var(--color-accent-hover);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border-color: var(--color-border-strong);
+      color: var(--color-text);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+      background-color: var(--color-accent-soft);
+    }
+
+    .btn-white {
+      background-color: var(--color-white);
+      border-color: var(--color-white);
+      color: var(--color-accent);
+    }
+
+    .btn-white:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .btn-ghost {
+      background-color: transparent;
+      border-color: transparent;
+      color: var(--color-text-secondary);
+    }
+
+    .btn-ghost:hover {
+      color: var(--color-text);
+      background-color: var(--color-surface);
+    }
+
+    .btn-lg {
+      padding: var(--space-5) var(--space-10);
+      font-size: var(--text-body-lg);
+    }
+
+    .btn-sm {
+      padding: var(--space-2) var(--space-4);
+      font-size: var(--text-body-sm);
+    }
+
+    /* Control Buttons */
+    .control-btn {
+      width: 40px;
+      height: 40px;
+      border: var(--border-width-thin) solid var(--color-border);
+      background-color: var(--color-surface);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+      border-radius: var(--radius-sm);
+    }
+
+    .control-btn:hover {
+      border-color: var(--color-accent);
+      background-color: var(--color-accent-soft);
+    }
+
+    .control-btn svg {
+      width: 20px;
+      height: 20px;
+      color: var(--color-text);
+    }
+
+    /* Palette Switcher */
+    .palette-switcher {
+      position: relative;
+    }
+
+    .palette-trigger {
+      width: 40px;
+      height: 40px;
+      border: var(--border-width-thin) solid var(--color-border);
+      background: linear-gradient(135deg,
+        var(--color-accent) 0%,
+        var(--color-accent) 50%,
+        var(--color-accent-700) 50%,
+        var(--color-accent-700) 100%);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition-fast);
+    }
+
+    .palette-trigger:hover {
+      transform: scale(1.05);
+      box-shadow: var(--shadow-md);
+    }
+
+    .palette-menu {
+      position: absolute;
+      top: calc(100% + var(--space-2));
+      right: 0;
+      background-color: var(--color-surface-elevated);
+      border: var(--border-width-thin) solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-4);
+      box-shadow: var(--shadow-xl);
+      display: none;
+      min-width: 200px;
+      z-index: var(--z-dropdown);
+    }
+
+    .palette-menu.active {
+      display: block;
+      animation: slideDown 200ms ease-out;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .palette-menu-title {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-bold);
+      letter-spacing: var(--tracking-wider);
+      text-transform: uppercase;
+      color: var(--color-text-tertiary);
+      margin-bottom: var(--space-3);
+      padding: 0 var(--space-2);
+    }
+
+    .palette-options {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .palette-option {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-2);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition-fast);
+      border: var(--border-width-thin) solid transparent;
+    }
+
+    .palette-option:hover {
+      background-color: var(--color-surface);
+    }
+
+    .palette-option.active {
+      background-color: var(--color-accent-soft);
+      border-color: var(--color-accent);
+    }
+
+    .palette-color-preview {
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-sm);
+      border: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .palette-option-name {
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-medium);
+      color: var(--color-text);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-12);
+      }
+
+      .hero-visual {
+        max-width: 500px;
+        margin: 0 auto;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hiw-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        gap: var(--space-4);
+      }
+
+      .nav-link span {
+        display: none;
+      }
+
+      .hero {
+        padding: var(--space-16) 0 var(--space-20);
+      }
+
+      .features,
+      .how-it-works {
+        padding: var(--space-20) 0;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-6);
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-cta,
+      .cta-buttons {
+        flex-direction: column;
+        width: 100%;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="container">
+      <div class="nav-container">
+        <a href="#" class="nav-logo">Video Manual</a>
+        <ul class="nav-links">
+          <li><a href="#features" class="nav-link"><span>Features</span></a></li>
+          <li><a href="#how-it-works" class="nav-link"><span>How it Works</span></a></li>
+          <li><a href="#" class="btn btn-ghost btn-sm">Sign In</a></li>
+          <li><a href="#" class="btn btn-primary btn-sm">Get Started</a></li>
+          <li class="nav-controls">
+            <div class="palette-switcher">
+              <button class="palette-trigger" id="paletteToggle" aria-label="Change color palette"></button>
+              <div class="palette-menu" id="paletteMenu">
+                <div class="palette-menu-title">Color Palette</div>
+                <div class="palette-options">
+                  <div class="palette-option active" data-palette="coral">
+                    <div class="palette-color-preview" style="background: #FF6B6B;"></div>
+                    <span class="palette-option-name">Coral</span>
+                  </div>
+                  <div class="palette-option" data-palette="electric-blue">
+                    <div class="palette-color-preview" style="background: #4361EE;"></div>
+                    <span class="palette-option-name">Electric Blue</span>
+                  </div>
+                  <div class="palette-option" data-palette="mint">
+                    <div class="palette-color-preview" style="background: #2EC4B6;"></div>
+                    <span class="palette-option-name">Mint</span>
+                  </div>
+                  <div class="palette-option" data-palette="marigold">
+                    <div class="palette-color-preview" style="background: #F4A261;"></div>
+                    <span class="palette-option-name">Marigold</span>
+                  </div>
+                  <div class="palette-option" data-palette="grape">
+                    <div class="palette-color-preview" style="background: #7209B7;"></div>
+                    <span class="palette-option-name">Grape</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button class="control-btn" id="themeToggle" aria-label="Toggle theme">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+              </svg>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-grid">
+        <div>
+          <span class="hero-label">AI-Powered Documentation</span>
+          <h1 class="hero-title">
+            Transform Video into
+            <span class="hero-title-accent">Visual Documentation</span>
+          </h1>
+          <p class="hero-description">
+            Create comprehensive, step-by-step visual manuals from your video content.
+            Advanced AI extracts, analyzes, and presents information beautifully.
+          </p>
+          <div class="hero-cta">
+            <a href="#" class="btn btn-primary btn-lg">Start Creating</a>
+            <a href="#" class="btn btn-secondary btn-lg">View Demo</a>
+          </div>
+        </div>
+        <div class="hero-visual"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Bar -->
+  <section class="stats-bar">
+    <div class="container">
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="stat-value">10K+</div>
+          <div class="stat-label">Manuals Created</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">95%</div>
+          <div class="stat-label">Time Saved</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">500+</div>
+          <div class="stat-label">Teams</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">4.9/5</div>
+          <div class="stat-label">User Rating</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="features">
+    <div class="container-narrow">
+      <div class="features-header">
+        <div class="features-label">Features</div>
+        <h2 class="features-title">Everything you need to create professional documentation</h2>
+        <p class="features-subtitle">
+          Powerful AI tools combined with intuitive design to deliver exceptional results
+        </p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <h3 class="feature-title">AI Video Analysis</h3>
+          <p class="feature-description">
+            Advanced AI automatically extracts key frames, identifies actions, and generates detailed descriptions from your video content.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
+          </div>
+          <h3 class="feature-title">Smart Manual Generation</h3>
+          <p class="feature-description">
+            Transform analyzed content into publication-ready manuals with intelligent formatting, organization, and professional layouts.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+          </div>
+          <h3 class="feature-title">Rich Text Editor</h3>
+          <p class="feature-description">
+            Edit and refine your manuals with a powerful editor featuring AI assistance, formatting tools, and collaborative features.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+          </div>
+          <h3 class="feature-title">Project Compilation</h3>
+          <p class="feature-description">
+            Organize multiple manuals into comprehensive projects with custom ordering, sections, and export options.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+          </div>
+          <h3 class="feature-title">Multi-Format Export</h3>
+          <p class="feature-description">
+            Export your documentation in various formats including PDF, HTML, and Markdown for maximum flexibility.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+          </div>
+          <h3 class="feature-title">Team Collaboration</h3>
+          <p class="feature-description">
+            Work together seamlessly with version control, comments, and real-time updates across your entire team.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works Section -->
+  <section id="how-it-works" class="how-it-works">
+    <div class="container-narrow">
+      <div class="hiw-header">
+        <h2 class="hiw-title">From Video to Manual in Minutes</h2>
+      </div>
+      <div class="hiw-grid">
+        <div class="step">
+          <div class="step-number">01</div>
+          <h3 class="step-title">Upload Your Video</h3>
+          <p class="step-description">
+            Start by uploading your video content. We support all major formats and handle files up to 2GB with ease.
+          </p>
+          <div class="step-tags">
+            <span class="badge">MP4</span>
+            <span class="badge">MOV</span>
+            <span class="badge">AVI</span>
+            <span class="badge">WebM</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">02</div>
+          <h3 class="step-title">AI Analysis</h3>
+          <p class="step-description">
+            Our AI processes your video, identifying key moments, extracting frames, and generating detailed descriptions automatically.
+          </p>
+          <div class="step-tags">
+            <span class="badge">Frame Extraction</span>
+            <span class="badge">Action Recognition</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">03</div>
+          <h3 class="step-title">Review & Edit</h3>
+          <p class="step-description">
+            Refine the generated manual with our powerful editor. Add context, adjust formatting, and perfect every detail.
+          </p>
+          <div class="step-tags">
+            <span class="badge">Rich Editor</span>
+            <span class="badge">AI Copilot</span>
+            <span class="badge">Version Control</span>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">04</div>
+          <h3 class="step-title">Publish & Share</h3>
+          <p class="step-description">
+            Export your manual in multiple formats or share directly with your team. Track views and gather feedback.
+          </p>
+          <div class="step-tags">
+            <span class="badge">PDF Export</span>
+            <span class="badge">HTML Export</span>
+            <span class="badge">Share Links</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta">
+    <div class="container">
+      <div class="cta-inner">
+        <div class="cta-content">
+          <h2 class="cta-title">Ready to Transform Your Documentation?</h2>
+          <p class="cta-description">
+            Join thousands of teams creating better documentation, faster. Start your free trial today.
+          </p>
+          <div class="cta-buttons">
+            <a href="#" class="btn btn-white btn-lg">Start Free Trial</a>
+            <a href="#" class="btn btn-ghost btn-lg" style="border-color: rgba(255,255,255,0.3); color: white;">Schedule Demo</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="footer-logo">Video Manual</div>
+          <p class="footer-tagline">
+            AI-powered platform for creating professional visual documentation from video content.
+          </p>
+        </div>
+        <div>
+          <h4 class="footer-section-title">Product</h4>
+          <ul class="footer-links">
+            <li><a href="#" class="footer-link">Features</a></li>
+            <li><a href="#" class="footer-link">Pricing</a></li>
+            <li><a href="#" class="footer-link">Use Cases</a></li>
+            <li><a href="#" class="footer-link">Documentation</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-section-title">Company</h4>
+          <ul class="footer-links">
+            <li><a href="#" class="footer-link">About</a></li>
+            <li><a href="#" class="footer-link">Blog</a></li>
+            <li><a href="#" class="footer-link">Careers</a></li>
+            <li><a href="#" class="footer-link">Contact</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-section-title">Legal</h4>
+          <ul class="footer-links">
+            <li><a href="#" class="footer-link">Privacy</a></li>
+            <li><a href="#" class="footer-link">Terms</a></li>
+            <li><a href="#" class="footer-link">Security</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-copyright">2025 Video Manual. All rights reserved.</div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Palette Switcher
+    const paletteToggle = document.getElementById('paletteToggle');
+    const paletteMenu = document.getElementById('paletteMenu');
+    const paletteOptions = document.querySelectorAll('.palette-option');
+    const html = document.documentElement;
+
+    // Load saved palette or default to coral
+    const currentPalette = localStorage.getItem('palette') || 'coral';
+    html.setAttribute('data-palette', currentPalette);
+    document.querySelector(`.palette-option[data-palette="${currentPalette}"]`)?.classList.add('active');
+
+    paletteToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      paletteMenu.classList.toggle('active');
+    });
+
+    paletteOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        const palette = option.dataset.palette;
+        html.setAttribute('data-palette', palette);
+        localStorage.setItem('palette', palette);
+
+        paletteOptions.forEach(opt => opt.classList.remove('active'));
+        option.classList.add('active');
+        paletteMenu.classList.remove('active');
+      });
+    });
+
+    // Close palette menu when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!paletteToggle.contains(e.target) && !paletteMenu.contains(e.target)) {
+        paletteMenu.classList.remove('active');
+      }
+    });
+
+    // Theme Toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    html.setAttribute('data-theme', currentTheme);
+
+    function updateIcon(theme) {
+      const icon = themeToggle.querySelector('svg path');
+      if (theme === 'dark') {
+        icon.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
+      } else {
+        icon.setAttribute('d', 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z');
+      }
+    }
+
+    updateIcon(currentTheme);
+
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      updateIcon(newTheme);
+    });
+
+    // Smooth scroll
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const href = this.getAttribute('href');
+        if (href !== '#') {
+          e.preventDefault();
+          const target = document.querySelector(href);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="coral" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Component Showcase - Modern Editorial Design System</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    body {
+      background-color: var(--color-background);
+      padding: var(--space-8);
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      margin-bottom: var(--space-16);
+      text-align: center;
+    }
+
+    .header-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-lg);
+      font-weight: var(--weight-normal);
+      margin-bottom: var(--space-4);
+    }
+
+    .header-subtitle {
+      font-size: var(--text-body-lg);
+      color: var(--color-text-secondary);
+    }
+
+    .controls {
+      display: flex;
+      gap: var(--space-4);
+      justify-content: center;
+      margin-bottom: var(--space-16);
+      flex-wrap: wrap;
+    }
+
+    .section {
+      background-color: var(--color-surface);
+      border: var(--border-width-thin) solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-10);
+      margin-bottom: var(--space-12);
+    }
+
+    .section-header {
+      margin-bottom: var(--space-8);
+      padding-bottom: var(--space-6);
+      border-bottom: var(--border-width-medium) solid var(--color-accent);
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-sm);
+      font-weight: var(--weight-normal);
+      margin-bottom: var(--space-2);
+    }
+
+    .section-description {
+      font-size: var(--text-body-md);
+      color: var(--color-text-secondary);
+    }
+
+    .component-grid {
+      display: grid;
+      gap: var(--space-8);
+    }
+
+    .component-item {
+      background-color: var(--color-background);
+      border: var(--border-width-thin) solid var(--color-border);
+      border-radius: var(--radius-sm);
+      padding: var(--space-6);
+    }
+
+    .component-label {
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-semibold);
+      color: var(--color-text-tertiary);
+      margin-bottom: var(--space-4);
+      letter-spacing: var(--tracking-wide);
+      text-transform: uppercase;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-2);
+      font-family: var(--font-body);
+      font-size: var(--text-body-md);
+      font-weight: var(--weight-medium);
+      padding: var(--space-4) var(--space-8);
+      border: var(--border-width-medium) solid transparent;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      text-decoration: none;
+      white-space: nowrap;
+    }
+
+    .btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .btn-primary {
+      background-color: var(--color-accent);
+      border-color: var(--color-accent);
+      color: var(--color-white);
+    }
+
+    .btn-primary:hover {
+      background-color: var(--color-accent-hover);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border-color: var(--color-border-strong);
+      color: var(--color-text);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+      background-color: var(--color-accent-soft);
+    }
+
+    .btn-ghost {
+      background-color: transparent;
+      border-color: transparent;
+      color: var(--color-text-secondary);
+    }
+
+    .btn-ghost:hover {
+      color: var(--color-text);
+      background-color: var(--color-surface);
+    }
+
+    .btn-lg {
+      padding: var(--space-5) var(--space-10);
+      font-size: var(--text-body-lg);
+    }
+
+    .btn-sm {
+      padding: var(--space-2) var(--space-4);
+      font-size: var(--text-body-sm);
+    }
+
+    .input {
+      width: 100%;
+      padding: var(--space-4);
+      border: var(--border-width-thin) solid var(--color-border);
+      border-radius: var(--radius-sm);
+      font-family: var(--font-body);
+      font-size: var(--text-body-md);
+      color: var(--color-text);
+      background-color: var(--color-background);
+      transition: all var(--transition-fast);
+    }
+
+    .input:focus {
+      outline: none;
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px var(--color-accent-soft);
+    }
+
+    .card {
+      background-color: var(--color-surface);
+      border: var(--border-width-thin) solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-8);
+      transition: all var(--transition-base);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: var(--border-width-thick);
+      background-color: var(--color-accent);
+      transform: scaleX(0);
+      transition: transform var(--transition-base);
+      transform-origin: left;
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--color-accent);
+    }
+
+    .card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .card-title {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-lg);
+      font-weight: var(--weight-normal);
+      margin-bottom: var(--space-3);
+    }
+
+    .card-description {
+      font-size: var(--text-body-md);
+      color: var(--color-text-secondary);
+      line-height: var(--leading-relaxed);
+    }
+
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: var(--space-4);
+    }
+
+    .color-swatch {
+      aspect-ratio: 1;
+      border-radius: var(--radius-sm);
+      border: var(--border-width-thin) solid var(--color-border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--space-2);
+    }
+
+    .color-name {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-semibold);
+      margin-top: auto;
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: var(--space-1) var(--space-2);
+      border-radius: var(--radius-sm);
+    }
+
+    [data-theme="dark"] .color-name {
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+    }
+
+    .palette-switcher {
+      position: relative;
+      display: inline-block;
+    }
+
+    .palette-trigger {
+      width: 40px;
+      height: 40px;
+      border: var(--border-width-thin) solid var(--color-border);
+      background: linear-gradient(135deg, var(--color-accent) 0%, var(--color-accent) 50%, var(--color-accent-700) 50%, var(--color-accent-700) 100%);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition-fast);
+    }
+
+    .palette-trigger:hover {
+      transform: scale(1.05);
+      box-shadow: var(--shadow-md);
+    }
+
+    .palette-menu {
+      position: absolute;
+      top: calc(100% + var(--space-2));
+      left: 0;
+      background-color: var(--color-surface-elevated);
+      border: var(--border-width-thin) solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-4);
+      box-shadow: var(--shadow-xl);
+      display: none;
+      min-width: 200px;
+      z-index: var(--z-dropdown);
+    }
+
+    .palette-menu.active { display: block; }
+
+    .palette-menu-title {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-bold);
+      letter-spacing: var(--tracking-wider);
+      text-transform: uppercase;
+      color: var(--color-text-tertiary);
+      margin-bottom: var(--space-3);
+      padding: 0 var(--space-2);
+    }
+
+    .palette-options {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+    }
+
+    .palette-option {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-3) var(--space-2);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all var(--transition-fast);
+      border: var(--border-width-thin) solid transparent;
+    }
+
+    .palette-option:hover { background-color: var(--color-surface); }
+
+    .palette-option.active {
+      background-color: var(--color-accent-soft);
+      border-color: var(--color-accent);
+    }
+
+    .palette-color-preview {
+      width: 24px;
+      height: 24px;
+      border-radius: var(--radius-sm);
+      border: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .palette-option-name {
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-medium);
+      color: var(--color-text);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <h1 class="header-title">Modern Editorial Design System</h1>
+      <p class="header-subtitle">Component showcase with switchable color palettes</p>
+    </header>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="palette-switcher">
+        <button class="palette-trigger" id="paletteToggle" aria-label="Change palette"></button>
+        <div class="palette-menu" id="paletteMenu">
+          <div class="palette-menu-title">Color Palette</div>
+          <div class="palette-options">
+            <div class="palette-option active" data-palette="coral">
+              <div class="palette-color-preview" style="background: #FF6B6B;"></div>
+              <span class="palette-option-name">Coral</span>
+            </div>
+            <div class="palette-option" data-palette="electric-blue">
+              <div class="palette-color-preview" style="background: #4361EE;"></div>
+              <span class="palette-option-name">Electric Blue</span>
+            </div>
+            <div class="palette-option" data-palette="mint">
+              <div class="palette-color-preview" style="background: #2EC4B6;"></div>
+              <span class="palette-option-name">Mint</span>
+            </div>
+            <div class="palette-option" data-palette="marigold">
+              <div class="palette-color-preview" style="background: #F4A261;"></div>
+              <span class="palette-option-name">Marigold</span>
+            </div>
+            <div class="palette-option" data-palette="grape">
+              <div class="palette-color-preview" style="background: #7209B7;"></div>
+              <span class="palette-option-name">Grape</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="btn btn-primary" id="themeToggle">
+        Toggle Dark Mode
+      </button>
+    </div>
+
+    <!-- Typography Section -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">Typography</h2>
+        <p class="section-description">DM Serif Display for headings, DM Sans for body text</p>
+      </div>
+      <div class="component-grid">
+        <div class="component-item">
+          <div class="component-label">Display Scales</div>
+          <div class="display-2xl" style="margin-bottom: var(--space-4);">Display 2XL</div>
+          <div class="display-xl" style="margin-bottom: var(--space-4);">Display XL</div>
+          <div class="display-lg" style="margin-bottom: var(--space-4);">Display LG</div>
+          <div class="display-md">Display MD</div>
+        </div>
+        <div class="component-item">
+          <div class="component-label">Headings</div>
+          <h1 class="heading-xl" style="margin-bottom: var(--space-3);">Heading XL</h1>
+          <h2 class="heading-lg" style="margin-bottom: var(--space-3);">Heading LG</h2>
+          <h3 class="heading-md">Heading MD</h3>
+        </div>
+        <div class="component-item">
+          <div class="component-label">Body Text</div>
+          <p class="body-xl" style="margin-bottom: var(--space-3);">Body XL - Large lead text</p>
+          <p class="body-lg" style="margin-bottom: var(--space-3);">Body LG - Comfortable reading</p>
+          <p class="body-md" style="margin-bottom: var(--space-3);">Body MD - Default paragraph</p>
+          <p class="body-sm">Body SM - Secondary content</p>
+        </div>
+        <div class="component-item">
+          <div class="component-label">Labels</div>
+          <div class="label-lg" style="margin-bottom: var(--space-3);">Label Large</div>
+          <div class="label-md">Label Medium</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Color Palettes -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">Color Palettes</h2>
+        <p class="section-description">Current palette accent colors (try switching palettes!)</p>
+      </div>
+      <div class="color-grid">
+        <div class="color-swatch" style="background-color: var(--color-accent-50);">
+          <div class="color-name">50</div>
+        </div>
+        <div class="color-swatch" style="background-color: var(--color-accent-100);">
+          <div class="color-name">100</div>
+        </div>
+        <div class="color-swatch" style="background-color: var(--color-accent-200);">
+          <div class="color-name">200</div>
+        </div>
+        <div class="color-swatch" style="background-color: var(--color-accent-300);">
+          <div class="color-name">300</div>
+        </div>
+        <div class="color-swatch" style="background-color: var(--color-accent-400);">
+          <div class="color-name">400</div>
+        </div>
+        <div class="color-swatch" style="background-color: var(--color-accent-500);">
+          <div class="color-name">500</div>
+        </div>
+        <div class="color-swatch" style="background-color: var(--color-accent-600);">
+          <div class="color-name">600</div>
+        </div>
+        <div class="color-swatch" style="background-color: var(--color-accent-700);">
+          <div class="color-name">700</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Buttons -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">Buttons</h2>
+        <p class="section-description">Primary, secondary, and ghost variants in multiple sizes</p>
+      </div>
+      <div class="component-grid">
+        <div class="component-item">
+          <div class="component-label">Primary Buttons</div>
+          <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; align-items: center;">
+            <button class="btn btn-primary btn-lg">Large Primary</button>
+            <button class="btn btn-primary">Default Primary</button>
+            <button class="btn btn-primary btn-sm">Small Primary</button>
+            <button class="btn btn-primary">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+              </svg>
+              With Icon
+            </button>
+          </div>
+        </div>
+        <div class="component-item">
+          <div class="component-label">Secondary Buttons</div>
+          <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; align-items: center;">
+            <button class="btn btn-secondary btn-lg">Large Secondary</button>
+            <button class="btn btn-secondary">Default Secondary</button>
+            <button class="btn btn-secondary btn-sm">Small Secondary</button>
+          </div>
+        </div>
+        <div class="component-item">
+          <div class="component-label">Ghost Buttons</div>
+          <div style="display: flex; gap: var(--space-4); flex-wrap: wrap; align-items: center;">
+            <button class="btn btn-ghost btn-lg">Large Ghost</button>
+            <button class="btn btn-ghost">Default Ghost</button>
+            <button class="btn btn-ghost btn-sm">Small Ghost</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Form Inputs -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">Form Inputs</h2>
+        <p class="section-description">Text inputs with focus states</p>
+      </div>
+      <div class="component-grid">
+        <div class="component-item">
+          <div class="component-label">Text Input</div>
+          <input type="text" class="input" placeholder="Enter your text...">
+        </div>
+        <div class="component-item">
+          <div class="component-label">Email Input</div>
+          <input type="email" class="input" placeholder="your@email.com">
+        </div>
+        <div class="component-item">
+          <div class="component-label">Search Input</div>
+          <input type="search" class="input" placeholder="Search...">
+        </div>
+      </div>
+    </section>
+
+    <!-- Cards -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">Cards</h2>
+        <p class="section-description">Interactive cards with hover effects</p>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: var(--space-6);">
+        <div class="card">
+          <h3 class="card-title">Card Title</h3>
+          <p class="card-description">
+            Cards have subtle borders, smooth hover animations, and an accent border that appears on interaction.
+          </p>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Interactive Design</h3>
+          <p class="card-description">
+            Hover over cards to see the elevation effect and the animated accent border at the top.
+          </p>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Modern Aesthetic</h3>
+          <p class="card-description">
+            Contemporary design with crisp shadows and smooth transitions for a polished feel.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Editorial Components -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">Editorial Components</h2>
+        <p class="section-description">Color blocks, callouts, and badges</p>
+      </div>
+      <div class="component-grid">
+        <div class="component-item">
+          <div class="component-label">Color Block</div>
+          <div class="color-block">
+            <h3 style="font-family: var(--font-display); font-size: var(--text-heading-xl); margin-bottom: var(--space-3);">Color Block Title</h3>
+            <p style="opacity: 0.95;">Bold accent backgrounds create visual impact for important content.</p>
+          </div>
+        </div>
+        <div class="component-item">
+          <div class="component-label">Callout</div>
+          <div class="callout">
+            <div class="callout-title">Important Information</div>
+            <div class="callout-text">Callouts use soft accent backgrounds with a bold left border for tips, warnings, and notes.</div>
+          </div>
+        </div>
+        <div class="component-item">
+          <div class="component-label">Badges</div>
+          <div style="display: flex; gap: var(--space-3); flex-wrap: wrap;">
+            <span class="badge">Featured</span>
+            <span class="badge">New</span>
+            <span class="badge">Tutorial</span>
+            <span class="badge">API</span>
+            <span class="badge">Guide</span>
+          </div>
+        </div>
+        <div class="component-item">
+          <div class="component-label">Section Label</div>
+          <div class="section-label">Category Label</div>
+        </div>
+        <div class="component-item">
+          <div class="component-label">Color Border Left</div>
+          <div class="color-border-left">
+            <p style="font-size: var(--text-body-lg); margin: 0;">Content with accent border on the left side for emphasis.</p>
+          </div>
+        </div>
+        <div class="component-item">
+          <div class="component-label">Dividers</div>
+          <div class="divider"></div>
+          <div class="divider-accent"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Spacing Scale -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">Spacing Scale</h2>
+        <p class="section-description">Consistent spacing system from 4px to 192px</p>
+      </div>
+      <div class="component-grid">
+        <div class="component-item">
+          <div class="component-label">Small Spacing (4px - 24px)</div>
+          <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+            <div style="height: var(--space-1); background-color: var(--color-accent); border-radius: var(--radius-sm);"></div>
+            <div style="height: var(--space-2); background-color: var(--color-accent); border-radius: var(--radius-sm);"></div>
+            <div style="height: var(--space-3); background-color: var(--color-accent); border-radius: var(--radius-sm);"></div>
+            <div style="height: var(--space-4); background-color: var(--color-accent); border-radius: var(--radius-sm);"></div>
+            <div style="height: var(--space-6); background-color: var(--color-accent); border-radius: var(--radius-sm);"></div>
+          </div>
+        </div>
+        <div class="component-item">
+          <div class="component-label">Medium Spacing (32px - 96px)</div>
+          <div style="display: flex; flex-direction: column; gap: var(--space-2);">
+            <div style="height: var(--space-8); background-color: var(--color-accent); border-radius: var(--radius-sm);"></div>
+            <div style="height: var(--space-12); background-color: var(--color-accent); border-radius: var(--radius-sm);"></div>
+            <div style="height: var(--space-16); background-color: var(--color-accent); border-radius: var(--radius-sm);"></div>
+            <div style="height: var(--space-24); background-color: var(--color-accent); border-radius: var(--radius-sm);"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // Palette Switcher
+    const paletteToggle = document.getElementById('paletteToggle');
+    const paletteMenu = document.getElementById('paletteMenu');
+    const paletteOptions = document.querySelectorAll('.palette-option');
+    const html = document.documentElement;
+
+    const currentPalette = localStorage.getItem('palette') || 'coral';
+    html.setAttribute('data-palette', currentPalette);
+    document.querySelector(`.palette-option[data-palette="${currentPalette}"]`)?.classList.add('active');
+
+    paletteToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      paletteMenu.classList.toggle('active');
+    });
+
+    paletteOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        const palette = option.dataset.palette;
+        html.setAttribute('data-palette', palette);
+        localStorage.setItem('palette', palette);
+        paletteOptions.forEach(opt => opt.classList.remove('active'));
+        option.classList.add('active');
+        paletteMenu.classList.remove('active');
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!paletteToggle.contains(e.target) && !paletteMenu.contains(e.target)) {
+        paletteMenu.classList.remove('active');
+      }
+    });
+
+    // Theme Toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    html.setAttribute('data-theme', currentTheme);
+
+    themeToggle.textContent = currentTheme === 'dark' ? 'Toggle Light Mode' : 'Toggle Dark Mode';
+
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      themeToggle.textContent = newTheme === 'dark' ? 'Toggle Light Mode' : 'Toggle Dark Mode';
+    });
+  </script>
+</body>
+</html>

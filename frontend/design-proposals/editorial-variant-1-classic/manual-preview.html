@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="burgundy">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual Preview - Classic Editorial</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    body {
+      background-color: var(--color-neutral-50);
+    }
+
+    /* Layout */
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: var(--space-12) var(--space-6);
+    }
+
+    /* Header */
+    .manual-header {
+      text-align: center;
+      padding: var(--space-16) 0 var(--space-12);
+      border-bottom: var(--border-width-statement) solid var(--color-accent);
+      margin-bottom: var(--space-16);
+      background-color: var(--color-surface);
+    }
+
+    .manual-category {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-widest);
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: var(--space-4);
+    }
+
+    .manual-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-xl);
+      font-weight: var(--weight-bold);
+      line-height: var(--leading-tight);
+      letter-spacing: var(--tracking-tighter);
+      color: var(--color-text);
+      margin-bottom: var(--space-6);
+    }
+
+    .manual-subtitle {
+      font-family: var(--font-display);
+      font-size: var(--text-body-xl);
+      font-style: italic;
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-8);
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .manual-meta {
+      display: flex;
+      justify-content: center;
+      gap: var(--space-8);
+      font-size: var(--text-body-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .meta-label {
+      font-weight: var(--weight-semibold);
+      color: var(--color-text);
+    }
+
+    /* Tools Bar */
+    .tools-bar {
+      position: sticky;
+      top: 0;
+      z-index: var(--z-sticky);
+      background-color: var(--color-surface);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+      padding: var(--space-4) var(--space-6);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-12);
+      backdrop-filter: blur(8px);
+      background-color: color-mix(in srgb, var(--color-surface) 95%, transparent);
+    }
+
+    .tools-left {
+      display: flex;
+      gap: var(--space-4);
+      align-items: center;
+    }
+
+    .tools-right {
+      display: flex;
+      gap: var(--space-3);
+      align-items: center;
+    }
+
+    .palette-mini {
+      display: flex;
+      gap: var(--space-1);
+    }
+
+    .palette-dot {
+      width: 24px;
+      height: 24px;
+      border: var(--border-width-thin) solid var(--color-border);
+      cursor: pointer;
+      transition: all var(--transition-fast);
+    }
+
+    .palette-dot:hover {
+      transform: scale(1.15);
+      border-color: var(--color-accent);
+    }
+
+    .palette-dot.active {
+      border-width: var(--border-width-medium);
+      border-color: var(--color-accent);
+    }
+
+    /* Manual Content */
+    .manual-content {
+      background-color: var(--color-surface);
+      padding: var(--space-16) var(--space-12);
+      box-shadow: var(--shadow-sm);
+      margin-bottom: var(--space-16);
+    }
+
+    .chapter {
+      margin-bottom: var(--space-20);
+    }
+
+    .chapter-number {
+      font-family: var(--font-display);
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-widest);
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: var(--space-2);
+    }
+
+    .chapter-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-sm);
+      font-weight: var(--weight-bold);
+      line-height: var(--leading-tight);
+      color: var(--color-text);
+      margin-bottom: var(--space-8);
+      padding-bottom: var(--space-4);
+      border-bottom: var(--border-width-medium) solid var(--color-accent);
+    }
+
+    .section {
+      margin-bottom: var(--space-12);
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-xl);
+      font-weight: var(--weight-semibold);
+      line-height: var(--leading-snug);
+      color: var(--color-text);
+      margin-bottom: var(--space-6);
+    }
+
+    .section-content p {
+      font-size: var(--text-body-lg);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text);
+      margin-bottom: var(--space-6);
+    }
+
+    .section-content p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* Drop Cap */
+    .dropcap-paragraph::first-letter {
+      font-family: var(--font-display);
+      font-size: 5em;
+      font-weight: var(--weight-bold);
+      float: left;
+      line-height: 0.85;
+      margin: 0.05em 0.15em 0 0;
+      color: var(--color-accent);
+    }
+
+    /* Pull Quote */
+    .pullquote-container {
+      margin: var(--space-12) 0;
+      padding: var(--space-8) 0;
+    }
+
+    .pullquote {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-xl);
+      font-style: italic;
+      font-weight: var(--weight-normal);
+      line-height: var(--leading-snug);
+      border-left: var(--border-width-statement) solid var(--color-accent);
+      padding-left: var(--space-8);
+      color: var(--color-text);
+    }
+
+    /* Figure */
+    .figure {
+      margin: var(--space-12) 0;
+      padding: var(--space-6);
+      border: var(--border-width-thin) solid var(--color-border);
+      background-color: var(--color-neutral-50);
+    }
+
+    .figure-image {
+      width: 100%;
+      aspect-ratio: 16/9;
+      background: linear-gradient(135deg, var(--color-neutral-100) 0%, var(--color-neutral-200) 100%);
+      border: var(--border-width-thin) solid var(--color-border);
+      margin-bottom: var(--space-4);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .figure-image::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" fill="none"/><path d="M0 20h40M20 0v40" stroke="%23E5DED0" stroke-width="1"/></svg>');
+      opacity: 0.3;
+    }
+
+    .figure-caption {
+      font-size: var(--text-body-sm);
+      line-height: var(--leading-normal);
+      color: var(--color-text-secondary);
+      font-style: italic;
+    }
+
+    .figure-caption strong {
+      font-weight: var(--weight-semibold);
+      color: var(--color-text);
+      font-style: normal;
+    }
+
+    /* Callout Box */
+    .callout {
+      padding: var(--space-8);
+      background-color: var(--color-accent-50);
+      border-left: var(--border-width-statement) solid var(--color-accent);
+      margin: var(--space-12) 0;
+    }
+
+    .callout-title {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-md);
+      font-weight: var(--weight-semibold);
+      color: var(--color-text);
+      margin-bottom: var(--space-4);
+    }
+
+    .callout-content {
+      font-size: var(--text-body-md);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+    }
+
+    /* Steps */
+    .steps {
+      margin: var(--space-8) 0;
+    }
+
+    .step-item {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: var(--space-6);
+      margin-bottom: var(--space-8);
+      padding-bottom: var(--space-8);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .step-item:last-child {
+      border-bottom: none;
+    }
+
+    .step-number {
+      font-family: var(--font-display);
+      font-size: var(--text-display-sm);
+      font-weight: var(--weight-semibold);
+      color: var(--color-accent);
+      opacity: 0.6;
+      min-width: 60px;
+    }
+
+    .step-content h4 {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-lg);
+      font-weight: var(--weight-semibold);
+      color: var(--color-text);
+      margin-bottom: var(--space-3);
+    }
+
+    .step-content p {
+      font-size: var(--text-body-md);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-4);
+    }
+
+    /* Button Styles */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-body);
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-medium);
+      line-height: 1;
+      text-decoration: none;
+      border: var(--border-width-medium) solid transparent;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      padding: var(--space-2) var(--space-4);
+      letter-spacing: var(--tracking-wide);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border-color: var(--color-border-strong);
+      color: var(--color-text);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--color-accent);
+      color: var(--color-accent);
+    }
+
+    .btn-icon {
+      background-color: transparent;
+      border-color: transparent;
+      color: var(--color-text-secondary);
+      padding: var(--space-2);
+    }
+
+    .btn-icon:hover {
+      color: var(--color-accent);
+      background-color: var(--color-neutral-100);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .manual-header {
+        padding: var(--space-12) 0 var(--space-8);
+      }
+
+      .manual-title {
+        font-size: var(--text-display-lg);
+      }
+
+      .manual-content {
+        padding: var(--space-8) var(--space-6);
+      }
+
+      .tools-bar {
+        flex-direction: column;
+        gap: var(--space-3);
+        align-items: stretch;
+      }
+
+      .tools-left,
+      .tools-right {
+        justify-content: space-between;
+      }
+
+      .chapter-title {
+        font-size: var(--text-heading-xl);
+      }
+
+      .step-item {
+        grid-template-columns: 1fr;
+      }
+
+      .step-number {
+        margin-bottom: var(--space-2);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Manual Header -->
+    <header class="manual-header">
+      <div class="manual-category">Technical Documentation</div>
+      <h1 class="manual-title">Complete Installation & Configuration Guide</h1>
+      <p class="manual-subtitle">
+        A comprehensive guide to installing, configuring, and optimizing your system for peak performance and reliability.
+      </p>
+      <div class="manual-meta">
+        <div class="meta-item">
+          <span class="meta-label">Author:</span>
+          <span>Technical Writing Team</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Updated:</span>
+          <span>January 15, 2025</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Reading Time:</span>
+          <span>12 minutes</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tools Bar -->
+    <div class="tools-bar">
+      <div class="tools-left">
+        <button class="btn btn-secondary">← Back to Dashboard</button>
+        <button class="btn btn-secondary">Edit Manual</button>
+      </div>
+      <div class="tools-right">
+        <div class="palette-mini">
+          <button class="palette-dot active" data-palette="burgundy" style="background-color: #722F37;" aria-label="Burgundy"></button>
+          <button class="palette-dot" data-palette="navy" style="background-color: #1B365D;" aria-label="Navy"></button>
+          <button class="palette-dot" data-palette="forest" style="background-color: #1B4332;" aria-label="Forest"></button>
+          <button class="palette-dot" data-palette="charcoal" style="background-color: #36454F;" aria-label="Charcoal"></button>
+          <button class="palette-dot" data-palette="sepia" style="background-color: #704214;" aria-label="Sepia"></button>
+        </div>
+        <button class="btn btn-icon" id="themeToggle" aria-label="Toggle theme">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+          </svg>
+        </button>
+        <button class="btn btn-secondary">Export PDF</button>
+      </div>
+    </div>
+
+    <!-- Manual Content -->
+    <article class="manual-content">
+      <!-- Chapter 1 -->
+      <div class="chapter">
+        <div class="chapter-number">Chapter I</div>
+        <h2 class="chapter-title">Introduction & Prerequisites</h2>
+
+        <div class="section">
+          <h3 class="section-title">Overview</h3>
+          <div class="section-content">
+            <p class="dropcap-paragraph">
+              Welcome to the comprehensive installation and configuration guide. This document represents the culmination of years of experience in system deployment and optimization, distilled into a clear, methodical approach that ensures success regardless of your technical background.
+            </p>
+            <p>
+              Throughout this guide, we will walk you through each step of the installation process, providing detailed explanations, helpful tips, and troubleshooting advice to ensure a smooth and successful deployment. Our approach emphasizes clarity and precision, ensuring that every action you take is well-understood and properly executed.
+            </p>
+          </div>
+        </div>
+
+        <div class="pullquote-container">
+          <blockquote class="pullquote">
+            "The foundation of any successful system lies not in its complexity, but in the thoroughness of its installation."
+          </blockquote>
+        </div>
+
+        <div class="section">
+          <h3 class="section-title">System Requirements</h3>
+          <div class="section-content">
+            <p>
+              Before beginning the installation process, it is essential to verify that your system meets the minimum requirements. These specifications ensure optimal performance and compatibility with all features and functionalities.
+            </p>
+          </div>
+
+          <div class="callout">
+            <h4 class="callout-title">Important: Verify Before Proceeding</h4>
+            <div class="callout-content">
+              Ensure your system meets all minimum requirements before beginning installation. Inadequate resources may result in performance issues or installation failure. If you are unsure about any specifications, consult your system administrator or hardware documentation.
+            </div>
+          </div>
+        </div>
+
+        <div class="figure">
+          <div class="figure-image"></div>
+          <p class="figure-caption">
+            <strong>Figure 1.1:</strong> System architecture overview showing the relationship between core components and external dependencies.
+          </p>
+        </div>
+      </div>
+
+      <!-- Chapter 2 -->
+      <div class="chapter">
+        <div class="chapter-number">Chapter II</div>
+        <h2 class="chapter-title">Installation Process</h2>
+
+        <div class="section">
+          <h3 class="section-title">Step-by-Step Installation</h3>
+          <div class="section-content">
+            <p>
+              The installation process has been designed to be straightforward and intuitive. Follow these steps carefully, and you will have a fully functional system in no time.
+            </p>
+          </div>
+
+          <div class="steps">
+            <div class="step-item">
+              <div class="step-number">1</div>
+              <div class="step-content">
+                <h4>Download Installation Package</h4>
+                <p>
+                  Navigate to the official download page and select the appropriate package for your operating system. Verify the integrity of the downloaded file using the provided checksums.
+                </p>
+                <div class="figure">
+                  <div class="figure-image"></div>
+                  <p class="figure-caption">
+                    <strong>Step 1:</strong> Download page showing available packages and version information.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-number">2</div>
+              <div class="step-content">
+                <h4>Extract and Prepare Files</h4>
+                <p>
+                  Extract the downloaded archive to your preferred installation directory. Ensure you have sufficient disk space and appropriate permissions for the selected location.
+                </p>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-number">3</div>
+              <div class="step-content">
+                <h4>Run Installation Wizard</h4>
+                <p>
+                  Launch the installation wizard and follow the on-screen instructions. The wizard will guide you through configuration options and dependency installation.
+                </p>
+                <div class="figure">
+                  <div class="figure-image"></div>
+                  <p class="figure-caption">
+                    <strong>Step 3:</strong> Installation wizard welcome screen with configuration options.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-number">4</div>
+              <div class="step-content">
+                <h4>Configure System Settings</h4>
+                <p>
+                  Review and adjust system settings according to your requirements. Pay particular attention to network configuration, security settings, and resource allocation.
+                </p>
+              </div>
+            </div>
+
+            <div class="step-item">
+              <div class="step-number">5</div>
+              <div class="step-content">
+                <h4>Verify Installation</h4>
+                <p>
+                  Run the included verification tools to ensure all components are properly installed and configured. Address any warnings or errors before proceeding to production use.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="callout">
+          <h4 class="callout-title">Professional Tip</h4>
+          <div class="callout-content">
+            Document each step of your installation process, including any customizations or non-standard configurations. This documentation will prove invaluable for troubleshooting, system updates, and disaster recovery scenarios.
+          </div>
+        </div>
+      </div>
+
+      <!-- Chapter 3 -->
+      <div class="chapter">
+        <div class="chapter-number">Chapter III</div>
+        <h2 class="chapter-title">Advanced Configuration</h2>
+
+        <div class="section">
+          <h3 class="section-title">Optimization and Fine-Tuning</h3>
+          <div class="section-content">
+            <p>
+              Once the basic installation is complete, you may wish to optimize the system for your specific use case. This section covers advanced configuration options that can significantly improve performance and functionality.
+            </p>
+            <p>
+              These optimizations are optional but highly recommended for production environments. Each setting has been carefully selected to provide meaningful improvements without compromising stability or security.
+            </p>
+          </div>
+
+          <div class="figure">
+            <div class="figure-image"></div>
+            <p class="figure-caption">
+              <strong>Figure 3.1:</strong> Performance metrics showing the impact of optimization on system throughput and response times.
+            </p>
+          </div>
+        </div>
+
+        <div class="pullquote-container">
+          <blockquote class="pullquote">
+            "Excellence in system administration is achieved not through complexity, but through the thoughtful application of fundamental principles."
+          </blockquote>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <script>
+    const html = document.documentElement;
+
+    // Palette Switcher
+    const paletteDots = document.querySelectorAll('.palette-dot');
+    const currentPalette = localStorage.getItem('palette') || 'burgundy';
+    html.setAttribute('data-palette', currentPalette);
+    updateActivePalette(currentPalette);
+
+    paletteDots.forEach(dot => {
+      dot.addEventListener('click', function() {
+        const palette = this.getAttribute('data-palette');
+        html.setAttribute('data-palette', palette);
+        localStorage.setItem('palette', palette);
+        updateActivePalette(palette);
+      });
+    });
+
+    function updateActivePalette(palette) {
+      paletteDots.forEach(dot => {
+        if (dot.getAttribute('data-palette') === palette) {
+          dot.classList.add('active');
+        } else {
+          dot.classList.remove('active');
+        }
+      });
+    }
+
+    // Theme Toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    html.setAttribute('data-theme', currentTheme);
+    updateThemeIcon(currentTheme);
+
+    function updateThemeIcon(theme) {
+      const icon = themeToggle.querySelector('svg path');
+      if (theme === 'dark') {
+        icon.setAttribute('d', 'M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z');
+      } else {
+        icon.setAttribute('d', 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z');
+      }
+    }
+
+    themeToggle.addEventListener('click', function() {
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      updateThemeIcon(newTheme);
+    });
+  </script>
+</body>
+</html>

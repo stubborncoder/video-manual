@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="ink" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Video Manual</title>
+  <link rel="stylesheet" href="design-system.css">
+</head>
+<body>
+
+  <!-- Theme Controls -->
+  <div class="theme-controls">
+    <div class="palette-dot active" data-palette="ink" title="Ink"></div>
+    <div class="palette-dot" data-palette="stone" title="Stone"></div>
+    <div class="palette-dot" data-palette="moss" title="Moss"></div>
+    <div class="palette-dot" data-palette="clay" title="Clay"></div>
+    <div class="palette-dot" data-palette="slate" title="Slate"></div>
+    <button class="theme-toggle" id="themeToggle">
+      <span id="themeLabel">Light</span>
+    </button>
+  </div>
+
+  <!-- Header - Minimal -->
+  <header style="padding: var(--space-6) 0; border-bottom: var(--border-width) solid var(--border-light);">
+    <div class="container flex justify-between items-center">
+      <h1 class="text-xl serif font-medium">Video Manual</h1>
+      <div class="flex items-center gap-6">
+        <button class="btn btn-ghost text-sm">Help</button>
+        <button class="btn btn-ghost text-sm">Account</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Hero Section -->
+    <section class="section">
+      <div class="container">
+        <div class="flex justify-between items-end mb-16">
+          <div>
+            <span class="label mb-4">Dashboard</span>
+            <h2 class="text-4xl serif font-medium">Your manuals</h2>
+          </div>
+          <button class="btn btn-primary">New Manual</button>
+        </div>
+
+        <!-- Stats - Minimal Presentation -->
+        <div class="grid grid-4 mb-24">
+          <div class="card-minimal">
+            <span class="label mb-2">Total Manuals</span>
+            <p class="text-4xl serif font-medium">24</p>
+          </div>
+          <div class="card-minimal">
+            <span class="label mb-2">This Month</span>
+            <p class="text-4xl serif font-medium">8</p>
+          </div>
+          <div class="card-minimal">
+            <span class="label mb-2">Team Members</span>
+            <p class="text-4xl serif font-medium">5</p>
+          </div>
+          <div class="card-minimal">
+            <span class="label mb-2">Storage Used</span>
+            <p class="text-4xl serif font-medium">4.2 GB</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Manuals List -->
+    <section class="section" style="padding-top: 0;">
+      <div class="container">
+        <div class="flex justify-between items-center mb-12">
+          <h3 class="text-lg font-medium">Recent</h3>
+          <div class="flex gap-4">
+            <button class="btn btn-ghost text-xs">All</button>
+            <button class="btn btn-ghost text-xs">Published</button>
+            <button class="btn btn-ghost text-xs">Drafts</button>
+          </div>
+        </div>
+
+        <!-- Manual Cards -->
+        <div class="flex flex-col gap-0">
+          <!-- Manual 1 -->
+          <div class="card-minimal" style="padding: var(--space-8) 0;">
+            <div class="flex justify-between items-start gap-8">
+              <div style="flex: 1;">
+                <span class="label mb-3">Video · 12:34</span>
+                <h4 class="text-xl serif font-medium mb-3">
+                  Complete Guide to Setting Up Development Environment
+                </h4>
+                <p class="text-base mb-4" style="color: var(--text-secondary);">
+                  Step-by-step instructions for installing and configuring your development tools, including Node.js, VS Code, and essential extensions.
+                </p>
+                <div class="flex items-center gap-6">
+                  <span class="text-sm" style="color: var(--text-tertiary);">Updated 2 hours ago</span>
+                  <span class="text-sm" style="color: var(--text-tertiary);">18 steps</span>
+                </div>
+              </div>
+              <div class="flex gap-3">
+                <button class="btn btn-ghost text-xs">Edit</button>
+                <button class="btn text-xs">View</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Manual 2 -->
+          <div class="card-minimal" style="padding: var(--space-8) 0;">
+            <div class="flex justify-between items-start gap-8">
+              <div style="flex: 1;">
+                <span class="label mb-3">Video · 8:45</span>
+                <h4 class="text-xl serif font-medium mb-3">
+                  Database Migration Best Practices
+                </h4>
+                <p class="text-base mb-4" style="color: var(--text-secondary);">
+                  Learn how to safely migrate your database schema with zero downtime, including backup strategies and rollback procedures.
+                </p>
+                <div class="flex items-center gap-6">
+                  <span class="text-sm" style="color: var(--text-tertiary);">Updated yesterday</span>
+                  <span class="text-sm" style="color: var(--text-tertiary);">12 steps</span>
+                </div>
+              </div>
+              <div class="flex gap-3">
+                <button class="btn btn-ghost text-xs">Edit</button>
+                <button class="btn text-xs">View</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Manual 3 -->
+          <div class="card-minimal" style="padding: var(--space-8) 0;">
+            <div class="flex justify-between items-start gap-8">
+              <div style="flex: 1;">
+                <span class="label mb-3">Video · 15:22</span>
+                <h4 class="text-xl serif font-medium mb-3">
+                  API Authentication Implementation
+                </h4>
+                <p class="text-base mb-4" style="color: var(--text-secondary);">
+                  Comprehensive guide to implementing JWT authentication, including token generation, validation, and refresh strategies.
+                </p>
+                <div class="flex items-center gap-6">
+                  <span class="text-sm" style="color: var(--text-tertiary);">Updated 3 days ago</span>
+                  <span class="text-sm" style="color: var(--text-tertiary);">24 steps</span>
+                </div>
+              </div>
+              <div class="flex gap-3">
+                <button class="btn btn-ghost text-xs">Edit</button>
+                <button class="btn text-xs">View</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Manual 4 -->
+          <div class="card-minimal" style="padding: var(--space-8) 0;">
+            <div class="flex justify-between items-start gap-8">
+              <div style="flex: 1;">
+                <span class="label mb-3">Video · 6:30</span>
+                <h4 class="text-xl serif font-medium mb-3">
+                  Responsive Design Fundamentals
+                </h4>
+                <p class="text-base mb-4" style="color: var(--text-secondary);">
+                  Master the essentials of responsive web design, from mobile-first approach to breakpoints and fluid layouts.
+                </p>
+                <div class="flex items-center gap-6">
+                  <span class="text-sm" style="color: var(--text-tertiary);">Updated 5 days ago</span>
+                  <span class="text-sm" style="color: var(--text-tertiary);">10 steps</span>
+                </div>
+              </div>
+              <div class="flex gap-3">
+                <button class="btn btn-ghost text-xs">Edit</button>
+                <button class="btn text-xs">View</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Manual 5 -->
+          <div class="card-minimal" style="padding: var(--space-8) 0;">
+            <div class="flex justify-between items-start gap-8">
+              <div style="flex: 1;">
+                <span class="label mb-3">Video · 10:15</span>
+                <h4 class="text-xl serif font-medium mb-3">
+                  Docker Container Optimization
+                </h4>
+                <p class="text-base mb-4" style="color: var(--text-secondary);">
+                  Optimize your Docker containers for production, reducing image sizes and improving build times significantly.
+                </p>
+                <div class="flex items-center gap-6">
+                  <span class="text-sm" style="color: var(--text-tertiary);">Updated 1 week ago</span>
+                  <span class="text-sm" style="color: var(--text-tertiary);">15 steps</span>
+                </div>
+              </div>
+              <div class="flex gap-3">
+                <button class="btn btn-ghost text-xs">Edit</button>
+                <button class="btn text-xs">View</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Manual 6 -->
+          <div class="card-minimal" style="padding: var(--space-8) 0;">
+            <div class="flex justify-between items-start gap-8">
+              <div style="flex: 1;">
+                <span class="label mb-3">Video · 9:50</span>
+                <h4 class="text-xl serif font-medium mb-3">
+                  Git Workflow for Teams
+                </h4>
+                <p class="text-base mb-4" style="color: var(--text-secondary);">
+                  Establish effective Git workflows for your team, including branching strategies, code reviews, and conflict resolution.
+                </p>
+                <div class="flex items-center gap-6">
+                  <span class="text-sm" style="color: var(--text-tertiary);">Updated 1 week ago</span>
+                  <span class="text-sm" style="color: var(--text-tertiary);">14 steps</span>
+                </div>
+              </div>
+              <div class="flex gap-3">
+                <button class="btn btn-ghost text-xs">Edit</button>
+                <button class="btn text-xs">View</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Load More -->
+        <div class="text-center mt-16">
+          <button class="btn">Load More</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Spacer -->
+    <div style="height: var(--space-64);"></div>
+
+    <!-- Activity Feed - Minimal -->
+    <section class="section">
+      <div class="container container-narrow">
+        <h3 class="text-lg font-medium mb-12">Recent Activity</h3>
+
+        <div class="flex flex-col gap-8">
+          <!-- Activity 1 -->
+          <div class="flex gap-6">
+            <span class="text-sm" style="color: var(--text-tertiary); min-width: 100px;">2 hours ago</span>
+            <div>
+              <p class="text-base mb-1">Manual published</p>
+              <p class="text-sm" style="color: var(--text-secondary);">
+                Development Environment Setup
+              </p>
+            </div>
+          </div>
+
+          <hr class="divider" style="margin: 0;">
+
+          <!-- Activity 2 -->
+          <div class="flex gap-6">
+            <span class="text-sm" style="color: var(--text-tertiary); min-width: 100px;">Yesterday</span>
+            <div>
+              <p class="text-base mb-1">New team member added</p>
+              <p class="text-sm" style="color: var(--text-secondary);">
+                Sarah Johnson joined your workspace
+              </p>
+            </div>
+          </div>
+
+          <hr class="divider" style="margin: 0;">
+
+          <!-- Activity 3 -->
+          <div class="flex gap-6">
+            <span class="text-sm" style="color: var(--text-tertiary); min-width: 100px;">3 days ago</span>
+            <div>
+              <p class="text-base mb-1">Manual updated</p>
+              <p class="text-sm" style="color: var(--text-secondary);">
+                API Authentication Implementation
+              </p>
+            </div>
+          </div>
+
+          <hr class="divider" style="margin: 0;">
+
+          <!-- Activity 4 -->
+          <div class="flex gap-6">
+            <span class="text-sm" style="color: var(--text-tertiary); min-width: 100px;">5 days ago</span>
+            <div>
+              <p class="text-base mb-1">Manual created</p>
+              <p class="text-sm" style="color: var(--text-secondary);">
+                Responsive Design Fundamentals
+              </p>
+            </div>
+          </div>
+
+          <hr class="divider" style="margin: 0;">
+
+          <!-- Activity 5 -->
+          <div class="flex gap-6">
+            <span class="text-sm" style="color: var(--text-tertiary); min-width: 100px;">1 week ago</span>
+            <div>
+              <p class="text-base mb-1">Export completed</p>
+              <p class="text-sm" style="color: var(--text-secondary);">
+                Docker Container Optimization exported to PDF
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Spacer -->
+    <div style="height: var(--space-64);"></div>
+  </main>
+
+  <!-- Footer - Minimal -->
+  <footer style="padding: var(--space-12) 0; border-top: var(--border-width) solid var(--border-light);">
+    <div class="container flex justify-between items-center">
+      <p class="text-sm" style="color: var(--text-tertiary);">© 2024 Video Manual</p>
+      <div class="flex gap-6">
+        <a href="#" class="link text-sm" style="color: var(--text-tertiary);">Help</a>
+        <a href="#" class="link text-sm" style="color: var(--text-tertiary);">Privacy</a>
+        <a href="#" class="link text-sm" style="color: var(--text-tertiary);">Terms</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript for Theme Controls -->
+  <script>
+    // Get elements
+    const html = document.documentElement;
+    const paletteDots = document.querySelectorAll('.palette-dot');
+    const themeToggle = document.getElementById('themeToggle');
+    const themeLabel = document.getElementById('themeLabel');
+
+    // Get stored preferences
+    const storedPalette = localStorage.getItem('palette') || 'ink';
+    const storedTheme = localStorage.getItem('theme') || 'light';
+
+    // Apply stored preferences
+    html.setAttribute('data-palette', storedPalette);
+    html.setAttribute('data-theme', storedTheme);
+    themeLabel.textContent = storedTheme === 'light' ? 'Light' : 'Dark';
+
+    // Update active palette dot
+    paletteDots.forEach(dot => {
+      if (dot.dataset.palette === storedPalette) {
+        dot.classList.add('active');
+      } else {
+        dot.classList.remove('active');
+      }
+    });
+
+    // Palette switching
+    paletteDots.forEach(dot => {
+      dot.addEventListener('click', () => {
+        const palette = dot.dataset.palette;
+        html.setAttribute('data-palette', palette);
+        localStorage.setItem('palette', palette);
+
+        // Update active state
+        paletteDots.forEach(d => d.classList.remove('active'));
+        dot.classList.add('active');
+      });
+    });
+
+    // Theme toggle (light/dark)
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      themeLabel.textContent = newTheme === 'light' ? 'Light' : 'Dark';
+    });
+  </script>
+
+</body>
+</html>

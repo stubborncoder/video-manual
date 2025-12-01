@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="ink" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Components - Minimal Editorial</title>
+  <link rel="stylesheet" href="design-system.css">
+</head>
+<body>
+
+  <!-- Theme Controls -->
+  <div class="theme-controls">
+    <div class="palette-dot active" data-palette="ink" title="Ink"></div>
+    <div class="palette-dot" data-palette="stone" title="Stone"></div>
+    <div class="palette-dot" data-palette="moss" title="Moss"></div>
+    <div class="palette-dot" data-palette="clay" title="Clay"></div>
+    <div class="palette-dot" data-palette="slate" title="Slate"></div>
+    <button class="theme-toggle" id="themeToggle">
+      <span id="themeLabel">Light</span>
+    </button>
+  </div>
+
+  <!-- Header -->
+  <header style="padding: var(--space-12) 0; border-bottom: var(--border-width) solid var(--border-light);">
+    <div class="container">
+      <span class="label mb-4">Design System</span>
+      <h1 class="text-4xl serif font-medium">Minimal Editorial Components</h1>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <!-- Color Palettes -->
+    <section class="section">
+      <div class="container">
+        <h2 class="text-2xl serif font-medium mb-12">Color Palettes</h2>
+
+        <div class="grid grid-3 mb-16">
+          <!-- Ink Palette -->
+          <div class="card">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="palette-dot" data-palette="ink"></div>
+              <h3 class="text-lg font-medium">Ink</h3>
+            </div>
+            <p class="text-sm mb-6" style="color: var(--text-secondary);">
+              Pure black on white - maximum contrast and clarity
+            </p>
+            <div class="flex gap-2">
+              <div style="width: 40px; height: 40px; background: #000000; border: var(--border-width) solid var(--border-light);"></div>
+              <div style="width: 40px; height: 40px; background: #FFFFFF; border: var(--border-width) solid var(--border-light);"></div>
+              <div style="width: 40px; height: 40px; background: #666666; border: var(--border-width) solid var(--border-light);"></div>
+            </div>
+          </div>
+
+          <!-- Stone Palette -->
+          <div class="card">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="palette-dot" data-palette="stone"></div>
+              <h3 class="text-lg font-medium">Stone</h3>
+            </div>
+            <p class="text-sm mb-6" style="color: var(--text-secondary);">
+              Warm stone gray with natural, organic feel
+            </p>
+            <div class="flex gap-2">
+              <div style="width: 40px; height: 40px; background: #78716C; border: var(--border-width) solid var(--border-light);"></div>
+              <div style="width: 40px; height: 40px; background: #FAFAF9; border: var(--border-width) solid var(--border-light);"></div>
+              <div style="width: 40px; height: 40px; background: #A8A29E; border: var(--border-width) solid var(--border-light);"></div>
+            </div>
+          </div>
+
+          <!-- Moss Palette -->
+          <div class="card">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="palette-dot" data-palette="moss"></div>
+              <h3 class="text-lg font-medium">Moss</h3>
+            </div>
+            <p class="text-sm mb-6" style="color: var(--text-secondary);">
+              Muted moss green - calm and grounded
+            </p>
+            <div class="flex gap-2">
+              <div style="width: 40px; height: 40px; background: #4D5D4D; border: var(--border-width) solid var(--border-light);"></div>
+              <div style="width: 40px; height: 40px; background: #FAFAF8; border: var(--border-width) solid var(--border-light);"></div>
+              <div style="width: 40px; height: 40px; background: #6B7B6B; border: var(--border-width) solid var(--border-light);"></div>
+            </div>
+          </div>
+
+          <!-- Clay Palette -->
+          <div class="card">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="palette-dot" data-palette="clay"></div>
+              <h3 class="text-lg font-medium">Clay</h3>
+            </div>
+            <p class="text-sm mb-6" style="color: var(--text-secondary);">
+              Earthy clay tones - warm and inviting
+            </p>
+            <div class="flex gap-2">
+              <div style="width: 40px; height: 40px; background: #9C8575; border: var(--border-width) solid var(--border-light);"></div>
+              <div style="width: 40px; height: 40px; background: #FAF9F7; border: var(--border-width) solid var(--border-light);"></div>
+              <div style="width: 40px; height: 40px; background: #6B5D52; border: var(--border-width) solid var(--border-light);"></div>
+            </div>
+          </div>
+
+          <!-- Slate Palette -->
+          <div class="card">
+            <div class="flex items-center gap-3 mb-6">
+              <div class="palette-dot" data-palette="slate"></div>
+              <h3 class="text-lg font-medium">Slate</h3>
+            </div>
+            <p class="text-sm mb-6" style="color: var(--text-secondary);">
+              Cool slate - professional and technical
+            </p>
+            <div class="flex gap-2">
+              <div style="width: 40px; height: 40px; background: #475569; border: var(--border-width) solid var(--border-light);"></div>
+              <div style="width: 40px; height: 40px; background: #F8FAFC; border: var(--border-width) solid var(--border-light);"></div>
+              <div style="width: 40px; height: 40px; background: #64748B; border: var(--border-width) solid var(--border-light);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" style="margin: var(--space-32) auto;">
+
+    <!-- Typography -->
+    <section class="section">
+      <div class="container container-narrow">
+        <h2 class="text-2xl serif font-medium mb-12">Typography</h2>
+
+        <div class="flex flex-col gap-12">
+          <div>
+            <span class="label mb-4">Display 5XL</span>
+            <h1 class="text-5xl serif font-medium">The quick brown fox jumps over the lazy dog</h1>
+          </div>
+
+          <div>
+            <span class="label mb-4">Display 4XL</span>
+            <h2 class="text-4xl serif font-medium">The quick brown fox jumps over the lazy dog</h2>
+          </div>
+
+          <div>
+            <span class="label mb-4">Display 3XL</span>
+            <h2 class="text-3xl serif font-medium">The quick brown fox jumps over the lazy dog</h2>
+          </div>
+
+          <div>
+            <span class="label mb-4">Display 2XL</span>
+            <h3 class="text-2xl serif font-medium">The quick brown fox jumps over the lazy dog</h3>
+          </div>
+
+          <div>
+            <span class="label mb-4">Display XL</span>
+            <h4 class="text-xl serif font-medium">The quick brown fox jumps over the lazy dog</h4>
+          </div>
+
+          <div>
+            <span class="label mb-4">Body Large</span>
+            <p class="text-lg">The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. How vexingly quick daft zebras jump!</p>
+          </div>
+
+          <div>
+            <span class="label mb-4">Body Base</span>
+            <p class="text-base">The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs. How vexingly quick daft zebras jump!</p>
+          </div>
+
+          <div>
+            <span class="label mb-4">Body Small</span>
+            <p class="text-sm">The quick brown fox jumps over the lazy dog. Pack my box with five dozen liquor jugs.</p>
+          </div>
+
+          <div>
+            <span class="label mb-4">Label</span>
+            <p class="text-xs">The quick brown fox jumps over the lazy dog</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" style="margin: var(--space-32) auto;">
+
+    <!-- Buttons -->
+    <section class="section">
+      <div class="container">
+        <h2 class="text-2xl serif font-medium mb-12">Buttons</h2>
+
+        <div class="flex flex-col gap-8">
+          <div>
+            <span class="label mb-4">Primary</span>
+            <div class="flex gap-4 items-center">
+              <button class="btn btn-primary">Primary Button</button>
+              <button class="btn btn-primary" disabled style="opacity: 0.5; cursor: not-allowed;">Disabled</button>
+            </div>
+          </div>
+
+          <div>
+            <span class="label mb-4">Secondary</span>
+            <div class="flex gap-4 items-center">
+              <button class="btn">Secondary Button</button>
+              <button class="btn" disabled style="opacity: 0.5; cursor: not-allowed;">Disabled</button>
+            </div>
+          </div>
+
+          <div>
+            <span class="label mb-4">Ghost</span>
+            <div class="flex gap-4 items-center">
+              <button class="btn btn-ghost">Ghost Button</button>
+              <button class="btn btn-ghost" disabled style="opacity: 0.5; cursor: not-allowed;">Disabled</button>
+            </div>
+          </div>
+
+          <div>
+            <span class="label mb-4">Sizes</span>
+            <div class="flex gap-4 items-center">
+              <button class="btn text-xs" style="padding: var(--space-2) var(--space-4);">Small</button>
+              <button class="btn">Medium</button>
+              <button class="btn text-base" style="padding: var(--space-4) var(--space-8);">Large</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" style="margin: var(--space-32) auto;">
+
+    <!-- Cards -->
+    <section class="section">
+      <div class="container">
+        <h2 class="text-2xl serif font-medium mb-12">Cards</h2>
+
+        <div class="grid grid-3">
+          <!-- Standard Card -->
+          <div class="card">
+            <span class="label mb-4">Standard Card</span>
+            <h3 class="text-xl serif font-medium mb-4">Card Title</h3>
+            <p class="text-base mb-6" style="color: var(--text-secondary);">
+              This is a standard card with minimal styling and clean borders. Hover to see the subtle interaction.
+            </p>
+            <button class="btn w-full">Action</button>
+          </div>
+
+          <!-- Elevated Card -->
+          <div class="card" style="box-shadow: var(--shadow-soft);">
+            <span class="label mb-4">Elevated Card</span>
+            <h3 class="text-xl serif font-medium mb-4">Card Title</h3>
+            <p class="text-base mb-6" style="color: var(--text-secondary);">
+              An elevated card with a subtle shadow for visual hierarchy and depth.
+            </p>
+            <button class="btn w-full">Action</button>
+          </div>
+
+          <!-- Minimal Card -->
+          <div class="card-minimal">
+            <span class="label mb-4">Minimal Card</span>
+            <h3 class="text-xl serif font-medium mb-4">Card Title</h3>
+            <p class="text-base" style="color: var(--text-secondary);">
+              Ultra-minimal card with just a bottom border and transparent background.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" style="margin: var(--space-32) auto;">
+
+    <!-- Form Elements -->
+    <section class="section">
+      <div class="container container-narrow">
+        <h2 class="text-2xl serif font-medium mb-12">Form Elements</h2>
+
+        <div class="flex flex-col gap-8">
+          <!-- Text Input -->
+          <div>
+            <label class="label mb-3">Text Input</label>
+            <input type="text" class="input" placeholder="Enter text...">
+          </div>
+
+          <!-- Email Input -->
+          <div>
+            <label class="label mb-3">Email Input</label>
+            <input type="email" class="input" placeholder="your@email.com">
+          </div>
+
+          <!-- Textarea -->
+          <div>
+            <label class="label mb-3">Textarea</label>
+            <textarea class="textarea" placeholder="Enter your message..."></textarea>
+          </div>
+
+          <!-- Select (styled) -->
+          <div>
+            <label class="label mb-3">Select</label>
+            <select class="input" style="cursor: pointer;">
+              <option>Option 1</option>
+              <option>Option 2</option>
+              <option>Option 3</option>
+            </select>
+          </div>
+
+          <!-- Checkbox -->
+          <div class="flex items-center gap-3">
+            <input type="checkbox" id="checkbox1" style="width: 20px; height: 20px; cursor: pointer;">
+            <label for="checkbox1" class="text-base" style="cursor: pointer;">
+              I agree to the terms and conditions
+            </label>
+          </div>
+
+          <!-- Radio Buttons -->
+          <div>
+            <label class="label mb-3">Radio Buttons</label>
+            <div class="flex flex-col gap-3">
+              <div class="flex items-center gap-3">
+                <input type="radio" name="radio" id="radio1" style="width: 20px; height: 20px; cursor: pointer;" checked>
+                <label for="radio1" class="text-base" style="cursor: pointer;">Option 1</label>
+              </div>
+              <div class="flex items-center gap-3">
+                <input type="radio" name="radio" id="radio2" style="width: 20px; height: 20px; cursor: pointer;">
+                <label for="radio2" class="text-base" style="cursor: pointer;">Option 2</label>
+              </div>
+              <div class="flex items-center gap-3">
+                <input type="radio" name="radio" id="radio3" style="width: 20px; height: 20px; cursor: pointer;">
+                <label for="radio3" class="text-base" style="cursor: pointer;">Option 3</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" style="margin: var(--space-32) auto;">
+
+    <!-- Dividers -->
+    <section class="section">
+      <div class="container container-narrow">
+        <h2 class="text-2xl serif font-medium mb-12">Dividers</h2>
+
+        <div class="flex flex-col gap-12">
+          <div>
+            <span class="label mb-4">Standard Divider</span>
+            <hr class="divider">
+          </div>
+
+          <div>
+            <span class="label mb-4">Vertical Divider</span>
+            <div class="flex items-center gap-6" style="height: 100px;">
+              <div style="flex: 1; background: var(--bg-secondary);"></div>
+              <div class="divider-vertical"></div>
+              <div style="flex: 1; background: var(--bg-secondary);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" style="margin: var(--space-32) auto;">
+
+    <!-- Labels -->
+    <section class="section">
+      <div class="container">
+        <h2 class="text-2xl serif font-medium mb-12">Labels</h2>
+
+        <div class="flex flex-wrap gap-6 items-center">
+          <span class="label">Default Label</span>
+          <span class="label" style="color: var(--accent);">Accent Label</span>
+          <span class="label" style="color: var(--text-primary);">Primary Label</span>
+          <span class="label" style="color: var(--text-secondary);">Secondary Label</span>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" style="margin: var(--space-32) auto;">
+
+    <!-- Links -->
+    <section class="section">
+      <div class="container">
+        <h2 class="text-2xl serif font-medium mb-12">Links</h2>
+
+        <div class="flex flex-col gap-6">
+          <div>
+            <a href="#" class="link text-base">This is a standard link with underline on hover</a>
+          </div>
+          <div>
+            <a href="#" class="link text-lg serif">This is a larger serif link</a>
+          </div>
+          <div>
+            <p class="text-base" style="color: var(--text-secondary);">
+              Links can be embedded in <a href="#" class="link">body text</a> seamlessly.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <hr class="divider" style="margin: var(--space-32) auto;">
+
+    <!-- Spacing Scale -->
+    <section class="section">
+      <div class="container">
+        <h2 class="text-2xl serif font-medium mb-12">Spacing Scale</h2>
+
+        <div class="flex flex-col gap-6">
+          <div class="flex items-center gap-6">
+            <span class="label" style="width: 100px;">space-1 (4px)</span>
+            <div style="width: var(--space-1); height: 40px; background: var(--accent);"></div>
+          </div>
+          <div class="flex items-center gap-6">
+            <span class="label" style="width: 100px;">space-2 (8px)</span>
+            <div style="width: var(--space-2); height: 40px; background: var(--accent);"></div>
+          </div>
+          <div class="flex items-center gap-6">
+            <span class="label" style="width: 100px;">space-4 (16px)</span>
+            <div style="width: var(--space-4); height: 40px; background: var(--accent);"></div>
+          </div>
+          <div class="flex items-center gap-6">
+            <span class="label" style="width: 100px;">space-6 (24px)</span>
+            <div style="width: var(--space-6); height: 40px; background: var(--accent);"></div>
+          </div>
+          <div class="flex items-center gap-6">
+            <span class="label" style="width: 100px;">space-8 (32px)</span>
+            <div style="width: var(--space-8); height: 40px; background: var(--accent);"></div>
+          </div>
+          <div class="flex items-center gap-6">
+            <span class="label" style="width: 100px;">space-12 (48px)</span>
+            <div style="width: var(--space-12); height: 40px; background: var(--accent);"></div>
+          </div>
+          <div class="flex items-center gap-6">
+            <span class="label" style="width: 100px;">space-16 (64px)</span>
+            <div style="width: var(--space-16); height: 40px; background: var(--accent);"></div>
+          </div>
+          <div class="flex items-center gap-6">
+            <span class="label" style="width: 100px;">space-24 (96px)</span>
+            <div style="width: var(--space-24); height: 40px; background: var(--accent);"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Spacer -->
+    <div style="height: var(--space-64);"></div>
+  </main>
+
+  <!-- Footer -->
+  <footer style="padding: var(--space-12) 0; border-top: var(--border-width) solid var(--border-light);">
+    <div class="container flex justify-between items-center">
+      <p class="text-sm" style="color: var(--text-tertiary);">
+        Minimal Editorial Design System
+      </p>
+      <p class="text-xs" style="color: var(--text-tertiary);">
+        All components
+      </p>
+    </div>
+  </footer>
+
+  <!-- JavaScript for Theme Controls -->
+  <script>
+    // Get elements
+    const html = document.documentElement;
+    const paletteDots = document.querySelectorAll('.palette-dot');
+    const themeToggle = document.getElementById('themeToggle');
+    const themeLabel = document.getElementById('themeLabel');
+
+    // Get stored preferences
+    const storedPalette = localStorage.getItem('palette') || 'ink';
+    const storedTheme = localStorage.getItem('theme') || 'light';
+
+    // Apply stored preferences
+    html.setAttribute('data-palette', storedPalette);
+    html.setAttribute('data-theme', storedTheme);
+    themeLabel.textContent = storedTheme === 'light' ? 'Light' : 'Dark';
+
+    // Update active palette dot
+    paletteDots.forEach(dot => {
+      if (dot.dataset.palette === storedPalette) {
+        dot.classList.add('active');
+      } else {
+        dot.classList.remove('active');
+      }
+    });
+
+    // Palette switching
+    paletteDots.forEach(dot => {
+      dot.addEventListener('click', () => {
+        const palette = dot.dataset.palette;
+        html.setAttribute('data-palette', palette);
+        localStorage.setItem('palette', palette);
+
+        // Update active state
+        paletteDots.forEach(d => d.classList.remove('active'));
+        dot.classList.add('active');
+      });
+    });
+
+    // Theme toggle (light/dark)
+    themeToggle.addEventListener('click', () => {
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      themeLabel.textContent = newTheme === 'light' ? 'Light' : 'Dark';
+    });
+  </script>
+
+</body>
+</html>

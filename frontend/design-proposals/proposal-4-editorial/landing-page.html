@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Manual - Transform Video into Visual Documentation</title>
+  <link rel="stylesheet" href="design-system.css">
+  <style>
+    /* Layout System */
+    .container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 0 var(--space-6);
+    }
+
+    .container-narrow {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 var(--space-6);
+    }
+
+    .container-text {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    /* Navigation */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: var(--z-sticky);
+      background-color: var(--color-background);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+      backdrop-filter: blur(8px);
+      background-color: rgba(254, 253, 251, 0.95);
+    }
+
+    [data-theme="dark"] .nav {
+      background-color: rgba(15, 14, 13, 0.95);
+    }
+
+    .nav-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 80px;
+    }
+
+    .nav-logo {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-lg);
+      font-weight: var(--weight-bold);
+      color: var(--color-text);
+      text-decoration: none;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: var(--space-8);
+      list-style: none;
+      align-items: center;
+    }
+
+    .nav-link {
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-medium);
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      letter-spacing: var(--tracking-wide);
+      transition: color var(--transition-fast);
+    }
+
+    .nav-link:hover {
+      color: var(--color-text);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: var(--space-32) 0 var(--space-40);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-20);
+      align-items: center;
+    }
+
+    .hero-content {
+      max-width: 600px;
+    }
+
+    .hero-label {
+      display: inline-block;
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-widest);
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: var(--space-6);
+      border-bottom: var(--border-width-medium) solid var(--color-accent);
+      padding-bottom: var(--space-2);
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-xl);
+      font-weight: var(--weight-bold);
+      line-height: var(--leading-tight);
+      letter-spacing: var(--tracking-tighter);
+      color: var(--color-text);
+      margin-bottom: var(--space-6);
+    }
+
+    .hero-description {
+      font-size: var(--text-body-xl);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-10);
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: var(--space-4);
+      align-items: center;
+    }
+
+    .hero-image {
+      position: relative;
+      aspect-ratio: 4/5;
+      background: linear-gradient(135deg, var(--color-neutral-100) 0%, var(--color-neutral-200) 100%);
+      border: var(--border-width-thin) solid var(--color-border);
+      overflow: hidden;
+    }
+
+    .hero-image::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" fill="none"/><path d="M0 20h40M20 0v40" stroke="%23E5E1D8" stroke-width="1"/></svg>');
+      opacity: 0.3;
+    }
+
+    /* Features Section */
+    .features {
+      padding: var(--space-32) 0;
+      background-color: var(--color-surface);
+      border-top: var(--border-width-thin) solid var(--color-border);
+      border-bottom: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .features-header {
+      text-align: center;
+      margin-bottom: var(--space-20);
+    }
+
+    .features-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-md);
+      font-weight: var(--weight-semibold);
+      line-height: var(--leading-tight);
+      margin-bottom: var(--space-6);
+    }
+
+    .features-subtitle {
+      font-size: var(--text-body-lg);
+      color: var(--color-text-secondary);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--space-12);
+    }
+
+    .feature-card {
+      padding: var(--space-8);
+      border: var(--border-width-thin) solid var(--color-border);
+      background-color: var(--color-background);
+      transition: all var(--transition-base);
+    }
+
+    .feature-card:hover {
+      border-color: var(--color-accent);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .feature-number {
+      font-family: var(--font-display);
+      font-size: var(--text-display-sm);
+      font-weight: var(--weight-light);
+      color: var(--color-accent);
+      margin-bottom: var(--space-4);
+      opacity: 0.6;
+    }
+
+    .feature-title {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-lg);
+      font-weight: var(--weight-semibold);
+      margin-bottom: var(--space-4);
+    }
+
+    .feature-description {
+      font-size: var(--text-body-md);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+    }
+
+    /* How It Works Section */
+    .how-it-works {
+      padding: var(--space-40) 0;
+    }
+
+    .hiw-grid {
+      display: grid;
+      grid-template-columns: 2fr 3fr;
+      gap: var(--space-24);
+    }
+
+    .hiw-sidebar {
+      position: sticky;
+      top: 120px;
+      height: fit-content;
+    }
+
+    .hiw-label {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-widest);
+      text-transform: uppercase;
+      color: var(--color-accent);
+      margin-bottom: var(--space-4);
+    }
+
+    .hiw-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-lg);
+      font-weight: var(--weight-semibold);
+      line-height: var(--leading-tight);
+      margin-bottom: var(--space-6);
+    }
+
+    .hiw-description {
+      font-size: var(--text-body-lg);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+    }
+
+    .hiw-steps {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-16);
+    }
+
+    .step {
+      padding-left: var(--space-12);
+      border-left: var(--border-width-thick) solid var(--color-border);
+      position: relative;
+    }
+
+    .step.active {
+      border-left-color: var(--color-accent);
+    }
+
+    .step-number {
+      position: absolute;
+      left: calc(-1 * var(--space-12) - 16px);
+      top: 0;
+      width: 32px;
+      height: 32px;
+      background-color: var(--color-background);
+      border: var(--border-width-medium) solid var(--color-border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-body);
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-semibold);
+      color: var(--color-text-secondary);
+    }
+
+    .step.active .step-number {
+      background-color: var(--color-accent);
+      border-color: var(--color-accent);
+      color: white;
+    }
+
+    .step-title {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-xl);
+      font-weight: var(--weight-semibold);
+      margin-bottom: var(--space-4);
+    }
+
+    .step-description {
+      font-size: var(--text-body-lg);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-6);
+    }
+
+    .step-details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-3);
+    }
+
+    .step-tag {
+      font-size: var(--text-body-xs);
+      font-weight: var(--weight-medium);
+      letter-spacing: var(--tracking-wide);
+      color: var(--color-text-secondary);
+      background-color: var(--color-neutral-100);
+      padding: var(--space-2) var(--space-3);
+      border: var(--border-width-thin) solid var(--color-border);
+    }
+
+    /* Testimonials Section */
+    .testimonials {
+      padding: var(--space-40) 0;
+      background-color: var(--color-accent-50);
+      border-top: var(--border-width-statement) solid var(--color-accent);
+    }
+
+    .testimonials-header {
+      text-align: center;
+      margin-bottom: var(--space-20);
+    }
+
+    .testimonials-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-md);
+      font-weight: var(--weight-semibold);
+      line-height: var(--leading-tight);
+    }
+
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--space-16);
+    }
+
+    .testimonial {
+      background-color: var(--color-background);
+      padding: var(--space-10);
+      border-left: var(--border-width-thick) solid var(--color-accent);
+    }
+
+    .testimonial-quote {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-lg);
+      font-style: italic;
+      font-weight: var(--weight-normal);
+      line-height: var(--leading-snug);
+      color: var(--color-text);
+      margin-bottom: var(--space-8);
+    }
+
+    .testimonial-author {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+    }
+
+    .testimonial-avatar {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--color-accent-300), var(--color-accent-500));
+      border-radius: 50%;
+    }
+
+    .testimonial-info {
+      flex: 1;
+    }
+
+    .testimonial-name {
+      font-weight: var(--weight-semibold);
+      font-size: var(--text-body-md);
+      color: var(--color-text);
+    }
+
+    .testimonial-role {
+      font-size: var(--text-body-sm);
+      color: var(--color-text-secondary);
+    }
+
+    /* CTA Section */
+    .cta {
+      padding: var(--space-40) 0;
+      border-top: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .cta-content {
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .cta-title {
+      font-family: var(--font-display);
+      font-size: var(--text-display-lg);
+      font-weight: var(--weight-bold);
+      line-height: var(--leading-tight);
+      margin-bottom: var(--space-8);
+    }
+
+    .cta-description {
+      font-size: var(--text-body-xl);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-10);
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: var(--space-4);
+      justify-content: center;
+    }
+
+    /* Footer */
+    .footer {
+      padding: var(--space-20) 0;
+      background-color: var(--color-surface);
+      border-top: var(--border-width-thin) solid var(--color-border);
+    }
+
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: var(--space-16);
+      margin-bottom: var(--space-16);
+    }
+
+    .footer-brand {
+      max-width: 400px;
+    }
+
+    .footer-logo {
+      font-family: var(--font-display);
+      font-size: var(--text-heading-lg);
+      font-weight: var(--weight-bold);
+      color: var(--color-text);
+      margin-bottom: var(--space-4);
+    }
+
+    .footer-tagline {
+      font-size: var(--text-body-md);
+      line-height: var(--leading-relaxed);
+      color: var(--color-text-secondary);
+    }
+
+    .footer-section-title {
+      font-family: var(--font-body);
+      font-size: var(--text-body-sm);
+      font-weight: var(--weight-semibold);
+      letter-spacing: var(--tracking-wider);
+      text-transform: uppercase;
+      color: var(--color-text);
+      margin-bottom: var(--space-4);
+    }
+
+    .footer-links {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-3);
+    }
+
+    .footer-link {
+      font-size: var(--text-body-sm);
+      color: var(--color-text-secondary);
+      text-decoration: none;
+      transition: color var(--transition-fast);
+    }
+
+    .footer-link:hover {
+      color: var(--color-text);
+    }
+
+    .footer-bottom {
+      padding-top: var(--space-8);
+      border-top: var(--border-width-thin) solid var(--color-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-copyright {
+      font-size: var(--text-body-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .footer-social {
+      display: flex;
+      gap: var(--space-4);
+      list-style: none;
+    }
+
+    /* Button Styles */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-body);
+      font-size: var(--text-body-md);
+      font-weight: var(--weight-medium);
+      line-height: 1;
+      text-decoration: none;
+      border: var(--border-width-medium) solid transparent;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      padding: var(--space-4) var(--space-8);
+    }
+
+    .btn-primary {
+      background-color: var(--color-accent);
+      border-color: var(--color-accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--color-accent-hover);
+      border-color: var(--color-accent-hover);
+      transform: translateY(-1px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border-color: var(--color-border-strong);
+      color: var(--color-text);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--color-text);
+      background-color: var(--color-surface);
+    }
+
+    .btn-ghost {
+      background-color: transparent;
+      border-color: transparent;
+      color: var(--color-text-secondary);
+    }
+
+    .btn-ghost:hover {
+      color: var(--color-text);
+      background-color: var(--color-neutral-100);
+    }
+
+    .btn-lg {
+      padding: var(--space-5) var(--space-10);
+      font-size: var(--text-body-lg);
+    }
+
+    /* Theme Toggle */
+    .theme-toggle {
+      width: 40px;
+      height: 40px;
+      border: var(--border-width-thin) solid var(--color-border);
+      background-color: var(--color-surface);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all var(--transition-fast);
+    }
+
+    .theme-toggle:hover {
+      border-color: var(--color-text);
+    }
+
+    .theme-icon {
+      width: 18px;
+      height: 18px;
+      color: var(--color-text);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .hero-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-12);
+      }
+
+      .hero-image {
+        max-width: 500px;
+        margin: 0 auto;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hiw-grid {
+        grid-template-columns: 1fr;
+        gap: var(--space-12);
+      }
+
+      .hiw-sidebar {
+        position: static;
+      }
+
+      .testimonials-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links {
+        gap: var(--space-4);
+      }
+
+      .hero {
+        padding: var(--space-20) 0 var(--space-24);
+      }
+
+      .features {
+        padding: var(--space-20) 0;
+      }
+
+      .how-it-works,
+      .testimonials,
+      .cta {
+        padding: var(--space-24) 0;
+      }
+
+      .footer-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-cta {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .btn {
+        width: 100%;
+      }
+
+      .cta-buttons {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .nav-container {
+        height: 64px;
+      }
+
+      .nav-links {
+        gap: var(--space-3);
+      }
+
+      .nav-link {
+        font-size: var(--text-body-xs);
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="container">
+      <div class="nav-container">
+        <a href="#" class="nav-logo">Video Manual</a>
+        <ul class="nav-links">
+          <li><a href="#features" class="nav-link">Features</a></li>
+          <li><a href="#how-it-works" class="nav-link">How it Works</a></li>
+          <li><a href="#testimonials" class="nav-link">Testimonials</a></li>
+          <li><a href="#" class="btn btn-ghost">Sign In</a></li>
+          <li><a href="#" class="btn btn-primary">Get Started</a></li>
+          <li>
+            <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+              <svg class="theme-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+              </svg>
+            </button>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-grid">
+        <div class="hero-content">
+          <span class="hero-label">AI-Powered Documentation</span>
+          <h1 class="hero-title">Transform Video into Visual Documentation</h1>
+          <p class="hero-description">
+            Create comprehensive, step-by-step visual manuals from your video content.
+            Powered by advanced AI to extract, analyze, and present information beautifully.
+          </p>
+          <div class="hero-cta">
+            <a href="#" class="btn btn-primary btn-lg">Start Creating</a>
+            <a href="#" class="btn btn-secondary btn-lg">View Demo</a>
+          </div>
+        </div>
+        <div class="hero-image"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="features">
+    <div class="container-narrow">
+      <div class="features-header">
+        <h2 class="features-title">Powerful Features for Modern Teams</h2>
+        <p class="features-subtitle">
+          Everything you need to create, manage, and share professional documentation
+        </p>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-number">01</div>
+          <h3 class="feature-title">AI Video Analysis</h3>
+          <p class="feature-description">
+            Advanced AI automatically extracts key frames, identifies actions,
+            and generates detailed descriptions from your video content.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-number">02</div>
+          <h3 class="feature-title">Smart Manual Generation</h3>
+          <p class="feature-description">
+            Transform analyzed content into publication-ready manuals with
+            intelligent formatting, organization, and professional layouts.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-number">03</div>
+          <h3 class="feature-title">Rich Text Editor</h3>
+          <p class="feature-description">
+            Edit and refine your manuals with a powerful editor featuring
+            AI assistance, formatting tools, and collaborative features.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-number">04</div>
+          <h3 class="feature-title">Project Compilation</h3>
+          <p class="feature-description">
+            Organize multiple manuals into comprehensive projects with
+            custom ordering, sections, and export options.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-number">05</div>
+          <h3 class="feature-title">Multi-Format Export</h3>
+          <p class="feature-description">
+            Export your documentation in various formats including PDF, HTML,
+            and Markdown for maximum flexibility and reach.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-number">06</div>
+          <h3 class="feature-title">Team Collaboration</h3>
+          <p class="feature-description">
+            Work together seamlessly with version control, comments,
+            and real-time updates across your entire team.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works Section -->
+  <section id="how-it-works" class="how-it-works">
+    <div class="container-narrow">
+      <div class="hiw-grid">
+        <div class="hiw-sidebar">
+          <div class="hiw-label">Process</div>
+          <h2 class="hiw-title">From Video to Manual in Minutes</h2>
+          <p class="hiw-description">
+            Our streamlined workflow combines cutting-edge AI with
+            intuitive design to deliver professional results.
+          </p>
+        </div>
+        <div class="hiw-steps">
+          <div class="step active">
+            <div class="step-number">1</div>
+            <h3 class="step-title">Upload Your Video</h3>
+            <p class="step-description">
+              Start by uploading your video content. We support all major formats
+              and handle files up to 2GB with ease.
+            </p>
+            <div class="step-details">
+              <span class="step-tag">MP4</span>
+              <span class="step-tag">MOV</span>
+              <span class="step-tag">AVI</span>
+              <span class="step-tag">WebM</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">2</div>
+            <h3 class="step-title">AI Analysis</h3>
+            <p class="step-description">
+              Our AI processes your video, identifying key moments, extracting
+              frames, and generating detailed descriptions automatically.
+            </p>
+            <div class="step-details">
+              <span class="step-tag">Frame Extraction</span>
+              <span class="step-tag">Action Recognition</span>
+              <span class="step-tag">Text Detection</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">3</div>
+            <h3 class="step-title">Review & Edit</h3>
+            <p class="step-description">
+              Refine the generated manual with our powerful editor. Add context,
+              adjust formatting, and perfect every detail.
+            </p>
+            <div class="step-details">
+              <span class="step-tag">Rich Editor</span>
+              <span class="step-tag">AI Copilot</span>
+              <span class="step-tag">Version Control</span>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-number">4</div>
+            <h3 class="step-title">Publish & Share</h3>
+            <p class="step-description">
+              Export your manual in multiple formats or share directly with your
+              team. Track views and gather feedback.
+            </p>
+            <div class="step-details">
+              <span class="step-tag">PDF Export</span>
+              <span class="step-tag">HTML Export</span>
+              <span class="step-tag">Share Links</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials Section -->
+  <section id="testimonials" class="testimonials">
+    <div class="container-narrow">
+      <div class="testimonials-header">
+        <h2 class="testimonials-title">Trusted by Teams Worldwide</h2>
+      </div>
+      <div class="testimonials-grid">
+        <div class="testimonial">
+          <p class="testimonial-quote">
+            "Video Manual transformed how we create documentation. What used to
+            take days now takes hours, and the quality is consistently excellent."
+          </p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar"></div>
+            <div class="testimonial-info">
+              <div class="testimonial-name">Sarah Chen</div>
+              <div class="testimonial-role">Head of Documentation, TechCorp</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial">
+          <p class="testimonial-quote">
+            "The AI-powered analysis is remarkably accurate. It captures nuances
+            we would have missed manually and presents them beautifully."
+          </p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar"></div>
+            <div class="testimonial-info">
+              <div class="testimonial-name">Marcus Rodriguez</div>
+              <div class="testimonial-role">Training Manager, GlobalEd</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial">
+          <p class="testimonial-quote">
+            "Our team productivity has increased dramatically. The collaborative
+            features make it easy for everyone to contribute."
+          </p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar"></div>
+            <div class="testimonial-info">
+              <div class="testimonial-name">Emily Watson</div>
+              <div class="testimonial-role">Product Lead, InnovateLabs</div>
+            </div>
+          </div>
+        </div>
+        <div class="testimonial">
+          <p class="testimonial-quote">
+            "The export options are fantastic. We can deliver documentation in
+            exactly the format our clients need, every time."
+          </p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar"></div>
+            <div class="testimonial-info">
+              <div class="testimonial-name">James Morrison</div>
+              <div class="testimonial-role">Operations Director, ServicePro</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta">
+    <div class="container">
+      <div class="cta-content">
+        <h2 class="cta-title">Ready to Transform Your Documentation?</h2>
+        <p class="cta-description">
+          Join thousands of teams creating better documentation, faster.
+          Start your free trial today, no credit card required.
+        </p>
+        <div class="cta-buttons">
+          <a href="#" class="btn btn-primary btn-lg">Start Free Trial</a>
+          <a href="#" class="btn btn-secondary btn-lg">Schedule Demo</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="footer-logo">Video Manual</div>
+          <p class="footer-tagline">
+            AI-powered platform for creating professional visual documentation
+            from video content.
+          </p>
+        </div>
+        <div>
+          <h4 class="footer-section-title">Product</h4>
+          <ul class="footer-links">
+            <li><a href="#" class="footer-link">Features</a></li>
+            <li><a href="#" class="footer-link">Pricing</a></li>
+            <li><a href="#" class="footer-link">Use Cases</a></li>
+            <li><a href="#" class="footer-link">Documentation</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-section-title">Company</h4>
+          <ul class="footer-links">
+            <li><a href="#" class="footer-link">About</a></li>
+            <li><a href="#" class="footer-link">Blog</a></li>
+            <li><a href="#" class="footer-link">Careers</a></li>
+            <li><a href="#" class="footer-link">Contact</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-section-title">Legal</h4>
+          <ul class="footer-links">
+            <li><a href="#" class="footer-link">Privacy</a></li>
+            <li><a href="#" class="footer-link">Terms</a></li>
+            <li><a href="#" class="footer-link">Security</a></li>
+            <li><a href="#" class="footer-link">Compliance</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div class="footer-copyright">
+          2025 Video Manual. All rights reserved.
+        </div>
+        <ul class="footer-social">
+          <li><a href="#" class="footer-link">Twitter</a></li>
+          <li><a href="#" class="footer-link">LinkedIn</a></li>
+          <li><a href="#" class="footer-link">GitHub</a></li>
+        </ul>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Theme Toggle Functionality
+    const themeToggle = document.getElementById('themeToggle');
+    const html = document.documentElement;
+
+    // Check for saved theme preference or default to 'light' mode
+    const currentTheme = localStorage.getItem('theme') || 'light';
+    html.setAttribute('data-theme', currentTheme);
+
+    // Update icon based on current theme
+    function updateIcon(theme) {
+      const icon = themeToggle.querySelector('.theme-icon');
+      if (theme === 'dark') {
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>';
+      } else {
+        icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>';
+      }
+    }
+
+    updateIcon(currentTheme);
+
+    themeToggle.addEventListener('click', function() {
+      const currentTheme = html.getAttribute('data-theme');
+      const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+
+      html.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+      updateIcon(newTheme);
+    });
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const href = this.getAttribute('href');
+        if (href !== '#' && href !== '') {
+          e.preventDefault();
+          const target = document.querySelector(href);
+          if (target) {
+            target.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
