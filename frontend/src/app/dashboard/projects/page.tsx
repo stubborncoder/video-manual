@@ -65,7 +65,6 @@ import {
   Edit2,
   BookOpen,
   GripVertical,
-  ChevronRight,
   ChevronDown,
   FileText,
   Loader2,
@@ -84,7 +83,6 @@ import {
   manuals,
   type ProjectSummary,
   type ProjectDetail,
-  type ChapterInfo,
   type ManualDetail,
 } from "@/lib/api";
 import { useProjectCompiler } from "@/hooks/useWebSocket";
@@ -181,6 +179,7 @@ export default function ProjectsPage() {
               return {
                 ...project,
                 manual_names: detail.manuals.map((m) => m.manual_id).slice(0, 5),
+                chapter_count: detail.chapters.length, // Use actual chapter count from detail
               };
             } catch {
               return { ...project, manual_names: [] };
@@ -631,31 +630,6 @@ export default function ProjectsPage() {
                     </div>
                   )}
                 </div>
-
-                {/* Manual names preview with refined styling */}
-                {project.manual_names && project.manual_names.length > 0 && (
-                  <div className="border-t pt-3 space-y-1.5">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                      Contents
-                    </span>
-                    <div className="space-y-1">
-                      {project.manual_names.slice(0, 3).map((name) => (
-                        <div
-                          key={name}
-                          className="flex items-center gap-2 text-sm text-muted-foreground group/item hover:text-foreground transition-colors"
-                        >
-                          <ChevronRight className="h-3 w-3 text-primary/60 group-hover/item:translate-x-0.5 transition-transform" />
-                          <span className="truncate">{name}</span>
-                        </div>
-                      ))}
-                      {project.manual_count > 3 && (
-                        <div className="text-xs text-muted-foreground/70 pl-5 italic">
-                          +{project.manual_count - 3} more
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
 
                 {/* Actions with refined styling */}
                 <div className="flex items-center gap-2 pt-2">
