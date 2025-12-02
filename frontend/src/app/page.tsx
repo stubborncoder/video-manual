@@ -12,6 +12,7 @@ import {
   Globe,
   Sun,
   Moon,
+  FileVideo,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -145,9 +146,12 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="mx-auto max-w-[1400px] px-6">
           <div className="flex h-[72px] items-center justify-between">
-            <span className="font-display text-2xl tracking-tight">
-              vDocs
-            </span>
+            <div className="flex items-center gap-2">
+              <FileVideo className="h-12 w-12 text-primary" strokeWidth={2.5} />
+              <span className="font-display text-3xl tracking-tight">
+                v<span className="text-primary">D</span>ocs
+              </span>
+            </div>
 
             <div className="flex items-center gap-8">
               <button
