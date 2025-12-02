@@ -1,10 +1,10 @@
-# Video Manual Platform
+# vDocs
 
-A multi-agent platform for generating user manuals from instructional videos using Google's Gemini AI and LangGraph workflows.
+AI-powered documentation from video. A multi-agent platform for generating professional documentation from instructional videos using Google's Gemini AI and LangGraph workflows.
 
 ## Overview
 
-The Video Manual Platform provides intelligent agents that:
+vDocs provides intelligent agents that:
 - **Analyze video content** using Gemini 2.5 Pro's advanced video understanding
 - **Identify key moments** where important instructions occur
 - **Extract screenshots** from critical timestamps

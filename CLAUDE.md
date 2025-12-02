@@ -1,6 +1,6 @@
-# Video Manual Platform
+# vDocs
 
-AI-powered platform that generates step-by-step visual manuals from video content using LangGraph.
+AI-powered documentation from video. Generates step-by-step visual documentation from video content using LangGraph.
 
 ## Stack
 - Python 3.12+, LangGraph, LangChain

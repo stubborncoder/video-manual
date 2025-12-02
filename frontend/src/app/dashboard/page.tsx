@@ -44,7 +44,7 @@ export default function DashboardPage() {
       <div>
         <h1 className="font-display text-4xl tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground mt-1">
-          Welcome to Video Manual Platform
+          Welcome to vDocs
         </p>
       </div>
 

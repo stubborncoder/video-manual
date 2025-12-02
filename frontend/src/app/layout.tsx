@@ -18,8 +18,8 @@ const dmSerifDisplay = DM_Serif_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Video Manual Platform",
-  description: "AI-powered platform for generating visual manuals from video content",
+  title: "vDocs - AI-powered documentation from video",
+  description: "AI-powered documentation from video",
 };
 
 export default function RootLayout({

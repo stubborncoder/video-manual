@@ -1,4 +1,4 @@
-"""Global configuration for the video-manual platform."""
+"""Global configuration for the vDocs platform."""
 
 from pathlib import Path
 

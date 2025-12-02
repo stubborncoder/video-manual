@@ -32,9 +32,9 @@ def main():
             reload = True
             i += 1
         elif args[i] in ("--help",):
-            print("Video Manual Platform API Server")
+            print("vDocs API Server")
             print()
-            print("Usage: video-manual-api [options]")
+            print("Usage: vdocs-api [options]")
             print()
             print("Options:")
             print("  --host, -h HOST    Host to bind to (default: 0.0.0.0)")
@@ -45,7 +45,7 @@ def main():
         else:
             i += 1
 
-    print(f"Starting Video Manual API server on {host}:{port}")
+    print(f"Starting vDocs API server on {host}:{port}")
     print(f"API docs available at http://{host}:{port}/docs")
     print()
 

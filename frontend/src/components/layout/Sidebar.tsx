@@ -67,12 +67,11 @@ export function Sidebar() {
                   VM
                 </div>
               </TooltipTrigger>
-              <TooltipContent side="right">Video Manual Platform</TooltipContent>
+              <TooltipContent side="right">vDocs</TooltipContent>
             </Tooltip>
           ) : (
             <>
-              <h1 className="text-xl font-bold">Video Manual</h1>
-              <p className="text-sm text-muted-foreground">Platform</p>
+              <h1 className="text-xl font-bold">vDocs</h1>
             </>
           )}
         </div>

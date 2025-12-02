@@ -1,4 +1,4 @@
-"""Main CLI entry point for Video Manual Platform."""
+"""Main CLI entry point for vDocs."""
 
 import typer
 import time
@@ -41,8 +41,8 @@ from ..storage.version_storage import VersionStorage
 from ..config import ensure_directories
 
 app = typer.Typer(
-    name="video-manual",
-    help="Generate user manuals from instructional videos",
+    name="vdocs",
+    help="AI-powered documentation from video",
     add_completion=False,
     no_args_is_help=True,
 )

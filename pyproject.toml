@@ -1,7 +1,7 @@
 [project]
-name = "video-manual"
+name = "vdocs"
 version = "0.1.0"
-description = "Video Manual Generator - Multi-agent platform using LangGraph"
+description = "vDocs - AI-powered documentation from video"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -43,8 +43,8 @@ dependencies = [
 ]
 
 [project.scripts]
-video-manual = "src.cli.main:app"
-video-manual-api = "src.api.serve:main"
+vdocs = "src.cli.main:app"
+vdocs-api = "src.api.serve:main"
 
 [build-system]
 requires = ["hatchling"]

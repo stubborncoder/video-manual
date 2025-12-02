@@ -1,4 +1,4 @@
-"""Rich console utilities for Video Manual CLI."""
+"""Rich console utilities for vDocs CLI."""
 
 import time
 from typing import Dict, Any, Optional, List
@@ -127,7 +127,7 @@ def render_processing_header(video_path: str, user_id: str, language: str = "Eng
 
     return Panel(
         content,
-        title="[bold cyan]VIDEO MANUAL GENERATOR[/bold cyan]",
+        title="[bold cyan]VDOCS[/bold cyan]",
         border_style="cyan",
         box=box.DOUBLE,
         padding=(0, 2),

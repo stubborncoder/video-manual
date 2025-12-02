@@ -1,4 +1,4 @@
-"""Export utilities for video-manual platform."""
+"""Export utilities for vDocs platform."""
 
 from .base_exporter import BaseExporter
 from .project_exporter import ProjectExporter

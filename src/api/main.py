@@ -1,4 +1,4 @@
-"""Main FastAPI application for Video Manual Platform."""
+"""Main FastAPI application for vDocs."""
 
 from contextlib import asynccontextmanager
 
@@ -26,8 +26,8 @@ def create_app(
     """Create and configure the FastAPI application."""
 
     app = FastAPI(
-        title="Video Manual Platform",
-        description="AI-powered platform for generating visual manuals from video content",
+        title="vDocs",
+        description="AI-powered documentation from video",
         version="0.1.0",
         lifespan=lifespan,
         debug=debug,
@@ -67,7 +67,7 @@ def create_app(
     async def root():
         """Root endpoint."""
         return {
-            "name": "Video Manual Platform API",
+            "name": "vDocs API",
             "version": "0.1.0",
             "docs": "/docs",
         }
