@@ -91,11 +91,6 @@ import { CompilerView } from "@/components/compiler/CompilerView";
 import { CompilationVersionHistory } from "@/components/projects/CompilationVersionHistory";
 import type { CompileSettings } from "@/lib/types";
 
-// Extended project info with manual names for preview
-interface ProjectWithManuals extends ProjectSummary {
-  manual_names?: string[];
-}
-
 // Extended info for delete confirmation
 interface ProjectDeleteInfo extends ProjectSummary {
   chapters_with_manuals?: {
@@ -106,7 +101,7 @@ interface ProjectDeleteInfo extends ProjectSummary {
 }
 
 export default function ProjectsPage() {
-  const [projectList, setProjectList] = useState<ProjectWithManuals[]>([]);
+  const [projectList, setProjectList] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -169,27 +164,7 @@ export default function ProjectsPage() {
   async function loadProjects() {
     try {
       const res = await projects.list();
-
-      // Fetch manual names for each project (for preview)
-      const projectsWithManuals: ProjectWithManuals[] = await Promise.all(
-        res.projects.map(async (project) => {
-          if (project.manual_count > 0) {
-            try {
-              const detail = await projects.get(project.id);
-              return {
-                ...project,
-                manual_names: detail.manuals.map((m) => m.manual_id).slice(0, 5),
-                chapter_count: detail.chapters.length, // Use actual chapter count from detail
-              };
-            } catch {
-              return { ...project, manual_names: [] };
-            }
-          }
-          return { ...project, manual_names: [] };
-        })
-      );
-
-      setProjectList(projectsWithManuals);
+      setProjectList(res.projects);
     } catch (e) {
       console.error("Failed to load projects:", e);
     } finally {

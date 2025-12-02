@@ -1,0 +1,55 @@
+<svg width="200" height="150" viewBox="0 0 200 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Open Book with multiple pages -->
+  <g id="book">
+    <!-- Back pages (darker, smaller) -->
+    <path d="M35 35 L35 115 L100 118 L100 38 Q100 33, 90 30 L45 23 Q35 21, 35 35 Z"
+          fill="#1e40af"
+          stroke="white"
+          stroke-width="2"
+          opacity="0.4"/>
+    <path d="M165 35 L165 115 L100 118 L100 38 Q100 33, 110 30 L155 23 Q165 21, 165 35 Z"
+          fill="#2563eb"
+          stroke="white"
+          stroke-width="2"
+          opacity="0.4"/>
+
+    <!-- Middle pages -->
+    <path d="M32 32 L32 112 L100 115 L100 35 Q100 30, 90 27 L42 20 Q32 18, 32 32 Z"
+          fill="#1e40af"
+          stroke="white"
+          stroke-width="2"
+          opacity="0.7"/>
+    <path d="M168 32 L168 112 L100 115 L100 35 Q100 30, 110 27 L158 20 Q168 18, 168 32 Z"
+          fill="#2563eb"
+          stroke="white"
+          stroke-width="2"
+          opacity="0.7"/>
+
+    <!-- Front pages (brightest) -->
+    <path d="M28 28 L28 108 L100 111 L100 31 Q100 26, 90 23 L38 16 Q28 14, 28 28 Z"
+          fill="#1e3a8a"
+          stroke="white"
+          stroke-width="2"/>
+    <path d="M172 28 L172 108 L100 111 L100 31 Q100 26, 110 23 L162 16 Q172 14, 172 28 Z"
+          fill="#2563eb"
+          stroke="white"
+          stroke-width="2"/>
+
+    <!-- Page lines left -->
+    <path d="M40 40 Q65 38, 92 42" stroke="white" stroke-width="1.5" opacity="0.5" fill="none"/>
+    <path d="M40 52 Q65 50, 92 54" stroke="white" stroke-width="1.5" opacity="0.5" fill="none"/>
+    <path d="M40 64 Q65 62, 92 66" stroke="white" stroke-width="1.5" opacity="0.5" fill="none"/>
+    <path d="M40 76 Q65 74, 92 78" stroke="white" stroke-width="1.5" opacity="0.5" fill="none"/>
+
+    <!-- Page lines right -->
+    <path d="M108 42 Q135 38, 160 40" stroke="white" stroke-width="1.5" opacity="0.5" fill="none"/>
+    <path d="M108 54 Q135 50, 160 52" stroke="white" stroke-width="1.5" opacity="0.5" fill="none"/>
+    <path d="M108 66 Q135 62, 160 64" stroke="white" stroke-width="1.5" opacity="0.5" fill="none"/>
+    <path d="M108 78 Q135 74, 160 76" stroke="white" stroke-width="1.5" opacity="0.5" fill="none"/>
+  </g>
+
+  <!-- Play Triangle (white, rounded corners) -->
+  <path d="M88 55 Q88 53, 90 53 L90 53 Q92 53, 94 55 L122 72 Q126 75, 122 78 L94 95 Q92 97, 90 97 L90 97 Q88 97, 88 95 Z"
+        fill="white"
+        stroke-linejoin="round"/>
+</svg>
