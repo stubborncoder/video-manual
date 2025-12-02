@@ -176,18 +176,40 @@ export default function ProjectsPage() {
   }
 
   async function handleCreate() {
-    if (!newProjectName.trim()) return;
+    const trimmedName = newProjectName.trim();
+    const trimmedDesc = newProjectDesc.trim();
+
+    if (!trimmedName) {
+      toast.error("Project name is required");
+      return;
+    }
+
+    if (trimmedName.length > 100) {
+      toast.error("Project name too long (max 100 characters)");
+      return;
+    }
+
+    if (trimmedDesc.length > 500) {
+      toast.error("Description too long (max 500 characters)");
+      return;
+    }
+
+    // Sanitize inputs to prevent XSS
+    const sanitizedName = trimmedName.replace(/[<>]/g, '');
+    const sanitizedDesc = trimmedDesc.replace(/[<>]/g, '');
 
     try {
-      await projects.create(newProjectName.trim(), newProjectDesc.trim());
+      await projects.create(sanitizedName, sanitizedDesc);
       toast.success("Project created");
       setCreateDialogOpen(false);
       setNewProjectName("");
       setNewProjectDesc("");
       await loadProjects();
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Create failed";
-      toast.error("Create failed", { description: message });
+      console.error("Failed to create project:", e);
+      toast.error("Failed to create project", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     }
   }
 
@@ -199,11 +221,33 @@ export default function ProjectsPage() {
   }
 
   async function handleEdit() {
-    if (!editProjectId || !editName.trim()) return;
+    if (!editProjectId) return;
+
+    const trimmedName = editName.trim();
+    const trimmedDesc = editDescription.trim();
+
+    if (!trimmedName) {
+      toast.error("Project name is required");
+      return;
+    }
+
+    if (trimmedName.length > 100) {
+      toast.error("Project name too long (max 100 characters)");
+      return;
+    }
+
+    if (trimmedDesc.length > 500) {
+      toast.error("Description too long (max 500 characters)");
+      return;
+    }
+
+    // Sanitize inputs to prevent XSS
+    const sanitizedName = trimmedName.replace(/[<>]/g, '');
+    const sanitizedDesc = trimmedDesc.replace(/[<>]/g, '');
 
     setSaving(true);
     try {
-      await projects.update(editProjectId, editName.trim(), editDescription.trim());
+      await projects.update(editProjectId, sanitizedName, sanitizedDesc);
       toast.success("Project updated");
       setEditDialogOpen(false);
       await loadProjects();
@@ -213,8 +257,10 @@ export default function ProjectsPage() {
         setSelectedProject(detail);
       }
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Update failed";
-      toast.error("Update failed", { description: message });
+      console.error("Failed to update project:", e);
+      toast.error("Failed to update project", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     } finally {
       setSaving(false);
     }
@@ -241,8 +287,10 @@ export default function ProjectsPage() {
       setProjectToDelete(null);
       await loadProjects();
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Delete failed";
-      toast.error("Delete failed", { description: message });
+      console.error("Failed to delete project:", e);
+      toast.error("Failed to delete project", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     } finally {
       setDeleting(false);
     }
@@ -254,17 +302,41 @@ export default function ProjectsPage() {
       setSelectedProject(detail);
       setProjectSheetOpen(true);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to load project";
-      toast.error("Error", { description: message });
+      console.error("Failed to load project details:", e);
+      toast.error("Failed to load project details", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     }
   }
 
   // Chapter handlers
   async function handleAddChapter() {
-    if (!selectedProject || !newChapterTitle.trim()) return;
+    if (!selectedProject) return;
+
+    const trimmedTitle = newChapterTitle.trim();
+    const trimmedDesc = newChapterDesc.trim();
+
+    if (!trimmedTitle) {
+      toast.error("Chapter title is required");
+      return;
+    }
+
+    if (trimmedTitle.length > 200) {
+      toast.error("Chapter title too long (max 200 characters)");
+      return;
+    }
+
+    if (trimmedDesc.length > 1000) {
+      toast.error("Chapter description too long (max 1000 characters)");
+      return;
+    }
+
+    // Sanitize inputs to prevent XSS
+    const sanitizedTitle = trimmedTitle.replace(/[<>]/g, '');
+    const sanitizedDesc = trimmedDesc.replace(/[<>]/g, '');
 
     try {
-      await projects.addChapter(selectedProject.id, newChapterTitle.trim(), newChapterDesc.trim());
+      await projects.addChapter(selectedProject.id, sanitizedTitle, sanitizedDesc);
       toast.success("Chapter added");
       setAddChapterDialogOpen(false);
       setNewChapterTitle("");
@@ -273,24 +345,50 @@ export default function ProjectsPage() {
       const detail = await projects.get(selectedProject.id);
       setSelectedProject(detail);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to add chapter";
-      toast.error("Error", { description: message });
+      console.error("Failed to add chapter:", e);
+      toast.error("Failed to add chapter", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     }
   }
 
   async function handleEditChapter() {
-    if (!selectedProject || !editChapterId || !editChapterTitle.trim()) return;
+    if (!selectedProject || !editChapterId) return;
+
+    const trimmedTitle = editChapterTitle.trim();
+    const trimmedDesc = editChapterDesc.trim();
+
+    if (!trimmedTitle) {
+      toast.error("Chapter title is required");
+      return;
+    }
+
+    if (trimmedTitle.length > 200) {
+      toast.error("Chapter title too long (max 200 characters)");
+      return;
+    }
+
+    if (trimmedDesc.length > 1000) {
+      toast.error("Chapter description too long (max 1000 characters)");
+      return;
+    }
+
+    // Sanitize inputs to prevent XSS
+    const sanitizedTitle = trimmedTitle.replace(/[<>]/g, '');
+    const sanitizedDesc = trimmedDesc.replace(/[<>]/g, '');
 
     try {
-      await projects.updateChapter(selectedProject.id, editChapterId, editChapterTitle.trim(), editChapterDesc.trim());
+      await projects.updateChapter(selectedProject.id, editChapterId, sanitizedTitle, sanitizedDesc);
       toast.success("Chapter updated");
       setEditChapterId(null);
       // Refresh project detail
       const detail = await projects.get(selectedProject.id);
       setSelectedProject(detail);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to update chapter";
-      toast.error("Error", { description: message });
+      console.error("Failed to update chapter:", e);
+      toast.error("Failed to update chapter", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     }
   }
 
@@ -304,8 +402,10 @@ export default function ProjectsPage() {
       const detail = await projects.get(selectedProject.id);
       setSelectedProject(detail);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to delete chapter";
-      toast.error("Error", { description: message });
+      console.error("Failed to delete chapter:", e);
+      toast.error("Failed to delete chapter", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     }
   }
 
@@ -491,6 +591,7 @@ export default function ProjectsPage() {
                     value={newProjectName}
                     onChange={(e) => setNewProjectName(e.target.value)}
                     placeholder="Project name"
+                    maxLength={100}
                   />
                 </div>
                 <div className="space-y-2">
@@ -499,6 +600,7 @@ export default function ProjectsPage() {
                     value={newProjectDesc}
                     onChange={(e) => setNewProjectDesc(e.target.value)}
                     placeholder="Optional description"
+                    maxLength={500}
                   />
                 </div>
                 <Button onClick={handleCreate} className="w-full">
@@ -596,7 +698,7 @@ export default function ProjectsPage() {
                     </div>
                   </div>
 
-                  {project.chapter_count !== undefined && project.chapter_count > 0 && (
+                  {project.chapter_count !== undefined && (
                     <div className="flex items-center gap-2">
                       <div className="flex items-center justify-center h-8 w-8 rounded-md bg-secondary text-secondary-foreground">
                         <BookOpen className="h-4 w-4" />
@@ -803,11 +905,13 @@ export default function ProjectsPage() {
                                       value={editChapterTitle}
                                       onChange={(e) => setEditChapterTitle(e.target.value)}
                                       placeholder="Chapter title"
+                                      maxLength={200}
                                     />
                                     <Input
                                       value={editChapterDesc}
                                       onChange={(e) => setEditChapterDesc(e.target.value)}
                                       placeholder="Description (optional)"
+                                      maxLength={1000}
                                     />
                                     <div className="flex gap-2">
                                       <Button size="sm" onClick={handleEditChapter}>
@@ -1087,6 +1191,7 @@ export default function ProjectsPage() {
                 value={newChapterTitle}
                 onChange={(e) => setNewChapterTitle(e.target.value)}
                 placeholder="Chapter title"
+                maxLength={200}
               />
             </div>
             <div className="space-y-2">
@@ -1095,6 +1200,7 @@ export default function ProjectsPage() {
                 value={newChapterDesc}
                 onChange={(e) => setNewChapterDesc(e.target.value)}
                 placeholder="Optional description"
+                maxLength={1000}
               />
             </div>
           </div>
@@ -1122,6 +1228,7 @@ export default function ProjectsPage() {
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 placeholder="Project name"
+                maxLength={100}
               />
             </div>
             <div className="space-y-2">
@@ -1131,6 +1238,7 @@ export default function ProjectsPage() {
                 onChange={(e) => setEditDescription(e.target.value)}
                 placeholder="Optional description"
                 rows={3}
+                maxLength={500}
               />
             </div>
           </div>
