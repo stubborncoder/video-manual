@@ -13,6 +13,7 @@ import {
   PanelLeft,
   Sun,
   Moon,
+  FileVideo,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
@@ -59,20 +60,23 @@ export function Sidebar() {
         )}
       >
         {/* Header */}
-        <div className={cn("p-4", collapsed && "flex justify-center")}>
+        <div className={cn("p-2", collapsed && "flex justify-center")}>
           {collapsed ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="w-8 h-8 rounded bg-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
-                  VM
+                <div className="relative w-full h-12 flex items-center justify-center">
+                  <FileVideo className="h-11 w-11 text-primary" strokeWidth={1.5} />
                 </div>
               </TooltipTrigger>
               <TooltipContent side="right">vDocs</TooltipContent>
             </Tooltip>
           ) : (
-            <>
+            <div className="flex items-center gap-3">
+              <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
+                <FileVideo className="h-11 w-11 text-primary" strokeWidth={1.5} />
+              </div>
               <h1 className="text-xl font-bold">vDocs</h1>
-            </>
+            </div>
           )}
         </div>
 
