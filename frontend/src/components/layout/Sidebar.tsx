@@ -75,7 +75,7 @@ export function Sidebar() {
               <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
                 <FileVideo className="h-11 w-11 text-primary" strokeWidth={1.5} />
               </div>
-              <h1 className="text-xl font-bold">vDocs</h1>
+              <h1 className="text-xl font-bold">v<span className="text-primary">D</span>ocs</h1>
             </div>
           )}
         </div>
@@ -94,7 +94,7 @@ export function Sidebar() {
                 <Button
                   variant={isActive ? "secondary" : "ghost"}
                   className={cn(
-                    "w-full",
+                    "w-full hover:text-primary",
                     collapsed ? "justify-center px-2" : "justify-start"
                   )}
                 >
@@ -131,7 +131,7 @@ export function Sidebar() {
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="w-full justify-center px-2"
+                  className="w-full justify-center px-2 hover:text-primary"
                   onClick={toggleCollapsed}
                 >
                   <PanelLeft className="h-4 w-4" />
@@ -142,7 +142,7 @@ export function Sidebar() {
           ) : (
             <Button
               variant="ghost"
-              className="w-full justify-start text-muted-foreground"
+              className="w-full justify-start text-muted-foreground hover:text-primary"
               onClick={toggleCollapsed}
             >
               <PanelLeftClose className="mr-2 h-4 w-4" />
@@ -156,7 +156,7 @@ export function Sidebar() {
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="w-full justify-center px-2"
+                  className="w-full justify-center px-2 hover:text-primary"
                   onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 >
                   <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -170,12 +170,12 @@ export function Sidebar() {
           ) : (
             <Button
               variant="ghost"
-              className="w-full justify-start text-muted-foreground"
+              className="w-full justify-start text-muted-foreground hover:text-primary"
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             >
               <Sun className="mr-2 h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute ml-0 h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              <span className="ml-6">{theme === "dark" ? "Light" : "Dark"} Mode</span>
+              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              {theme === "dark" ? "Light" : "Dark"} Mode
             </Button>
           )}
 
@@ -185,7 +185,7 @@ export function Sidebar() {
               <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
-                  className="w-full justify-center px-2 text-muted-foreground"
+                  className="w-full justify-center px-2 text-muted-foreground hover:text-primary"
                   onClick={handleLogout}
                 >
                   <LogOut className="h-4 w-4" />
@@ -196,7 +196,7 @@ export function Sidebar() {
           ) : (
             <Button
               variant="ghost"
-              className="w-full justify-start text-muted-foreground"
+              className="w-full justify-start text-muted-foreground hover:text-primary"
               onClick={handleLogout}
             >
               <LogOut className="mr-2 h-4 w-4" />
