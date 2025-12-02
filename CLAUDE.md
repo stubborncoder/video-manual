@@ -1,6 +1,6 @@
-# Video Manual Platform
+# vDocs
 
-AI-powered platform that generates step-by-step visual manuals from video content using LangGraph.
+AI-powered documentation from video. Generates step-by-step visual documentation from video content using LangGraph.
 
 ## Stack
 - Python 3.12+, LangGraph, LangChain
@@ -8,9 +8,11 @@ AI-powered platform that generates step-by-step visual manuals from video conten
 - UV package manager
 
 ## Commands
-- `uv run python -m src.cli.main` - Run CLI
+- `uv run vdocs` - Run CLI (recommended)
+- `uv run vdocs-api` - Run API server
 - `uv sync` - Install dependencies
 - `uv run pytest` - Run tests
+- `uv run python -m src.cli.main` - Alternative: direct module execution
 
 ## Structure
 - `src/agents/video_manual_agent/` - LangGraph agent with nodes for video analysis

@@ -12,6 +12,7 @@ import {
   Globe,
   Sun,
   Moon,
+  FileVideo,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -145,9 +146,12 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="mx-auto max-w-[1400px] px-6">
           <div className="flex h-[72px] items-center justify-between">
-            <span className="font-display text-2xl tracking-tight">
-              Video Manual
-            </span>
+            <div className="flex items-center gap-2">
+              <FileVideo className="h-12 w-12 text-primary" strokeWidth={2.5} />
+              <span className="font-display text-3xl tracking-tight">
+                v<span className="text-primary">D</span>ocs
+              </span>
+            </div>
 
             <div className="flex items-center gap-8">
               <button
@@ -653,10 +657,9 @@ export default function LandingPage() {
         <div className="mx-auto max-w-[1400px] px-6">
           <div className="mb-16 grid gap-16 md:grid-cols-2 lg:grid-cols-4">
             <div className="max-w-[350px]">
-              <div className="mb-4 font-display text-xl">Video Manual</div>
+              <div className="mb-4 font-display text-xl">vDocs</div>
               <p className="leading-relaxed text-muted-foreground">
-                AI-powered platform for creating professional visual
-                documentation from video content.
+                AI-powered documentation from video.
               </p>
             </div>
 
@@ -775,7 +778,7 @@ export default function LandingPage() {
 
           <div className="border-t border-border pt-8">
             <p className="text-sm text-muted-foreground">
-              2025 Video Manual. All rights reserved.
+              © 2025 vDocs. All rights reserved.
             </p>
           </div>
         </div>

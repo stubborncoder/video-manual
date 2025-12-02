@@ -65,7 +65,6 @@ import {
   Edit2,
   BookOpen,
   GripVertical,
-  ChevronRight,
   ChevronDown,
   FileText,
   Loader2,
@@ -84,7 +83,6 @@ import {
   manuals,
   type ProjectSummary,
   type ProjectDetail,
-  type ChapterInfo,
   type ManualDetail,
 } from "@/lib/api";
 import { useProjectCompiler } from "@/hooks/useWebSocket";
@@ -92,11 +90,6 @@ import { CompileSettingsDialog } from "@/components/dialogs/CompileSettingsDialo
 import { CompilerView } from "@/components/compiler/CompilerView";
 import { CompilationVersionHistory } from "@/components/projects/CompilationVersionHistory";
 import type { CompileSettings } from "@/lib/types";
-
-// Extended project info with manual names for preview
-interface ProjectWithManuals extends ProjectSummary {
-  manual_names?: string[];
-}
 
 // Extended info for delete confirmation
 interface ProjectDeleteInfo extends ProjectSummary {
@@ -108,7 +101,7 @@ interface ProjectDeleteInfo extends ProjectSummary {
 }
 
 export default function ProjectsPage() {
-  const [projectList, setProjectList] = useState<ProjectWithManuals[]>([]);
+  const [projectList, setProjectList] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
@@ -171,28 +164,12 @@ export default function ProjectsPage() {
   async function loadProjects() {
     try {
       const res = await projects.list();
-
-      // Fetch manual names for each project (for preview)
-      const projectsWithManuals: ProjectWithManuals[] = await Promise.all(
-        res.projects.map(async (project) => {
-          if (project.manual_count > 0) {
-            try {
-              const detail = await projects.get(project.id);
-              return {
-                ...project,
-                manual_names: detail.manuals.map((m) => m.manual_id).slice(0, 5),
-              };
-            } catch {
-              return { ...project, manual_names: [] };
-            }
-          }
-          return { ...project, manual_names: [] };
-        })
-      );
-
-      setProjectList(projectsWithManuals);
+      setProjectList(res.projects);
     } catch (e) {
       console.error("Failed to load projects:", e);
+      toast.error("Failed to load projects", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     } finally {
       setLoading(false);
     }
@@ -631,31 +608,6 @@ export default function ProjectsPage() {
                     </div>
                   )}
                 </div>
-
-                {/* Manual names preview with refined styling */}
-                {project.manual_names && project.manual_names.length > 0 && (
-                  <div className="border-t pt-3 space-y-1.5">
-                    <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                      Contents
-                    </span>
-                    <div className="space-y-1">
-                      {project.manual_names.slice(0, 3).map((name) => (
-                        <div
-                          key={name}
-                          className="flex items-center gap-2 text-sm text-muted-foreground group/item hover:text-foreground transition-colors"
-                        >
-                          <ChevronRight className="h-3 w-3 text-primary/60 group-hover/item:translate-x-0.5 transition-transform" />
-                          <span className="truncate">{name}</span>
-                        </div>
-                      ))}
-                      {project.manual_count > 3 && (
-                        <div className="text-xs text-muted-foreground/70 pl-5 italic">
-                          +{project.manual_count - 3} more
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
 
                 {/* Actions with refined styling */}
                 <div className="flex items-center gap-2 pt-2">
