@@ -167,6 +167,9 @@ export default function ProjectsPage() {
       setProjectList(res.projects);
     } catch (e) {
       console.error("Failed to load projects:", e);
+      toast.error("Failed to load projects", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     } finally {
       setLoading(false);
     }
