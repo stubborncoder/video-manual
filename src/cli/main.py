@@ -360,7 +360,7 @@ def process_video(
         console.print()
         console.print("You can either:")
         console.print(f"  1. Place video files in: [cyan]{storage.videos_dir}[/cyan]")
-        console.print("  2. Provide a path directly: [cyan]video-manual process /path/to/video.mp4[/cyan]")
+        console.print("  2. Provide a path directly: [cyan]vdocs process /path/to/video.mp4[/cyan]")
         console.print()
         raise typer.Exit(0)
 
@@ -406,7 +406,7 @@ def list_manuals_cmd(
         console.print(f"[yellow]No manuals found for user '{user}'[/yellow]")
         console.print()
         console.print("Generate your first manual with:")
-        console.print("  [cyan]video-manual process /path/to/video.mp4[/cyan]")
+        console.print("  [cyan]vdocs process /path/to/video.mp4[/cyan]")
         console.print()
         return
 
@@ -434,7 +434,7 @@ def list_manuals_cmd(
 
     console.print(manuals_table(manual_details))
     console.print()
-    console.print("View a manual with: [cyan]video-manual view <manual_id>[/cyan]")
+    console.print("View a manual with: [cyan]vdocs view <manual_id>[/cyan]")
     console.print()
 
 
@@ -480,7 +480,7 @@ def view_manual(
     if content is None:
         console.print(f"[red]Manual not found: {manual_id}[/red]")
         console.print()
-        console.print("List available manuals with: [cyan]video-manual list[/cyan]")
+        console.print("List available manuals with: [cyan]vdocs list[/cyan]")
         raise typer.Exit(1)
 
     console.print()
@@ -551,7 +551,7 @@ def project_create(
     try:
         project_id = storage.create_project(name, description)
         console.print(f"[green]Project created:[/green] {project_id}")
-        console.print(f"[dim]Add manuals with: video-manual project add-manual {project_id} MANUAL_ID[/dim]")
+        console.print(f"[dim]Add manuals with: vdocs project add-manual {project_id} MANUAL_ID[/dim]")
     except Exception as e:
         console.print(f"[red]Error creating project: {e}[/red]")
         raise typer.Exit(1)
@@ -575,7 +575,7 @@ def project_list(
         console.print(f"[yellow]No projects found for user '{user}'[/yellow]")
         console.print()
         console.print("Create your first project with:")
-        console.print("  [cyan]video-manual project create \"My Project\"[/cyan]")
+        console.print("  [cyan]vdocs project create \"My Project\"[/cyan]")
         return
 
     console.print()
@@ -719,7 +719,7 @@ def project_chapter_list(
             console.print(f"[yellow]No chapters in project '{project_id}'[/yellow]")
             console.print()
             console.print("Add a chapter with:")
-            console.print(f"  [cyan]video-manual project chapter-add {project_id} \"Chapter Title\"[/cyan]")
+            console.print(f"  [cyan]vdocs project chapter-add {project_id} \"Chapter Title\"[/cyan]")
             return
 
         console.print()
@@ -1287,7 +1287,7 @@ def tag_list(
             console.print("[yellow]No tags found[/yellow]")
             console.print()
             console.print("Add tags with:")
-            console.print("  [cyan]video-manual tag add MANUAL_ID tag1 tag2[/cyan]")
+            console.print("  [cyan]vdocs tag add MANUAL_ID tag1 tag2[/cyan]")
             return
 
         # Get counts for each tag

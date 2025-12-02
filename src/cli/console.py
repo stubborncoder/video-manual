@@ -227,8 +227,8 @@ def print_welcome():
     console.print()
     console.print(
         Panel(
-            "[bold cyan]Video Manual Generator[/bold cyan]\n"
-            "[dim]Generate user manuals from instructional videos[/dim]",
+            "[bold cyan]vDocs[/bold cyan]\n"
+            "[dim]AI-powered documentation from video[/dim]",
             box=box.DOUBLE,
             border_style="cyan",
             padding=(0, 2),
