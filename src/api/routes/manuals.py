@@ -60,6 +60,8 @@ async def list_manuals(
         # Get source video info and project_id from metadata
         source_video = None
         project_id = None
+        target_audience = None
+        target_objective = None
         metadata = storage.get_manual_metadata(manual_id)
         if metadata:
             video_path = metadata.get("video_path", "")
@@ -70,6 +72,8 @@ async def list_manuals(
                     exists=sv_info.get("exists", True),
                 )
             project_id = metadata.get("project_id")
+            target_audience = metadata.get("target_audience")
+            target_objective = metadata.get("target_objective")
 
         manuals.append(
             ManualSummary(
@@ -79,6 +83,8 @@ async def list_manuals(
                 languages=languages,
                 source_video=source_video,
                 project_id=project_id,
+                target_audience=target_audience,
+                target_objective=target_objective,
             )
         )
 

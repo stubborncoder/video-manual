@@ -87,6 +87,12 @@ export default function VideosPage() {
   const [projectList, setProjectList] = useState<ProjectSummary[]>([]);
   const [selectedProjectId, setSelectedProjectId] = useState<string>("__default__");
 
+  // Target audience and objective for manual generation
+  const [targetAudience, setTargetAudience] = useState<string>("");
+  const [targetObjective, setTargetObjective] = useState<string>("");
+  const [audienceEnabled, setAudienceEnabled] = useState(false);
+  const [objectiveEnabled, setObjectiveEnabled] = useState(false);
+
   // Project filter state
   const [filterProjectId, setFilterProjectId] = useState<string>("__all__");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -221,12 +227,18 @@ export default function VideosPage() {
   async function handleProcess() {
     if (!selectedVideo) return;
 
+    // Only include if enabled and has content
+    const audience = audienceEnabled && targetAudience.trim() ? targetAudience.trim() : undefined;
+    const objective = objectiveEnabled && targetObjective.trim() ? targetObjective.trim() : undefined;
+
     try {
       await startProcessing({
         video_path: selectedVideo.path,
         output_language: outputLanguage,
         use_scene_detection: true,
         project_id: selectedProjectId,
+        target_audience: audience,
+        target_objective: objective,
       });
     } catch (e) {
       const message = e instanceof Error ? e.message : "Processing failed";
@@ -472,6 +484,10 @@ export default function VideosPage() {
                       if (open) {
                         setSelectedVideo(video);
                         setSelectedProjectId("__default__");
+                        setTargetAudience("");
+                        setTargetObjective("");
+                        setAudienceEnabled(false);
+                        setObjectiveEnabled(false);
                         reset();
                       }
                     }}
@@ -482,75 +498,163 @@ export default function VideosPage() {
                         Process
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-3xl">
-                      <DialogHeader>
-                        <DialogTitle>Process Video</DialogTitle>
-                      </DialogHeader>
-
+                    <DialogContent className="max-w-[95vw] w-[1600px] h-[85vh] p-0 gap-0 overflow-hidden">
                       {processingState.status === "idle" ? (
-                        <div className="space-y-4">
-                          {/* Video Preview in Process Dialog */}
-                          <div className="aspect-video bg-muted rounded-lg overflow-hidden">
-                            <video
-                              src={getVideoStreamUrl(video.name)}
-                              className="w-full h-full object-contain"
-                              controls
-                              preload="metadata"
-                            />
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">{video.name}</p>
-                              <p className="text-sm text-muted-foreground">
+                        <div className="flex h-full">
+                          {/* LEFT: Video Preview - Takes most space */}
+                          <div className="flex-[3] bg-black flex flex-col min-w-0">
+                            <div className="flex-1 relative">
+                              <video
+                                src={getVideoStreamUrl(video.name)}
+                                className="absolute inset-0 w-full h-full object-contain"
+                                controls
+                                preload="metadata"
+                              />
+                            </div>
+                            {/* Video info bar */}
+                            <div className="bg-black/90 border-t border-white/10 px-6 py-3">
+                              <p className="font-display text-white text-sm tracking-tight truncate">
+                                {video.name}
+                              </p>
+                              <p className="text-white/50 text-xs">
                                 {formatFileSize(video.size_bytes)}
                               </p>
                             </div>
                           </div>
 
-                          <div className="grid gap-4 sm:grid-cols-2">
-                            <div className="space-y-2">
-                              <Label>Output Language</Label>
-                              <Input
-                                value={outputLanguage}
-                                onChange={(e) => setOutputLanguage(e.target.value)}
-                                placeholder="English"
-                              />
+                          {/* CENTER: Generation Settings */}
+                          <div className="w-[280px] border-l bg-background flex flex-col">
+                            {/* Header - aligned top */}
+                            <div className="px-5 py-4 border-b">
+                              <h2 className="text-sm font-semibold">Generate Manual</h2>
                             </div>
 
-                            <div className="space-y-2">
-                              <Label>Add to Project</Label>
-                              <Select
-                                value={selectedProjectId}
-                                onValueChange={setSelectedProjectId}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Select project" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {projectList.map((project) => (
-                                    <SelectItem key={project.id} value={project.id}>
-                                      <div className="flex items-center gap-2">
-                                        <FolderKanban className="h-4 w-4" />
-                                        {project.name}
-                                        {project.is_default && (
-                                          <span className="text-xs text-muted-foreground">(default)</span>
-                                        )}
-                                      </div>
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                            {/* Content */}
+                            <div className="flex-1 p-5 space-y-4">
+                              <div className="space-y-2">
+                                <Label className="text-xs font-medium">Language</Label>
+                                <Input
+                                  value={outputLanguage}
+                                  onChange={(e) => setOutputLanguage(e.target.value)}
+                                  placeholder="English"
+                                  className="h-9"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <Label className="text-xs font-medium">Project</Label>
+                                <Select
+                                  value={selectedProjectId}
+                                  onValueChange={setSelectedProjectId}
+                                >
+                                  <SelectTrigger className="h-9">
+                                    <SelectValue placeholder="Select project..." />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {projectList.map((project) => (
+                                      <SelectItem key={project.id} value={project.id}>
+                                        <div className="flex items-center gap-2">
+                                          <FolderKanban className="h-3.5 w-3.5" />
+                                          <span className="truncate">{project.name}</span>
+                                          {project.is_default && (
+                                            <span className="text-[10px] text-muted-foreground">(default)</span>
+                                          )}
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+
+                            {/* Footer - Generate button at bottom */}
+                            <div className="p-5 border-t">
+                              <Button onClick={handleProcess} className="w-full h-10">
+                                <Wand2 className="mr-2 h-4 w-4" />
+                                Generate
+                              </Button>
                             </div>
                           </div>
 
-                          <Button onClick={handleProcess} className="w-full">
-                            <Wand2 className="mr-2 h-4 w-4" />
-                            Generate Manual
-                          </Button>
+                          {/* RIGHT: Optional Context Prompts */}
+                          <div className="w-[280px] border-l bg-muted/30 flex flex-col">
+                            {/* Header - aligned top, same style */}
+                            <div className="px-5 py-4 border-b border-border/50">
+                              <h2 className="text-sm font-semibold">Optional Context</h2>
+                            </div>
+
+                            {/* Content - textareas fill space */}
+                            <div className="flex-1 p-5 flex flex-col gap-4">
+                              {/* Target Audience */}
+                              <div className="flex flex-col flex-1 min-h-0">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Checkbox
+                                    id="audience-toggle"
+                                    checked={audienceEnabled}
+                                    onCheckedChange={(checked) => {
+                                      setAudienceEnabled(!!checked);
+                                      if (!checked) setTargetAudience("");
+                                    }}
+                                  />
+                                  <Label
+                                    htmlFor="audience-toggle"
+                                    className="text-xs font-medium cursor-pointer"
+                                  >
+                                    Target Audience
+                                  </Label>
+                                </div>
+                                <textarea
+                                  value={targetAudience}
+                                  onChange={(e) => setTargetAudience(e.target.value)}
+                                  placeholder="Who is this documentation for?&#10;&#10;e.g., New employees unfamiliar with the system, IT administrators with technical background"
+                                  disabled={!audienceEnabled}
+                                  onClick={() => !audienceEnabled && setAudienceEnabled(true)}
+                                  className={`flex-1 w-full rounded-md border px-3 py-2 text-[13px] leading-relaxed ring-offset-background placeholder:text-muted-foreground/70 placeholder:text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none transition-colors ${
+                                    !audienceEnabled
+                                      ? "bg-muted/50 border-transparent cursor-pointer hover:bg-muted/80"
+                                      : "bg-background border-input"
+                                  }`}
+                                />
+                              </div>
+
+                              {/* Objective */}
+                              <div className="flex flex-col flex-1 min-h-0">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Checkbox
+                                    id="objective-toggle"
+                                    checked={objectiveEnabled}
+                                    onCheckedChange={(checked) => {
+                                      setObjectiveEnabled(!!checked);
+                                      if (!checked) setTargetObjective("");
+                                    }}
+                                  />
+                                  <Label
+                                    htmlFor="objective-toggle"
+                                    className="text-xs font-medium cursor-pointer"
+                                  >
+                                    Objective
+                                  </Label>
+                                </div>
+                                <textarea
+                                  value={targetObjective}
+                                  onChange={(e) => setTargetObjective(e.target.value)}
+                                  placeholder="What should readers accomplish?&#10;&#10;e.g., Complete initial setup in under 5 minutes, Troubleshoot common errors independently"
+                                  disabled={!objectiveEnabled}
+                                  onClick={() => !objectiveEnabled && setObjectiveEnabled(true)}
+                                  className={`flex-1 w-full rounded-md border px-3 py-2 text-[13px] leading-relaxed ring-offset-background placeholder:text-muted-foreground/70 placeholder:text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none transition-colors ${
+                                    !objectiveEnabled
+                                      ? "bg-muted/50 border-transparent cursor-pointer hover:bg-muted/80"
+                                      : "bg-background border-input"
+                                  }`}
+                                />
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       ) : (
-                        <ProcessingProgress state={processingState} />
+                        <div className="p-8">
+                          <ProcessingProgress state={processingState} />
+                        </div>
                       )}
                     </DialogContent>
                   </Dialog>

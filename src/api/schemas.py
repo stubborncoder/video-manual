@@ -47,6 +47,8 @@ class ManualSummary(BaseModel):
     languages: list[str] = []
     source_video: Optional[SourceVideoInfo] = None
     project_id: Optional[str] = None
+    target_audience: Optional[str] = None
+    target_objective: Optional[str] = None
 
 
 class ManualDetail(BaseModel):

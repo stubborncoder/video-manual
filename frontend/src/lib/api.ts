@@ -149,6 +149,8 @@ export interface ManualSummary {
   languages: string[];
   source_video?: SourceVideoInfo;
   project_id?: string;
+  target_audience?: string;
+  target_objective?: string;
 }
 
 export interface ManualDetail {
@@ -165,6 +167,31 @@ export interface VersionInfo {
   notes: string;
   is_current: boolean;
   snapshot_dir?: string;
+}
+
+export interface ManualEvaluation {
+  manual_id: string;
+  language: string;
+  target_audience?: string;
+  target_objective?: string;
+  overall_score: number;
+  summary: string;
+  strengths: string[];
+  areas_for_improvement: string[];
+  objective_alignment: {
+    score: number;
+    explanation: string;
+  };
+  audience_appropriateness: {
+    score: number;
+    explanation: string;
+  };
+  clarity_and_completeness: {
+    score: number;
+    explanation: string;
+  };
+  recommendations: string[];
+  evaluated_at: string;
 }
 
 export const manuals = {
@@ -270,6 +297,12 @@ export const manuals = {
         created_at: string;
       }>;
     }>(`/api/manuals/${manualId}/exports`),
+
+  evaluate: (manualId: string, language = "en") =>
+    request<ManualEvaluation>(`/api/manuals/${manualId}/evaluate`, {
+      method: "POST",
+      body: JSON.stringify({ language }),
+    }),
 };
 
 // Manual project assignment

@@ -61,8 +61,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown } from "lucide-react";
-import { manuals, manualProject, projects, type ManualSummary, type ManualDetail, type ProjectSummary } from "@/lib/api";
+import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown, ClipboardCheck, Users, Target } from "lucide-react";
+import { manuals, manualProject, projects, type ManualSummary, type ManualDetail, type ProjectSummary, type ManualEvaluation } from "@/lib/api";
 import { useVideoProcessing } from "@/hooks/useWebSocket";
 import { ProcessingProgress } from "@/components/processing/ProcessingProgress";
 
@@ -112,6 +112,12 @@ export default function ManualsPage() {
   const [generateLanguage, setGenerateLanguage] = useState("English");
   const [overrideWarningOpen, setOverrideWarningOpen] = useState(false);
   const { state: processingState, startProcessing, reset: resetProcessing } = useVideoProcessing();
+
+  // Evaluation state
+  const [evaluateDialogOpen, setEvaluateDialogOpen] = useState(false);
+  const [manualToEvaluate, setManualToEvaluate] = useState<ManualWithProject | null>(null);
+  const [evaluating, setEvaluating] = useState(false);
+  const [evaluationResult, setEvaluationResult] = useState<ManualEvaluation | null>(null);
 
   useEffect(() => {
     loadManuals();
@@ -359,6 +365,37 @@ export default function ManualsPage() {
     } catch (e) {
       const message = e instanceof Error ? e.message : "Export failed";
       toast.error("Export failed", { description: message });
+    }
+  }
+
+  // Evaluate manual
+  function openEvaluateDialog(manual: ManualWithProject) {
+    // Check if manual has target audience or objective
+    if (!manual.target_audience && !manual.target_objective) {
+      toast.error("Cannot evaluate", {
+        description: "This manual has no target audience or objective set. These fields are required for evaluation."
+      });
+      return;
+    }
+    setManualToEvaluate(manual);
+    setEvaluationResult(null);
+    setEvaluateDialogOpen(true);
+  }
+
+  async function handleEvaluate() {
+    if (!manualToEvaluate) return;
+
+    setEvaluating(true);
+    try {
+      const language = manualToEvaluate.languages[0] || "en";
+      const result = await manuals.evaluate(manualToEvaluate.id, language);
+      setEvaluationResult(result);
+      toast.success("Evaluation complete");
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Evaluation failed";
+      toast.error("Evaluation failed", { description: message });
+    } finally {
+      setEvaluating(false);
     }
   }
 
@@ -665,6 +702,24 @@ export default function ManualsPage() {
                   </div>
                 )}
 
+                {/* Target Audience & Objective */}
+                {(manual.target_audience || manual.target_objective) && (
+                  <div className="mt-3 pt-3 border-t border-border/50 space-y-1.5">
+                    {manual.target_audience && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Users className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{manual.target_audience}</span>
+                      </div>
+                    )}
+                    {manual.target_objective && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Target className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{manual.target_objective}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Spacer to push actions to bottom */}
                 <div className="flex-1 min-h-4" />
 
@@ -741,6 +796,16 @@ export default function ManualsPage() {
                     className="opacity-70 hover:opacity-100 transition-opacity"
                   >
                     <Tag className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => openEvaluateDialog(manual)}
+                    title="Evaluate manual"
+                    className="opacity-70 hover:opacity-100 transition-opacity"
+                    disabled={!manual.target_audience && !manual.target_objective}
+                  >
+                    <ClipboardCheck className="h-4 w-4" />
                   </Button>
                   <Button
                     size="sm"
@@ -1202,6 +1267,147 @@ export default function ManualsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Evaluate Manual Dialog */}
+      <Dialog open={evaluateDialogOpen} onOpenChange={setEvaluateDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5" />
+              Evaluate Manual
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Manual Info */}
+            <div className="p-4 bg-muted rounded-lg space-y-3">
+              <p className="font-medium">{manualToEvaluate?.id}</p>
+
+              {/* Target Audience & Objective */}
+              <div className="space-y-2">
+                {manualToEvaluate?.target_audience && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Audience:</span>
+                    <span>{manualToEvaluate.target_audience}</span>
+                  </div>
+                )}
+                {manualToEvaluate?.target_objective && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <Target className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">Objective:</span>
+                    <span>{manualToEvaluate.target_objective}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Evaluation Results */}
+            {evaluationResult ? (
+              <div className="space-y-4">
+                {/* Score Overview */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-primary/10 rounded-lg text-center">
+                    <p className="text-3xl font-bold text-primary">
+                      {evaluationResult.overall_score}/10
+                    </p>
+                    <p className="text-sm text-muted-foreground">Overall Score</p>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span>Objective Alignment</span>
+                      <span className="font-medium">{evaluationResult.objective_alignment.score}/10</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Audience Fit</span>
+                      <span className="font-medium">{evaluationResult.audience_appropriateness.score}/10</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>Clarity & Completeness</span>
+                      <span className="font-medium">{evaluationResult.clarity_and_completeness.score}/10</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Summary */}
+                <div className="p-4 bg-muted/50 rounded-lg">
+                  <p className="text-sm">{evaluationResult.summary}</p>
+                </div>
+
+                {/* Strengths */}
+                {evaluationResult.strengths.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-2 text-green-600 dark:text-green-400">Strengths</p>
+                    <ul className="space-y-1">
+                      {evaluationResult.strengths.map((strength, idx) => (
+                        <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                          <Check className="h-4 w-4 text-green-500 shrink-0 mt-0.5" />
+                          {strength}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Areas for Improvement */}
+                {evaluationResult.areas_for_improvement.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-2 text-amber-600 dark:text-amber-400">Areas for Improvement</p>
+                    <ul className="space-y-1">
+                      {evaluationResult.areas_for_improvement.map((improvement, idx) => (
+                        <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                          <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                          {improvement}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Recommendations */}
+                {evaluationResult.recommendations.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-2 text-blue-600 dark:text-blue-400">Recommendations</p>
+                    <ul className="space-y-1">
+                      {evaluationResult.recommendations.map((rec, idx) => (
+                        <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                          <Target className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+                          {rec}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <p className="text-sm text-muted-foreground mb-4">
+                  Evaluate this manual against its target audience and objective using AI.
+                </p>
+                <Button onClick={handleEvaluate} disabled={evaluating}>
+                  {evaluating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Evaluating...
+                    </>
+                  ) : (
+                    <>
+                      <ClipboardCheck className="mr-2 h-4 w-4" />
+                      Start Evaluation
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEvaluateDialogOpen(false)}>
+              {evaluationResult ? "Close" : "Cancel"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
