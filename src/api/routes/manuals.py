@@ -1,5 +1,6 @@
 """Manual management routes."""
 
+import asyncio
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -10,12 +11,21 @@ import shutil
 
 from fastapi import APIRouter, HTTPException, File, UploadFile, Query
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from ..schemas import ManualSummary, ManualDetail, ManualListResponse, SourceVideoInfo
 from ..dependencies import CurrentUser, UserStorageDep, ProjectStorageDep, TrashStorageDep
 from ...storage.version_storage import VersionStorage
 from ...storage.screenshot_store import ScreenshotStore
+from ...core.sanitization import sanitize_target_audience, sanitize_target_objective
+from ...core.constants import (
+    SUPPORTED_LANGUAGES,
+    DEFAULT_EVALUATION_MODEL,
+    EVALUATION_SCORE_MIN,
+    EVALUATION_SCORE_MAX,
+    LLM_TIMEOUT_SECONDS,
+    normalize_language_to_code,
+)
 
 
 class ManualProjectAssignment(BaseModel):
@@ -28,6 +38,21 @@ class ManualContentUpdate(BaseModel):
     """Request to update manual content."""
     content: str
     language: str = "en"
+
+
+class ManualEvaluationRequest(BaseModel):
+    """Request to evaluate a manual."""
+    language: str = "en"
+
+    @field_validator('language')
+    @classmethod
+    def validate_language(cls, v: str) -> str:
+        """Validate and normalize language to ISO code.
+
+        Accepts both language names ("English") and codes ("en").
+        Returns the ISO 639-1 code.
+        """
+        return normalize_language_to_code(v)
 
 router = APIRouter(prefix="/manuals", tags=["manuals"])
 
@@ -55,6 +80,8 @@ async def list_manuals(
         # Get source video info and project_id from metadata
         source_video = None
         project_id = None
+        target_audience = None
+        target_objective = None
         metadata = storage.get_manual_metadata(manual_id)
         if metadata:
             video_path = metadata.get("video_path", "")
@@ -65,6 +92,8 @@ async def list_manuals(
                     exists=sv_info.get("exists", True),
                 )
             project_id = metadata.get("project_id")
+            target_audience = metadata.get("target_audience")
+            target_objective = metadata.get("target_objective")
 
         manuals.append(
             ManualSummary(
@@ -74,6 +103,8 @@ async def list_manuals(
                 languages=languages,
                 source_video=source_video,
                 project_id=project_id,
+                target_audience=target_audience,
+                target_objective=target_objective,
             )
         )
 
@@ -915,3 +946,347 @@ async def download_manual_export(
         filename=filename,
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+
+# ==================== Manual Evaluation ====================
+
+
+@router.post(
+    "/{manual_id}/evaluate",
+    summary="Evaluate manual quality",
+    description="""
+Evaluates a manual using AI to assess its quality across multiple dimensions.
+
+## Evaluation Categories
+
+When **target audience/objective are provided**, the evaluation includes:
+- **Objective Alignment**: How well the manual helps achieve the stated objective
+- **Audience Appropriateness**: Whether language and technical depth match the target audience
+
+When **no target context is provided**, evaluates:
+- **General Usability**: How easy it is for a general user to follow the manual
+
+**Always evaluated:**
+- **Clarity & Completeness**: Are instructions clear and complete?
+- **Technical Accuracy**: Are UI elements and actions correctly described?
+- **Structure & Flow**: Is the manual well-organized with logical progression?
+
+## Scoring
+
+Scores range from 1-10:
+- **10**: Exceptional, professional quality
+- **8-9**: Very good, minor improvements possible
+- **6-7**: Good, some notable areas for improvement
+- **4-5**: Adequate but needs significant improvement
+- **1-3**: Poor, major revisions needed
+
+## Response
+
+Returns a detailed evaluation with:
+- Overall score and summary
+- Individual category scores with explanations
+- Specific strengths identified
+- Areas for improvement
+- Actionable recommendations
+    """,
+    response_description="Evaluation results with scores, analysis, and recommendations",
+    responses={
+        200: {
+            "description": "Successful evaluation",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "manual_id": "my-software-guide",
+                        "language": "en",
+                        "overall_score": 8,
+                        "summary": "A well-structured manual with clear instructions...",
+                        "strengths": ["Clear step-by-step instructions", "Good use of screenshots"],
+                        "areas_for_improvement": ["Could add more context for beginners"],
+                        "clarity_and_completeness": {"score": 8, "explanation": "Instructions are clear..."},
+                        "technical_accuracy": {"score": 9, "explanation": "UI elements correctly described..."},
+                        "structure_and_flow": {"score": 7, "explanation": "Good organization..."},
+                        "recommendations": ["Add a troubleshooting section", "Include keyboard shortcuts"],
+                        "evaluated_at": "2024-01-15T10:30:00",
+                        "score_range": {"min": 1, "max": 10}
+                    }
+                }
+            }
+        },
+        404: {"description": "Manual or language not found"},
+        422: {"description": "Invalid language code"},
+        500: {"description": "Evaluation failed (API error)"}
+    }
+)
+async def evaluate_manual(
+    manual_id: str,
+    evaluation_request: ManualEvaluationRequest,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+) -> dict:
+    """Evaluate a manual's quality using AI analysis.
+
+    Uses Gemini AI to assess the manual across multiple quality dimensions,
+    providing scores, explanations, and actionable recommendations.
+
+    Args:
+        manual_id: The unique identifier of the manual to evaluate
+        evaluation_request: Request containing the language code to evaluate
+        user_id: Current authenticated user
+        storage: User storage dependency
+
+    Returns:
+        Comprehensive evaluation report with scores and recommendations
+    """
+    import os
+    from dotenv import load_dotenv
+    from langchain_google_genai import ChatGoogleGenerativeAI
+
+    load_dotenv()
+
+    # Get manual content and metadata (use asyncio.to_thread for blocking I/O)
+    manual_dir = storage.manuals_dir / manual_id
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    content = await asyncio.to_thread(
+        storage.get_manual_content, manual_id, evaluation_request.language
+    )
+    if not content:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Manual content not found for language: {evaluation_request.language}"
+        )
+
+    metadata = await asyncio.to_thread(storage.get_manual_metadata, manual_id)
+    if not metadata:
+        raise HTTPException(status_code=404, detail="Manual metadata not found")
+
+    # Get target context and sanitize (defense in depth for older manuals)
+    try:
+        target_audience = sanitize_target_audience(metadata.get("target_audience"))
+        target_objective = sanitize_target_objective(metadata.get("target_objective"))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # Build evaluation prompt with context if available
+    has_context = bool(target_audience or target_objective)
+    context_section = ""
+    if has_context:
+        context_section = "\n\n**Evaluation Context:**"
+        if target_audience:
+            context_section += f"\n- Target Audience: {target_audience}"
+        if target_objective:
+            context_section += f"\n- Target Objective: {target_objective}"
+    else:
+        context_section = "\n\n*No specific target audience or objective was defined for this manual. Evaluate based on general documentation best practices.*"
+
+    score_range = f"{EVALUATION_SCORE_MIN}-{EVALUATION_SCORE_MAX}"
+
+    # Build dynamic evaluation categories based on available context
+    # Always include these core categories
+    core_categories = f'''  "clarity_and_completeness": {{
+    "score": <number {score_range}>,
+    "explanation": "<are instructions clear, unambiguous, and complete? Are there any missing steps or confusing explanations?>"
+  }},
+  "technical_accuracy": {{
+    "score": <number {score_range}>,
+    "explanation": "<are the technical instructions accurate? Are UI elements, buttons, and actions correctly described?>"
+  }},
+  "structure_and_flow": {{
+    "score": <number {score_range}>,
+    "explanation": "<is the manual well-organized with logical progression? Are headings clear? Is navigation easy?>"
+  }},'''
+
+    # Add context-dependent categories only when context is provided
+    if has_context:
+        context_categories = f'''  "objective_alignment": {{
+    "score": <number {score_range}>,
+    "explanation": "<how well does the manual help readers achieve the stated objective? Does it cover all necessary steps?>"
+  }},
+  "audience_appropriateness": {{
+    "score": <number {score_range}>,
+    "explanation": "<is the language, tone, and technical depth appropriate for the target audience? Are prerequisites clearly stated?>"
+  }},
+'''
+    else:
+        # When no context, evaluate general usability instead
+        context_categories = f'''  "general_usability": {{
+    "score": <number {score_range}>,
+    "explanation": "<how easy is it for a general user to follow and understand this manual? Is it self-contained and accessible?>"
+  }},
+'''
+
+    evaluation_prompt = f"""You are an expert technical documentation evaluator specializing in user manuals and instructional content. Please evaluate the following user manual.
+{context_section}
+
+**Manual Content:**
+{content}
+
+---
+
+Evaluate this manual comprehensively across multiple dimensions. Consider that this is a video-generated manual with screenshots, so assess both written and visual content quality.
+
+Provide your evaluation in the following JSON format:
+
+{{
+  "overall_score": <number {score_range}>,
+  "summary": "<brief 2-3 sentence executive summary of the evaluation>",
+  "strengths": [
+    "<specific strength with example from the manual>",
+    "<another strength>",
+    ...
+  ],
+  "areas_for_improvement": [
+    "<specific improvement area with suggestion>",
+    "<another area>",
+    ...
+  ],
+{context_categories}{core_categories}
+  "recommendations": [
+    "<specific actionable recommendation to improve the manual>",
+    "<another recommendation>",
+    ...
+  ]
+}}
+
+Scoring Guidelines:
+- {EVALUATION_SCORE_MAX}: Exceptional, professional quality
+- 8-9: Very good, minor improvements possible
+- 6-7: Good, some notable areas for improvement
+- 4-5: Adequate but needs significant improvement
+- {EVALUATION_SCORE_MIN}-3: Poor, major revisions needed
+
+Provide your evaluation as valid JSON only, with no additional text before or after."""
+
+    try:
+        # Use Gemini for evaluation
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            raise HTTPException(
+                status_code=500,
+                detail="GOOGLE_API_KEY not configured"
+            )
+
+        llm = ChatGoogleGenerativeAI(
+            model=DEFAULT_EVALUATION_MODEL,
+            google_api_key=api_key,
+            temperature=0.3,
+            timeout=LLM_TIMEOUT_SECONDS,
+        )
+
+        # Use asyncio.to_thread for the blocking LLM call
+        response = await asyncio.to_thread(llm.invoke, evaluation_prompt)
+        evaluation_text = response.content
+
+        # Parse JSON response
+        import json
+        import re
+
+        # Extract JSON from response (in case there's any surrounding text)
+        json_match = re.search(r'\{.*\}', evaluation_text, re.DOTALL)
+        if json_match:
+            evaluation_data = json.loads(json_match.group(0))
+        else:
+            evaluation_data = json.loads(evaluation_text)
+
+        # Validate and clamp scores to valid range
+        def validate_score(score: any) -> int:
+            """Validate and clamp score to valid range."""
+            try:
+                score_int = int(score)
+                return max(EVALUATION_SCORE_MIN, min(EVALUATION_SCORE_MAX, score_int))
+            except (TypeError, ValueError):
+                return EVALUATION_SCORE_MIN
+
+        # Validate top-level score
+        if "overall_score" in evaluation_data:
+            evaluation_data["overall_score"] = validate_score(evaluation_data["overall_score"])
+
+        # Validate nested scores for all evaluation categories
+        # Include both context-dependent and context-independent categories
+        score_categories = [
+            "objective_alignment",       # Only when has_context
+            "audience_appropriateness",  # Only when has_context
+            "general_usability",         # Only when no context
+            "clarity_and_completeness",  # Always
+            "technical_accuracy",        # Always
+            "structure_and_flow",        # Always
+        ]
+        for key in score_categories:
+            if key in evaluation_data and isinstance(evaluation_data[key], dict):
+                if "score" in evaluation_data[key]:
+                    evaluation_data[key]["score"] = validate_score(evaluation_data[key]["score"])
+
+        # Add metadata
+        evaluation_data["manual_id"] = manual_id
+        evaluation_data["language"] = evaluation_request.language
+        evaluation_data["evaluated_at"] = datetime.now().isoformat()
+        evaluation_data["target_audience"] = target_audience
+        evaluation_data["target_objective"] = target_objective
+        evaluation_data["score_range"] = {
+            "min": EVALUATION_SCORE_MIN,
+            "max": EVALUATION_SCORE_MAX,
+        }
+
+        # Save evaluation to storage (per-version, use asyncio.to_thread for blocking I/O)
+        version_storage = VersionStorage(user_id, manual_id)
+        saved_evaluation = await asyncio.to_thread(
+            version_storage.save_evaluation,
+            evaluation_data,
+            evaluation_request.language,
+        )
+
+        return saved_evaluation
+
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse evaluation response: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Evaluation failed: {str(e)}"
+        )
+
+
+@router.get("/{manual_id}/evaluations")
+async def list_evaluations(
+    manual_id: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+):
+    """List all stored evaluations for a manual."""
+    manual_dir = storage.manuals_dir / manual_id
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    version_storage = VersionStorage(user_id, manual_id)
+    evaluations = version_storage.list_evaluations()
+
+    return {"manual_id": manual_id, "evaluations": evaluations}
+
+
+@router.get("/{manual_id}/evaluations/{version}")
+async def get_evaluation(
+    manual_id: str,
+    version: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+    language: str = Query(default="en"),
+):
+    """Get a stored evaluation for a specific version."""
+    manual_dir = storage.manuals_dir / manual_id
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    version_storage = VersionStorage(user_id, manual_id)
+    evaluation = version_storage.get_evaluation(language=language, version=version)
+
+    if not evaluation:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No evaluation found for version {version} in language {language}"
+        )
+
+    return evaluation

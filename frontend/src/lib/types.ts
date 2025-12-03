@@ -114,6 +114,45 @@ export interface ProcessVideoRequest {
   project_id?: string;
   chapter_id?: string;
   tags?: string[];
+  target_audience?: string;  // e.g., "Beginners", "Advanced Users"
+  target_objective?: string; // e.g., "Quick tutorial", "Comprehensive guide"
+}
+
+// Manual evaluation request
+export interface ManualEvaluationRequest {
+  language?: string;
+}
+
+// Evaluation score category with score and explanation
+export interface EvaluationScoreCategory {
+  score: number;
+  explanation: string;
+}
+
+// Manual evaluation response (matches backend format)
+export interface ManualEvaluationResponse {
+  manual_id: string;
+  language: string;
+  target_audience?: string;
+  target_objective?: string;
+  overall_score: number;
+  summary: string;
+  strengths: string[];
+  areas_for_improvement: string[];
+  // Core evaluation categories
+  objective_alignment: EvaluationScoreCategory;
+  audience_appropriateness: EvaluationScoreCategory;
+  clarity_and_completeness: EvaluationScoreCategory;
+  // Extended evaluation categories
+  technical_accuracy?: EvaluationScoreCategory;
+  structure_and_flow?: EvaluationScoreCategory;
+  // Recommendations and metadata
+  recommendations: string[];
+  evaluated_at: string;
+  score_range: {
+    min: number;
+    max: number;
+  };
 }
 
 // Compile project request

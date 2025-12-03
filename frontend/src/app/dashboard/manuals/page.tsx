@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -55,16 +55,20 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown } from "lucide-react";
-import { manuals, manualProject, projects, type ManualSummary, type ManualDetail, type ProjectSummary } from "@/lib/api";
+import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown, ClipboardCheck, Users, Target, History, Clock, MoreHorizontal, HelpCircle } from "lucide-react";
+import { manuals, manualProject, projects, type ManualSummary, type ManualDetail, type ProjectSummary, type ManualEvaluation } from "@/lib/api";
 import { useVideoProcessing } from "@/hooks/useWebSocket";
 import { ProcessingProgress } from "@/components/processing/ProcessingProgress";
+import { SUPPORTED_LANGUAGES, getScoreColorByRaw, getScoreColorByPercentage, getScoreLevel, SCORE_LEVEL_DESCRIPTIONS } from "@/lib/constants";
 
 // Extended manual info with additional data
 interface ManualWithProject extends ManualSummary {
@@ -112,6 +116,37 @@ export default function ManualsPage() {
   const [generateLanguage, setGenerateLanguage] = useState("English");
   const [overrideWarningOpen, setOverrideWarningOpen] = useState(false);
   const { state: processingState, startProcessing, reset: resetProcessing } = useVideoProcessing();
+
+  // Evaluation state
+  const [evaluateDialogOpen, setEvaluateDialogOpen] = useState(false);
+  const [manualToEvaluate, setManualToEvaluate] = useState<ManualWithProject | null>(null);
+  const [evaluating, setEvaluating] = useState(false);
+  const [evaluationResult, setEvaluationResult] = useState<ManualEvaluation | null>(null);
+  const [storedEvaluations, setStoredEvaluations] = useState<Array<{
+    version: string;
+    language: string;
+    overall_score: number;
+    evaluated_at: string;
+    stored_at: string;
+  }>>([]);
+  const [loadingStoredEval, setLoadingStoredEval] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("");
+  const [selectedVersion, setSelectedVersion] = useState<string>("");
+  const [availableVersions, setAvailableVersions] = useState<Array<{
+    version: string;
+    is_current: boolean;
+    created_at: string;
+  }>>([]);
+
+  // Evaluation state for view sheet
+  const [viewingEvaluation, setViewingEvaluation] = useState<ManualEvaluation | null>(null);
+  const [loadingViewEval, setLoadingViewEval] = useState(false);
+
+  // Export loading state (tracks which manual/format is exporting)
+  const [exportingManual, setExportingManual] = useState<string | null>(null);
+
+  // Abort controller ref for cancelling in-flight evaluation requests
+  const evalAbortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     loadManuals();
@@ -167,10 +202,58 @@ export default function ManualsPage() {
       setSelectedManual(manual);
       setViewingManualId(manualId);
       setViewingLanguage(language);
+      setViewingEvaluation(null);
       setViewDialogOpen(true);
+
+      // Load evaluation for this manual/language in background
+      loadViewingEvaluation(manualId, language);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to load manual";
       toast.error("Load failed", { description: message });
+    }
+  }
+
+  async function loadViewingEvaluation(manualId: string, language: string) {
+    // Cancel any in-flight request to prevent race conditions
+    if (evalAbortControllerRef.current) {
+      evalAbortControllerRef.current.abort();
+    }
+
+    // Create new abort controller for this request
+    const abortController = new AbortController();
+    evalAbortControllerRef.current = abortController;
+
+    // Clear stale data immediately
+    setViewingEvaluation(null);
+    setLoadingViewEval(true);
+
+    try {
+      // Check if aborted before each async operation
+      if (abortController.signal.aborted) return;
+
+      // Get the current version first
+      const versionsRes = await manuals.listVersions(manualId);
+
+      if (abortController.signal.aborted) return;
+
+      const currentVersion = versionsRes.current_version;
+
+      // Try to load evaluation for current version and language
+      const evaluation = await manuals.getEvaluation(manualId, currentVersion, language);
+
+      if (abortController.signal.aborted) return;
+
+      setViewingEvaluation(evaluation);
+    } catch (e) {
+      // Ignore abort errors, but handle other errors
+      if (e instanceof Error && e.name === 'AbortError') return;
+      // No evaluation found - that's ok
+      setViewingEvaluation(null);
+    } finally {
+      // Only update loading state if this request wasn't aborted
+      if (!abortController.signal.aborted) {
+        setLoadingViewEval(false);
+      }
     }
   }
 
@@ -180,6 +263,9 @@ export default function ManualsPage() {
       const manual = await manuals.get(viewingManualId, language);
       setSelectedManual(manual);
       setViewingLanguage(language);
+
+      // Also reload evaluation for the new language
+      loadViewingEvaluation(viewingManualId, language);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to load language";
       toast.error("Load failed", { description: message });
@@ -341,6 +427,10 @@ export default function ManualsPage() {
 
   // Export manual
   async function handleExport(manual: ManualWithProject, format: "pdf" | "word" | "html") {
+    // Prevent multiple exports of the same manual simultaneously
+    if (exportingManual === manual.id) return;
+
+    setExportingManual(manual.id);
     try {
       const language = manual.languages[0] || "en";
       const result = await manuals.export(manual.id, format, language);
@@ -359,6 +449,91 @@ export default function ManualsPage() {
     } catch (e) {
       const message = e instanceof Error ? e.message : "Export failed";
       toast.error("Export failed", { description: message });
+    } finally {
+      setExportingManual(null);
+    }
+  }
+
+  // Evaluate manual
+  async function openEvaluateDialog(manual: ManualWithProject, preferredLanguage?: string) {
+    setManualToEvaluate(manual);
+    setEvaluationResult(null);
+    setStoredEvaluations([]);
+    setAvailableVersions([]);
+
+    // Initialize selected language - use preferred if provided and valid, else first available
+    const defaultLanguage = preferredLanguage && manual.languages.includes(preferredLanguage)
+      ? preferredLanguage
+      : manual.languages[0] || "en";
+    setSelectedLanguage(defaultLanguage);
+    setSelectedVersion(""); // Will be set after fetching versions
+
+    setEvaluateDialogOpen(true);
+    setLoadingStoredEval(true);
+
+    try {
+      // Fetch versions and evaluations in parallel
+      const [versionsRes, evalsRes] = await Promise.all([
+        manuals.listVersions(manual.id),
+        manuals.listEvaluations(manual.id),
+      ]);
+
+      // Set available versions
+      setAvailableVersions(versionsRes.versions);
+      setSelectedVersion(versionsRes.current_version);
+
+      // Set stored evaluations
+      setStoredEvaluations(evalsRes.evaluations);
+
+      // If there's a stored evaluation for current version and language, load it
+      const latestEval = evalsRes.evaluations.find(
+        e => e.language === defaultLanguage && e.version === versionsRes.current_version
+      );
+      if (latestEval) {
+        const stored = await manuals.getEvaluation(manual.id, latestEval.version, defaultLanguage);
+        setEvaluationResult(stored);
+      }
+    } catch (e) {
+      console.log("Error loading evaluation data:", e);
+    } finally {
+      setLoadingStoredEval(false);
+    }
+  }
+
+  async function handleEvaluate() {
+    if (!manualToEvaluate) return;
+
+    setEvaluating(true);
+    try {
+      const result = await manuals.evaluate(manualToEvaluate.id, selectedLanguage);
+      setEvaluationResult(result);
+      toast.success("Evaluation complete and saved");
+
+      // Refresh stored evaluations list
+      const res = await manuals.listEvaluations(manualToEvaluate.id);
+      setStoredEvaluations(res.evaluations);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Evaluation failed";
+      toast.error("Evaluation failed", { description: message });
+    } finally {
+      setEvaluating(false);
+    }
+  }
+
+  async function loadStoredEvaluation(version: string, language: string) {
+    if (!manualToEvaluate) return;
+
+    setLoadingStoredEval(true);
+    try {
+      const stored = await manuals.getEvaluation(manualToEvaluate.id, version, language);
+      setEvaluationResult(stored);
+      // Update selected values to match loaded evaluation
+      setSelectedLanguage(language);
+      setSelectedVersion(version);
+    } catch (e) {
+      toast.error("Failed to load evaluation");
+    } finally {
+      setLoadingStoredEval(false);
     }
   }
 
@@ -587,21 +762,9 @@ export default function ManualsPage() {
               <CardHeader className="pb-0 relative">
                 <div className="flex items-start justify-between gap-2">
                   {/* Editorial title with serif font */}
-                  <CardTitle className="font-display text-lg tracking-tight leading-tight truncate flex-1">
+                  <CardTitle className="font-display text-lg tracking-tight leading-tight line-clamp-2 flex-1">
                     {manual.id}
                   </CardTitle>
-
-                  {/* Edit button - reveals on hover */}
-                  <Link href={`/dashboard/manuals/${manual.id}/edit`}>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="h-8 w-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      title="Edit manual"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                  </Link>
                 </div>
 
                 {/* Source, Project & Languages info */}
@@ -665,6 +828,24 @@ export default function ManualsPage() {
                   </div>
                 )}
 
+                {/* Target Audience & Objective */}
+                {(manual.target_audience || manual.target_objective) && (
+                  <div className="mt-3 pt-3 border-t border-border/50 space-y-1.5">
+                    {manual.target_audience && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Users className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{manual.target_audience}</span>
+                      </div>
+                    )}
+                    {manual.target_objective && (
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Target className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{manual.target_objective}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Spacer to push actions to bottom */}
                 <div className="flex-1 min-h-4" />
 
@@ -679,7 +860,7 @@ export default function ManualsPage() {
                   </p>
                 )}
 
-                {/* Actions - always at bottom */}
+                {/* Actions - clean two-button layout */}
                 <div className="flex items-center gap-2">
                   <Button
                     size="sm"
@@ -689,67 +870,88 @@ export default function ManualsPage() {
                     <Eye className="mr-2 h-4 w-4" />
                     View Manual
                   </Button>
+                  <Link href={`/dashboard/manuals/${manual.id}/edit`} className="contents">
+                    <Button size="sm" variant="outline" title="Edit manual content">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </Link>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
                         size="sm"
                         variant="outline"
-                        title="Export manual"
-                        className="opacity-70 hover:opacity-100 transition-opacity"
+                        title="More actions"
                       >
-                        <Download className="h-4 w-4" />
+                        <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleExport(manual, "pdf")}>
-                        <FileDown className="mr-2 h-4 w-4" />
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">
+                        {exportingManual === manual.id ? "Exporting..." : "Export"}
+                      </DropdownMenuLabel>
+                      <DropdownMenuItem
+                        onClick={() => handleExport(manual, "pdf")}
+                        disabled={exportingManual === manual.id}
+                      >
+                        {exportingManual === manual.id ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <FileDown className="mr-2 h-4 w-4" />
+                        )}
                         Export as PDF
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleExport(manual, "word")}>
-                        <FileDown className="mr-2 h-4 w-4" />
+                      <DropdownMenuItem
+                        onClick={() => handleExport(manual, "word")}
+                        disabled={exportingManual === manual.id}
+                      >
+                        {exportingManual === manual.id ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <FileDown className="mr-2 h-4 w-4" />
+                        )}
                         Export as Word
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleExport(manual, "html")}>
-                        <FileDown className="mr-2 h-4 w-4" />
+                      <DropdownMenuItem
+                        onClick={() => handleExport(manual, "html")}
+                        disabled={exportingManual === manual.id}
+                      >
+                        {exportingManual === manual.id ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <FileDown className="mr-2 h-4 w-4" />
+                        )}
                         Export as HTML
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">Generate</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => openGenerateDialog(manual)}>
+                        <Wand2 className="mr-2 h-4 w-4" />
+                        Add Language
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openEvaluateDialog(manual)}>
+                        <ClipboardCheck className="mr-2 h-4 w-4" />
+                        Evaluate Quality
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">Organize</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => openAssignDialog(manual)}>
+                        <FolderKanban className="mr-2 h-4 w-4" />
+                        Assign to Project
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openTagsDialog(manual)}>
+                        <Tag className="mr-2 h-4 w-4" />
+                        Manage Tags
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => openDeleteDialog(manual)}
+                        className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Manual
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => openGenerateDialog(manual)}
-                    title="Generate in another language"
-                    className="opacity-70 hover:opacity-100 transition-opacity"
-                  >
-                    <Wand2 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => openAssignDialog(manual)}
-                    title="Assign to project"
-                    className="opacity-70 hover:opacity-100 transition-opacity"
-                  >
-                    <FolderKanban className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => openTagsDialog(manual)}
-                    title="Manage tags"
-                    className="opacity-70 hover:opacity-100 transition-opacity"
-                  >
-                    <Tag className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => openDeleteDialog(manual)}
-                    className="opacity-60 hover:opacity-100 hover:border-destructive hover:text-destructive transition-all"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -793,7 +995,7 @@ export default function ManualsPage() {
                       <DropdownMenuTrigger asChild>
                         <button className="flex items-center gap-1.5 bg-primary/10 text-primary px-2.5 py-1 rounded-md hover:bg-primary/20 transition-colors">
                           <Globe className="h-4 w-4" />
-                          {viewingLanguage.toUpperCase()}
+                          {SUPPORTED_LANGUAGES[viewingLanguage] || viewingLanguage.toUpperCase()}
                           <ChevronDown className="h-3 w-3" />
                         </button>
                       </DropdownMenuTrigger>
@@ -805,7 +1007,7 @@ export default function ManualsPage() {
                             className={`cursor-pointer ${lang === viewingLanguage ? "bg-accent" : ""}`}
                           >
                             <Globe className="mr-2 h-4 w-4" />
-                            {lang.toUpperCase()}
+                            {SUPPORTED_LANGUAGES[lang] || lang.toUpperCase()}
                             {lang === viewingLanguage && (
                               <Check className="ml-auto h-4 w-4" />
                             )}
@@ -815,6 +1017,50 @@ export default function ManualsPage() {
                     </DropdownMenu>
                   );
                 })()}
+
+                {/* Evaluation Score & Button */}
+                <div className="flex items-center gap-2 ml-auto">
+                  {loadingViewEval ? (
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      Loading score...
+                    </span>
+                  ) : viewingEvaluation ? (
+                    <button
+                      onClick={() => {
+                        const manual = manualList.find((m) => m.id === selectedManual.id);
+                        if (manual) {
+                          setViewDialogOpen(false);
+                          openEvaluateDialog(manual, viewingLanguage);
+                        }
+                      }}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors ${(() => {
+                        const colors = getScoreColorByRaw(viewingEvaluation.overall_score);
+                        return `${colors.bgLight} ${colors.text} ${colors.hoverBg}`;
+                      })()}`}
+                      title="View evaluation details"
+                    >
+                      <ClipboardCheck className="h-4 w-4" />
+                      <span className="font-semibold">{viewingEvaluation.overall_score}/10</span>
+                    </button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const manual = manualList.find((m) => m.id === selectedManual.id);
+                        if (manual) {
+                          setViewDialogOpen(false);
+                          openEvaluateDialog(manual, viewingLanguage);
+                        }
+                      }}
+                      className="h-7 text-xs"
+                    >
+                      <ClipboardCheck className="mr-1.5 h-3.5 w-3.5" />
+                      Evaluate
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
           </SheetHeader>
@@ -1202,6 +1448,353 @@ export default function ManualsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Evaluate Manual Dialog */}
+      <Dialog open={evaluateDialogOpen} onOpenChange={setEvaluateDialogOpen}>
+        <DialogContent className="max-w-[1100px] max-h-[90vh] flex flex-col">
+          <DialogHeader className="shrink-0">
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5" />
+              Manual Evaluation
+            </DialogTitle>
+          </DialogHeader>
+
+          {/* Manual Info Header */}
+          <div className="p-4 bg-muted rounded-lg space-y-3 shrink-0">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <p className="font-medium">{manualToEvaluate?.id}</p>
+              <div className="flex items-center gap-3">
+                {/* Language Selector */}
+                <div className="flex items-center gap-2">
+                  <Globe className="h-4 w-4 text-muted-foreground" />
+                  <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                    <SelectTrigger className="w-[140px] h-8">
+                      <SelectValue placeholder="Language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {manualToEvaluate?.languages.map((lang) => (
+                        <SelectItem key={lang} value={lang}>
+                          {SUPPORTED_LANGUAGES[lang] || lang.toUpperCase()}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {/* Version Selector */}
+                <div className="flex items-center gap-2">
+                  <History className="h-4 w-4 text-muted-foreground" />
+                  <Select value={selectedVersion} onValueChange={setSelectedVersion}>
+                    <SelectTrigger className="w-[160px] h-8">
+                      <SelectValue placeholder="Version" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableVersions.map((v) => (
+                        <SelectItem key={v.version} value={v.version}>
+                          v{v.version} {v.is_current && "(current)"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Target Audience & Objective */}
+            {(manualToEvaluate?.target_audience || manualToEvaluate?.target_objective) && (
+              <div className="flex flex-wrap gap-x-6 gap-y-2 pt-2 border-t text-sm">
+                {manualToEvaluate?.target_audience && (
+                  <div className="flex items-start gap-2">
+                    <Users className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <span className="text-muted-foreground">Audience:</span>
+                    <span className="line-clamp-1">{manualToEvaluate.target_audience}</span>
+                  </div>
+                )}
+                {manualToEvaluate?.target_objective && (
+                  <div className="flex items-start gap-2">
+                    <Target className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <span className="text-muted-foreground">Objective:</span>
+                    <span className="line-clamp-1">{manualToEvaluate.target_objective}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Two Column Layout */}
+          <div className="flex-1 flex gap-4 overflow-hidden min-h-0">
+            {/* Left Column - Main Content */}
+            <div className="flex-[2] overflow-y-auto pr-2 space-y-6">
+
+            {/* Evaluation Results */}
+            {evaluationResult ? (
+              <div className="space-y-6">
+                {/* Version & Date Info */}
+                {(evaluationResult as ManualEvaluation & { version?: string; stored_at?: string }).version && (
+                  <div className="flex items-center justify-between text-xs text-muted-foreground bg-muted/30 px-3 py-2 rounded-lg">
+                    <span className="flex items-center gap-2">
+                      <History className="h-3.5 w-3.5" />
+                      Version {(evaluationResult as ManualEvaluation & { version?: string }).version}
+                    </span>
+                    <span className="flex items-center gap-2">
+                      <Clock className="h-3.5 w-3.5" />
+                      {new Date(evaluationResult.evaluated_at).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                  </div>
+                )}
+
+                {/* Overall Score - Hero */}
+                <div className="text-center p-6 bg-gradient-to-br from-primary/10 to-primary/5 rounded-xl border">
+                  <p className="text-5xl font-bold text-primary mb-1">
+                    {evaluationResult.overall_score}
+                    <span className="text-2xl text-muted-foreground font-normal">/{evaluationResult.score_range?.max || 10}</span>
+                  </p>
+                  <div className="flex items-center justify-center gap-2">
+                    <p className="text-sm text-muted-foreground">Overall Score</p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-xs text-left">
+                        <p className="font-semibold mb-1">Scoring Guide</p>
+                        <ul className="space-y-0.5 text-xs">
+                          <li><span className="text-green-500">8-10:</span> Excellent - Professional quality</li>
+                          <li><span className="text-yellow-500">6-7:</span> Good - Minor improvements possible</li>
+                          <li><span className="text-orange-500">4-5:</span> Fair - Needs improvement</li>
+                          <li><span className="text-red-500">1-3:</span> Poor - Major revisions needed</li>
+                        </ul>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <p className={`text-sm font-medium mt-1 ${getScoreColorByRaw(evaluationResult.overall_score).text}`}>
+                    {SCORE_LEVEL_DESCRIPTIONS[getScoreLevel(evaluationResult.overall_score)]}
+                  </p>
+                </div>
+
+                {/* Summary */}
+                <div className="p-4 bg-muted/50 rounded-lg border-l-4 border-primary">
+                  <p className="text-sm leading-relaxed">{evaluationResult.summary}</p>
+                </div>
+
+                {/* Score Breakdown - Visual Progress Bars */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Score Breakdown</h3>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-sm text-left">
+                        <p className="font-semibold mb-2">Evaluation Categories</p>
+                        <ul className="space-y-1.5 text-xs">
+                          <li><span className="font-medium">Objective Alignment:</span> How well the manual helps achieve its stated goal</li>
+                          <li><span className="font-medium">Audience Appropriateness:</span> Language and depth match the target audience</li>
+                          <li><span className="font-medium">General Usability:</span> Ease of use for general readers (when no target set)</li>
+                          <li><span className="font-medium">Clarity & Completeness:</span> Instructions are clear with no missing steps</li>
+                          <li><span className="font-medium">Technical Accuracy:</span> UI elements and actions correctly described</li>
+                          <li><span className="font-medium">Structure & Flow:</span> Well-organized with logical progression</li>
+                        </ul>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+
+                  {/* Score Item Component - includes context-dependent and always-present categories */}
+                  {[
+                    // Context-dependent categories (only one set will be present)
+                    { key: 'objective_alignment', label: 'Objective Alignment', data: evaluationResult.objective_alignment },
+                    { key: 'audience_appropriateness', label: 'Audience Appropriateness', data: evaluationResult.audience_appropriateness },
+                    { key: 'general_usability', label: 'General Usability', data: evaluationResult.general_usability },
+                    // Always-present categories
+                    { key: 'clarity_and_completeness', label: 'Clarity & Completeness', data: evaluationResult.clarity_and_completeness },
+                    { key: 'technical_accuracy', label: 'Technical Accuracy', data: evaluationResult.technical_accuracy },
+                    { key: 'structure_and_flow', label: 'Structure & Flow', data: evaluationResult.structure_and_flow },
+                  ].filter((item): item is { key: string; label: string; data: { score: number; explanation: string } } => !!item.data).map(({ key, label, data }) => {
+                    const score = data.score;
+                    const maxScore = evaluationResult.score_range?.max || 10;
+                    const percentage = (score / maxScore) * 100;
+
+                    return (
+                      <div key={key} className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">{label}</span>
+                          <span className="text-sm font-bold">{score}/{maxScore}</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full ${getScoreColorByPercentage(percentage)} transition-all duration-500`}
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                        {data.explanation && (
+                          <p className="text-xs text-muted-foreground leading-relaxed">{data.explanation}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Strengths */}
+                {evaluationResult.strengths && evaluationResult.strengths.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-green-600 dark:text-green-400 flex items-center gap-2">
+                      <Check className="h-4 w-4" />
+                      Strengths
+                    </h3>
+                    <ul className="space-y-2">
+                      {evaluationResult.strengths.map((strength, idx) => (
+                        <li key={idx} className="text-sm text-muted-foreground flex items-start gap-3 p-2 rounded-lg bg-green-500/5 border border-green-500/20">
+                          <span className="text-green-500 font-bold shrink-0">{idx + 1}.</span>
+                          {strength}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Areas for Improvement */}
+                {evaluationResult.areas_for_improvement && evaluationResult.areas_for_improvement.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400 flex items-center gap-2">
+                      <AlertCircle className="h-4 w-4" />
+                      Areas for Improvement
+                    </h3>
+                    <ul className="space-y-2">
+                      {evaluationResult.areas_for_improvement.map((improvement, idx) => (
+                        <li key={idx} className="text-sm text-muted-foreground flex items-start gap-3 p-2 rounded-lg bg-amber-500/5 border border-amber-500/20">
+                          <span className="text-amber-500 font-bold shrink-0">{idx + 1}.</span>
+                          {improvement}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Recommendations */}
+                {evaluationResult.recommendations && evaluationResult.recommendations.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400 flex items-center gap-2">
+                      <Target className="h-4 w-4" />
+                      Recommendations
+                    </h3>
+                    <ul className="space-y-2">
+                      {evaluationResult.recommendations.map((rec, idx) => (
+                        <li key={idx} className="text-sm text-muted-foreground flex items-start gap-3 p-2 rounded-lg bg-blue-500/5 border border-blue-500/20">
+                          <span className="text-blue-500 font-bold shrink-0">{idx + 1}.</span>
+                          {rec}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* No evaluation yet - show start button */
+              <div className="text-center py-12">
+                <ClipboardCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground mb-6">
+                  Evaluate this manual against its target audience and objective using AI analysis.
+                </p>
+                <Button onClick={handleEvaluate} disabled={evaluating || loadingStoredEval} size="lg">
+                  {evaluating ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Analyzing Manual...
+                    </>
+                  ) : loadingStoredEval ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    <>
+                      <ClipboardCheck className="mr-2 h-4 w-4" />
+                      Start New Evaluation
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+            </div>
+
+            {/* Right Column - Evaluation History Sidebar */}
+            <div className="w-[280px] shrink-0 border-l pl-4 overflow-y-auto">
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2 mb-4 sticky top-0 bg-background py-2">
+                <History className="h-4 w-4" />
+                Evaluation History
+              </h3>
+              {storedEvaluations.length > 0 ? (
+                <div className="space-y-2">
+                  {storedEvaluations.map((evalItem, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => loadStoredEvaluation(evalItem.version, evalItem.language)}
+                      disabled={loadingStoredEval}
+                      className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left ${
+                        selectedVersion === evalItem.version && selectedLanguage === evalItem.language
+                          ? 'bg-primary/10 border-primary/50'
+                          : 'bg-muted/30 hover:bg-muted/60'
+                      }`}
+                    >
+                      <div className={`text-lg font-bold shrink-0 ${
+                        evalItem.overall_score >= 8 ? 'text-green-500' :
+                        evalItem.overall_score >= 6 ? 'text-yellow-500' :
+                        evalItem.overall_score >= 4 ? 'text-orange-500' : 'text-red-500'
+                      }`}>
+                        {evalItem.overall_score}/10
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium truncate">v{evalItem.version}</p>
+                          <Badge variant="outline" className="text-[10px] font-mono uppercase shrink-0">
+                            {evalItem.language}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                          <Clock className="h-3 w-3 shrink-0" />
+                          {new Date(evalItem.evaluated_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  No previous evaluations
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter className="shrink-0 border-t pt-4 mt-4">
+            <Button variant="outline" onClick={() => setEvaluateDialogOpen(false)}>
+              {evaluationResult ? "Close" : "Cancel"}
+            </Button>
+            {evaluationResult && (
+              <Button onClick={handleEvaluate} disabled={evaluating} variant="secondary">
+                {evaluating ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Re-evaluating...
+                  </>
+                ) : (
+                  <>
+                    <ClipboardCheck className="mr-2 h-4 w-4" />
+                    Re-evaluate
+                  </>
+                )}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

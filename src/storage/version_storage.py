@@ -1,13 +1,18 @@
 """Version storage management for manual revision tracking."""
 
 import json
+import logging
 import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
+from pydantic import ValidationError
+
 from ..config import USERS_DIR
 from .screenshot_store import ScreenshotStore
+
+logger = logging.getLogger(__name__)
 
 
 class VersionStorage:
@@ -395,6 +400,139 @@ class VersionStorage:
             return manual_path.read_text(encoding="utf-8")
 
         return None
+
+    # ==================== Evaluation Storage ====================
+
+    def save_evaluation(
+        self,
+        evaluation: Dict[str, Any],
+        language: str = "en",
+        version: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Save an evaluation for a specific version.
+
+        Args:
+            evaluation: Evaluation data from the AI evaluator
+            language: Language code of the evaluated manual
+            version: Version to associate with (defaults to current)
+
+        Returns:
+            Saved evaluation with added metadata
+        """
+        if version is None:
+            version = self.get_current_version()
+
+        # Create evaluations directory
+        evaluations_dir = self.manual_dir / "evaluations"
+        evaluations_dir.mkdir(parents=True, exist_ok=True)
+
+        # Add version and storage metadata
+        evaluation_record = {
+            **evaluation,
+            "version": version,
+            "language": language,
+            "stored_at": datetime.now().isoformat(),
+        }
+
+        # Save to version-specific file
+        eval_file = evaluations_dir / f"v{version}_{language}.json"
+        with open(eval_file, "w", encoding="utf-8") as f:
+            json.dump(evaluation_record, f, indent=2, ensure_ascii=False)
+
+        return evaluation_record
+
+    def get_evaluation(
+        self,
+        language: str = "en",
+        version: Optional[str] = None,
+        validate: bool = True
+    ) -> Optional[Dict[str, Any]]:
+        """Get stored evaluation for a specific version.
+
+        Args:
+            language: Language code
+            version: Version to get evaluation for (defaults to current)
+            validate: Whether to validate the evaluation data with Pydantic schema
+
+        Returns:
+            Evaluation data or None if not found or invalid
+        """
+        if version is None:
+            version = self.get_current_version()
+
+        eval_file = self.manual_dir / "evaluations" / f"v{version}_{language}.json"
+        if not eval_file.exists():
+            return None
+
+        try:
+            with open(eval_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            if validate:
+                # Import here to avoid circular imports
+                from ..api.schemas import ManualEvaluation
+                # Validate with Pydantic schema - this will raise ValidationError if invalid
+                ManualEvaluation(**data)
+
+            return data
+
+        except json.JSONDecodeError as e:
+            logger.warning(f"Corrupted evaluation file {eval_file}: {e}")
+            return None
+        except ValidationError as e:
+            logger.warning(f"Invalid evaluation data in {eval_file}: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Error reading evaluation {eval_file}: {e}")
+            return None
+
+    def list_evaluations(self) -> List[Dict[str, Any]]:
+        """List all stored evaluations for this manual.
+
+        Returns:
+            List of evaluation summaries (version, language, score, date)
+        """
+        evaluations_dir = self.manual_dir / "evaluations"
+        if not evaluations_dir.exists():
+            return []
+
+        results = []
+        for eval_file in evaluations_dir.glob("v*_*.json"):
+            try:
+                with open(eval_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    results.append({
+                        "version": data.get("version"),
+                        "language": data.get("language"),
+                        "overall_score": data.get("overall_score"),
+                        "evaluated_at": data.get("evaluated_at"),
+                        "stored_at": data.get("stored_at"),
+                    })
+            except (json.JSONDecodeError, IOError):
+                continue
+
+        # Sort by stored_at descending (newest first)
+        results.sort(key=lambda x: x.get("stored_at", ""), reverse=True)
+        return results
+
+    def delete_evaluation(self, language: str = "en", version: Optional[str] = None) -> bool:
+        """Delete a stored evaluation.
+
+        Args:
+            language: Language code
+            version: Version (defaults to current)
+
+        Returns:
+            True if deleted, False if not found
+        """
+        if version is None:
+            version = self.get_current_version()
+
+        eval_file = self.manual_dir / "evaluations" / f"v{version}_{language}.json"
+        if eval_file.exists():
+            eval_file.unlink()
+            return True
+        return False
 
     def cleanup_old_versions(self, keep_count: int = 10) -> int:
         """Remove old versions, keeping only the most recent ones.

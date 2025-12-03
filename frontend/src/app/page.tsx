@@ -195,29 +195,29 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <section className="py-24 pb-32">
+      <section className="py-4 lg:py-6">
         <div className="mx-auto max-w-[1400px] px-6">
-          <div className="grid grid-cols-1 items-center gap-20 lg:grid-cols-[1.2fr_1fr]">
+          <div className="grid grid-cols-1 items-center gap-8 lg:gap-12 lg:grid-cols-[1.2fr_1fr]">
             <div>
-              <span className="mb-6 inline-block rounded bg-primary px-4 py-2 text-xs font-bold uppercase tracking-widest text-primary-foreground">
+              <span className="mb-3 inline-block rounded bg-primary px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-primary-foreground">
                 AI-Powered Documentation
               </span>
-              <h1 className="mb-6 font-display text-5xl leading-tight tracking-tight lg:text-6xl">
+              <h1 className="mb-3 font-display text-3xl leading-tight tracking-tight sm:text-4xl lg:text-5xl">
                 Transform Video into
                 <span className="block text-primary">Visual Documentation</span>
               </h1>
-              <p className="mb-10 max-w-[580px] text-xl leading-relaxed text-muted-foreground">
+              <p className="mb-5 max-w-[540px] text-base leading-relaxed text-muted-foreground lg:text-lg">
                 Create comprehensive, step-by-step visual manuals from your
                 video content. Advanced AI extracts, analyzes, and presents
                 information beautifully.
               </p>
-              <div className="flex flex-col gap-4 sm:flex-row">
-                <Button size="lg" onClick={() => setLoginOpen(true)}>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Button size="default" onClick={() => setLoginOpen(true)}>
                   Start Creating
                 </Button>
                 <Button
                   variant="outline"
-                  size="lg"
+                  size="default"
                   onClick={() => scrollToSection("how-it-works")}
                 >
                   View Demo
@@ -226,7 +226,7 @@ export default function LandingPage() {
             </div>
 
             {/* Hero Visual - Animated Flow Diagram */}
-            <div className="hero-flow relative aspect-[4/5] overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 shadow-2xl">
+            <div className="hero-flow relative aspect-[5/4] lg:aspect-[4/4] overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 shadow-2xl">
               {/* Dark overlay for dark mode */}
               <div className="absolute inset-0 bg-black/40 hidden dark:block" />
               {/* Pattern background */}
@@ -334,7 +334,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* Phase 2: Edit & Refine */}
-                <div className="phase phase-2 absolute inset-4 top-12 flex flex-col justify-center">
+                <div className="phase phase-2 absolute inset-4 top-9 flex flex-col justify-center">
                   <div className="flex items-center gap-2 mb-4">
                     <Edit3 className="h-6 w-6 text-white" />
                     <span className="text-white text-lg font-semibold">Edit & Refine</span>
@@ -388,7 +388,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* Phase 3: Compilation */}
-                <div className="phase phase-3 absolute inset-4 top-12 flex flex-col justify-center">
+                <div className="phase phase-3 absolute inset-4 top-9 flex flex-col justify-center">
                   <div className="flex items-center gap-2 mb-4">
                     <FolderKanban className="h-6 w-6 text-white" />
                     <span className="text-white text-lg font-semibold">Compile Project</span>
@@ -442,7 +442,7 @@ export default function LandingPage() {
                 </div>
 
                 {/* Phase 4: Export */}
-                <div className="phase phase-4 absolute inset-4 top-12 flex flex-col justify-center">
+                <div className="phase phase-4 absolute inset-4 top-9 flex flex-col justify-center">
                   <div className="flex items-center gap-2 mb-4">
                     <Download className="h-6 w-6 text-white" />
                     <span className="text-white text-lg font-semibold">Export & Share</span>

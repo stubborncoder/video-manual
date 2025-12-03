@@ -32,7 +32,19 @@ async function request<T>(
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: `HTTP ${response.status} ${response.statusText}` }));
-    throw new Error(error.detail || `HTTP ${response.status} ${response.statusText}`);
+    // Handle FastAPI validation errors which return detail as an array
+    let errorMessage: string;
+    if (Array.isArray(error.detail)) {
+      // Validation errors: extract messages from each error object
+      errorMessage = error.detail.map((e: { msg?: string; loc?: string[] }) =>
+        e.msg || JSON.stringify(e)
+      ).join(", ");
+    } else if (typeof error.detail === 'object') {
+      errorMessage = JSON.stringify(error.detail);
+    } else {
+      errorMessage = error.detail || `HTTP ${response.status} ${response.statusText}`;
+    }
+    throw new Error(errorMessage);
   }
 
   return response.json();
@@ -149,6 +161,8 @@ export interface ManualSummary {
   languages: string[];
   source_video?: SourceVideoInfo;
   project_id?: string;
+  target_audience?: string;
+  target_objective?: string;
 }
 
 export interface ManualDetail {
@@ -165,6 +179,37 @@ export interface VersionInfo {
   notes: string;
   is_current: boolean;
   snapshot_dir?: string;
+}
+
+export interface EvaluationScoreCategory {
+  score: number;
+  explanation: string;
+}
+
+export interface ManualEvaluation {
+  manual_id: string;
+  language: string;
+  target_audience?: string;
+  target_objective?: string;
+  overall_score: number;
+  summary: string;
+  strengths: string[];
+  areas_for_improvement: string[];
+  // Context-dependent categories (only one set will be present)
+  objective_alignment?: EvaluationScoreCategory;    // When target context provided
+  audience_appropriateness?: EvaluationScoreCategory; // When target context provided
+  general_usability?: EvaluationScoreCategory;      // When no target context
+  // Always-present categories
+  clarity_and_completeness?: EvaluationScoreCategory;
+  technical_accuracy?: EvaluationScoreCategory;
+  structure_and_flow?: EvaluationScoreCategory;
+  // Metadata
+  recommendations: string[];
+  evaluated_at: string;
+  score_range?: {
+    min: number;
+    max: number;
+  };
 }
 
 export const manuals = {
@@ -270,6 +315,30 @@ export const manuals = {
         created_at: string;
       }>;
     }>(`/api/manuals/${manualId}/exports`),
+
+  evaluate: (manualId: string, language = "en") =>
+    request<ManualEvaluation>(`/api/manuals/${manualId}/evaluate`, {
+      method: "POST",
+      body: JSON.stringify({ language }),
+    }),
+
+  // Stored evaluations
+  listEvaluations: (manualId: string) =>
+    request<{
+      manual_id: string;
+      evaluations: Array<{
+        version: string;
+        language: string;
+        overall_score: number;
+        evaluated_at: string;
+        stored_at: string;
+      }>;
+    }>(`/api/manuals/${manualId}/evaluations`),
+
+  getEvaluation: (manualId: string, version: string, language = "en") =>
+    request<ManualEvaluation>(`/api/manuals/${manualId}/evaluations/${version}`, {
+      params: { language },
+    }),
 };
 
 // Manual project assignment

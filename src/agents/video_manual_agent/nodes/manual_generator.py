@@ -6,14 +6,22 @@ from pathlib import Path
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from ..config import DEFAULT_GEMINI_MODEL
+from ..config import DEFAULT_GEMINI_MODEL, LLM_TEXT_TIMEOUT
 from ..prompts.system import MANUAL_GENERATOR_PROMPT
 from ..tools.video_tools import extract_screenshot_at_timestamp
 from ..state import VideoManualState
 from ..utils.language import get_language_code, get_language_name
-from ..utils.metadata import has_screenshots, add_language_generated
+from ..utils.metadata import (
+    has_screenshots,
+    add_language_generated,
+    get_target_audience,
+    get_target_objective,
+    load_metadata,
+    save_metadata,
+)
 from ....storage.user_storage import UserStorage
 from ....storage.version_storage import VersionStorage
+from ....core.sanitization import sanitize_target_audience, sanitize_target_objective
 
 
 def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
@@ -69,6 +77,34 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
     video_name = output_filename or Path(video_path).name
     manual_dir, manual_id = user_storage.get_manual_dir(manual_id, video_name=video_name)
 
+    # Get or retrieve target audience and objective (immutable across languages)
+    # Sanitize inputs to prevent prompt injection
+    try:
+        target_audience = sanitize_target_audience(state.get("target_audience"))
+        target_objective = sanitize_target_objective(state.get("target_objective"))
+    except ValueError as e:
+        return {
+            "status": "error",
+            "error": str(e),
+        }
+
+    # If not in state, try to get from existing metadata (for add-language flow)
+    # Note: metadata values were sanitized when originally saved
+    if not target_audience or not target_objective:
+        existing_target_audience = get_target_audience(manual_dir)
+        existing_target_objective = get_target_objective(manual_dir)
+        target_audience = target_audience or existing_target_audience
+        target_objective = target_objective or existing_target_objective
+
+    # Store in metadata if this is the first time (or update if provided)
+    metadata = load_metadata(manual_dir)
+    if metadata:
+        if target_audience is not None:
+            metadata["target_audience"] = target_audience
+        if target_objective is not None:
+            metadata["target_objective"] = target_objective
+        save_metadata(manual_dir, metadata)
+
     # Create shared screenshots directory (at manual level, not language level)
     screenshots_dir = manual_dir / "screenshots"
     screenshots_dir.mkdir(parents=True, exist_ok=True)
@@ -119,10 +155,21 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
     llm = ChatGoogleGenerativeAI(
         model=DEFAULT_GEMINI_MODEL,
         google_api_key=api_key,
+        timeout=LLM_TEXT_TIMEOUT,
     )
 
     # Prepare screenshot references for the prompt
     screenshot_refs = _format_screenshot_references(screenshot_paths)
+
+    # Build context section with target audience and objective
+    context_section = ""
+    if target_audience or target_objective:
+        context_section = "\n\nMANUAL CONTEXT:"
+        if target_audience:
+            context_section += f"\nTarget Audience: {target_audience}"
+        if target_objective:
+            context_section += f"\nTarget Objective: {target_objective}"
+        context_section += "\n\nPlease tailor the manual's tone, level of detail, and explanations to match the target audience and help achieve the stated objective."
 
     # Create generation prompt with language instruction
     generation_prompt = f"""{MANUAL_GENERATOR_PROMPT}
@@ -130,6 +177,7 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
 OUTPUT LANGUAGE: Write the entire manual in {language_name}.
 - Use {language_name} for all explanations, headings, and instructions
 - Keep UI element names/labels exactly as shown in screenshots (do not translate UI text)
+{context_section}
 
 VIDEO ANALYSIS:
 {video_analysis}
