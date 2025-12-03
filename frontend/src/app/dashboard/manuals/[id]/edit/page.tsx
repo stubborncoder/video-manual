@@ -33,11 +33,19 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   ArrowLeft,
   FileText,
   Code,
   Loader2,
   List,
+  Download,
+  FileDown,
 } from "lucide-react";
 
 import { manuals, type ManualDetail } from "@/lib/api";
@@ -367,6 +375,28 @@ export default function ManualEditorPage() {
   // Handle version restored
   const handleVersionRestored = useCallback(() => {
     loadManual();
+  }, [manualId, language]);
+
+  // Handle export
+  const handleExport = useCallback(async (format: "pdf" | "word" | "html") => {
+    try {
+      const result = await manuals.export(manualId, format, language);
+
+      // Trigger automatic download
+      const link = document.createElement('a');
+      link.href = result.download_url;
+      link.download = result.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success(`Exported as ${format.toUpperCase()}`, {
+        description: `${result.filename} (${(result.size_bytes / 1024).toFixed(1)} KB)`
+      });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Export failed";
+      toast.error("Export failed", { description: message });
+    }
   }, [manualId, language]);
 
   // Handle chat message send
@@ -701,6 +731,31 @@ export default function ManualEditorPage() {
               Unsaved changes
             </Badge>
           )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Download className="mr-2 h-4 w-4" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport("pdf")}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Export as PDF
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("word")}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Export as Word
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport("html")}>
+                <FileDown className="mr-2 h-4 w-4" />
+                Export as HTML
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
       </div>

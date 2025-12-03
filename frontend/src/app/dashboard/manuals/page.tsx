@@ -61,7 +61,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2 } from "lucide-react";
+import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown } from "lucide-react";
 import { manuals, manualProject, projects, type ManualSummary, type ManualDetail, type ProjectSummary } from "@/lib/api";
 import { useVideoProcessing } from "@/hooks/useWebSocket";
 import { ProcessingProgress } from "@/components/processing/ProcessingProgress";
@@ -336,6 +336,29 @@ export default function ManualsPage() {
     } catch (e) {
       const message = e instanceof Error ? e.message : "Generation failed";
       toast.error("Generation failed", { description: message });
+    }
+  }
+
+  // Export manual
+  async function handleExport(manual: ManualWithProject, format: "pdf" | "word" | "html") {
+    try {
+      const language = manual.languages[0] || "en";
+      const result = await manuals.export(manual.id, format, language);
+
+      // Trigger automatic download
+      const link = document.createElement('a');
+      link.href = result.download_url;
+      link.download = result.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success(`Exported as ${format.toUpperCase()}`, {
+        description: `${result.filename} (${(result.size_bytes / 1024).toFixed(1)} KB)`
+      });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Export failed";
+      toast.error("Export failed", { description: message });
     }
   }
 
@@ -666,6 +689,32 @@ export default function ManualsPage() {
                     <Eye className="mr-2 h-4 w-4" />
                     View Manual
                   </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        title="Export manual"
+                        className="opacity-70 hover:opacity-100 transition-opacity"
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleExport(manual, "pdf")}>
+                        <FileDown className="mr-2 h-4 w-4" />
+                        Export as PDF
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleExport(manual, "word")}>
+                        <FileDown className="mr-2 h-4 w-4" />
+                        Export as Word
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleExport(manual, "html")}>
+                        <FileDown className="mr-2 h-4 w-4" />
+                        Export as HTML
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                   <Button
                     size="sm"
                     variant="outline"
