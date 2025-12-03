@@ -1,13 +1,18 @@
 """Version storage management for manual revision tracking."""
 
 import json
+import logging
 import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
+from pydantic import ValidationError
+
 from ..config import USERS_DIR
 from .screenshot_store import ScreenshotStore
+
+logger = logging.getLogger(__name__)
 
 
 class VersionStorage:
@@ -439,16 +444,18 @@ class VersionStorage:
     def get_evaluation(
         self,
         language: str = "en",
-        version: Optional[str] = None
+        version: Optional[str] = None,
+        validate: bool = True
     ) -> Optional[Dict[str, Any]]:
         """Get stored evaluation for a specific version.
 
         Args:
             language: Language code
             version: Version to get evaluation for (defaults to current)
+            validate: Whether to validate the evaluation data with Pydantic schema
 
         Returns:
-            Evaluation data or None if not found
+            Evaluation data or None if not found or invalid
         """
         if version is None:
             version = self.get_current_version()
@@ -457,8 +464,27 @@ class VersionStorage:
         if not eval_file.exists():
             return None
 
-        with open(eval_file, "r", encoding="utf-8") as f:
-            return json.load(f)
+        try:
+            with open(eval_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            if validate:
+                # Import here to avoid circular imports
+                from ..api.schemas import ManualEvaluation
+                # Validate with Pydantic schema - this will raise ValidationError if invalid
+                ManualEvaluation(**data)
+
+            return data
+
+        except json.JSONDecodeError as e:
+            logger.warning(f"Corrupted evaluation file {eval_file}: {e}")
+            return None
+        except ValidationError as e:
+            logger.warning(f"Invalid evaluation data in {eval_file}: {e}")
+            return None
+        except Exception as e:
+            logger.error(f"Error reading evaluation {eval_file}: {e}")
+            return None
 
     def list_evaluations(self) -> List[Dict[str, Any]]:
         """List all stored evaluations for this manual.

@@ -7,8 +7,10 @@ from pydantic import BaseModel, Field, field_validator
 from ..core.constants import (
     MAX_TARGET_AUDIENCE_LENGTH,
     MAX_TARGET_OBJECTIVE_LENGTH,
-    is_valid_language,
     SUPPORTED_LANGUAGES,
+    normalize_language_to_code,
+    EVALUATION_SCORE_MIN,
+    EVALUATION_SCORE_MAX,
 )
 
 
@@ -152,11 +154,12 @@ class ProcessVideoRequest(BaseModel):
     @field_validator('output_language')
     @classmethod
     def validate_output_language(cls, v: str) -> str:
-        """Validate output language is supported."""
-        if not is_valid_language(v):
-            supported = ", ".join(sorted(SUPPORTED_LANGUAGES.values()))
-            raise ValueError(f"Unsupported language: {v}. Supported: {supported}")
-        return v
+        """Validate and normalize output language to ISO code.
+
+        Accepts both language names ("English") and codes ("en").
+        Returns the ISO 639-1 code.
+        """
+        return normalize_language_to_code(v)
 
 
 class CompileProjectRequest(BaseModel):
@@ -234,3 +237,50 @@ class ExportRequest(BaseModel):
 class ExportResponse(BaseModel):
     output_path: str
     format: str
+
+
+# ==================== Evaluation ====================
+
+
+class EvaluationScoreCategory(BaseModel):
+    """Score for a specific evaluation category."""
+    score: int = Field(..., ge=EVALUATION_SCORE_MIN, le=EVALUATION_SCORE_MAX)
+    explanation: str = ""
+
+
+class EvaluationScoreRange(BaseModel):
+    """Score range for evaluations."""
+    min: int = EVALUATION_SCORE_MIN
+    max: int = EVALUATION_SCORE_MAX
+
+
+class ManualEvaluation(BaseModel):
+    """Schema for manual evaluation data.
+
+    Used to validate stored evaluations when loading from disk.
+    """
+    manual_id: str
+    language: str
+    overall_score: int = Field(..., ge=EVALUATION_SCORE_MIN, le=EVALUATION_SCORE_MAX)
+    summary: str = ""
+    strengths: list[str] = []
+    areas_for_improvement: list[str] = []
+    recommendations: list[str] = []
+    objective_alignment: Optional[EvaluationScoreCategory] = None
+    audience_appropriateness: Optional[EvaluationScoreCategory] = None
+    general_usability: Optional[EvaluationScoreCategory] = None  # Used when no target context
+    clarity_and_completeness: Optional[EvaluationScoreCategory] = None
+    technical_accuracy: Optional[EvaluationScoreCategory] = None
+    structure_and_flow: Optional[EvaluationScoreCategory] = None
+    evaluated_at: str = ""
+    stored_at: Optional[str] = None
+    version: Optional[str] = None
+    target_audience: Optional[str] = None
+    target_objective: Optional[str] = None
+    score_range: Optional[EvaluationScoreRange] = None
+
+    @field_validator('language')
+    @classmethod
+    def validate_language(cls, v: str) -> str:
+        """Validate language is a supported ISO code."""
+        return normalize_language_to_code(v)

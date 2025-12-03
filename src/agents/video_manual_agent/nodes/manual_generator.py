@@ -6,7 +6,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from ..config import DEFAULT_GEMINI_MODEL
+from ..config import DEFAULT_GEMINI_MODEL, LLM_TEXT_TIMEOUT
 from ..prompts.system import MANUAL_GENERATOR_PROMPT
 from ..tools.video_tools import extract_screenshot_at_timestamp
 from ..state import VideoManualState
@@ -155,6 +155,7 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
     llm = ChatGoogleGenerativeAI(
         model=DEFAULT_GEMINI_MODEL,
         google_api_key=api_key,
+        timeout=LLM_TEXT_TIMEOUT,
     )
 
     # Prepare screenshot references for the prompt

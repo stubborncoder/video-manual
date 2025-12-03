@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Optional
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-from ..config import DEFAULT_GEMINI_MODEL, KEYFRAME_MIN_INTERVAL
+from ..config import DEFAULT_GEMINI_MODEL, KEYFRAME_MIN_INTERVAL, LLM_TEXT_TIMEOUT
 from ..prompts.system import KEYFRAME_IDENTIFIER_PROMPT
 from ..tools.video_tools import detect_scene_changes
 from ..state import VideoManualState
@@ -74,6 +74,7 @@ def identify_keyframes_node(state: VideoManualState) -> Dict[str, Any]:
     llm = ChatGoogleGenerativeAI(
         model=DEFAULT_GEMINI_MODEL,
         google_api_key=api_key,
+        timeout=LLM_TEXT_TIMEOUT,
     )
 
     # Prepare enhanced prompt

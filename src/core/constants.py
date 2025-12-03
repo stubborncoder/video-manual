@@ -12,6 +12,10 @@ DEFAULT_EVALUATION_MODEL = "gemini-2.0-flash-exp"
 EVALUATION_SCORE_MIN = 1
 EVALUATION_SCORE_MAX = 10
 
+# LLM timeout configuration (seconds)
+LLM_TIMEOUT_SECONDS = 60  # Default timeout for text-only LLM API calls
+LLM_VIDEO_TIMEOUT_SECONDS = 300  # Longer timeout for video analysis (5 minutes)
+
 # Supported language codes for manual generation
 # ISO 639-1 codes mapped to full names
 SUPPORTED_LANGUAGES = {
@@ -97,3 +101,34 @@ def is_valid_language(language: str) -> bool:
         if name.lower() == language_lower:
             return True
     return False
+
+
+def normalize_language_to_code(language: str) -> str:
+    """Normalize a language name or code to ISO 639-1 code.
+
+    Accepts both full names ("English", "Spanish") and codes ("en", "es").
+    Returns the ISO code in lowercase.
+
+    Args:
+        language: Language name or code
+
+    Returns:
+        ISO 639-1 language code (e.g., "en", "es")
+
+    Raises:
+        ValueError: If language is not supported
+    """
+    language_lower = language.lower()
+
+    # Check if it's already a code
+    if language_lower in SUPPORTED_LANGUAGES:
+        return language_lower
+
+    # Check if it's a name
+    for code, name in SUPPORTED_LANGUAGES.items():
+        if name.lower() == language_lower:
+            return code
+
+    # Not found
+    supported_codes = ", ".join(sorted(SUPPORTED_LANGUAGES.keys()))
+    raise ValueError(f"Unsupported language: {language}. Supported codes: {supported_codes}")

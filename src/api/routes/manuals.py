@@ -1,5 +1,6 @@
 """Manual management routes."""
 
+import asyncio
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -22,6 +23,8 @@ from ...core.constants import (
     DEFAULT_EVALUATION_MODEL,
     EVALUATION_SCORE_MIN,
     EVALUATION_SCORE_MAX,
+    LLM_TIMEOUT_SECONDS,
+    normalize_language_to_code,
 )
 
 
@@ -44,11 +47,12 @@ class ManualEvaluationRequest(BaseModel):
     @field_validator('language')
     @classmethod
     def validate_language(cls, v: str) -> str:
-        """Validate language code is supported."""
-        if v.lower() not in SUPPORTED_LANGUAGES:
-            supported = ", ".join(sorted(SUPPORTED_LANGUAGES.keys()))
-            raise ValueError(f"Unsupported language code: {v}. Supported: {supported}")
-        return v.lower()
+        """Validate and normalize language to ISO code.
+
+        Accepts both language names ("English") and codes ("en").
+        Returns the ISO 639-1 code.
+        """
+        return normalize_language_to_code(v)
 
 router = APIRouter(prefix="/manuals", tags=["manuals"])
 
@@ -947,23 +951,91 @@ async def download_manual_export(
 # ==================== Manual Evaluation ====================
 
 
-@router.post("/{manual_id}/evaluate")
+@router.post(
+    "/{manual_id}/evaluate",
+    summary="Evaluate manual quality",
+    description="""
+Evaluates a manual using AI to assess its quality across multiple dimensions.
+
+## Evaluation Categories
+
+When **target audience/objective are provided**, the evaluation includes:
+- **Objective Alignment**: How well the manual helps achieve the stated objective
+- **Audience Appropriateness**: Whether language and technical depth match the target audience
+
+When **no target context is provided**, evaluates:
+- **General Usability**: How easy it is for a general user to follow the manual
+
+**Always evaluated:**
+- **Clarity & Completeness**: Are instructions clear and complete?
+- **Technical Accuracy**: Are UI elements and actions correctly described?
+- **Structure & Flow**: Is the manual well-organized with logical progression?
+
+## Scoring
+
+Scores range from 1-10:
+- **10**: Exceptional, professional quality
+- **8-9**: Very good, minor improvements possible
+- **6-7**: Good, some notable areas for improvement
+- **4-5**: Adequate but needs significant improvement
+- **1-3**: Poor, major revisions needed
+
+## Response
+
+Returns a detailed evaluation with:
+- Overall score and summary
+- Individual category scores with explanations
+- Specific strengths identified
+- Areas for improvement
+- Actionable recommendations
+    """,
+    response_description="Evaluation results with scores, analysis, and recommendations",
+    responses={
+        200: {
+            "description": "Successful evaluation",
+            "content": {
+                "application/json": {
+                    "example": {
+                        "manual_id": "my-software-guide",
+                        "language": "en",
+                        "overall_score": 8,
+                        "summary": "A well-structured manual with clear instructions...",
+                        "strengths": ["Clear step-by-step instructions", "Good use of screenshots"],
+                        "areas_for_improvement": ["Could add more context for beginners"],
+                        "clarity_and_completeness": {"score": 8, "explanation": "Instructions are clear..."},
+                        "technical_accuracy": {"score": 9, "explanation": "UI elements correctly described..."},
+                        "structure_and_flow": {"score": 7, "explanation": "Good organization..."},
+                        "recommendations": ["Add a troubleshooting section", "Include keyboard shortcuts"],
+                        "evaluated_at": "2024-01-15T10:30:00",
+                        "score_range": {"min": 1, "max": 10}
+                    }
+                }
+            }
+        },
+        404: {"description": "Manual or language not found"},
+        422: {"description": "Invalid language code"},
+        500: {"description": "Evaluation failed (API error)"}
+    }
+)
 async def evaluate_manual(
     manual_id: str,
     evaluation_request: ManualEvaluationRequest,
     user_id: CurrentUser,
     storage: UserStorageDep,
 ) -> dict:
-    """Evaluate a manual against its target objective.
+    """Evaluate a manual's quality using AI analysis.
 
-    Uses Gemini AI to assess:
-    - How well the manual achieves its stated objective
-    - Completeness and clarity for the target audience
-    - Areas for improvement
-    - Overall quality rating
+    Uses Gemini AI to assess the manual across multiple quality dimensions,
+    providing scores, explanations, and actionable recommendations.
+
+    Args:
+        manual_id: The unique identifier of the manual to evaluate
+        evaluation_request: Request containing the language code to evaluate
+        user_id: Current authenticated user
+        storage: User storage dependency
 
     Returns:
-        Evaluation report with scores and recommendations
+        Comprehensive evaluation report with scores and recommendations
     """
     import os
     from dotenv import load_dotenv
@@ -971,19 +1043,21 @@ async def evaluate_manual(
 
     load_dotenv()
 
-    # Get manual content and metadata
+    # Get manual content and metadata (use asyncio.to_thread for blocking I/O)
     manual_dir = storage.manuals_dir / manual_id
     if not manual_dir.exists():
         raise HTTPException(status_code=404, detail="Manual not found")
 
-    content = storage.get_manual_content(manual_id, evaluation_request.language)
+    content = await asyncio.to_thread(
+        storage.get_manual_content, manual_id, evaluation_request.language
+    )
     if not content:
         raise HTTPException(
             status_code=404,
             detail=f"Manual content not found for language: {evaluation_request.language}"
         )
 
-    metadata = storage.get_manual_metadata(manual_id)
+    metadata = await asyncio.to_thread(storage.get_manual_metadata, manual_id)
     if not metadata:
         raise HTTPException(status_code=404, detail="Manual metadata not found")
 
@@ -995,8 +1069,9 @@ async def evaluate_manual(
         raise HTTPException(status_code=400, detail=str(e))
 
     # Build evaluation prompt with context if available
+    has_context = bool(target_audience or target_objective)
     context_section = ""
-    if target_audience or target_objective:
+    if has_context:
         context_section = "\n\n**Evaluation Context:**"
         if target_audience:
             context_section += f"\n- Target Audience: {target_audience}"
@@ -1006,6 +1081,41 @@ async def evaluate_manual(
         context_section = "\n\n*No specific target audience or objective was defined for this manual. Evaluate based on general documentation best practices.*"
 
     score_range = f"{EVALUATION_SCORE_MIN}-{EVALUATION_SCORE_MAX}"
+
+    # Build dynamic evaluation categories based on available context
+    # Always include these core categories
+    core_categories = f'''  "clarity_and_completeness": {{
+    "score": <number {score_range}>,
+    "explanation": "<are instructions clear, unambiguous, and complete? Are there any missing steps or confusing explanations?>"
+  }},
+  "technical_accuracy": {{
+    "score": <number {score_range}>,
+    "explanation": "<are the technical instructions accurate? Are UI elements, buttons, and actions correctly described?>"
+  }},
+  "structure_and_flow": {{
+    "score": <number {score_range}>,
+    "explanation": "<is the manual well-organized with logical progression? Are headings clear? Is navigation easy?>"
+  }},'''
+
+    # Add context-dependent categories only when context is provided
+    if has_context:
+        context_categories = f'''  "objective_alignment": {{
+    "score": <number {score_range}>,
+    "explanation": "<how well does the manual help readers achieve the stated objective? Does it cover all necessary steps?>"
+  }},
+  "audience_appropriateness": {{
+    "score": <number {score_range}>,
+    "explanation": "<is the language, tone, and technical depth appropriate for the target audience? Are prerequisites clearly stated?>"
+  }},
+'''
+    else:
+        # When no context, evaluate general usability instead
+        context_categories = f'''  "general_usability": {{
+    "score": <number {score_range}>,
+    "explanation": "<how easy is it for a general user to follow and understand this manual? Is it self-contained and accessible?>"
+  }},
+'''
+
     evaluation_prompt = f"""You are an expert technical documentation evaluator specializing in user manuals and instructional content. Please evaluate the following user manual.
 {context_section}
 
@@ -1031,26 +1141,7 @@ Provide your evaluation in the following JSON format:
     "<another area>",
     ...
   ],
-  "objective_alignment": {{
-    "score": <number {score_range}>,
-    "explanation": "<how well does the manual help readers achieve the stated objective? Does it cover all necessary steps?>"
-  }},
-  "audience_appropriateness": {{
-    "score": <number {score_range}>,
-    "explanation": "<is the language, tone, and technical depth appropriate for the target audience? Are prerequisites clearly stated?>"
-  }},
-  "clarity_and_completeness": {{
-    "score": <number {score_range}>,
-    "explanation": "<are instructions clear, unambiguous, and complete? Are there any missing steps or confusing explanations?>"
-  }},
-  "technical_accuracy": {{
-    "score": <number {score_range}>,
-    "explanation": "<are the technical instructions accurate? Are UI elements, buttons, and actions correctly described?>"
-  }},
-  "structure_and_flow": {{
-    "score": <number {score_range}>,
-    "explanation": "<is the manual well-organized with logical progression? Are headings clear? Is navigation easy?>"
-  }},
+{context_categories}{core_categories}
   "recommendations": [
     "<specific actionable recommendation to improve the manual>",
     "<another recommendation>",
@@ -1080,9 +1171,11 @@ Provide your evaluation as valid JSON only, with no additional text before or af
             model=DEFAULT_EVALUATION_MODEL,
             google_api_key=api_key,
             temperature=0.3,
+            timeout=LLM_TIMEOUT_SECONDS,
         )
 
-        response = llm.invoke(evaluation_prompt)
+        # Use asyncio.to_thread for the blocking LLM call
+        response = await asyncio.to_thread(llm.invoke, evaluation_prompt)
         evaluation_text = response.content
 
         # Parse JSON response
@@ -1110,12 +1203,14 @@ Provide your evaluation as valid JSON only, with no additional text before or af
             evaluation_data["overall_score"] = validate_score(evaluation_data["overall_score"])
 
         # Validate nested scores for all evaluation categories
+        # Include both context-dependent and context-independent categories
         score_categories = [
-            "objective_alignment",
-            "audience_appropriateness",
-            "clarity_and_completeness",
-            "technical_accuracy",
-            "structure_and_flow",
+            "objective_alignment",       # Only when has_context
+            "audience_appropriateness",  # Only when has_context
+            "general_usability",         # Only when no context
+            "clarity_and_completeness",  # Always
+            "technical_accuracy",        # Always
+            "structure_and_flow",        # Always
         ]
         for key in score_categories:
             if key in evaluation_data and isinstance(evaluation_data[key], dict):
@@ -1133,11 +1228,12 @@ Provide your evaluation as valid JSON only, with no additional text before or af
             "max": EVALUATION_SCORE_MAX,
         }
 
-        # Save evaluation to storage (per-version)
+        # Save evaluation to storage (per-version, use asyncio.to_thread for blocking I/O)
         version_storage = VersionStorage(user_id, manual_id)
-        saved_evaluation = version_storage.save_evaluation(
+        saved_evaluation = await asyncio.to_thread(
+            version_storage.save_evaluation,
             evaluation_data,
-            language=evaluation_request.language,
+            evaluation_request.language,
         )
 
         return saved_evaluation

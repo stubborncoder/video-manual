@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
@@ -55,6 +55,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,11 +64,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown, ClipboardCheck, Users, Target, History, Clock, MoreHorizontal } from "lucide-react";
+import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown, ClipboardCheck, Users, Target, History, Clock, MoreHorizontal, HelpCircle } from "lucide-react";
 import { manuals, manualProject, projects, type ManualSummary, type ManualDetail, type ProjectSummary, type ManualEvaluation } from "@/lib/api";
 import { useVideoProcessing } from "@/hooks/useWebSocket";
 import { ProcessingProgress } from "@/components/processing/ProcessingProgress";
-import { SUPPORTED_LANGUAGES } from "@/lib/constants";
+import { SUPPORTED_LANGUAGES, getScoreColorByRaw, getScoreColorByPercentage, getScoreLevel, SCORE_LEVEL_DESCRIPTIONS } from "@/lib/constants";
 
 // Extended manual info with additional data
 interface ManualWithProject extends ManualSummary {
@@ -141,6 +142,12 @@ export default function ManualsPage() {
   const [viewingEvaluation, setViewingEvaluation] = useState<ManualEvaluation | null>(null);
   const [loadingViewEval, setLoadingViewEval] = useState(false);
 
+  // Export loading state (tracks which manual/format is exporting)
+  const [exportingManual, setExportingManual] = useState<string | null>(null);
+
+  // Abort controller ref for cancelling in-flight evaluation requests
+  const evalAbortControllerRef = useRef<AbortController | null>(null);
+
   useEffect(() => {
     loadManuals();
     loadProjects();
@@ -207,20 +214,46 @@ export default function ManualsPage() {
   }
 
   async function loadViewingEvaluation(manualId: string, language: string) {
+    // Cancel any in-flight request to prevent race conditions
+    if (evalAbortControllerRef.current) {
+      evalAbortControllerRef.current.abort();
+    }
+
+    // Create new abort controller for this request
+    const abortController = new AbortController();
+    evalAbortControllerRef.current = abortController;
+
+    // Clear stale data immediately
+    setViewingEvaluation(null);
     setLoadingViewEval(true);
+
     try {
+      // Check if aborted before each async operation
+      if (abortController.signal.aborted) return;
+
       // Get the current version first
       const versionsRes = await manuals.listVersions(manualId);
+
+      if (abortController.signal.aborted) return;
+
       const currentVersion = versionsRes.current_version;
 
       // Try to load evaluation for current version and language
       const evaluation = await manuals.getEvaluation(manualId, currentVersion, language);
+
+      if (abortController.signal.aborted) return;
+
       setViewingEvaluation(evaluation);
-    } catch {
+    } catch (e) {
+      // Ignore abort errors, but handle other errors
+      if (e instanceof Error && e.name === 'AbortError') return;
       // No evaluation found - that's ok
       setViewingEvaluation(null);
     } finally {
-      setLoadingViewEval(false);
+      // Only update loading state if this request wasn't aborted
+      if (!abortController.signal.aborted) {
+        setLoadingViewEval(false);
+      }
     }
   }
 
@@ -394,6 +427,10 @@ export default function ManualsPage() {
 
   // Export manual
   async function handleExport(manual: ManualWithProject, format: "pdf" | "word" | "html") {
+    // Prevent multiple exports of the same manual simultaneously
+    if (exportingManual === manual.id) return;
+
+    setExportingManual(manual.id);
     try {
       const language = manual.languages[0] || "en";
       const result = await manuals.export(manual.id, format, language);
@@ -412,6 +449,8 @@ export default function ManualsPage() {
     } catch (e) {
       const message = e instanceof Error ? e.message : "Export failed";
       toast.error("Export failed", { description: message });
+    } finally {
+      setExportingManual(null);
     }
   }
 
@@ -847,17 +886,40 @@ export default function ManualsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
-                      <DropdownMenuLabel className="text-xs text-muted-foreground">Export</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => handleExport(manual, "pdf")}>
-                        <FileDown className="mr-2 h-4 w-4" />
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">
+                        {exportingManual === manual.id ? "Exporting..." : "Export"}
+                      </DropdownMenuLabel>
+                      <DropdownMenuItem
+                        onClick={() => handleExport(manual, "pdf")}
+                        disabled={exportingManual === manual.id}
+                      >
+                        {exportingManual === manual.id ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <FileDown className="mr-2 h-4 w-4" />
+                        )}
                         Export as PDF
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleExport(manual, "word")}>
-                        <FileDown className="mr-2 h-4 w-4" />
+                      <DropdownMenuItem
+                        onClick={() => handleExport(manual, "word")}
+                        disabled={exportingManual === manual.id}
+                      >
+                        {exportingManual === manual.id ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <FileDown className="mr-2 h-4 w-4" />
+                        )}
                         Export as Word
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleExport(manual, "html")}>
-                        <FileDown className="mr-2 h-4 w-4" />
+                      <DropdownMenuItem
+                        onClick={() => handleExport(manual, "html")}
+                        disabled={exportingManual === manual.id}
+                      >
+                        {exportingManual === manual.id ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <FileDown className="mr-2 h-4 w-4" />
+                        )}
                         Export as HTML
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
@@ -972,15 +1034,10 @@ export default function ManualsPage() {
                           openEvaluateDialog(manual, viewingLanguage);
                         }
                       }}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors ${
-                        viewingEvaluation.overall_score >= 8
-                          ? 'bg-green-500/10 text-green-600 hover:bg-green-500/20'
-                          : viewingEvaluation.overall_score >= 6
-                          ? 'bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20'
-                          : viewingEvaluation.overall_score >= 4
-                          ? 'bg-orange-500/10 text-orange-600 hover:bg-orange-500/20'
-                          : 'bg-red-500/10 text-red-600 hover:bg-red-500/20'
-                      }`}
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors ${(() => {
+                        const colors = getScoreColorByRaw(viewingEvaluation.overall_score);
+                        return `${colors.bgLight} ${colors.text} ${colors.hoverBg}`;
+                      })()}`}
                       title="View evaluation details"
                     >
                       <ClipboardCheck className="h-4 w-4" />
@@ -1497,7 +1554,26 @@ export default function ManualsPage() {
                     {evaluationResult.overall_score}
                     <span className="text-2xl text-muted-foreground font-normal">/{evaluationResult.score_range?.max || 10}</span>
                   </p>
-                  <p className="text-sm text-muted-foreground">Overall Score</p>
+                  <div className="flex items-center justify-center gap-2">
+                    <p className="text-sm text-muted-foreground">Overall Score</p>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-xs text-left">
+                        <p className="font-semibold mb-1">Scoring Guide</p>
+                        <ul className="space-y-0.5 text-xs">
+                          <li><span className="text-green-500">8-10:</span> Excellent - Professional quality</li>
+                          <li><span className="text-yellow-500">6-7:</span> Good - Minor improvements possible</li>
+                          <li><span className="text-orange-500">4-5:</span> Fair - Needs improvement</li>
+                          <li><span className="text-red-500">1-3:</span> Poor - Major revisions needed</li>
+                        </ul>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <p className={`text-sm font-medium mt-1 ${getScoreColorByRaw(evaluationResult.overall_score).text}`}>
+                    {SCORE_LEVEL_DESCRIPTIONS[getScoreLevel(evaluationResult.overall_score)]}
+                  </p>
                 </div>
 
                 {/* Summary */}
@@ -1507,12 +1583,33 @@ export default function ManualsPage() {
 
                 {/* Score Breakdown - Visual Progress Bars */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Score Breakdown</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Score Breakdown</h3>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-sm text-left">
+                        <p className="font-semibold mb-2">Evaluation Categories</p>
+                        <ul className="space-y-1.5 text-xs">
+                          <li><span className="font-medium">Objective Alignment:</span> How well the manual helps achieve its stated goal</li>
+                          <li><span className="font-medium">Audience Appropriateness:</span> Language and depth match the target audience</li>
+                          <li><span className="font-medium">General Usability:</span> Ease of use for general readers (when no target set)</li>
+                          <li><span className="font-medium">Clarity & Completeness:</span> Instructions are clear with no missing steps</li>
+                          <li><span className="font-medium">Technical Accuracy:</span> UI elements and actions correctly described</li>
+                          <li><span className="font-medium">Structure & Flow:</span> Well-organized with logical progression</li>
+                        </ul>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
 
-                  {/* Score Item Component */}
+                  {/* Score Item Component - includes context-dependent and always-present categories */}
                   {[
+                    // Context-dependent categories (only one set will be present)
                     { key: 'objective_alignment', label: 'Objective Alignment', data: evaluationResult.objective_alignment },
                     { key: 'audience_appropriateness', label: 'Audience Appropriateness', data: evaluationResult.audience_appropriateness },
+                    { key: 'general_usability', label: 'General Usability', data: evaluationResult.general_usability },
+                    // Always-present categories
                     { key: 'clarity_and_completeness', label: 'Clarity & Completeness', data: evaluationResult.clarity_and_completeness },
                     { key: 'technical_accuracy', label: 'Technical Accuracy', data: evaluationResult.technical_accuracy },
                     { key: 'structure_and_flow', label: 'Structure & Flow', data: evaluationResult.structure_and_flow },
@@ -1520,12 +1617,6 @@ export default function ManualsPage() {
                     const score = data.score;
                     const maxScore = evaluationResult.score_range?.max || 10;
                     const percentage = (score / maxScore) * 100;
-                    const getScoreColor = (pct: number) => {
-                      if (pct >= 80) return 'bg-green-500';
-                      if (pct >= 60) return 'bg-yellow-500';
-                      if (pct >= 40) return 'bg-orange-500';
-                      return 'bg-red-500';
-                    };
 
                     return (
                       <div key={key} className="space-y-2">
@@ -1535,7 +1626,7 @@ export default function ManualsPage() {
                         </div>
                         <div className="h-2 bg-muted rounded-full overflow-hidden">
                           <div
-                            className={`h-full ${getScoreColor(percentage)} transition-all duration-500`}
+                            className={`h-full ${getScoreColorByPercentage(percentage)} transition-all duration-500`}
                             style={{ width: `${percentage}%` }}
                           />
                         </div>

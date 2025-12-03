@@ -34,3 +34,7 @@ OPTIMIZED_AUDIO_BITRATE = "64k"  # Mono audio for voiceover analysis
 # Gemini Upload Thresholds
 INLINE_SIZE_THRESHOLD = 20 * 1024 * 1024  # 20MB - use Files API if larger
 GEMINI_FILES_API_EXPIRY = 48 * 60 * 60  # 48 hours in seconds
+
+# LLM Timeout Configuration (seconds)
+LLM_VIDEO_TIMEOUT = 300  # 5 minutes for video analysis (can be slow for long videos)
+LLM_TEXT_TIMEOUT = 60  # 1 minute for text-only operations

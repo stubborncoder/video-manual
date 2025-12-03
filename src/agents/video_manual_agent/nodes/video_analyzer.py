@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 
-from ..config import DEFAULT_GEMINI_MODEL, INLINE_SIZE_THRESHOLD
+from ..config import DEFAULT_GEMINI_MODEL, INLINE_SIZE_THRESHOLD, LLM_VIDEO_TIMEOUT
 from ..prompts.system import VIDEO_ANALYZER_PROMPT
 from ..tools.video_tools import get_video_metadata
 from ..tools.video_preprocessor import (
@@ -250,10 +250,11 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
                 "optimized_video_path": optimized_video_path,
             }
 
-    # Create LLM and invoke
+    # Create LLM with timeout and invoke
     llm = ChatGoogleGenerativeAI(
         model=DEFAULT_GEMINI_MODEL,
         google_api_key=api_key,
+        timeout=LLM_VIDEO_TIMEOUT,
     )
 
     try:

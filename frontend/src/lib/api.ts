@@ -195,11 +195,12 @@ export interface ManualEvaluation {
   summary: string;
   strengths: string[];
   areas_for_improvement: string[];
-  // Core evaluation categories
-  objective_alignment: EvaluationScoreCategory;
-  audience_appropriateness: EvaluationScoreCategory;
-  clarity_and_completeness: EvaluationScoreCategory;
-  // Extended evaluation categories
+  // Context-dependent categories (only one set will be present)
+  objective_alignment?: EvaluationScoreCategory;    // When target context provided
+  audience_appropriateness?: EvaluationScoreCategory; // When target context provided
+  general_usability?: EvaluationScoreCategory;      // When no target context
+  // Always-present categories
+  clarity_and_completeness?: EvaluationScoreCategory;
   technical_accuracy?: EvaluationScoreCategory;
   structure_and_flow?: EvaluationScoreCategory;
   // Metadata
