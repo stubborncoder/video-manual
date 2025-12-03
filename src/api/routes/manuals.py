@@ -1243,7 +1243,19 @@ Provide your evaluation as valid JSON only, with no additional text before or af
             status_code=500,
             detail=f"Failed to parse evaluation response: {str(e)}"
         )
+    except (asyncio.TimeoutError, TimeoutError):
+        raise HTTPException(
+            status_code=504,
+            detail="Evaluation timed out. The manual may be too long or the API is experiencing delays. Please try again."
+        )
     except Exception as e:
+        # Check for timeout-related errors from HTTP libraries (httpx, requests, etc.)
+        error_msg = str(e).lower()
+        if "timeout" in error_msg or "timed out" in error_msg:
+            raise HTTPException(
+                status_code=504,
+                detail="Evaluation timed out. The manual may be too long or the API is experiencing delays. Please try again."
+            )
         raise HTTPException(
             status_code=500,
             detail=f"Evaluation failed: {str(e)}"
