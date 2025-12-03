@@ -65,7 +65,7 @@ export function Sidebar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="relative w-full h-12 flex items-center justify-center">
-                  <FileVideo className="h-11 w-11 text-primary" strokeWidth={1.5} />
+                  <FileVideo className="h-11 w-11 text-primary" strokeWidth={1.5} aria-label="vDocs logo" />
                 </div>
               </TooltipTrigger>
               <TooltipContent side="right">vDocs</TooltipContent>
@@ -73,7 +73,7 @@ export function Sidebar() {
           ) : (
             <div className="flex items-center gap-3">
               <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
-                <FileVideo className="h-11 w-11 text-primary" strokeWidth={1.5} />
+                <FileVideo className="h-11 w-11 text-primary" strokeWidth={1.5} aria-label="vDocs logo" />
               </div>
               <h1 className="text-xl font-bold">v<span className="text-primary">D</span>ocs</h1>
             </div>

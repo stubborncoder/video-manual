@@ -2,6 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+
+// Validation constants
+const VALIDATION_LIMITS = {
+  PROJECT_NAME_MAX_LENGTH: 100,
+  PROJECT_DESC_MAX_LENGTH: 500,
+  CHAPTER_TITLE_MAX_LENGTH: 200,
+  CHAPTER_DESC_MAX_LENGTH: 1000,
+} as const;
+
+const INVALID_CHARS_PATTERN = /[<>]/;
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -91,6 +101,35 @@ import { CompilerView } from "@/components/compiler/CompilerView";
 import { CompilationVersionHistory } from "@/components/projects/CompilationVersionHistory";
 import type { CompileSettings } from "@/lib/types";
 
+// Validation helper
+interface ValidationResult {
+  isValid: boolean;
+  error?: string;
+}
+
+function validateInput(
+  value: string,
+  fieldName: string,
+  maxLength: number,
+  required: boolean = true
+): ValidationResult {
+  const trimmed = value.trim();
+
+  if (required && !trimmed) {
+    return { isValid: false, error: `${fieldName} is required` };
+  }
+
+  if (trimmed.length > maxLength) {
+    return { isValid: false, error: `${fieldName} too long (max ${maxLength} characters)` };
+  }
+
+  if (INVALID_CHARS_PATTERN.test(trimmed)) {
+    return { isValid: false, error: `${fieldName} contains invalid characters (< >)` };
+  }
+
+  return { isValid: true };
+}
+
 // Extended info for delete confirmation
 interface ProjectDeleteInfo extends ProjectSummary {
   chapters_with_manuals?: {
@@ -176,7 +215,28 @@ export default function ProjectsPage() {
   }
 
   async function handleCreate() {
-    if (!newProjectName.trim()) return;
+    // Validate name
+    const nameValidation = validateInput(
+      newProjectName,
+      "Project name",
+      VALIDATION_LIMITS.PROJECT_NAME_MAX_LENGTH
+    );
+    if (!nameValidation.isValid) {
+      toast.error(nameValidation.error!);
+      return;
+    }
+
+    // Validate description (optional field)
+    const descValidation = validateInput(
+      newProjectDesc,
+      "Description",
+      VALIDATION_LIMITS.PROJECT_DESC_MAX_LENGTH,
+      false
+    );
+    if (!descValidation.isValid) {
+      toast.error(descValidation.error!);
+      return;
+    }
 
     try {
       await projects.create(newProjectName.trim(), newProjectDesc.trim());
@@ -186,8 +246,10 @@ export default function ProjectsPage() {
       setNewProjectDesc("");
       await loadProjects();
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Create failed";
-      toast.error("Create failed", { description: message });
+      console.error("Failed to create project:", e);
+      toast.error("Failed to create project", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     }
   }
 
@@ -199,7 +261,30 @@ export default function ProjectsPage() {
   }
 
   async function handleEdit() {
-    if (!editProjectId || !editName.trim()) return;
+    if (!editProjectId) return;
+
+    // Validate name
+    const nameValidation = validateInput(
+      editName,
+      "Project name",
+      VALIDATION_LIMITS.PROJECT_NAME_MAX_LENGTH
+    );
+    if (!nameValidation.isValid) {
+      toast.error(nameValidation.error!);
+      return;
+    }
+
+    // Validate description (optional field)
+    const descValidation = validateInput(
+      editDescription,
+      "Description",
+      VALIDATION_LIMITS.PROJECT_DESC_MAX_LENGTH,
+      false
+    );
+    if (!descValidation.isValid) {
+      toast.error(descValidation.error!);
+      return;
+    }
 
     setSaving(true);
     try {
@@ -213,8 +298,10 @@ export default function ProjectsPage() {
         setSelectedProject(detail);
       }
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Update failed";
-      toast.error("Update failed", { description: message });
+      console.error("Failed to update project:", e);
+      toast.error("Failed to update project", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     } finally {
       setSaving(false);
     }
@@ -241,8 +328,10 @@ export default function ProjectsPage() {
       setProjectToDelete(null);
       await loadProjects();
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Delete failed";
-      toast.error("Delete failed", { description: message });
+      console.error("Failed to delete project:", e);
+      toast.error("Failed to delete project", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     } finally {
       setDeleting(false);
     }
@@ -254,14 +343,39 @@ export default function ProjectsPage() {
       setSelectedProject(detail);
       setProjectSheetOpen(true);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to load project";
-      toast.error("Error", { description: message });
+      console.error("Failed to load project details:", e);
+      toast.error("Failed to load project details", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     }
   }
 
   // Chapter handlers
   async function handleAddChapter() {
-    if (!selectedProject || !newChapterTitle.trim()) return;
+    if (!selectedProject) return;
+
+    // Validate title
+    const titleValidation = validateInput(
+      newChapterTitle,
+      "Chapter title",
+      VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH
+    );
+    if (!titleValidation.isValid) {
+      toast.error(titleValidation.error!);
+      return;
+    }
+
+    // Validate description (optional field)
+    const descValidation = validateInput(
+      newChapterDesc,
+      "Chapter description",
+      VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH,
+      false
+    );
+    if (!descValidation.isValid) {
+      toast.error(descValidation.error!);
+      return;
+    }
 
     try {
       await projects.addChapter(selectedProject.id, newChapterTitle.trim(), newChapterDesc.trim());
@@ -273,13 +387,38 @@ export default function ProjectsPage() {
       const detail = await projects.get(selectedProject.id);
       setSelectedProject(detail);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to add chapter";
-      toast.error("Error", { description: message });
+      console.error("Failed to add chapter:", e);
+      toast.error("Failed to add chapter", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     }
   }
 
   async function handleEditChapter() {
-    if (!selectedProject || !editChapterId || !editChapterTitle.trim()) return;
+    if (!selectedProject || !editChapterId) return;
+
+    // Validate title
+    const titleValidation = validateInput(
+      editChapterTitle,
+      "Chapter title",
+      VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH
+    );
+    if (!titleValidation.isValid) {
+      toast.error(titleValidation.error!);
+      return;
+    }
+
+    // Validate description (optional field)
+    const descValidation = validateInput(
+      editChapterDesc,
+      "Chapter description",
+      VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH,
+      false
+    );
+    if (!descValidation.isValid) {
+      toast.error(descValidation.error!);
+      return;
+    }
 
     try {
       await projects.updateChapter(selectedProject.id, editChapterId, editChapterTitle.trim(), editChapterDesc.trim());
@@ -289,8 +428,10 @@ export default function ProjectsPage() {
       const detail = await projects.get(selectedProject.id);
       setSelectedProject(detail);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to update chapter";
-      toast.error("Error", { description: message });
+      console.error("Failed to update chapter:", e);
+      toast.error("Failed to update chapter", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     }
   }
 
@@ -304,8 +445,10 @@ export default function ProjectsPage() {
       const detail = await projects.get(selectedProject.id);
       setSelectedProject(detail);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to delete chapter";
-      toast.error("Error", { description: message });
+      console.error("Failed to delete chapter:", e);
+      toast.error("Failed to delete chapter", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     }
   }
 
@@ -319,8 +462,10 @@ export default function ProjectsPage() {
       const detail = await projects.get(selectedProject.id);
       setSelectedProject(detail);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to remove manual";
-      toast.error("Error", { description: message });
+      console.error("Failed to remove manual from project:", e);
+      toast.error("Failed to remove manual from project", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     }
   }
 
@@ -360,9 +505,9 @@ export default function ProjectsPage() {
         description: result.output_path,
       });
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Export failed";
-      toast.error("Export failed", {
-        description: message,
+      console.error("Failed to export project:", e);
+      toast.error("Failed to export project", {
+        description: e instanceof Error ? e.message : "Unknown error",
       });
     } finally {
       setExporting(null);
@@ -376,8 +521,10 @@ export default function ProjectsPage() {
       setSelectedManual(manual);
       setViewManualOpen(true);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to load manual";
-      toast.error("Error", { description: message });
+      console.error("Failed to load manual:", e);
+      toast.error("Failed to load manual", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
     } finally {
       setLoadingManual(false);
     }
@@ -486,19 +633,31 @@ export default function ProjectsPage() {
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Name</Label>
+                  <div className="flex items-center justify-between">
+                    <Label>Name</Label>
+                    <span className="text-xs text-muted-foreground">
+                      {newProjectName.length}/{VALIDATION_LIMITS.PROJECT_NAME_MAX_LENGTH}
+                    </span>
+                  </div>
                   <Input
                     value={newProjectName}
                     onChange={(e) => setNewProjectName(e.target.value)}
                     placeholder="Project name"
+                    maxLength={VALIDATION_LIMITS.PROJECT_NAME_MAX_LENGTH}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Description</Label>
+                  <div className="flex items-center justify-between">
+                    <Label>Description</Label>
+                    <span className="text-xs text-muted-foreground">
+                      {newProjectDesc.length}/{VALIDATION_LIMITS.PROJECT_DESC_MAX_LENGTH}
+                    </span>
+                  </div>
                   <Input
                     value={newProjectDesc}
                     onChange={(e) => setNewProjectDesc(e.target.value)}
                     placeholder="Optional description"
+                    maxLength={VALIDATION_LIMITS.PROJECT_DESC_MAX_LENGTH}
                   />
                 </div>
                 <Button onClick={handleCreate} className="w-full">
@@ -596,7 +755,7 @@ export default function ProjectsPage() {
                     </div>
                   </div>
 
-                  {project.chapter_count !== undefined && project.chapter_count > 0 && (
+                  {project.chapter_count !== undefined && (
                     <div className="flex items-center gap-2">
                       <div className="flex items-center justify-center h-8 w-8 rounded-md bg-secondary text-secondary-foreground">
                         <BookOpen className="h-4 w-4" />
@@ -799,16 +958,34 @@ export default function ProjectsPage() {
                               <CardContent className="p-4">
                                 {isEditing ? (
                                   <div className="space-y-3">
-                                    <Input
-                                      value={editChapterTitle}
-                                      onChange={(e) => setEditChapterTitle(e.target.value)}
-                                      placeholder="Chapter title"
-                                    />
-                                    <Input
-                                      value={editChapterDesc}
-                                      onChange={(e) => setEditChapterDesc(e.target.value)}
-                                      placeholder="Description (optional)"
-                                    />
+                                    <div>
+                                      <div className="flex items-center justify-between mb-1">
+                                        <span className="text-sm font-medium">Title</span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {editChapterTitle.length}/{VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH}
+                                        </span>
+                                      </div>
+                                      <Input
+                                        value={editChapterTitle}
+                                        onChange={(e) => setEditChapterTitle(e.target.value)}
+                                        placeholder="Chapter title"
+                                        maxLength={VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH}
+                                      />
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center justify-between mb-1">
+                                        <span className="text-sm font-medium">Description</span>
+                                        <span className="text-xs text-muted-foreground">
+                                          {editChapterDesc.length}/{VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH}
+                                        </span>
+                                      </div>
+                                      <Input
+                                        value={editChapterDesc}
+                                        onChange={(e) => setEditChapterDesc(e.target.value)}
+                                        placeholder="Description (optional)"
+                                        maxLength={VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH}
+                                      />
+                                    </div>
                                     <div className="flex gap-2">
                                       <Button size="sm" onClick={handleEditChapter}>
                                         Save
@@ -1082,19 +1259,31 @@ export default function ProjectsPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Title</Label>
+              <div className="flex items-center justify-between">
+                <Label>Title</Label>
+                <span className="text-xs text-muted-foreground">
+                  {newChapterTitle.length}/{VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH}
+                </span>
+              </div>
               <Input
                 value={newChapterTitle}
                 onChange={(e) => setNewChapterTitle(e.target.value)}
                 placeholder="Chapter title"
+                maxLength={VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH}
               />
             </div>
             <div className="space-y-2">
-              <Label>Description</Label>
+              <div className="flex items-center justify-between">
+                <Label>Description</Label>
+                <span className="text-xs text-muted-foreground">
+                  {newChapterDesc.length}/{VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH}
+                </span>
+              </div>
               <Input
                 value={newChapterDesc}
                 onChange={(e) => setNewChapterDesc(e.target.value)}
                 placeholder="Optional description"
+                maxLength={VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH}
               />
             </div>
           </div>
@@ -1117,20 +1306,32 @@ export default function ProjectsPage() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Name</Label>
+              <div className="flex items-center justify-between">
+                <Label>Name</Label>
+                <span className="text-xs text-muted-foreground">
+                  {editName.length}/{VALIDATION_LIMITS.PROJECT_NAME_MAX_LENGTH}
+                </span>
+              </div>
               <Input
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 placeholder="Project name"
+                maxLength={VALIDATION_LIMITS.PROJECT_NAME_MAX_LENGTH}
               />
             </div>
             <div className="space-y-2">
-              <Label>Description</Label>
+              <div className="flex items-center justify-between">
+                <Label>Description</Label>
+                <span className="text-xs text-muted-foreground">
+                  {editDescription.length}/{VALIDATION_LIMITS.PROJECT_DESC_MAX_LENGTH}
+                </span>
+              </div>
               <Textarea
                 value={editDescription}
                 onChange={(e) => setEditDescription(e.target.value)}
                 placeholder="Optional description"
                 rows={3}
+                maxLength={VALIDATION_LIMITS.PROJECT_DESC_MAX_LENGTH}
               />
             </div>
           </div>
