@@ -71,9 +71,19 @@ class VideoManualRunner:
         output_filename: Optional[str] = None,
         use_scene_detection: bool = False,
         output_language: str = "English",
+        target_audience: Optional[str] = None,
+        target_objective: Optional[str] = None,
     ) -> Iterator[ProgressEvent]:
         """
         Run the video manual agent and yield progress events.
+
+        Args:
+            video_path: Path to the video file
+            output_filename: Optional custom filename
+            use_scene_detection: Whether to use scene detection
+            output_language: Target language for the manual
+            target_audience: Target audience for the manual
+            target_objective: Target objective of the manual
 
         Yields:
             ProgressEvent objects for each state change
@@ -105,6 +115,8 @@ class VideoManualRunner:
             "output_filename": output_filename,
             "use_scene_detection": use_scene_detection,
             "output_language": output_language,
+            "target_audience": target_audience,
+            "target_objective": target_objective,
             "video_metadata": None,
             "video_analysis": None,
             "model_used": None,

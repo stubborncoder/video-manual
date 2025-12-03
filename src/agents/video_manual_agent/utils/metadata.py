@@ -54,6 +54,8 @@ def create_metadata(
     project_id: Optional[str] = None,
     chapter_id: Optional[str] = None,
     tags: Optional[List[str]] = None,
+    target_audience: Optional[str] = None,
+    target_objective: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Create a new metadata dictionary.
 
@@ -63,6 +65,8 @@ def create_metadata(
         project_id: Optional project this manual belongs to
         chapter_id: Optional chapter within the project
         tags: Optional list of tags
+        target_audience: Target audience for the manual
+        target_objective: Target objective of the manual
 
     Returns:
         New metadata dictionary
@@ -81,6 +85,9 @@ def create_metadata(
         "project_id": project_id,
         "chapter_id": chapter_id,
         "tags": tags or [],
+        # Manual context (immutable across languages)
+        "target_audience": target_audience,
+        "target_objective": target_objective,
         # Version tracking
         "version": {
             "number": "1.0.0",
@@ -464,3 +471,36 @@ def bump_version(manual_dir: Path, bump_type: str = "patch") -> str:
         patch += 1
 
     return f"{major}.{minor}.{patch}"
+
+
+# ==================== Manual Context ====================
+
+
+def get_target_audience(manual_dir: Path) -> Optional[str]:
+    """Get the target audience for a manual.
+
+    Args:
+        manual_dir: Path to the manual directory
+
+    Returns:
+        Target audience string or None
+    """
+    metadata = load_metadata(manual_dir)
+    if metadata is None:
+        return None
+    return metadata.get("target_audience")
+
+
+def get_target_objective(manual_dir: Path) -> Optional[str]:
+    """Get the target objective for a manual.
+
+    Args:
+        manual_dir: Path to the manual directory
+
+    Returns:
+        Target objective string or None
+    """
+    metadata = load_metadata(manual_dir)
+    if metadata is None:
+        return None
+    return metadata.get("target_objective")

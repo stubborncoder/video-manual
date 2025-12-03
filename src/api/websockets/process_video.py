@@ -37,7 +37,9 @@ async def websocket_process_video(
         "output_language": "English",
         "project_id": "optional",
         "chapter_id": "optional",
-        "tags": ["tag1", "tag2"]
+        "tags": ["tag1", "tag2"],
+        "target_audience": "optional",
+        "target_objective": "optional"
     }
 
     Client sends (from Manuals page - add language to existing manual):
@@ -156,6 +158,8 @@ async def websocket_process_video(
 
         use_scene_detection = message.get("use_scene_detection", True)
         output_language = message.get("output_language", "English")
+        target_audience = message.get("target_audience")
+        target_objective = message.get("target_objective")
 
         # Ensure default project exists
         project_storage = ProjectStorage(auth_user_id)
@@ -176,6 +180,8 @@ async def websocket_process_video(
                     output_filename=output_filename,
                     use_scene_detection=use_scene_detection,
                     output_language=output_language,
+                    target_audience=target_audience,
+                    target_objective=target_objective,
                 ):
                     loop.call_soon_threadsafe(event_queue.put_nowait, event)
             finally:

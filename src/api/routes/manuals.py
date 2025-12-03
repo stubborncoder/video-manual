@@ -29,6 +29,11 @@ class ManualContentUpdate(BaseModel):
     content: str
     language: str = "en"
 
+
+class ManualEvaluationRequest(BaseModel):
+    """Request to evaluate a manual."""
+    language: str = "en"
+
 router = APIRouter(prefix="/manuals", tags=["manuals"])
 
 
@@ -915,3 +920,157 @@ async def download_manual_export(
         filename=filename,
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
+
+
+# ==================== Manual Evaluation ====================
+
+
+@router.post("/{manual_id}/evaluate")
+async def evaluate_manual(
+    manual_id: str,
+    evaluation_request: ManualEvaluationRequest,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+) -> dict:
+    """Evaluate a manual against its target objective.
+
+    Uses Gemini AI to assess:
+    - How well the manual achieves its stated objective
+    - Completeness and clarity for the target audience
+    - Areas for improvement
+    - Overall quality rating
+
+    Returns:
+        Evaluation report with scores and recommendations
+    """
+    import os
+    from dotenv import load_dotenv
+    from langchain_google_genai import ChatGoogleGenerativeAI
+
+    load_dotenv()
+
+    # Get manual content and metadata
+    manual_dir = storage.manuals_dir / manual_id
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    content = storage.get_manual_content(manual_id, evaluation_request.language)
+    if not content:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Manual content not found for language: {evaluation_request.language}"
+        )
+
+    metadata = storage.get_manual_metadata(manual_id)
+    if not metadata:
+        raise HTTPException(status_code=404, detail="Manual metadata not found")
+
+    # Get target context
+    target_audience = metadata.get("target_audience")
+    target_objective = metadata.get("target_objective")
+
+    if not target_audience and not target_objective:
+        raise HTTPException(
+            status_code=400,
+            detail="Manual has no target audience or objective set. Cannot evaluate."
+        )
+
+    # Build evaluation prompt
+    context_section = ""
+    if target_audience:
+        context_section += f"\n**Target Audience:** {target_audience}"
+    if target_objective:
+        context_section += f"\n**Target Objective:** {target_objective}"
+
+    evaluation_prompt = f"""You are an expert technical documentation evaluator. Please evaluate the following user manual against its stated objective and target audience.
+{context_section}
+
+**Manual Content:**
+{content}
+
+---
+
+Please provide a comprehensive evaluation in the following JSON format:
+
+{{
+  "overall_score": <number 1-10>,
+  "summary": "<brief 2-3 sentence summary of the evaluation>",
+  "strengths": [
+    "<strength 1>",
+    "<strength 2>",
+    ...
+  ],
+  "areas_for_improvement": [
+    "<improvement 1>",
+    "<improvement 2>",
+    ...
+  ],
+  "objective_alignment": {{
+    "score": <number 1-10>,
+    "explanation": "<how well does it achieve the target objective?>"
+  }},
+  "audience_appropriateness": {{
+    "score": <number 1-10>,
+    "explanation": "<how well suited is it for the target audience?>"
+  }},
+  "clarity_and_completeness": {{
+    "score": <number 1-10>,
+    "explanation": "<assessment of clarity and completeness>"
+  }},
+  "recommendations": [
+    "<specific actionable recommendation 1>",
+    "<specific actionable recommendation 2>",
+    ...
+  ]
+}}
+
+Provide your evaluation as valid JSON only, with no additional text before or after."""
+
+    try:
+        # Use Gemini for evaluation
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            raise HTTPException(
+                status_code=500,
+                detail="GOOGLE_API_KEY not configured"
+            )
+
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-2.0-flash-exp",
+            google_api_key=api_key,
+            temperature=0.3,
+        )
+
+        response = llm.invoke(evaluation_prompt)
+        evaluation_text = response.content
+
+        # Parse JSON response
+        import json
+        import re
+
+        # Extract JSON from response (in case there's any surrounding text)
+        json_match = re.search(r'\{.*\}', evaluation_text, re.DOTALL)
+        if json_match:
+            evaluation_data = json.loads(json_match.group(0))
+        else:
+            evaluation_data = json.loads(evaluation_text)
+
+        # Add metadata
+        evaluation_data["manual_id"] = manual_id
+        evaluation_data["language"] = evaluation_request.language
+        evaluation_data["evaluated_at"] = datetime.now().isoformat()
+        evaluation_data["target_audience"] = target_audience
+        evaluation_data["target_objective"] = target_objective
+
+        return evaluation_data
+
+    except json.JSONDecodeError as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to parse evaluation response: {str(e)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Evaluation failed: {str(e)}"
+        )

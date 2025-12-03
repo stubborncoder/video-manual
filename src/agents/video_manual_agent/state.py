@@ -20,6 +20,10 @@ class VideoManualState(TypedDict):
     use_scene_detection: bool  # Whether to use scene detection for keyframes
     output_language: Optional[str]  # Target language for manual (default: English)
 
+    # Manual context (immutable across language versions)
+    target_audience: Optional[str]  # Who is the manual for (e.g., "beginners", "IT professionals")
+    target_objective: Optional[str]  # What the manual aims to accomplish
+
     # Step 1: Video Analysis results
     video_metadata: Optional[Dict[str, Any]]  # FPS, duration, resolution, etc.
     video_analysis: Optional[str]  # Gemini's analysis of video content
