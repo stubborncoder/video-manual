@@ -183,7 +183,13 @@ async def get_screenshot(
     storage: UserStorageDep,
 ):
     """Get a screenshot image."""
+    # Validate path to prevent path traversal attacks
     screenshot_path = storage.manuals_dir / manual_id / "screenshots" / filename
+    screenshot_path = screenshot_path.resolve()
+    screenshots_dir = (storage.manuals_dir / manual_id / "screenshots").resolve()
+
+    if not str(screenshot_path).startswith(str(screenshots_dir)):
+        raise HTTPException(status_code=400, detail="Invalid filename")
 
     if not screenshot_path.exists():
         raise HTTPException(status_code=404, detail="Screenshot not found")
@@ -348,8 +354,14 @@ async def get_frame(
     user_id: CurrentUser,
 ):
     """Get a temporary frame image."""
+    # Validate path to prevent path traversal attacks
     frames_dir = Path(tempfile.gettempdir()) / "manual_frames" / manual_id
     frame_path = frames_dir / filename
+    frame_path = frame_path.resolve()
+    frames_dir = frames_dir.resolve()
+
+    if not str(frame_path).startswith(str(frames_dir)):
+        raise HTTPException(status_code=400, detail="Invalid filename")
 
     if not frame_path.exists():
         raise HTTPException(status_code=404, detail="Frame not found")
@@ -660,6 +672,12 @@ async def get_version_screenshot(
 
     # Fallback: old full-copy format
     screenshot_path = version_dir / "screenshots" / filename
+    screenshot_path = screenshot_path.resolve()
+    screenshots_dir = (version_dir / "screenshots").resolve()
+
+    if not str(screenshot_path).startswith(str(screenshots_dir)):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
     if screenshot_path.exists():
         return FileResponse(screenshot_path)
 
