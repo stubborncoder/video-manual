@@ -574,11 +574,24 @@ async def get_compiled_screenshot(
 
     compilation_storage = CompilationVersionStorage(user_id, project_id)
     current_dir = compilation_storage.get_current_directory()
+
+    # Validate path to prevent path traversal attacks
     screenshot_path = current_dir / "screenshots" / filename
+    screenshot_path = screenshot_path.resolve()
+    screenshots_dir = (current_dir / "screenshots").resolve()
+
+    if not str(screenshot_path).startswith(str(screenshots_dir)):
+        raise HTTPException(status_code=400, detail="Invalid filename")
 
     if not screenshot_path.exists():
         # Fall back to legacy path for backward compatibility
         legacy_path = storage.projects_dir / project_id / "compiled" / "screenshots" / filename
+        legacy_path = legacy_path.resolve()
+        legacy_screenshots_dir = (storage.projects_dir / project_id / "compiled" / "screenshots").resolve()
+
+        if not str(legacy_path).startswith(str(legacy_screenshots_dir)):
+            raise HTTPException(status_code=400, detail="Invalid filename")
+
         if legacy_path.exists():
             return FileResponse(legacy_path)
         raise HTTPException(status_code=404, detail="Screenshot not found")
@@ -677,7 +690,14 @@ async def get_compilation_version_screenshot(
     if not version_dir:
         raise HTTPException(status_code=404, detail="Version not found")
 
+    # Validate path to prevent path traversal attacks
     screenshot_path = version_dir / "screenshots" / filename
+    screenshot_path = screenshot_path.resolve()
+    screenshots_dir = (version_dir / "screenshots").resolve()
+
+    if not str(screenshot_path).startswith(str(screenshots_dir)):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
     if not screenshot_path.exists():
         raise HTTPException(status_code=404, detail="Screenshot not found")
 
@@ -904,7 +924,14 @@ async def download_export(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
+    # Validate path to prevent path traversal attacks
     export_path = storage.projects_dir / project_id / "exports" / filename
+    export_path = export_path.resolve()
+    exports_dir = (storage.projects_dir / project_id / "exports").resolve()
+
+    if not str(export_path).startswith(str(exports_dir)):
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
     if not export_path.exists():
         raise HTTPException(status_code=404, detail="Export file not found")
 

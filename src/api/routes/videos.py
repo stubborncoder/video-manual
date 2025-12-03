@@ -167,7 +167,13 @@ async def stream_video(
     storage: UserStorageDep,
 ):
     """Stream a video file for playback."""
+    # Validate path to prevent path traversal attacks
     video_path = storage.videos_dir / video_name
+    video_path = video_path.resolve()
+    videos_dir = storage.videos_dir.resolve()
+
+    if not str(video_path).startswith(str(videos_dir)):
+        raise HTTPException(status_code=400, detail="Invalid video name")
 
     if not video_path.exists():
         raise HTTPException(status_code=404, detail="Video not found")
