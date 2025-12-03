@@ -738,3 +738,162 @@ async def create_version_snapshot(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to create snapshot: {str(e)}")
+
+
+# ==================== Export ====================
+
+
+class ManualExportRequest(BaseModel):
+    """Request to export a manual."""
+    format: str = "pdf"  # pdf, word, html
+    language: str = "en"
+    embed_images: bool = True  # For HTML only
+
+
+@router.post("/{manual_id}/export")
+async def export_manual(
+    manual_id: str,
+    export_request: ManualExportRequest,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+) -> dict:
+    """Export manual to specified format (PDF, Word, or HTML).
+
+    Args:
+        manual_id: Manual identifier
+        export_request: Export configuration
+
+    Returns:
+        Export details including download URL
+    """
+    from ...export.manual_exporter import create_manual_exporter
+
+    manual_dir = storage.manuals_dir / manual_id
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    # Validate format
+    if export_request.format.lower() not in ("pdf", "word", "docx", "html"):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported format: {export_request.format}. Supported: pdf, word, html"
+        )
+
+    # Verify manual has content for the requested language
+    content = storage.get_manual_content(manual_id, export_request.language)
+    if not content:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Manual content not found for language: {export_request.language}"
+        )
+
+    try:
+        # Create exporter
+        exporter = create_manual_exporter(
+            user_id=user_id,
+            manual_id=manual_id,
+            format=export_request.format
+        )
+
+        # Export manual
+        output_path = exporter.export(
+            language=export_request.language,
+            embed_images=export_request.embed_images if export_request.format.lower() == "html" else True,
+        )
+
+        # Return export details
+        output_file = Path(output_path)
+        return {
+            "status": "success",
+            "manual_id": manual_id,
+            "format": export_request.format.lower(),
+            "language": export_request.language,
+            "filename": output_file.name,
+            "download_url": f"/api/manuals/{manual_id}/exports/{output_file.name}",
+            "size_bytes": output_file.stat().st_size,
+            "created_at": datetime.fromtimestamp(output_file.stat().st_mtime).isoformat(),
+        }
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Export failed: {str(e)}")
+
+
+@router.get("/{manual_id}/exports")
+async def list_manual_exports(
+    manual_id: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+) -> dict:
+    """List all previous exports for a manual."""
+    manual_dir = storage.manuals_dir / manual_id
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    export_dir = manual_dir / "exports"
+    if not export_dir.exists():
+        return {"manual_id": manual_id, "exports": []}
+
+    exports = []
+    for export_file in export_dir.glob("*.*"):
+        # Skip directories and hidden files
+        if export_file.is_dir() or export_file.name.startswith('.'):
+            continue
+
+        # Determine format from extension
+        ext = export_file.suffix.lower()
+        format_map = {
+            '.pdf': 'pdf',
+            '.docx': 'word',
+            '.html': 'html',
+        }
+        format_type = format_map.get(ext, 'unknown')
+
+        # Parse language from filename (format: manualid_lang_timestamp.ext)
+        parts = export_file.stem.split('_')
+        language = parts[1] if len(parts) >= 3 else 'unknown'
+
+        exports.append({
+            "filename": export_file.name,
+            "format": format_type,
+            "language": language,
+            "download_url": f"/api/manuals/{manual_id}/exports/{export_file.name}",
+            "size_bytes": export_file.stat().st_size,
+            "created_at": datetime.fromtimestamp(export_file.stat().st_mtime).isoformat(),
+        })
+
+    # Sort by creation time (newest first)
+    exports.sort(key=lambda e: e["created_at"], reverse=True)
+
+    return {"manual_id": manual_id, "exports": exports}
+
+
+@router.get("/{manual_id}/exports/{filename}")
+async def download_manual_export(
+    manual_id: str,
+    filename: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+):
+    """Download a manual export file."""
+    export_path = storage.manuals_dir / manual_id / "exports" / filename
+
+    if not export_path.exists():
+        raise HTTPException(status_code=404, detail="Export file not found")
+
+    # Determine media type from extension
+    ext = export_path.suffix.lower()
+    media_types = {
+        '.pdf': 'application/pdf',
+        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        '.html': 'text/html',
+    }
+    media_type = media_types.get(ext, 'application/octet-stream')
+
+    return FileResponse(
+        export_path,
+        media_type=media_type,
+        filename=filename,
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )

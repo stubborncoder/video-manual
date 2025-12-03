@@ -241,6 +241,35 @@ export const manuals = {
       method: "POST",
       params: { bump_type: bumpType, notes },
     }),
+
+  // Export manual to various formats
+  export: (manualId: string, format: "pdf" | "word" | "html" = "pdf", language = "en", embedImages = true) =>
+    request<{
+      status: string;
+      manual_id: string;
+      format: string;
+      language: string;
+      filename: string;
+      download_url: string;
+      size_bytes: number;
+      created_at: string;
+    }>(`/api/manuals/${manualId}/export`, {
+      method: "POST",
+      body: JSON.stringify({ format, language, embed_images: embedImages }),
+    }),
+
+  listExports: (manualId: string) =>
+    request<{
+      manual_id: string;
+      exports: Array<{
+        filename: string;
+        format: string;
+        language: string;
+        download_url: string;
+        size_bytes: number;
+        created_at: string;
+      }>;
+    }>(`/api/manuals/${manualId}/exports`),
 };
 
 // Manual project assignment
