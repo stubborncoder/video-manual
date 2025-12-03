@@ -2,7 +2,14 @@
 
 from datetime import datetime
 from typing import Any, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from ..core.constants import (
+    MAX_TARGET_AUDIENCE_LENGTH,
+    MAX_TARGET_OBJECTIVE_LENGTH,
+    is_valid_language,
+    SUPPORTED_LANGUAGES,
+)
 
 
 # ==================== Auth ====================
@@ -131,6 +138,25 @@ class ProcessVideoRequest(BaseModel):
     project_id: Optional[str] = None
     chapter_id: Optional[str] = None
     tags: list[str] = []
+    target_audience: Optional[str] = Field(
+        None,
+        max_length=MAX_TARGET_AUDIENCE_LENGTH,
+        description="Target audience for the generated manual"
+    )
+    target_objective: Optional[str] = Field(
+        None,
+        max_length=MAX_TARGET_OBJECTIVE_LENGTH,
+        description="Objective the manual should help readers accomplish"
+    )
+
+    @field_validator('output_language')
+    @classmethod
+    def validate_output_language(cls, v: str) -> str:
+        """Validate output language is supported."""
+        if not is_valid_language(v):
+            supported = ", ".join(sorted(SUPPORTED_LANGUAGES.values()))
+            raise ValueError(f"Unsupported language: {v}. Supported: {supported}")
+        return v
 
 
 class CompileProjectRequest(BaseModel):

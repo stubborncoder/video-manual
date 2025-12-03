@@ -4,6 +4,7 @@ Maps common language names to ISO 639-1 codes for folder organization.
 """
 
 # Map common language names to ISO 639-1 codes
+# This map MUST include all languages from core/constants.py SUPPORTED_LANGUAGES
 LANGUAGE_TO_ISO = {
     # English
     "english": "en",
@@ -82,6 +83,45 @@ LANGUAGE_TO_ISO = {
     # Malay
     "malay": "ms",
     "bahasa melayu": "ms",
+    # Ukrainian
+    "ukrainian": "uk",
+    "українська": "uk",
+    # Romanian
+    "romanian": "ro",
+    "română": "ro",
+    # Hungarian
+    "hungarian": "hu",
+    "magyar": "hu",
+    # Bulgarian
+    "bulgarian": "bg",
+    "български": "bg",
+    # Croatian
+    "croatian": "hr",
+    "hrvatski": "hr",
+    # Slovak
+    "slovak": "sk",
+    "slovenčina": "sk",
+    # Slovenian
+    "slovenian": "sl",
+    "slovenščina": "sl",
+    # Estonian
+    "estonian": "et",
+    "eesti": "et",
+    # Latvian
+    "latvian": "lv",
+    "latviešu": "lv",
+    # Lithuanian
+    "lithuanian": "lt",
+    "lietuvių": "lt",
+    # Catalan
+    "catalan": "ca",
+    "català": "ca",
+    # Basque
+    "basque": "eu",
+    "euskara": "eu",
+    # Galician
+    "galician": "gl",
+    "galego": "gl",
 }
 
 

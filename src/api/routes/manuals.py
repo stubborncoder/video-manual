@@ -10,12 +10,19 @@ import shutil
 
 from fastapi import APIRouter, HTTPException, File, UploadFile, Query
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from ..schemas import ManualSummary, ManualDetail, ManualListResponse, SourceVideoInfo
 from ..dependencies import CurrentUser, UserStorageDep, ProjectStorageDep, TrashStorageDep
 from ...storage.version_storage import VersionStorage
 from ...storage.screenshot_store import ScreenshotStore
+from ...core.sanitization import sanitize_target_audience, sanitize_target_objective
+from ...core.constants import (
+    SUPPORTED_LANGUAGES,
+    DEFAULT_EVALUATION_MODEL,
+    EVALUATION_SCORE_MIN,
+    EVALUATION_SCORE_MAX,
+)
 
 
 class ManualProjectAssignment(BaseModel):
@@ -33,6 +40,15 @@ class ManualContentUpdate(BaseModel):
 class ManualEvaluationRequest(BaseModel):
     """Request to evaluate a manual."""
     language: str = "en"
+
+    @field_validator('language')
+    @classmethod
+    def validate_language(cls, v: str) -> str:
+        """Validate language code is supported."""
+        if v.lower() not in SUPPORTED_LANGUAGES:
+            supported = ", ".join(sorted(SUPPORTED_LANGUAGES.keys()))
+            raise ValueError(f"Unsupported language code: {v}. Supported: {supported}")
+        return v.lower()
 
 router = APIRouter(prefix="/manuals", tags=["manuals"])
 
@@ -971,24 +987,26 @@ async def evaluate_manual(
     if not metadata:
         raise HTTPException(status_code=404, detail="Manual metadata not found")
 
-    # Get target context
-    target_audience = metadata.get("target_audience")
-    target_objective = metadata.get("target_objective")
+    # Get target context and sanitize (defense in depth for older manuals)
+    try:
+        target_audience = sanitize_target_audience(metadata.get("target_audience"))
+        target_objective = sanitize_target_objective(metadata.get("target_objective"))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    if not target_audience and not target_objective:
-        raise HTTPException(
-            status_code=400,
-            detail="Manual has no target audience or objective set. Cannot evaluate."
-        )
-
-    # Build evaluation prompt
+    # Build evaluation prompt with context if available
     context_section = ""
-    if target_audience:
-        context_section += f"\n**Target Audience:** {target_audience}"
-    if target_objective:
-        context_section += f"\n**Target Objective:** {target_objective}"
+    if target_audience or target_objective:
+        context_section = "\n\n**Evaluation Context:**"
+        if target_audience:
+            context_section += f"\n- Target Audience: {target_audience}"
+        if target_objective:
+            context_section += f"\n- Target Objective: {target_objective}"
+    else:
+        context_section = "\n\n*No specific target audience or objective was defined for this manual. Evaluate based on general documentation best practices.*"
 
-    evaluation_prompt = f"""You are an expert technical documentation evaluator. Please evaluate the following user manual against its stated objective and target audience.
+    score_range = f"{EVALUATION_SCORE_MIN}-{EVALUATION_SCORE_MAX}"
+    evaluation_prompt = f"""You are an expert technical documentation evaluator specializing in user manuals and instructional content. Please evaluate the following user manual.
 {context_section}
 
 **Manual Content:**
@@ -996,39 +1014,56 @@ async def evaluate_manual(
 
 ---
 
-Please provide a comprehensive evaluation in the following JSON format:
+Evaluate this manual comprehensively across multiple dimensions. Consider that this is a video-generated manual with screenshots, so assess both written and visual content quality.
+
+Provide your evaluation in the following JSON format:
 
 {{
-  "overall_score": <number 1-10>,
-  "summary": "<brief 2-3 sentence summary of the evaluation>",
+  "overall_score": <number {score_range}>,
+  "summary": "<brief 2-3 sentence executive summary of the evaluation>",
   "strengths": [
-    "<strength 1>",
-    "<strength 2>",
+    "<specific strength with example from the manual>",
+    "<another strength>",
     ...
   ],
   "areas_for_improvement": [
-    "<improvement 1>",
-    "<improvement 2>",
+    "<specific improvement area with suggestion>",
+    "<another area>",
     ...
   ],
   "objective_alignment": {{
-    "score": <number 1-10>,
-    "explanation": "<how well does it achieve the target objective?>"
+    "score": <number {score_range}>,
+    "explanation": "<how well does the manual help readers achieve the stated objective? Does it cover all necessary steps?>"
   }},
   "audience_appropriateness": {{
-    "score": <number 1-10>,
-    "explanation": "<how well suited is it for the target audience?>"
+    "score": <number {score_range}>,
+    "explanation": "<is the language, tone, and technical depth appropriate for the target audience? Are prerequisites clearly stated?>"
   }},
   "clarity_and_completeness": {{
-    "score": <number 1-10>,
-    "explanation": "<assessment of clarity and completeness>"
+    "score": <number {score_range}>,
+    "explanation": "<are instructions clear, unambiguous, and complete? Are there any missing steps or confusing explanations?>"
+  }},
+  "technical_accuracy": {{
+    "score": <number {score_range}>,
+    "explanation": "<are the technical instructions accurate? Are UI elements, buttons, and actions correctly described?>"
+  }},
+  "structure_and_flow": {{
+    "score": <number {score_range}>,
+    "explanation": "<is the manual well-organized with logical progression? Are headings clear? Is navigation easy?>"
   }},
   "recommendations": [
-    "<specific actionable recommendation 1>",
-    "<specific actionable recommendation 2>",
+    "<specific actionable recommendation to improve the manual>",
+    "<another recommendation>",
     ...
   ]
 }}
+
+Scoring Guidelines:
+- {EVALUATION_SCORE_MAX}: Exceptional, professional quality
+- 8-9: Very good, minor improvements possible
+- 6-7: Good, some notable areas for improvement
+- 4-5: Adequate but needs significant improvement
+- {EVALUATION_SCORE_MIN}-3: Poor, major revisions needed
 
 Provide your evaluation as valid JSON only, with no additional text before or after."""
 
@@ -1042,7 +1077,7 @@ Provide your evaluation as valid JSON only, with no additional text before or af
             )
 
         llm = ChatGoogleGenerativeAI(
-            model="gemini-2.0-flash-exp",
+            model=DEFAULT_EVALUATION_MODEL,
             google_api_key=api_key,
             temperature=0.3,
         )
@@ -1061,14 +1096,51 @@ Provide your evaluation as valid JSON only, with no additional text before or af
         else:
             evaluation_data = json.loads(evaluation_text)
 
+        # Validate and clamp scores to valid range
+        def validate_score(score: any) -> int:
+            """Validate and clamp score to valid range."""
+            try:
+                score_int = int(score)
+                return max(EVALUATION_SCORE_MIN, min(EVALUATION_SCORE_MAX, score_int))
+            except (TypeError, ValueError):
+                return EVALUATION_SCORE_MIN
+
+        # Validate top-level score
+        if "overall_score" in evaluation_data:
+            evaluation_data["overall_score"] = validate_score(evaluation_data["overall_score"])
+
+        # Validate nested scores for all evaluation categories
+        score_categories = [
+            "objective_alignment",
+            "audience_appropriateness",
+            "clarity_and_completeness",
+            "technical_accuracy",
+            "structure_and_flow",
+        ]
+        for key in score_categories:
+            if key in evaluation_data and isinstance(evaluation_data[key], dict):
+                if "score" in evaluation_data[key]:
+                    evaluation_data[key]["score"] = validate_score(evaluation_data[key]["score"])
+
         # Add metadata
         evaluation_data["manual_id"] = manual_id
         evaluation_data["language"] = evaluation_request.language
         evaluation_data["evaluated_at"] = datetime.now().isoformat()
         evaluation_data["target_audience"] = target_audience
         evaluation_data["target_objective"] = target_objective
+        evaluation_data["score_range"] = {
+            "min": EVALUATION_SCORE_MIN,
+            "max": EVALUATION_SCORE_MAX,
+        }
 
-        return evaluation_data
+        # Save evaluation to storage (per-version)
+        version_storage = VersionStorage(user_id, manual_id)
+        saved_evaluation = version_storage.save_evaluation(
+            evaluation_data,
+            language=evaluation_request.language,
+        )
+
+        return saved_evaluation
 
     except json.JSONDecodeError as e:
         raise HTTPException(
@@ -1080,3 +1152,45 @@ Provide your evaluation as valid JSON only, with no additional text before or af
             status_code=500,
             detail=f"Evaluation failed: {str(e)}"
         )
+
+
+@router.get("/{manual_id}/evaluations")
+async def list_evaluations(
+    manual_id: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+):
+    """List all stored evaluations for a manual."""
+    manual_dir = storage.manuals_dir / manual_id
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    version_storage = VersionStorage(user_id, manual_id)
+    evaluations = version_storage.list_evaluations()
+
+    return {"manual_id": manual_id, "evaluations": evaluations}
+
+
+@router.get("/{manual_id}/evaluations/{version}")
+async def get_evaluation(
+    manual_id: str,
+    version: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+    language: str = Query(default="en"),
+):
+    """Get a stored evaluation for a specific version."""
+    manual_dir = storage.manuals_dir / manual_id
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    version_storage = VersionStorage(user_id, manual_id)
+    evaluation = version_storage.get_evaluation(language=language, version=version)
+
+    if not evaluation:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No evaluation found for version {version} in language {language}"
+        )
+
+    return evaluation

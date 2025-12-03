@@ -11,6 +11,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Cookie
 
 from ...core.runners import VideoManualRunner
 from ...core.events import EventType
+from ...core.sanitization import sanitize_target_audience, sanitize_target_objective
 from ...storage.project_storage import ProjectStorage, DEFAULT_PROJECT_ID, DEFAULT_CHAPTER_ID
 from ...storage.user_storage import UserStorage
 
@@ -158,8 +159,19 @@ async def websocket_process_video(
 
         use_scene_detection = message.get("use_scene_detection", True)
         output_language = message.get("output_language", "English")
-        target_audience = message.get("target_audience")
-        target_objective = message.get("target_objective")
+
+        # Sanitize user inputs to prevent prompt injection
+        try:
+            target_audience = sanitize_target_audience(message.get("target_audience"))
+            target_objective = sanitize_target_objective(message.get("target_objective"))
+        except ValueError as e:
+            await websocket.send_json({
+                "event_type": "error",
+                "timestamp": 0,
+                "data": {"error_message": str(e), "recoverable": True}
+            })
+            await websocket.close()
+            return
 
         # Ensure default project exists
         project_storage = ProjectStorage(auth_user_id)

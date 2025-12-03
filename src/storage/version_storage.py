@@ -396,6 +396,118 @@ class VersionStorage:
 
         return None
 
+    # ==================== Evaluation Storage ====================
+
+    def save_evaluation(
+        self,
+        evaluation: Dict[str, Any],
+        language: str = "en",
+        version: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Save an evaluation for a specific version.
+
+        Args:
+            evaluation: Evaluation data from the AI evaluator
+            language: Language code of the evaluated manual
+            version: Version to associate with (defaults to current)
+
+        Returns:
+            Saved evaluation with added metadata
+        """
+        if version is None:
+            version = self.get_current_version()
+
+        # Create evaluations directory
+        evaluations_dir = self.manual_dir / "evaluations"
+        evaluations_dir.mkdir(parents=True, exist_ok=True)
+
+        # Add version and storage metadata
+        evaluation_record = {
+            **evaluation,
+            "version": version,
+            "language": language,
+            "stored_at": datetime.now().isoformat(),
+        }
+
+        # Save to version-specific file
+        eval_file = evaluations_dir / f"v{version}_{language}.json"
+        with open(eval_file, "w", encoding="utf-8") as f:
+            json.dump(evaluation_record, f, indent=2, ensure_ascii=False)
+
+        return evaluation_record
+
+    def get_evaluation(
+        self,
+        language: str = "en",
+        version: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Get stored evaluation for a specific version.
+
+        Args:
+            language: Language code
+            version: Version to get evaluation for (defaults to current)
+
+        Returns:
+            Evaluation data or None if not found
+        """
+        if version is None:
+            version = self.get_current_version()
+
+        eval_file = self.manual_dir / "evaluations" / f"v{version}_{language}.json"
+        if not eval_file.exists():
+            return None
+
+        with open(eval_file, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    def list_evaluations(self) -> List[Dict[str, Any]]:
+        """List all stored evaluations for this manual.
+
+        Returns:
+            List of evaluation summaries (version, language, score, date)
+        """
+        evaluations_dir = self.manual_dir / "evaluations"
+        if not evaluations_dir.exists():
+            return []
+
+        results = []
+        for eval_file in evaluations_dir.glob("v*_*.json"):
+            try:
+                with open(eval_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    results.append({
+                        "version": data.get("version"),
+                        "language": data.get("language"),
+                        "overall_score": data.get("overall_score"),
+                        "evaluated_at": data.get("evaluated_at"),
+                        "stored_at": data.get("stored_at"),
+                    })
+            except (json.JSONDecodeError, IOError):
+                continue
+
+        # Sort by stored_at descending (newest first)
+        results.sort(key=lambda x: x.get("stored_at", ""), reverse=True)
+        return results
+
+    def delete_evaluation(self, language: str = "en", version: Optional[str] = None) -> bool:
+        """Delete a stored evaluation.
+
+        Args:
+            language: Language code
+            version: Version (defaults to current)
+
+        Returns:
+            True if deleted, False if not found
+        """
+        if version is None:
+            version = self.get_current_version()
+
+        eval_file = self.manual_dir / "evaluations" / f"v{version}_{language}.json"
+        if eval_file.exists():
+            eval_file.unlink()
+            return True
+        return False
+
     def cleanup_old_versions(self, keep_count: int = 10) -> int:
         """Remove old versions, keeping only the most recent ones.
 

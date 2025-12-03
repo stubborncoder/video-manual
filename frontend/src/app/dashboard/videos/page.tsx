@@ -51,6 +51,7 @@ import { Upload, Trash2, Video, Loader2, Eye, Wand2, FileText, FolderKanban, Ale
 import { videos, projects, type VideoInfo, type UploadProgress, type ProjectSummary, type VideoManualInfo } from "@/lib/api";
 import { useVideoProcessing } from "@/hooks/useWebSocket";
 import { ProcessingProgress } from "@/components/processing/ProcessingProgress";
+import { MAX_TARGET_AUDIENCE_LENGTH, MAX_TARGET_OBJECTIVE_LENGTH } from "@/lib/constants";
 
 function getVideoStreamUrl(videoName: string): string {
   return `/api/videos/${encodeURIComponent(videoName)}/stream`;
@@ -587,25 +588,33 @@ export default function VideosPage() {
                             <div className="flex-1 p-5 flex flex-col gap-4">
                               {/* Target Audience */}
                               <div className="flex flex-col flex-1 min-h-0">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Checkbox
-                                    id="audience-toggle"
-                                    checked={audienceEnabled}
-                                    onCheckedChange={(checked) => {
-                                      setAudienceEnabled(!!checked);
-                                      if (!checked) setTargetAudience("");
-                                    }}
-                                  />
-                                  <Label
-                                    htmlFor="audience-toggle"
-                                    className="text-xs font-medium cursor-pointer"
-                                  >
-                                    Target Audience
-                                  </Label>
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <Checkbox
+                                      id="audience-toggle"
+                                      checked={audienceEnabled}
+                                      onCheckedChange={(checked) => {
+                                        setAudienceEnabled(!!checked);
+                                        if (!checked) setTargetAudience("");
+                                      }}
+                                    />
+                                    <Label
+                                      htmlFor="audience-toggle"
+                                      className="text-xs font-medium cursor-pointer"
+                                    >
+                                      Target Audience
+                                    </Label>
+                                  </div>
+                                  {audienceEnabled && (
+                                    <span className={`text-[10px] ${targetAudience.length > MAX_TARGET_AUDIENCE_LENGTH * 0.9 ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                                      {targetAudience.length}/{MAX_TARGET_AUDIENCE_LENGTH}
+                                    </span>
+                                  )}
                                 </div>
                                 <textarea
                                   value={targetAudience}
-                                  onChange={(e) => setTargetAudience(e.target.value)}
+                                  onChange={(e) => setTargetAudience(e.target.value.slice(0, MAX_TARGET_AUDIENCE_LENGTH))}
+                                  maxLength={MAX_TARGET_AUDIENCE_LENGTH}
                                   placeholder="Who is this documentation for?&#10;&#10;e.g., New employees unfamiliar with the system, IT administrators with technical background"
                                   disabled={!audienceEnabled}
                                   onClick={() => !audienceEnabled && setAudienceEnabled(true)}
@@ -619,25 +628,33 @@ export default function VideosPage() {
 
                               {/* Objective */}
                               <div className="flex flex-col flex-1 min-h-0">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <Checkbox
-                                    id="objective-toggle"
-                                    checked={objectiveEnabled}
-                                    onCheckedChange={(checked) => {
-                                      setObjectiveEnabled(!!checked);
-                                      if (!checked) setTargetObjective("");
-                                    }}
-                                  />
-                                  <Label
-                                    htmlFor="objective-toggle"
-                                    className="text-xs font-medium cursor-pointer"
-                                  >
-                                    Objective
-                                  </Label>
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <Checkbox
+                                      id="objective-toggle"
+                                      checked={objectiveEnabled}
+                                      onCheckedChange={(checked) => {
+                                        setObjectiveEnabled(!!checked);
+                                        if (!checked) setTargetObjective("");
+                                      }}
+                                    />
+                                    <Label
+                                      htmlFor="objective-toggle"
+                                      className="text-xs font-medium cursor-pointer"
+                                    >
+                                      Objective
+                                    </Label>
+                                  </div>
+                                  {objectiveEnabled && (
+                                    <span className={`text-[10px] ${targetObjective.length > MAX_TARGET_OBJECTIVE_LENGTH * 0.9 ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                                      {targetObjective.length}/{MAX_TARGET_OBJECTIVE_LENGTH}
+                                    </span>
+                                  )}
                                 </div>
                                 <textarea
                                   value={targetObjective}
-                                  onChange={(e) => setTargetObjective(e.target.value)}
+                                  onChange={(e) => setTargetObjective(e.target.value.slice(0, MAX_TARGET_OBJECTIVE_LENGTH))}
+                                  maxLength={MAX_TARGET_OBJECTIVE_LENGTH}
                                   placeholder="What should readers accomplish?&#10;&#10;e.g., Complete initial setup in under 5 minutes, Troubleshoot common errors independently"
                                   disabled={!objectiveEnabled}
                                   onClick={() => !objectiveEnabled && setObjectiveEnabled(true)}

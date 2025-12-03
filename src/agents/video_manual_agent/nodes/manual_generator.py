@@ -21,6 +21,7 @@ from ..utils.metadata import (
 )
 from ....storage.user_storage import UserStorage
 from ....storage.version_storage import VersionStorage
+from ....core.sanitization import sanitize_target_audience, sanitize_target_objective
 
 
 def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
@@ -77,10 +78,18 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
     manual_dir, manual_id = user_storage.get_manual_dir(manual_id, video_name=video_name)
 
     # Get or retrieve target audience and objective (immutable across languages)
-    target_audience = state.get("target_audience")
-    target_objective = state.get("target_objective")
+    # Sanitize inputs to prevent prompt injection
+    try:
+        target_audience = sanitize_target_audience(state.get("target_audience"))
+        target_objective = sanitize_target_objective(state.get("target_objective"))
+    except ValueError as e:
+        return {
+            "status": "error",
+            "error": str(e),
+        }
 
     # If not in state, try to get from existing metadata (for add-language flow)
+    # Note: metadata values were sanitized when originally saved
     if not target_audience or not target_objective:
         existing_target_audience = get_target_audience(manual_dir)
         existing_target_objective = get_target_objective(manual_dir)
