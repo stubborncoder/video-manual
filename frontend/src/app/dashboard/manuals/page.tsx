@@ -52,7 +52,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -1018,13 +1017,13 @@ export default function ManualsPage() {
                   );
                 })()}
 
-                {/* Evaluation Score & Button */}
-                <div className="flex items-center gap-2 ml-auto">
+                {/* Evaluation Score Card */}
+                <div className="ml-auto">
                   {loadingViewEval ? (
-                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Loading score...
-                    </span>
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-lg border bg-muted/30">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Loading...</span>
+                    </div>
                   ) : viewingEvaluation ? (
                     <button
                       onClick={() => {
@@ -1034,18 +1033,26 @@ export default function ManualsPage() {
                           openEvaluateDialog(manual, viewingLanguage);
                         }
                       }}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors ${(() => {
-                        const colors = getScoreColorByRaw(viewingEvaluation.overall_score);
-                        return `${colors.bgLight} ${colors.text} ${colors.hoverBg}`;
-                      })()}`}
-                      title="View evaluation details"
+                      className="group flex flex-col items-center px-5 py-3 rounded-lg border bg-muted/30 cursor-pointer transition-all duration-200 hover:border-primary/50 hover:bg-muted/50 active:scale-[0.98]"
+                      title="Click to view full evaluation details"
                     >
-                      <ClipboardCheck className="h-4 w-4" />
-                      <span className="font-semibold">{viewingEvaluation.overall_score}/10</span>
+                      {/* Card Header */}
+                      <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-1">Eval Score</span>
+                      {/* Score Display */}
+                      <div className="flex items-baseline gap-0.5">
+                        <span className={`text-3xl font-bold ${getScoreColorByRaw(viewingEvaluation.overall_score).text}`}>
+                          {viewingEvaluation.overall_score}
+                        </span>
+                        <span className="text-lg text-muted-foreground">/10</span>
+                      </div>
+                      {/* View action hint */}
+                      <span className="text-xs text-muted-foreground mt-1 flex items-center gap-1 group-hover:text-primary transition-colors">
+                        View Details
+                        <Eye className="h-3 w-3" />
+                      </span>
                     </button>
                   ) : (
                     <Button
-                      size="sm"
                       variant="outline"
                       onClick={() => {
                         const manual = manualList.find((m) => m.id === selectedManual.id);
@@ -1054,10 +1061,10 @@ export default function ManualsPage() {
                           openEvaluateDialog(manual, viewingLanguage);
                         }
                       }}
-                      className="h-7 text-xs"
+                      className="gap-2"
                     >
-                      <ClipboardCheck className="mr-1.5 h-3.5 w-3.5" />
-                      Evaluate
+                      <ClipboardCheck className="h-4 w-4" />
+                      Evaluate Quality
                     </Button>
                   )}
                 </div>
@@ -1066,122 +1073,91 @@ export default function ManualsPage() {
           </SheetHeader>
 
           {selectedManual && (
-            <div className="flex-1 overflow-hidden flex flex-col">
-              <Tabs defaultValue="content" className="flex-1 flex flex-col overflow-hidden">
-                <div className="px-6 pt-4 border-b">
-                  <TabsList className="shrink-0 mb-4 w-fit">
-                  <TabsTrigger value="content">Content</TabsTrigger>
-                  <TabsTrigger value="screenshots">
-                    Screenshots ({selectedManual.screenshots.length})
-                  </TabsTrigger>
-                </TabsList>
-                </div>
-
-                <TabsContent value="content" className="flex-1 overflow-y-auto mt-0 p-6">
-                  <div className="prose prose-base dark:prose-invert max-w-none pb-8">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        img: ({ src, alt }) => {
-                          // Transform markdown image references to API URLs
-                          const srcStr = typeof src === "string" ? src : "";
-                          const filename = srcStr.split("/").pop() || srcStr;
-                          const apiUrl = `/api/manuals/${selectedManual.id}/screenshots/${filename}`;
-                          return (
-                            <span className="block my-6">
-                              <img
-                                src={apiUrl}
-                                alt={alt || "Screenshot"}
-                                className="rounded-lg border shadow-sm w-full"
-                              />
-                              {alt && (
-                                <span className="block text-center text-sm text-muted-foreground mt-2">
-                                  {alt}
-                                </span>
-                              )}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="prose prose-base dark:prose-invert max-w-none pb-8">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    img: ({ src, alt }) => {
+                      // Transform markdown image references to API URLs
+                      const srcStr = typeof src === "string" ? src : "";
+                      const filename = srcStr.split("/").pop() || srcStr;
+                      const apiUrl = `/api/manuals/${selectedManual.id}/screenshots/${filename}`;
+                      return (
+                        <span className="block my-6">
+                          <img
+                            src={apiUrl}
+                            alt={alt || "Screenshot"}
+                            className="rounded-lg border shadow-sm w-full"
+                          />
+                          {alt && (
+                            <span className="block text-center text-sm text-muted-foreground mt-2">
+                              {alt}
                             </span>
-                          );
-                        },
-                        h1: ({ children }) => (
-                          <h1 className="text-3xl font-bold mt-8 mb-4 first:mt-0 pb-2 border-b">{children}</h1>
-                        ),
-                        h2: ({ children }) => (
-                          <h2 className="text-2xl font-semibold mt-8 mb-4">{children}</h2>
-                        ),
-                        h3: ({ children }) => (
-                          <h3 className="text-xl font-medium mt-6 mb-3">{children}</h3>
-                        ),
-                        h4: ({ children }) => (
-                          <h4 className="text-lg font-medium mt-4 mb-2">{children}</h4>
-                        ),
-                        p: ({ children }) => (
-                          <p className="my-4 leading-7 text-foreground/90">{children}</p>
-                        ),
-                        ul: ({ children }) => (
-                          <ul className="my-4 ml-6 list-disc space-y-2">{children}</ul>
-                        ),
-                        ol: ({ children }) => (
-                          <ol className="my-4 ml-6 list-decimal space-y-2">{children}</ol>
-                        ),
-                        li: ({ children }) => (
-                          <li className="leading-7">{children}</li>
-                        ),
-                        code: ({ children, className }) => {
-                          const isInline = !className;
-                          return isInline ? (
-                            <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>
-                          ) : (
-                            <pre className="bg-muted p-4 rounded-lg overflow-x-auto my-4">
-                              <code className="text-sm font-mono">{children}</code>
-                            </pre>
-                          );
-                        },
-                        pre: ({ children }) => <>{children}</>,
-                        blockquote: ({ children }) => (
-                          <blockquote className="border-l-4 border-primary/50 bg-muted/50 pl-4 pr-4 py-3 my-4 italic rounded-r-lg">
-                            {children}
-                          </blockquote>
-                        ),
-                        strong: ({ children }) => (
-                          <strong className="font-semibold text-foreground">{children}</strong>
-                        ),
-                        hr: () => <hr className="my-8 border-border" />,
-                        table: ({ children }) => (
-                          <div className="my-4 overflow-x-auto">
-                            <table className="w-full border-collapse border border-border rounded-lg">{children}</table>
-                          </div>
-                        ),
-                        th: ({ children }) => (
-                          <th className="border border-border bg-muted px-4 py-2 text-left font-semibold">{children}</th>
-                        ),
-                        td: ({ children }) => (
-                          <td className="border border-border px-4 py-2">{children}</td>
-                        ),
-                      }}
-                    >
-                      {selectedManual.content}
-                    </ReactMarkdown>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="screenshots" className="flex-1 overflow-y-auto mt-0 p-6">
-                  <div className="grid grid-cols-1 gap-6 pb-8">
-                    {selectedManual.screenshots.map((screenshot, idx) => (
-                      <div key={idx} className="border rounded-lg overflow-hidden shadow-sm">
-                        <img
-                          src={`/api/manuals/${selectedManual.id}/screenshots/${screenshot.split("/").pop()}`}
-                          alt={`Screenshot ${idx + 1}`}
-                          className="w-full"
-                        />
-                        <div className="px-4 py-3 text-sm text-muted-foreground bg-muted/50 flex items-center justify-between">
-                          <span className="font-medium">Step {idx + 1}</span>
-                          <span className="text-xs">{screenshot.split("/").pop()}</span>
-                        </div>
+                          )}
+                        </span>
+                      );
+                    },
+                    h1: ({ children }) => (
+                      <h1 className="text-3xl font-bold mt-8 mb-4 first:mt-0 pb-2 border-b">{children}</h1>
+                    ),
+                    h2: ({ children }) => (
+                      <h2 className="text-2xl font-semibold mt-8 mb-4">{children}</h2>
+                    ),
+                    h3: ({ children }) => (
+                      <h3 className="text-xl font-medium mt-6 mb-3">{children}</h3>
+                    ),
+                    h4: ({ children }) => (
+                      <h4 className="text-lg font-medium mt-4 mb-2">{children}</h4>
+                    ),
+                    p: ({ children }) => (
+                      <p className="my-4 leading-7 text-foreground/90">{children}</p>
+                    ),
+                    ul: ({ children }) => (
+                      <ul className="my-4 ml-6 list-disc space-y-2">{children}</ul>
+                    ),
+                    ol: ({ children }) => (
+                      <ol className="my-4 ml-6 list-decimal space-y-2">{children}</ol>
+                    ),
+                    li: ({ children }) => (
+                      <li className="leading-7">{children}</li>
+                    ),
+                    code: ({ children, className }) => {
+                      const isInline = !className;
+                      return isInline ? (
+                        <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>
+                      ) : (
+                        <pre className="bg-muted p-4 rounded-lg overflow-x-auto my-4">
+                          <code className="text-sm font-mono">{children}</code>
+                        </pre>
+                      );
+                    },
+                    pre: ({ children }) => <>{children}</>,
+                    blockquote: ({ children }) => (
+                      <blockquote className="border-l-4 border-primary/50 bg-muted/50 pl-4 pr-4 py-3 my-4 italic rounded-r-lg">
+                        {children}
+                      </blockquote>
+                    ),
+                    strong: ({ children }) => (
+                      <strong className="font-semibold text-foreground">{children}</strong>
+                    ),
+                    hr: () => <hr className="my-8 border-border" />,
+                    table: ({ children }) => (
+                      <div className="my-4 overflow-x-auto">
+                        <table className="w-full border-collapse border border-border rounded-lg">{children}</table>
                       </div>
-                    ))}
-                  </div>
-                </TabsContent>
-              </Tabs>
+                    ),
+                    th: ({ children }) => (
+                      <th className="border border-border bg-muted px-4 py-2 text-left font-semibold">{children}</th>
+                    ),
+                    td: ({ children }) => (
+                      <td className="border border-border px-4 py-2">{children}</td>
+                    ),
+                  }}
+                >
+                  {selectedManual.content}
+                </ReactMarkdown>
+              </div>
             </div>
           )}
         </SheetContent>
