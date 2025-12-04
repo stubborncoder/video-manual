@@ -758,6 +758,16 @@ export default function ManualsPage() {
               {/* Subtle gradient overlay on hover */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
+              {/* Export loading overlay */}
+              {exportingManual === manual.id && (
+                <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10">
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-sm font-medium">Exporting...</span>
+                  </div>
+                </div>
+              )}
+
               <CardHeader className="pb-0 relative">
                 <div className="flex items-start justify-between gap-2">
                   {/* Editorial title with serif font */}
@@ -1088,7 +1098,16 @@ export default function ManualsPage() {
                           <img
                             src={apiUrl}
                             alt={alt || "Screenshot"}
-                            className="rounded-lg border shadow-sm w-full"
+                            className="rounded-lg border shadow-sm max-w-full mx-auto"
+                            style={{ maxHeight: '70vh' }}
+                            onLoad={(e) => {
+                              const img = e.currentTarget;
+                              const isPortrait = img.naturalHeight > img.naturalWidth;
+                              if (isPortrait) {
+                                // Portrait: limit width to ~40% so it doesn't dominate
+                                img.style.maxWidth = '40%';
+                              }
+                            }}
                           />
                           {alt && (
                             <span className="block text-center text-sm text-muted-foreground mt-2">
