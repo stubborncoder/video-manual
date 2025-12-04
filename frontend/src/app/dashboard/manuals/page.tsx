@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -63,7 +64,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown, ClipboardCheck, Users, Target, History, Clock, MoreHorizontal, HelpCircle } from "lucide-react";
+import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown, ClipboardCheck, Users, Target, History, Clock, MoreHorizontal, HelpCircle, Expand } from "lucide-react";
 import { manuals, manualProject, projects, type ManualSummary, type ManualDetail, type ProjectSummary, type ManualEvaluation } from "@/lib/api";
 import { useVideoProcessing } from "@/hooks/useWebSocket";
 import { ProcessingProgress } from "@/components/processing/ProcessingProgress";
@@ -1498,18 +1499,50 @@ export default function ManualsPage() {
             {(manualToEvaluate?.target_audience || manualToEvaluate?.target_objective) && (
               <div className="flex flex-wrap gap-x-6 gap-y-2 pt-2 border-t text-sm">
                 {manualToEvaluate?.target_audience && (
-                  <div className="flex items-start gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                    <span className="text-muted-foreground">Audience:</span>
-                    <span className="line-clamp-1">{manualToEvaluate.target_audience}</span>
-                  </div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <div className="flex items-center gap-2 cursor-pointer hover:text-foreground transition-colors">
+                        <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="text-muted-foreground">Audience:</span>
+                        <span className="line-clamp-1">{manualToEvaluate.target_audience}</span>
+                        <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent side="bottom" align="start" className="w-96 p-0">
+                      <div className="p-3 border-b">
+                        <p className="font-medium text-sm flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          Target Audience
+                        </p>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto p-3">
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{manualToEvaluate.target_audience}</p>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 )}
                 {manualToEvaluate?.target_objective && (
-                  <div className="flex items-start gap-2">
-                    <Target className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                    <span className="text-muted-foreground">Objective:</span>
-                    <span className="line-clamp-1">{manualToEvaluate.target_objective}</span>
-                  </div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <div className="flex items-center gap-2 cursor-pointer hover:text-foreground transition-colors">
+                        <Target className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="text-muted-foreground">Objective:</span>
+                        <span className="line-clamp-1">{manualToEvaluate.target_objective}</span>
+                        <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent side="bottom" align="start" className="w-96 p-0">
+                      <div className="p-3 border-b">
+                        <p className="font-medium text-sm flex items-center gap-2">
+                          <Target className="h-4 w-4" />
+                          Target Objective
+                        </p>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto p-3">
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{manualToEvaluate.target_objective}</p>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 )}
               </div>
             )}

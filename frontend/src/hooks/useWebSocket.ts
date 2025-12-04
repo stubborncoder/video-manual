@@ -126,8 +126,20 @@ export function useVideoProcessing() {
           reject(new Error("WebSocket connection failed"));
         };
 
-        ws.onclose = () => {
+        ws.onclose = (event) => {
           wsRef.current = null;
+          // If connection closed unexpectedly during processing, set error state
+          setState((prev) => {
+            if (prev.status === "processing") {
+              console.error("[WS Video] Connection closed unexpectedly during processing", event.code, event.reason);
+              return {
+                ...prev,
+                status: "error",
+                error: `Connection closed unexpectedly (code: ${event.code})`,
+              };
+            }
+            return prev;
+          });
         };
       });
     },

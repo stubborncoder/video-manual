@@ -481,6 +481,10 @@ export default function VideosPage() {
                   <Dialog
                     open={processDialogOpen && selectedVideo?.name === video.name}
                     onOpenChange={(open) => {
+                      // Prevent closing while processing
+                      if (!open && processingState.status === "processing") {
+                        return;
+                      }
                       setProcessDialogOpen(open);
                       if (open) {
                         setSelectedVideo(video);
@@ -500,6 +504,7 @@ export default function VideosPage() {
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-[95vw] w-[1600px] h-[85vh] p-0 gap-0 overflow-hidden">
+                      <DialogTitle className="sr-only">Process Video: {video.name}</DialogTitle>
                       {processingState.status === "idle" ? (
                         <div className="flex h-full">
                           {/* LEFT: Video Preview - Takes most space */}
