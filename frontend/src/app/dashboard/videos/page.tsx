@@ -411,10 +411,10 @@ export default function VideosPage() {
               "
             >
               {/* Video Preview */}
-              <div className="relative aspect-video bg-muted">
+              <div className="relative aspect-video bg-black overflow-hidden">
                 <video
                   src={getVideoStreamUrl(video.name)}
-                  className="w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-contain"
                   muted
                   preload="metadata"
                   onMouseEnter={(e) => e.currentTarget.play()}
