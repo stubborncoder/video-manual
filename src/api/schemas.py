@@ -49,12 +49,19 @@ class SourceVideoInfo(BaseModel):
     exists: bool = True
 
 
+class LanguageEvaluation(BaseModel):
+    """Evaluation status for a language."""
+    score: Optional[int] = None  # None if not evaluated
+    evaluated: bool = False
+
+
 class ManualSummary(BaseModel):
     id: str
     title: str = ""  # Display title (derived from video name or manual content)
     created_at: Optional[str] = None
     screenshot_count: int = 0
     languages: list[str] = []
+    evaluations: dict[str, LanguageEvaluation] = {}  # lang -> evaluation status
     source_video: Optional[SourceVideoInfo] = None
     project_id: Optional[str] = None
     target_audience: Optional[str] = None

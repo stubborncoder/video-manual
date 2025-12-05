@@ -173,12 +173,18 @@ export interface SourceVideoInfo {
   exists: boolean;
 }
 
+export interface LanguageEvaluation {
+  score: number | null;
+  evaluated: boolean;
+}
+
 export interface ManualSummary {
   id: string;
   title: string;
   created_at: string | null;
   screenshot_count: number;
   languages: string[];
+  evaluations: Record<string, LanguageEvaluation>;
   source_video?: SourceVideoInfo;
   project_id?: string;
   target_audience?: string;

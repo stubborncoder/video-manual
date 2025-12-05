@@ -13,7 +13,7 @@ from fastapi import APIRouter, HTTPException, File, UploadFile, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
 
-from ..schemas import ManualSummary, ManualDetail, ManualListResponse, SourceVideoInfo
+from ..schemas import ManualSummary, ManualDetail, ManualListResponse, SourceVideoInfo, LanguageEvaluation
 from ..dependencies import CurrentUser, UserStorageDep, ProjectStorageDep, TrashStorageDep
 from ...storage.version_storage import VersionStorage
 from ...storage.screenshot_store import ScreenshotStore
@@ -134,6 +134,28 @@ async def list_manuals(
             target_objective = metadata.get("target_objective")
             title = _get_manual_title(metadata, manual_id)
 
+        # Get evaluation status for each language
+        evaluations: dict[str, LanguageEvaluation] = {}
+        version_storage = VersionStorage(user_id, manual_id)
+        all_evals = version_storage.list_evaluations()
+
+        # Group by language (most recent for each lang)
+        latest_by_lang: dict[str, dict] = {}
+        for eval_info in all_evals:
+            lang = eval_info.get("language", "en")
+            if lang not in latest_by_lang:
+                latest_by_lang[lang] = eval_info
+
+        # Create evaluation status for each language
+        for lang in languages:
+            if lang in latest_by_lang:
+                evaluations[lang] = LanguageEvaluation(
+                    score=latest_by_lang[lang].get("overall_score"),
+                    evaluated=True
+                )
+            else:
+                evaluations[lang] = LanguageEvaluation(evaluated=False)
+
         manuals.append(
             ManualSummary(
                 id=manual_id,
@@ -141,6 +163,7 @@ async def list_manuals(
                 created_at=created_at,
                 screenshot_count=len(screenshots),
                 languages=languages,
+                evaluations=evaluations,
                 source_video=source_video,
                 project_id=project_id,
                 target_audience=target_audience,

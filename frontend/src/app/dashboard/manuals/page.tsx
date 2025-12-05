@@ -848,13 +848,33 @@ function ManualsPageContent() {
                     </Link>
                   )}
 
-                  {/* Languages */}
-                  <div className="flex items-center gap-1.5">
-                    {(manual.languages.length > 0 ? manual.languages : ["en"]).map((lang) => (
-                      <Badge key={lang} variant="outline" className="text-xs px-1.5 py-0 font-mono uppercase">
-                        {lang}
-                      </Badge>
-                    ))}
+                  {/* Languages with evaluation scores */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {(manual.languages.length > 0 ? manual.languages : ["en"]).map((lang) => {
+                      const evaluation = manual.evaluations?.[lang];
+                      const hasScore = evaluation?.evaluated && evaluation?.score != null;
+                      const scoreColors = hasScore ? getScoreColorByRaw(evaluation.score!) : null;
+
+                      return (
+                        <div key={lang} className="flex items-center gap-0.5">
+                          <Badge variant="outline" className="text-xs px-1.5 py-0 font-mono uppercase rounded-r-none border-r-0">
+                            {lang}
+                          </Badge>
+                          {hasScore && scoreColors ? (
+                            <Badge
+                              variant="outline"
+                              className={`text-xs px-1 py-0 rounded-l-none font-medium border-0 ${scoreColors.bgLight} ${scoreColors.text}`}
+                            >
+                              {evaluation.score}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs px-1 py-0 rounded-l-none text-muted-foreground">
+                              —
+                            </Badge>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </CardHeader>
