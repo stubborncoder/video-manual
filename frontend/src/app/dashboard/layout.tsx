@@ -3,6 +3,7 @@
 import { Sidebar } from "@/components/layout/Sidebar";
 import { SidebarProvider, useSidebar } from "@/components/layout/SidebarContext";
 import { SheetSidebarProvider } from "@/components/ui/sheet";
+import { JobToastsContainer } from "@/components/jobs/JobProgressToast";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { collapsed } = useSidebar();
@@ -15,6 +16,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           {children}
         </main>
       </div>
+      <JobToastsContainer />
     </SheetSidebarProvider>
   );
 }

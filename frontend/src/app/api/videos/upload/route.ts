@@ -23,17 +23,34 @@ export async function POST(request: NextRequest) {
     const contentLength = request.headers.get("content-length");
 
     // Stream the request body directly to the backend
-    const backendResponse = await fetch("http://localhost:8000/api/videos/upload", {
-      method: "POST",
-      headers: {
-        Cookie: `session_user_id=${sessionCookie.value}`,
-        ...(contentType && { "Content-Type": contentType }),
-        ...(contentLength && { "Content-Length": contentLength }),
-      },
-      body: request.body,
-      // @ts-expect-error duplex is required for streaming request bodies in Node.js
-      duplex: "half",
-    });
+    let backendResponse: Response;
+    try {
+      backendResponse = await fetch("http://localhost:8000/api/videos/upload", {
+        method: "POST",
+        headers: {
+          Cookie: `session_user_id=${sessionCookie.value}`,
+          ...(contentType && { "Content-Type": contentType }),
+          ...(contentLength && { "Content-Length": contentLength }),
+        },
+        body: request.body,
+        // @ts-expect-error duplex is required for streaming request bodies in Node.js
+        duplex: "half",
+      });
+    } catch {
+      return NextResponse.json(
+        { detail: "Cannot connect to backend server" },
+        { status: 503 }
+      );
+    }
+
+    // Check if response is JSON before parsing
+    const responseContentType = backendResponse.headers.get("content-type");
+    if (!responseContentType?.includes("application/json")) {
+      return NextResponse.json(
+        { detail: `Backend error: ${backendResponse.status} ${backendResponse.statusText}` },
+        { status: backendResponse.status || 500 }
+      );
+    }
 
     const data = await backendResponse.json();
 

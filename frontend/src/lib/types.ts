@@ -4,6 +4,7 @@
 
 // Event types matching backend
 export type EventType =
+  | "job_created"
   | "node_started"
   | "node_completed"
   | "llm_token"
@@ -82,7 +83,16 @@ export interface CompleteEvent extends BaseEvent {
   };
 }
 
+export interface JobCreatedEvent extends BaseEvent {
+  event_type: "job_created";
+  data: {
+    job_id: string;
+    video_name: string;
+  };
+}
+
 export type StreamEvent =
+  | JobCreatedEvent
   | NodeStartedEvent
   | NodeCompletedEvent
   | LLMTokenEvent
@@ -102,6 +112,7 @@ export interface ProcessingState {
   pendingHITL?: HITLRequiredEvent;
   result?: Record<string, unknown>;
   error?: string;
+  jobId?: string; // Job ID for tracking persistent jobs
 }
 
 // Video processing request

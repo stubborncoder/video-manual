@@ -50,7 +50,6 @@ import { Badge } from "@/components/ui/badge";
 import { Upload, Trash2, Video, Loader2, Eye, Wand2, FileText, FolderKanban, AlertTriangle, ArrowUpRight, Check, ChevronsUpDown } from "lucide-react";
 import { videos, projects, type VideoInfo, type UploadProgress, type ProjectSummary, type VideoManualInfo } from "@/lib/api";
 import { useVideoProcessing } from "@/hooks/useWebSocket";
-import { ProcessingProgress } from "@/components/processing/ProcessingProgress";
 import { MAX_TARGET_AUDIENCE_LENGTH, MAX_TARGET_OBJECTIVE_LENGTH } from "@/lib/constants";
 
 function getVideoStreamUrl(videoName: string): string {
@@ -98,7 +97,7 @@ export default function VideosPage() {
   const [filterProjectId, setFilterProjectId] = useState<string>("__all__");
   const [filterOpen, setFilterOpen] = useState(false);
 
-  const { state: processingState, startProcessing, reset } = useVideoProcessing();
+  const { startProcessing, reset } = useVideoProcessing();
 
   useEffect(() => {
     loadVideos();
@@ -233,13 +232,20 @@ export default function VideosPage() {
     const objective = objectiveEnabled && targetObjective.trim() ? targetObjective.trim() : undefined;
 
     try {
-      await startProcessing({
+      // Start processing - returns immediately when job is created
+      const { jobId } = await startProcessing({
         video_path: selectedVideo.path,
         output_language: outputLanguage,
         use_scene_detection: true,
         project_id: selectedProjectId,
         target_audience: audience,
         target_objective: objective,
+      });
+
+      // Close dialog immediately after job starts
+      setProcessDialogOpen(false);
+      toast.success("Processing started", {
+        description: `${selectedVideo.name} is being processed. You can continue working.`,
       });
     } catch (e) {
       const message = e instanceof Error ? e.message : "Processing failed";
@@ -481,10 +487,6 @@ export default function VideosPage() {
                   <Dialog
                     open={processDialogOpen && selectedVideo?.name === video.name}
                     onOpenChange={(open) => {
-                      // Prevent closing while processing
-                      if (!open && processingState.status === "processing") {
-                        return;
-                      }
                       setProcessDialogOpen(open);
                       if (open) {
                         setSelectedVideo(video);
@@ -505,7 +507,6 @@ export default function VideosPage() {
                     </DialogTrigger>
                     <DialogContent className="max-w-[95vw] w-[1600px] h-[85vh] p-0 gap-0 overflow-hidden">
                       <DialogTitle className="sr-only">Process Video: {video.name}</DialogTitle>
-                      {processingState.status === "idle" ? (
                         <div className="flex h-full">
                           {/* LEFT: Video Preview - Takes most space */}
                           <div className="flex-[3] bg-black flex flex-col min-w-0">
@@ -673,11 +674,6 @@ export default function VideosPage() {
                             </div>
                           </div>
                         </div>
-                      ) : (
-                        <div className="p-8">
-                          <ProcessingProgress state={processingState} />
-                        </div>
-                      )}
                     </DialogContent>
                   </Dialog>
 

@@ -206,15 +206,33 @@ def update_keyframes(manual_dir: Path, keyframes: List[Dict[str, Any]]) -> None:
     save_metadata(manual_dir, metadata)
 
 
-def update_optimized(manual_dir: Path, optimized: bool) -> None:
-    """Update metadata to mark video as optimized.
+def update_optimized(
+    manual_dir: Path,
+    optimized: bool,
+    original_size: Optional[int] = None,
+    optimized_size: Optional[int] = None,
+    compression_ratio: Optional[float] = None,
+) -> None:
+    """Update metadata to mark video as optimized with details.
 
     Args:
         manual_dir: Path to the manual directory
         optimized: Whether the video has been optimized
+        original_size: Original video size in bytes
+        optimized_size: Optimized video size in bytes
+        compression_ratio: Compression ratio (original/optimized)
     """
     metadata = load_metadata(manual_dir) or create_metadata("")
     metadata["optimized"] = optimized
+
+    # Save optimization details if provided
+    if optimized and any([original_size, optimized_size, compression_ratio]):
+        metadata["optimization_details"] = {
+            "original_size": original_size,
+            "optimized_size": optimized_size,
+            "compression_ratio": compression_ratio,
+        }
+
     save_metadata(manual_dir, metadata)
 
 

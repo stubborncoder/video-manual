@@ -8,6 +8,8 @@ import type {
   CompileProjectRequest,
   HITLDecision,
 } from "@/lib/types";
+import { useJobsStore } from "@/stores/jobsStore";
+import { JobInfo } from "@/lib/api";
 
 const WS_BASE = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000";
 
@@ -33,8 +35,64 @@ export function useVideoProcessing() {
   });
 
   const wsRef = useRef<WebSocket | null>(null);
+  const jobIdRef = useRef<string | null>(null);
+  const { addJob, updateJob } = useJobsStore();
 
   const processEvent = useCallback((event: StreamEvent) => {
+    // Handle job_created event - store job ID and add to jobs store
+    if (event.event_type === "job_created") {
+      const jobId = event.data.job_id as string;
+      const videoName = event.data.video_name as string;
+      jobIdRef.current = jobId;
+
+      // Add job to the store
+      addJob({
+        id: jobId,
+        user_id: "", // Will be filled by backend
+        video_name: videoName,
+        manual_id: null,
+        status: "processing",
+        current_node: null,
+        node_index: null,
+        total_nodes: null,
+        error: null,
+        started_at: new Date().toISOString(),
+        completed_at: null,
+        seen: false,
+      });
+
+      setState((prev) => ({
+        ...prev,
+        jobId,
+      }));
+      return;
+    }
+
+    // Update job store on progress events
+    const jobId = jobIdRef.current;
+    if (jobId) {
+      if (event.event_type === "node_started") {
+        updateJob(jobId, {
+          current_node: event.data.node_name as string,
+          node_index: event.data.node_index as number,
+          total_nodes: event.data.total_nodes as number,
+        });
+      } else if (event.event_type === "error") {
+        updateJob(jobId, {
+          status: "error",
+          error: event.data.error_message as string,
+          completed_at: new Date().toISOString(),
+        });
+      } else if (event.event_type === "complete") {
+        const result = event.data.result as Record<string, unknown>;
+        updateJob(jobId, {
+          status: "complete",
+          manual_id: result?.manual_id as string,
+          completed_at: new Date().toISOString(),
+        });
+      }
+    }
+
     setState((prev) => {
       let newState = prev;
       switch (event.event_type) {
@@ -80,7 +138,7 @@ export function useVideoProcessing() {
       console.log("[WS] State update:", event.event_type, "->", newState.status, newState.currentNode);
       return newState;
     });
-  }, []);
+  }, [addJob, updateJob]);
 
   const startProcessing = useCallback(
     (request: ProcessVideoRequest) => {
@@ -91,15 +149,19 @@ export function useVideoProcessing() {
         currentNode: undefined,
         nodeIndex: undefined,
         totalNodes: undefined,
+        jobId: undefined,
       }));
+      jobIdRef.current = null;
 
-      return new Promise<void>((resolve, reject) => {
+      return new Promise<{ jobId: string }>((resolve, reject) => {
         const userId = getUserIdFromCookie();
         const wsUrl = userId
           ? `${WS_BASE}/api/ws/process?user_id=${encodeURIComponent(userId)}`
           : `${WS_BASE}/api/ws/process`;
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
+
+        let jobCreated = false;
 
         ws.onopen = () => {
           ws.send(JSON.stringify({ action: "start", ...request }));
@@ -110,9 +172,14 @@ export function useVideoProcessing() {
           console.log("[WS] Event:", event.event_type, event.data);
           processEvent(event);
 
-          if (event.event_type === "complete") {
-            resolve();
-          } else if (event.event_type === "error") {
+          // Resolve early when job is created (non-blocking mode)
+          if (event.event_type === "job_created" && !jobCreated) {
+            jobCreated = true;
+            resolve({ jobId: event.data.job_id as string });
+          }
+
+          // Still handle complete/error for cleanup
+          if (event.event_type === "error" && !jobCreated) {
             reject(new Error(event.data.error_message as string));
           }
         };
@@ -123,20 +190,19 @@ export function useVideoProcessing() {
             status: "error",
             error: "WebSocket connection failed",
           }));
-          reject(new Error("WebSocket connection failed"));
+          if (!jobCreated) {
+            reject(new Error("WebSocket connection failed"));
+          }
         };
 
         ws.onclose = (event) => {
           wsRef.current = null;
-          // If connection closed unexpectedly during processing, set error state
+          // If connection closed unexpectedly during processing, update job status
           setState((prev) => {
             if (prev.status === "processing") {
               console.error("[WS Video] Connection closed unexpectedly during processing", event.code, event.reason);
-              return {
-                ...prev,
-                status: "error",
-                error: `Connection closed unexpectedly (code: ${event.code})`,
-              };
+              // Job continues on backend - user can track via REST API
+              return prev;
             }
             return prev;
           });
@@ -151,6 +217,7 @@ export function useVideoProcessing() {
       wsRef.current.close();
       wsRef.current = null;
     }
+    jobIdRef.current = null;
     setState({
       status: "idle",
       nodeDetails: {},

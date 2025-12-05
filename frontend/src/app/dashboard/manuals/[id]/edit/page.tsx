@@ -353,13 +353,24 @@ export default function ManualEditorPage() {
     }
   }
 
+  // Build URL with preserved filter params
+  const manualsListUrl = useMemo(() => {
+    const filterParams = new URLSearchParams();
+    const project = searchParams.get("project");
+    const tags = searchParams.get("tags");
+    if (project) filterParams.set("project", project);
+    if (tags) filterParams.set("tags", tags);
+    const queryString = filterParams.toString();
+    return queryString ? `/dashboard/manuals?${queryString}` : "/dashboard/manuals";
+  }, [searchParams]);
+
   // Handle back navigation
   function handleBack() {
     if (hasUnsavedChanges) {
-      setPendingNavigation("/dashboard/manuals");
+      setPendingNavigation(manualsListUrl);
       setShowUnsavedDialog(true);
     } else {
-      router.push("/dashboard/manuals");
+      router.push(manualsListUrl);
     }
   }
 

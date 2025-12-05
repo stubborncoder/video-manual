@@ -1,40 +1,37 @@
-"""Keyframe identifier node for extracting key moments from video."""
+"""Keyframe identifier node for extracting key moments from video.
 
-import os
+This node parses keyframes from the video analysis (no LLM call).
+The video analyzer prompt now includes keyframe selection criteria,
+so this node only validates and sanitizes the output.
+"""
+
 import re
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
 
-from ..config import DEFAULT_GEMINI_MODEL, KEYFRAME_MIN_INTERVAL, LLM_TEXT_TIMEOUT
-from ..prompts.system import KEYFRAME_IDENTIFIER_PROMPT
-from ..tools.video_tools import detect_scene_changes
+from ..config import KEYFRAME_MIN_INTERVAL
 from ..state import VideoManualState
 from ..utils.metadata import has_keyframes, get_cached_keyframes, update_keyframes
 
 
 def identify_keyframes_node(state: VideoManualState) -> Dict[str, Any]:
-    """Identify keyframes from video analysis.
+    """Parse and validate keyframes from video analysis.
 
-    This is a LangGraph node that reads from state and returns a partial state update.
-    Supports caching of keyframes in metadata.json to avoid re-identification.
+    This is a LangGraph node that extracts keyframes from the video_analysis text.
+    No LLM call is made - this is pure Python parsing and validation.
 
     Args:
-        state: Current workflow state containing video_path, video_analysis, and use_scene_detection
+        state: Current workflow state containing video_analysis and video_metadata
 
     Returns:
-        Partial state update with keyframes, scene_changes, total_keyframes, and status
+        Partial state update with keyframes, total_keyframes, and status
     """
-    # Load environment variables
-    load_dotenv()
-
     # Extract values from state
-    video_path = state["video_path"]
     video_analysis = state["video_analysis"]
-    use_scene_detection = state.get("use_scene_detection", True)
+    video_metadata = state.get("video_metadata", {})
     user_id = state.get("user_id", "default")
     manual_id = state.get("manual_id")
+    video_duration = video_metadata.get("duration_seconds", float("inf"))
 
     # Get manual directory for caching
     manual_dir: Optional[Path] = None
@@ -55,56 +52,23 @@ def identify_keyframes_node(state: VideoManualState) -> Dict[str, Any]:
             "status": "identifying_complete",
         }
 
-    # Get API key
-    api_key = os.getenv("GOOGLE_API_KEY")
-    if not api_key:
-        return {
-            "status": "error",
-            "error": "GOOGLE_API_KEY not found in environment variables",
-        }
+    # Parse keyframes from video analysis text
+    print("Parsing keyframes from video analysis...")
+    keyframes = _parse_keyframes_from_response(video_analysis)
 
-    # Optional: Use scene detection for initial suggestions
-    scene_changes = []
-    if use_scene_detection:
-        try:
-            scene_changes = detect_scene_changes(video_path)
-        except Exception:
-            scene_changes = []
-
-    llm = ChatGoogleGenerativeAI(
-        model=DEFAULT_GEMINI_MODEL,
-        google_api_key=api_key,
-        timeout=LLM_TEXT_TIMEOUT,
-    )
-
-    # Prepare enhanced prompt
-    enhanced_prompt = f"""{KEYFRAME_IDENTIFIER_PROMPT}
-
-VIDEO ANALYSIS:
-{video_analysis}
-
-{"DETECTED SCENE CHANGES:" if scene_changes else ""}
-{_format_scene_changes(scene_changes) if scene_changes else ""}
-
-Based on the video analysis above, identify the most important keyframes (with exact timestamps in seconds)
-that should be captured as screenshots for the user manual.
-"""
-
-    try:
-        # Get keyframe recommendations
-        print("Identifying keyframes...")
-        response = llm.invoke(enhanced_prompt)
-    except Exception as e:
-        return {
-            "status": "error",
-            "error": f"Keyframe identification API error: {str(e)}",
-        }
-
-    # Parse keyframes from response
-    keyframes = _parse_keyframes_from_response(response.content)
+    # Validate keyframes
+    keyframes = _validate_keyframes(keyframes, video_duration)
 
     # Filter keyframes to ensure minimum interval
     keyframes = _filter_keyframes(keyframes, KEYFRAME_MIN_INTERVAL)
+
+    # Warn if keyframe count seems off
+    if len(keyframes) == 0:
+        print("Warning: No keyframes found in video analysis")
+    elif len(keyframes) < 3:
+        print(f"Warning: Only {len(keyframes)} keyframes found - may be too few")
+    elif len(keyframes) > 50:
+        print(f"Warning: {len(keyframes)} keyframes found - may be too many")
 
     # Cache keyframes in metadata
     if manual_dir:
@@ -113,25 +77,44 @@ that should be captured as screenshots for the user manual.
     # Return partial state update
     return {
         "keyframes": keyframes,
-        "scene_changes": scene_changes,
+        "scene_changes": [],
         "total_keyframes": len(keyframes),
         "status": "identifying_complete",
     }
 
 
-def _format_scene_changes(scene_changes: List[Dict]) -> str:
-    """Format scene changes for prompt."""
-    if not scene_changes:
-        return ""
+def _validate_keyframes(
+    keyframes: List[Dict[str, Any]],
+    video_duration: float
+) -> List[Dict[str, Any]]:
+    """Validate keyframes and filter out invalid entries.
 
-    formatted = []
-    for scene in scene_changes[:20]:  # Limit to first 20 scenes
-        formatted.append(
-            f"Scene {scene['scene_number']}: {scene['start_formatted']} - "
-            f"{scene['end_formatted']} ({scene['duration_seconds']:.1f}s)"
-        )
+    Args:
+        keyframes: List of parsed keyframes
+        video_duration: Video duration in seconds
 
-    return "\n".join(formatted)
+    Returns:
+        List of valid keyframes
+    """
+    valid_keyframes = []
+
+    for kf in keyframes:
+        timestamp = kf.get("timestamp_seconds", -1)
+        description = kf.get("description", "").strip()
+
+        # Skip invalid entries
+        if timestamp < 0:
+            continue
+        if timestamp > video_duration:
+            print(f"Warning: Skipping keyframe at {timestamp}s (exceeds video duration {video_duration}s)")
+            continue
+        if not description:
+            print(f"Warning: Skipping keyframe at {timestamp}s (no description)")
+            continue
+
+        valid_keyframes.append(kf)
+
+    return valid_keyframes
 
 
 def _parse_keyframes_from_response(response_text: str) -> List[Dict[str, Any]]:

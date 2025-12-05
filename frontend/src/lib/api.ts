@@ -21,16 +21,30 @@ async function request<T>(
     url += `?${searchParams.toString()}`;
   }
 
-  const response = await fetch(url, {
-    ...fetchOptions,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...fetchOptions.headers,
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...fetchOptions,
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...fetchOptions.headers,
+      },
+    });
+  } catch (e) {
+    // Network error - backend probably not running
+    throw new Error("Cannot connect to server. Is the backend running?");
+  }
+
+  // Check content type to avoid parsing HTML as JSON
+  const contentType = response.headers.get("content-type");
+  const isJson = contentType?.includes("application/json");
 
   if (!response.ok) {
+    if (!isJson) {
+      // Got HTML error page (e.g., 404 from Next.js when backend is down)
+      throw new Error(`Server error: ${response.status} ${response.statusText}`);
+    }
     const error = await response.json().catch(() => ({ detail: `HTTP ${response.status} ${response.statusText}` }));
     // Handle FastAPI validation errors which return detail as an array
     let errorMessage: string;
@@ -45,6 +59,11 @@ async function request<T>(
       errorMessage = error.detail || `HTTP ${response.status} ${response.statusText}`;
     }
     throw new Error(errorMessage);
+  }
+
+  // Successful response but not JSON (shouldn't happen, but handle it)
+  if (!isJson) {
+    throw new Error("Server returned non-JSON response");
   }
 
   return response.json();
@@ -600,6 +619,39 @@ export const exports = {
   },
 };
 
+// Jobs
+export interface JobInfo {
+  id: string;
+  user_id: string;
+  video_name: string;
+  manual_id: string | null;
+  status: "pending" | "processing" | "complete" | "error";
+  current_node: string | null;
+  node_index: number | null;
+  total_nodes: number | null;
+  error: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  seen: boolean;
+}
+
+export const jobs = {
+  list: (status?: string, includeSeen = true) =>
+    request<{ jobs: JobInfo[] }>("/api/jobs", {
+      params: {
+        ...(status && { status }),
+        include_seen: String(includeSeen),
+      },
+    }),
+
+  listActive: () => request<{ jobs: JobInfo[] }>("/api/jobs/active"),
+
+  get: (jobId: string) => request<JobInfo>(`/api/jobs/${jobId}`),
+
+  markSeen: (jobId: string) =>
+    request<{ status: string }>(`/api/jobs/${jobId}/seen`, { method: "POST" }),
+};
+
 // Trash
 export interface TrashItem {
   trash_id: string;
@@ -637,4 +689,4 @@ export const trash = {
   empty: () => request<{ status: string; deleted_count: number }>("/api/trash/empty", { method: "DELETE" }),
 };
 
-export default { auth, videos, manuals, manualProject, projects, compilations, exports, trash };
+export default { auth, videos, manuals, manualProject, projects, compilations, exports, jobs, trash };

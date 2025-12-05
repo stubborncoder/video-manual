@@ -1,42 +1,72 @@
 # vDocs
 
-AI-powered documentation from video. A multi-agent platform for generating professional documentation from instructional videos using Google's Gemini AI and LangGraph workflows.
+AI-powered documentation from video. A full-stack platform for generating professional step-by-step documentation from instructional videos using Google Gemini and Anthropic Claude.
 
 ## Overview
 
-vDocs provides intelligent agents that:
-- **Analyze video content** using Gemini 2.5 Pro's advanced video understanding
-- **Identify key moments** where important instructions occur
-- **Extract screenshots** from critical timestamps
-- **Generate documentation** with step-by-step instructions and visual aids
+vDocs provides:
+- **Video Analysis** - Gemini 2.5 Pro analyzes video content to identify key instructional moments
+- **Smart Keyframe Selection** - Automatically identifies the best frames to capture as screenshots
+- **Documentation Generation** - Claude generates clear, professional Markdown manuals with embedded screenshots
+- **Web Dashboard** - Modern React UI for managing videos, manuals, and projects
+- **Async Processing** - Non-blocking video processing with real-time progress tracking
 
-Built with **LangGraph v1** for workflow orchestration and **SQLite checkpointing** for persistence.
+## Tech Stack
+
+### Backend
+- **Python 3.12+** with FastAPI
+- **LangGraph** for AI workflow orchestration
+- **Google Gemini 2.5 Pro** for video understanding
+- **Anthropic Claude** for manual generation
+- **SQLite** for job persistence
+- **FFmpeg** for video processing
+
+### Frontend
+- **Next.js 15** with App Router
+- **React 19** with TypeScript
+- **Tailwind CSS** + **shadcn/ui** components
+- **Zustand** for state management
+- **WebSocket** for real-time updates
 
 ## Architecture
 
 ```
-video-manual/
-├── src/
-│   ├── config.py                    # Global configuration
-│   ├── storage/                     # User data management
-│   │   └── user_storage.py          # Per-user folder structure
-│   └── agents/
-│       └── video_manual_agent/      # LangGraph video manual agent
-│           ├── state.py             # Workflow state definition
-│           ├── graph.py             # LangGraph StateGraph
-│           ├── agent.py             # Main agent class
-│           ├── nodes/               # Graph nodes
-│           ├── prompts/             # System prompts
-│           └── tools/               # Video processing utilities
-├── data/                            # Runtime data (gitignored)
-│   ├── users/{user_id}/             # Per-user storage
-│   │   ├── videos/                  # Uploaded videos
-│   │   └── manuals/{manual_id}/     # Generated manuals
-│   └── checkpoints/                 # Per-agent SQLite DBs
-└── tests/
+vDocs/
+├── src/                          # Backend (Python)
+│   ├── api/                      # FastAPI application
+│   │   ├── routes/               # REST endpoints
+│   │   │   ├── jobs.py           # Job tracking API
+│   │   │   ├── manuals.py        # Manual CRUD
+│   │   │   ├── videos.py         # Video management
+│   │   │   └── projects.py       # Project organization
+│   │   └── websockets/           # WebSocket handlers
+│   │       └── process_video.py  # Real-time processing
+│   ├── agents/
+│   │   └── video_manual_agent/   # LangGraph workflow
+│   │       ├── graph.py          # StateGraph definition
+│   │       ├── nodes/            # Processing nodes
+│   │       └── prompts/          # AI prompts
+│   ├── db/                       # SQLite database
+│   │   ├── database.py           # Connection management
+│   │   ├── job_storage.py        # Job CRUD operations
+│   │   └── vdocs.db              # Database file
+│   └── storage/                  # File storage
+│       ├── user_storage.py       # Per-user data
+│       └── project_storage.py    # Project organization
+├── frontend/                     # Frontend (Next.js)
+│   └── src/
+│       ├── app/dashboard/        # Dashboard pages
+│       ├── components/           # UI components
+│       ├── hooks/                # React hooks
+│       ├── stores/               # Zustand stores
+│       └── lib/                  # API client, utilities
+└── data/                         # Runtime data (gitignored)
+    └── users/{user_id}/
+        ├── videos/               # Uploaded videos
+        └── manuals/{manual_id}/  # Generated manuals
 ```
 
-### LangGraph Workflow
+### Processing Pipeline
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -46,17 +76,18 @@ video-manual/
 │    │                                                         │
 │    ▼                                                         │
 │  ┌──────────────────┐                                       │
-│  │  analyze_video   │  ← Gemini video analysis              │
+│  │  analyze_video   │  ← Gemini: analyze content + select   │
+│  │                  │    keyframe timestamps                 │
 │  └────────┬─────────┘                                       │
 │           │                                                  │
 │           ▼                                                  │
 │  ┌──────────────────┐                                       │
-│  │identify_keyframes│  ← Scene detection + Gemini           │
+│  │identify_keyframes│  ← Extract screenshots at timestamps  │
 │  └────────┬─────────┘                                       │
 │           │                                                  │
 │           ▼                                                  │
 │  ┌──────────────────┐                                       │
-│  │ generate_manual  │  ← Screenshots + Markdown             │
+│  │ generate_manual  │  ← Claude: create Markdown manual     │
 │  └────────┬─────────┘                                       │
 │           │                                                  │
 │           ▼                                                  │
@@ -64,210 +95,241 @@ video-manual/
 └─────────────────────────────────────────────────────────────┘
 ```
 
+### Job System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                              Frontend                                    │
+│  ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────────┐   │
+│  │ useWebSocket.ts │   │ jobsStore.ts    │   │ JobProgressToast.tsx │   │
+│  │ (starts job)    │──▶│ (Zustand store) │──▶│ (displays progress) │   │
+│  └────────┬────────┘   └────────▲────────┘   └─────────────────────┘   │
+│           │                     │                                       │
+│           │ WebSocket           │ REST API (polling fallback)          │
+│           ▼                     │                                       │
+└───────────┼─────────────────────┼───────────────────────────────────────┘
+            │                     │
+┌───────────┼─────────────────────┼───────────────────────────────────────┐
+│           │                     │                Backend                 │
+│           ▼                     │                                       │
+│  ┌─────────────────────┐   ┌────┴────────────┐   ┌──────────────────┐  │
+│  │ process_video.py    │──▶│ routes/jobs.py  │◀──│ job_storage.py   │  │
+│  │ (WebSocket handler) │   │ (REST endpoints)│   │ (CRUD operations)│  │
+│  └─────────┬───────────┘   └─────────────────┘   └────────▲─────────┘  │
+│            │                                               │            │
+│            └───────────────────────────────────────────────┘            │
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────────┐ │
+│  │                         SQLite (vdocs.db)                         │ │
+│  │  jobs: id, user_id, video_name, status, current_node, ...        │ │
+│  └───────────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
 ## Installation
 
 ### Prerequisites
 
-- Python 3.13+
-- Google Gemini API key
+- Python 3.12+
+- Node.js 20+
 - FFmpeg (for video processing)
+- Google Gemini API key
+- Anthropic API key
 
-### Setup
+### Backend Setup
 
 ```bash
 # Clone and enter directory
-cd /path/to/video-manual
+cd video-manual
 
-# Install dependencies with uv
+# Install Python dependencies with uv
 uv sync
 
 # Copy environment template
 cp .env.example .env
 
-# Add your Gemini API key to .env
-echo "GOOGLE_API_KEY=your_key_here" >> .env
+# Add your API keys to .env
+GOOGLE_API_KEY=your_gemini_key
+ANTHROPIC_API_KEY=your_claude_key
+```
+
+### Frontend Setup
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
 ```
 
 ## Usage
 
-### Basic Usage
+### Running the Application
+
+```bash
+# Terminal 1: Start backend API
+uv run vdocs-api
+
+# Terminal 2: Start frontend
+cd frontend && npm run dev
+```
+
+Then open http://localhost:3000 in your browser.
+
+### CLI Usage
+
+```bash
+# Process a video directly
+uv run vdocs process /path/to/video.mp4 --output my-manual
+
+# List manuals
+uv run vdocs list
+
+# Get help
+uv run vdocs --help
+```
+
+### Programmatic Usage
 
 ```python
 from src.agents.video_manual_agent import VideoManualAgent
 
-# Create agent (with SQLite checkpointing enabled by default)
 agent = VideoManualAgent()
 
-# Generate manual from video
 result = agent.create_manual(
     video_path="/path/to/tutorial.mp4",
-    user_id="user_123",                # Required: identifies output folder
-    output_filename="my_manual",       # Optional
-    use_scene_detection=True,          # Enable intelligent scene detection
+    user_id="user_123",
+    output_filename="my_manual",
+    use_scene_detection=True,
+    output_language="English",
 )
 
 print(f"Manual saved to: {result['manual_path']}")
-print(f"Screenshots: {len(result['screenshots'])}")
 ```
 
-### Factory Function
+## API Endpoints
 
-```python
-from src.agents.video_manual_agent import create_video_manual_agent
+### Videos
+- `GET /api/videos` - List user's videos
+- `POST /api/videos/upload` - Upload a video
+- `DELETE /api/videos/{name}` - Delete a video
 
-agent = create_video_manual_agent(
-    model_name="gemini-2.5-pro",
-    use_checkpointer=True
-)
+### Manuals
+- `GET /api/manuals` - List user's manuals
+- `GET /api/manuals/{id}` - Get manual content
+- `PUT /api/manuals/{id}/content` - Update manual content
+- `POST /api/manuals/{id}/evaluate` - AI quality evaluation
+- `POST /api/manuals/{id}/export/{format}` - Export to PDF/Word/HTML
+
+### Jobs
+- `GET /api/jobs` - List processing jobs
+- `GET /api/jobs/active` - List active jobs
+- `GET /api/jobs/{id}` - Get job status
+- `POST /api/jobs/{id}/seen` - Mark job as seen
+
+### Projects
+- `GET /api/projects` - List projects
+- `POST /api/projects` - Create project
+- `PUT /api/projects/{id}` - Update project
+- `DELETE /api/projects/{id}` - Delete project
+
+### WebSocket
+- `WS /api/ws/process` - Real-time video processing with progress events
+
+## Configuration
+
+### Environment Variables
+
+```bash
+# Required
+GOOGLE_API_KEY=           # Gemini API key
+ANTHROPIC_API_KEY=        # Claude API key
+
+# Optional
+VDOCS_DATA_DIR=          # Data directory (default: ./data)
+VDOCS_LOG_LEVEL=         # Logging level (default: INFO)
 ```
 
-### Direct Graph Access
+### Agent Configuration
+
+See `src/agents/video_manual_agent/config.py`:
 
 ```python
-from src.agents.video_manual_agent import get_video_manual_graph
-
-# Get compiled graph with checkpointer
-graph = get_video_manual_graph()
-
-# Run with custom thread_id for resumability
-result = graph.invoke(
-    initial_state,
-    config={"configurable": {"thread_id": "my_session"}}
-)
-```
-
-### Access User Manuals
-
-```python
-from src.storage.user_storage import UserStorage
-
-storage = UserStorage("user_123")
-
-# List all manuals for user
-manuals = storage.list_manuals()
-
-# Read a specific manual
-content = storage.get_manual_content("abc12345")
+DEFAULT_GEMINI_MODEL = "gemini-2.5-pro"
+MAX_VIDEO_DURATION = 7200  # 2 hours
+SCREENSHOT_FORMAT = "PNG"
+SCREENSHOT_MAX_WIDTH = 1920
 ```
 
 ## Output Structure
 
 ```
-data/users/user_123/
-├── videos/                          # Uploaded video files
+data/users/{user_id}/
+├── videos/
 │   └── tutorial.mp4
 └── manuals/
-    └── abc12345/                    # Generated manual
-        ├── manual.md                # Markdown manual
-        └── screenshots/
-            ├── figure_01_t15s.png   # Screenshot at 15 seconds
-            ├── figure_02_t42s.png   # Screenshot at 42 seconds
-            └── ...
+    └── my-manual/
+        ├── en/
+        │   └── manual.md          # English manual
+        ├── es/
+        │   └── manual.md          # Spanish manual (if generated)
+        ├── screenshots/
+        │   ├── figure_01_t15s.png  # Screenshot at 15s
+        │   ├── figure_02_t42s.png  # Screenshot at 42s
+        │   └── ...
+        └── metadata.json          # Manual metadata
 ```
 
-## Configuration
-
-### Global Config (`src/config.py`)
-
-```python
-# Data directories
-DATA_DIR = PROJECT_ROOT / "data"
-USERS_DIR = DATA_DIR / "users"
-CHECKPOINTS_DIR = DATA_DIR / "checkpoints"
-
-# Per-agent checkpoint databases
-get_checkpoint_db_path("video_manual_agent")  # Returns: data/checkpoints/video_manual_agent.db
-```
-
-### Agent Config (`src/agents/video_manual_agent/config.py`)
-
-```python
-# Model Selection
-DEFAULT_GEMINI_MODEL = "gemini-2.5-pro"  # Best for video understanding
-
-# Video Processing
-MAX_VIDEO_DURATION = 7200  # 2 hours max
-KEYFRAME_MIN_INTERVAL = 1  # Minimum seconds between keyframes
-
-# Screenshot Settings
-SCREENSHOT_FORMAT = "PNG"
-SCREENSHOT_QUALITY = 95
-SCREENSHOT_MAX_WIDTH = 1920
-
-# Scene Detection
-SCENE_THRESHOLD = 27.0
-MIN_SCENE_LENGTH = 3  # seconds
-```
-
-## State Management
-
-The workflow uses a typed state definition (`VideoManualState`):
-
-```python
-class VideoManualState(TypedDict):
-    # User context
-    user_id: str
-    manual_id: Optional[str]
-
-    # Input
-    video_path: str
-    use_scene_detection: bool
-
-    # Results from each node
-    video_metadata: Optional[Dict]
-    video_analysis: Optional[str]
-    keyframes: Optional[List[Dict]]
-    manual_content: Optional[str]
-    manual_path: Optional[str]
-    screenshots: Optional[List[Dict]]
-
-    # Status
-    status: str  # "pending", "completed", "error"
-    error: Optional[str]
-```
-
-## Checkpointing
-
-Each agent has its own SQLite database for checkpointing:
-
-```
-data/checkpoints/
-├── video_manual_agent.db    # Video manual agent checkpoints
-└── future_agent.db          # Future agents get their own DBs
-```
-
-This enables:
-- **Resumability**: Resume interrupted workflows
-- **Debugging**: Inspect state at each step
-- **Independence**: Agents don't interfere with each other
-
-## Dependencies
-
-### Core
-- `langchain>=1.0.3` - LangChain core
-- `langchain-google-genai>=2.1.0` - Gemini integration
-- `langgraph>=0.5.0` - Graph-based workflows
-- `langgraph-checkpoint-sqlite>=1.0.0` - SQLite checkpointing
-- `deepagents>=0.2.7` - For future DeepAgent integration
+## Features
 
 ### Video Processing
-- `opencv-python>=4.10.0` - Frame extraction
-- `moviepy>=2.1.0` - Video manipulation
-- `scenedetect[opencv]>=0.6.4` - Scene detection
-- `ffmpeg-python>=0.2.0` - Video operations
+- Supports MP4, WebM, AVI, MOV formats
+- Automatic video optimization for AI processing
+- Scene detection for intelligent keyframe selection
 
-### Image Processing
-- `pillow>=11.0.0` - Image optimization
-- `numpy>=2.0.0` - Numerical operations
+### Manual Generation
+- Multi-language support
+- Markdown output with embedded screenshots
+- AI-powered quality evaluation
+- Version history with restore capability
 
-## Future Roadmap
+### Project Organization
+- Group manuals into projects
+- Organize with chapters
+- Tag-based filtering
+- Compile project documentation
 
-This platform is designed to support multiple agents:
+### Editor
+- Live Markdown preview
+- AI copilot for editing assistance
+- Image replacement from video frames
+- Undo/redo with keyboard shortcuts
+- Auto-save
 
-- **Video Manual Agent** (this one) - LangGraph-based
-- **Manual Editor Agent** (future) - For user editing of generated manuals
-- **DeepAgent** (future) - Using the DeepAgents framework
-- **Additional agents** - Each with independent checkpointing
+## Development
+
+### Running Tests
+
+```bash
+# Backend tests
+uv run pytest
+
+# Frontend tests
+cd frontend && npm test
+```
+
+### Building for Production
+
+```bash
+# Frontend
+cd frontend && npm run build
+
+# The backend runs directly with uvicorn
+uv run vdocs-api --host 0.0.0.0 --port 8000
+```
 
 ## License
 

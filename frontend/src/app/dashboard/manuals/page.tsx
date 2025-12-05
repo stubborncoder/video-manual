@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { Suspense, useEffect, useState, useMemo, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -76,7 +77,10 @@ interface ManualWithProject extends ManualSummary {
   tags?: string[];
 }
 
-export default function ManualsPage() {
+function ManualsPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [manualList, setManualList] = useState<ManualWithProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedManual, setSelectedManual] = useState<ManualDetail | null>(null);
@@ -86,12 +90,48 @@ export default function ManualsPage() {
 
   // Project data
   const [projectList, setProjectList] = useState<ProjectSummary[]>([]);
-  const [filterProjectId, setFilterProjectId] = useState<string>("__all__");
   const [filterOpen, setFilterOpen] = useState(false);
 
   // Tag filter state
-  const [filterTags, setFilterTags] = useState<string[]>([]);
   const [tagFilterOpen, setTagFilterOpen] = useState(false);
+
+  // Initialize filter state from URL params
+  const filterProjectId = searchParams.get("project") || "__all__";
+  const filterTags = useMemo(() => {
+    const tagsParam = searchParams.get("tags");
+    return tagsParam ? tagsParam.split(",").filter(Boolean) : [];
+  }, [searchParams]);
+
+  // Update URL when filters change
+  const updateFilters = useCallback(
+    (projectId: string, tags: string[]) => {
+      const params = new URLSearchParams();
+      if (projectId !== "__all__") {
+        params.set("project", projectId);
+      }
+      if (tags.length > 0) {
+        params.set("tags", tags.join(","));
+      }
+      const queryString = params.toString();
+      router.replace(queryString ? `?${queryString}` : "/dashboard/manuals", { scroll: false });
+    },
+    [router]
+  );
+
+  const setFilterProjectId = useCallback(
+    (projectId: string) => {
+      updateFilters(projectId, filterTags);
+    },
+    [updateFilters, filterTags]
+  );
+
+  const setFilterTags = useCallback(
+    (tagsOrUpdater: string[] | ((prev: string[]) => string[])) => {
+      const newTags = typeof tagsOrUpdater === "function" ? tagsOrUpdater(filterTags) : tagsOrUpdater;
+      updateFilters(filterProjectId, newTags);
+    },
+    [updateFilters, filterProjectId, filterTags]
+  );
 
   // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -544,11 +584,27 @@ export default function ManualsPage() {
     return Array.from(tags).sort();
   }, [manualList]);
 
+  // Build edit URL with filter params preserved
+  const getEditUrl = useCallback(
+    (manualId: string) => {
+      const params = new URLSearchParams();
+      if (filterProjectId !== "__all__") {
+        params.set("project", filterProjectId);
+      }
+      if (filterTags.length > 0) {
+        params.set("tags", filterTags.join(","));
+      }
+      const queryString = params.toString();
+      return queryString
+        ? `/dashboard/manuals/${manualId}/edit?${queryString}`
+        : `/dashboard/manuals/${manualId}/edit`;
+    },
+    [filterProjectId, filterTags]
+  );
+
   // Get selected project name for display
   const selectedProjectName = filterProjectId === "__all__"
     ? "All Projects"
-    : filterProjectId === "__unassigned__"
-    ? "Unassigned"
     : projectList.find((p) => p.id === filterProjectId)?.name || "Select project";
 
   // Filter manuals by project and tags
@@ -557,11 +613,7 @@ export default function ManualsPage() {
 
     // Filter by project
     if (filterProjectId !== "__all__") {
-      if (filterProjectId === "__unassigned__") {
-        result = result.filter((m) => !m.project_id);
-      } else {
-        result = result.filter((m) => m.project_id === filterProjectId);
-      }
+      result = result.filter((m) => m.project_id === filterProjectId);
     }
 
     // Filter by tags (AND logic - must have all selected tags)
@@ -618,18 +670,6 @@ export default function ManualsPage() {
                           className={`mr-2 h-4 w-4 ${filterProjectId === "__all__" ? "opacity-100" : "opacity-0"}`}
                         />
                         All Projects
-                      </CommandItem>
-                      <CommandItem
-                        value="__unassigned__"
-                        onSelect={() => {
-                          setFilterProjectId("__unassigned__");
-                          setFilterOpen(false);
-                        }}
-                      >
-                        <Check
-                          className={`mr-2 h-4 w-4 ${filterProjectId === "__unassigned__" ? "opacity-100" : "opacity-0"}`}
-                        />
-                        Unassigned
                       </CommandItem>
                       {projectList.map((project) => (
                         <CommandItem
@@ -880,7 +920,7 @@ export default function ManualsPage() {
                     <Eye className="mr-2 h-4 w-4" />
                     View Manual
                   </Button>
-                  <Link href={`/dashboard/manuals/${manual.id}/edit`} className="contents">
+                  <Link href={getEditUrl(manual.id)} className="contents">
                     <Button size="sm" variant="outline" title="Edit manual content">
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -1824,5 +1864,27 @@ export default function ManualsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// Loading fallback for Suspense
+function ManualsLoading() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Manuals</h1>
+        <p className="text-muted-foreground">View and manage your generated manuals</p>
+      </div>
+      <div className="text-center py-8 text-muted-foreground">Loading manuals...</div>
+    </div>
+  );
+}
+
+// Main export wrapped in Suspense
+export default function ManualsPage() {
+  return (
+    <Suspense fallback={<ManualsLoading />}>
+      <ManualsPageContent />
+    </Suspense>
   );
 }

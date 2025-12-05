@@ -129,6 +129,30 @@ class ProjectListResponse(BaseModel):
     projects: list[ProjectSummary]
 
 
+# ==================== Jobs ====================
+
+
+class JobInfo(BaseModel):
+    """Information about a video processing job."""
+    id: str
+    user_id: str
+    video_name: str
+    manual_id: Optional[str] = None
+    status: str  # 'pending', 'processing', 'complete', 'error'
+    current_node: Optional[str] = None
+    node_index: Optional[int] = None
+    total_nodes: Optional[int] = None
+    error: Optional[str] = None
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+    seen: bool = False
+
+
+class JobListResponse(BaseModel):
+    """Response for listing jobs."""
+    jobs: list[JobInfo]
+
+
 # ==================== Processing ====================
 
 

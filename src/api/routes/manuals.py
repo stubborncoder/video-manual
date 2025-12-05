@@ -329,10 +329,16 @@ async def extract_frames(
     if not video_path_str:
         raise HTTPException(status_code=400, detail="No source video associated with this manual")
 
-    video_name = Path(video_path_str).name
-    video_path = storage.videos_dir / video_name
-    if not video_path.exists():
-        raise HTTPException(status_code=404, detail="Source video not found")
+    # Prefer optimized video for better codec compatibility (e.g., AV1 WebM won't work with OpenCV)
+    manual_dir = storage.get_manual_path(manual_id)
+    optimized_video = manual_dir / "video_optimized.mp4"
+    if optimized_video.exists():
+        video_path = optimized_video
+    else:
+        video_name = Path(video_path_str).name
+        video_path = storage.videos_dir / video_name
+        if not video_path.exists():
+            raise HTTPException(status_code=404, detail="Source video not found")
 
     # Create temp directory for frames
     frames_dir = Path(tempfile.gettempdir()) / "manual_frames" / manual_id
@@ -421,10 +427,16 @@ async def replace_screenshot_from_frame(
     if not video_path_str:
         raise HTTPException(status_code=400, detail="No source video associated with this manual")
 
-    video_name = Path(video_path_str).name
-    video_path = storage.videos_dir / video_name
-    if not video_path.exists():
-        raise HTTPException(status_code=404, detail="Source video not found")
+    # Prefer optimized video for better codec compatibility (e.g., AV1 WebM won't work with OpenCV)
+    manual_dir = storage.get_manual_path(manual_id)
+    optimized_video = manual_dir / "video_optimized.mp4"
+    if optimized_video.exists():
+        video_path = optimized_video
+    else:
+        video_name = Path(video_path_str).name
+        video_path = storage.videos_dir / video_name
+        if not video_path.exists():
+            raise HTTPException(status_code=404, detail="Source video not found")
 
     screenshot_path = storage.manuals_dir / manual_id / "screenshots" / filename
 
