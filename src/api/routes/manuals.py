@@ -40,6 +40,11 @@ class ManualContentUpdate(BaseModel):
     language: str = "en"
 
 
+class ManualTitleUpdate(BaseModel):
+    """Request to update manual title."""
+    title: str = Field(..., min_length=1, max_length=200)
+
+
 class ManualEvaluationRequest(BaseModel):
     """Request to evaluate a manual."""
     language: str = "en"
@@ -242,6 +247,40 @@ async def update_manual_content(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save: {str(e)}")
+
+
+@router.put("/{manual_id}/title")
+async def update_manual_title(
+    manual_id: str,
+    update: ManualTitleUpdate,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+) -> dict:
+    """Update manual title.
+
+    The title is stored in metadata.json and applies to all languages.
+    """
+    manual_dir = storage.manuals_dir / manual_id
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    try:
+        # Get current metadata
+        metadata = storage.get_manual_metadata(manual_id) or {}
+
+        # Update title
+        metadata["title"] = update.title.strip()
+
+        # Save metadata
+        storage.save_manual_metadata(manual_id, metadata)
+
+        return {
+            "status": "saved",
+            "manual_id": manual_id,
+            "title": metadata["title"],
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save title: {str(e)}")
 
 
 @router.get("/{manual_id}/screenshots/{filename}")

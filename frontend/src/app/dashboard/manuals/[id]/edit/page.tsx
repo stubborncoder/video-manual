@@ -46,7 +46,11 @@ import {
   List,
   Download,
   FileDown,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 import { manuals, type ManualDetail } from "@/lib/api";
 import { useUndoRedo } from "@/hooks/useUndoRedo";
@@ -94,6 +98,12 @@ export default function ManualEditorPage() {
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [showLineNumbers, setShowLineNumbers] = useState(false);
+
+  // Title editing state
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editingTitle, setEditingTitle] = useState("");
+  const [savingTitle, setSavingTitle] = useState(false);
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   // Image lightbox state
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -410,6 +420,50 @@ export default function ManualEditorPage() {
     }
   }, [manualId, language]);
 
+  // Title editing handlers
+  const startEditingTitle = useCallback(() => {
+    setEditingTitle(manual?.title || manualId);
+    setIsEditingTitle(true);
+    // Focus input after state update
+    setTimeout(() => titleInputRef.current?.focus(), 0);
+  }, [manual?.title, manualId]);
+
+  const cancelEditingTitle = useCallback(() => {
+    setIsEditingTitle(false);
+    setEditingTitle("");
+  }, []);
+
+  const saveTitle = useCallback(async () => {
+    const trimmedTitle = editingTitle.trim();
+    if (!trimmedTitle || trimmedTitle === manual?.title) {
+      cancelEditingTitle();
+      return;
+    }
+
+    setSavingTitle(true);
+    try {
+      await manuals.updateTitle(manualId, trimmedTitle);
+      // Update local state
+      setManual((prev) => prev ? { ...prev, title: trimmedTitle } : prev);
+      setIsEditingTitle(false);
+      toast.success("Title updated");
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to update title";
+      toast.error("Failed to save title", { description: message });
+    } finally {
+      setSavingTitle(false);
+    }
+  }, [editingTitle, manual?.title, manualId, cancelEditingTitle]);
+
+  const handleTitleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      saveTitle();
+    } else if (e.key === "Escape") {
+      cancelEditingTitle();
+    }
+  }, [saveTitle, cancelEditingTitle]);
+
   // Handle chat message send
   const handleSendMessage = useCallback(
     (content: string, sel: typeof selection, imgContext?: ImageContext) => {
@@ -720,7 +774,52 @@ export default function ManualEditorPage() {
 
           <div className="h-4 w-px bg-border" />
 
-          <h1 className="font-semibold truncate max-w-[300px]">{manual?.title || manualId}</h1>
+          {/* Editable Title */}
+          {isEditingTitle ? (
+            <div className="flex items-center gap-1">
+              <Input
+                ref={titleInputRef}
+                value={editingTitle}
+                onChange={(e) => setEditingTitle(e.target.value)}
+                onKeyDown={handleTitleKeyDown}
+                onBlur={saveTitle}
+                className="h-8 w-[280px] font-semibold"
+                disabled={savingTitle}
+                maxLength={200}
+              />
+              {savingTitle ? (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              ) : (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={saveTitle}
+                  >
+                    <Check className="h-4 w-4 text-green-600" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={cancelEditingTitle}
+                  >
+                    <X className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={startEditingTitle}
+              className="group flex items-center gap-2 font-semibold truncate max-w-[300px] hover:text-primary transition-colors"
+              title="Click to edit title"
+            >
+              <span>{manual?.title || manualId}</span>
+              <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+            </button>
+          )}
 
           {availableLanguages.length > 1 && (
             <Select value={language} onValueChange={handleLanguageChange}>

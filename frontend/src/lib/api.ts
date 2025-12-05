@@ -250,6 +250,12 @@ export const manuals = {
       { method: "PUT", body: JSON.stringify({ content, language }) }
     ),
 
+  updateTitle: (manualId: string, title: string) =>
+    request<{ status: string; manual_id: string; title: string }>(
+      `/api/manuals/${manualId}/title`,
+      { method: "PUT", body: JSON.stringify({ title }) }
+    ),
+
   delete: (manualId: string) =>
     request<{ status: string }>(`/api/manuals/${manualId}`, { method: "DELETE" }),
 
