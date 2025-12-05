@@ -813,7 +813,7 @@ function ManualsPageContent() {
                 <div className="flex items-start justify-between gap-2">
                   {/* Editorial title with serif font */}
                   <CardTitle className="font-display text-lg tracking-tight leading-tight line-clamp-2 flex-1">
-                    {manual.id}
+                    {manual.title || manual.id}
                   </CardTitle>
                 </div>
 

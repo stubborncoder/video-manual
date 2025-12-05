@@ -720,7 +720,7 @@ export default function ManualEditorPage() {
 
           <div className="h-4 w-px bg-border" />
 
-          <h1 className="font-semibold truncate max-w-[300px]">{manualId}</h1>
+          <h1 className="font-semibold truncate max-w-[300px]">{manual?.title || manualId}</h1>
 
           {availableLanguages.length > 1 && (
             <Select value={language} onValueChange={handleLanguageChange}>

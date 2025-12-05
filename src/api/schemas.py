@@ -51,6 +51,7 @@ class SourceVideoInfo(BaseModel):
 
 class ManualSummary(BaseModel):
     id: str
+    title: str = ""  # Display title (derived from video name or manual content)
     created_at: Optional[str] = None
     screenshot_count: int = 0
     languages: list[str] = []
@@ -62,6 +63,7 @@ class ManualSummary(BaseModel):
 
 class ManualDetail(BaseModel):
     id: str
+    title: str = ""  # Display title
     content: str
     language: str
     screenshots: list[str] = []

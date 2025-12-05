@@ -57,6 +57,38 @@ class ManualEvaluationRequest(BaseModel):
 router = APIRouter(prefix="/manuals", tags=["manuals"])
 
 
+def _derive_title_from_video(video_path: str) -> str:
+    """Derive a display title from video filename.
+
+    Removes file extension and returns the base name.
+    Example: "Visualizar documento contable.mp4" -> "Visualizar documento contable"
+    """
+    if not video_path:
+        return ""
+    return Path(video_path).stem
+
+
+def _get_manual_title(metadata: dict, manual_id: str) -> str:
+    """Get display title for a manual.
+
+    Priority:
+    1. Explicit title in metadata (user-editable)
+    2. Derived from source video filename
+    3. Fallback to manual ID
+    """
+    # Check for explicit title
+    if metadata.get("title"):
+        return metadata["title"]
+
+    # Derive from video filename
+    video_path = metadata.get("video_path", "")
+    if video_path:
+        return _derive_title_from_video(video_path)
+
+    # Fallback to manual ID
+    return manual_id
+
+
 @router.get("")
 async def list_manuals(
     user_id: CurrentUser,
@@ -82,6 +114,7 @@ async def list_manuals(
         project_id = None
         target_audience = None
         target_objective = None
+        title = manual_id  # Default fallback
         metadata = storage.get_manual_metadata(manual_id)
         if metadata:
             video_path = metadata.get("video_path", "")
@@ -94,10 +127,12 @@ async def list_manuals(
             project_id = metadata.get("project_id")
             target_audience = metadata.get("target_audience")
             target_objective = metadata.get("target_objective")
+            title = _get_manual_title(metadata, manual_id)
 
         manuals.append(
             ManualSummary(
                 id=manual_id,
+                title=title,
                 created_at=created_at,
                 screenshot_count=len(screenshots),
                 languages=languages,
@@ -131,8 +166,9 @@ async def get_manual(
 
     screenshots = storage.list_screenshots(manual_id)
 
-    # Get source video info from metadata
+    # Get source video info and title from metadata
     source_video = None
+    title = manual_id  # Default fallback
     metadata = storage.get_manual_metadata(manual_id)
     if metadata:
         video_path = metadata.get("video_path", "")
@@ -143,9 +179,11 @@ async def get_manual(
                 name=video_name,
                 exists=video_exists,
             )
+        title = _get_manual_title(metadata, manual_id)
 
     return ManualDetail(
         id=manual_id,
+        title=title,
         content=content,
         language=language,
         screenshots=[str(s) for s in screenshots],

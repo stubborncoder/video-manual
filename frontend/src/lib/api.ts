@@ -175,6 +175,7 @@ export interface SourceVideoInfo {
 
 export interface ManualSummary {
   id: string;
+  title: string;
   created_at: string | null;
   screenshot_count: number;
   languages: string[];
@@ -186,6 +187,7 @@ export interface ManualSummary {
 
 export interface ManualDetail {
   id: string;
+  title: string;
   content: string;
   language: string;
   screenshots: string[];
