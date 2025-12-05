@@ -182,15 +182,20 @@ async def websocket_process_video(
         video_name = video_path.name
         job_id = JobStorage.create_job(auth_user_id, video_name)
 
-        # Send job_id to client immediately so they can track it
-        await websocket.send_json({
-            "event_type": "job_created",
-            "timestamp": 0,
-            "data": {"job_id": job_id, "video_name": video_name}
-        })
+        try:
+            # Send job_id to client immediately so they can track it
+            await websocket.send_json({
+                "event_type": "job_created",
+                "timestamp": 0,
+                "data": {"job_id": job_id, "video_name": video_name}
+            })
 
-        # Update job status to processing
-        JobStorage.update_job(job_id, status="processing")
+            # Update job status to processing
+            JobStorage.update_job(job_id, status="processing")
+        except Exception as e:
+            # If we fail to notify client or update status, mark job as error
+            JobStorage.mark_error(job_id, f"Failed to start job: {e}")
+            raise
 
         # Create runner and stream events
         runner = VideoManualRunner(auth_user_id)

@@ -118,23 +118,33 @@ export function JobProgressToast({ job, onDismiss }: JobProgressToastProps) {
  * Container component that renders all active job toasts
  */
 export function JobToastsContainer() {
-  const { jobs, getActiveJobs, getUnseenCompleted, fetchActiveJobs, initialized } = useJobsStore();
+  const { getActiveJobs, getUnseenCompleted, fetchActiveJobs, initialized } = useJobsStore();
   const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
 
-  // Fetch active jobs on mount
+  // Fetch active jobs on mount and poll every 5 seconds
+  // Use mounted flag to prevent state updates after unmount
   useEffect(() => {
-    if (!initialized) {
-      fetchActiveJobs();
-    }
-  }, [initialized, fetchActiveJobs]);
+    let mounted = true;
 
-  // Poll for job updates every 5 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchActiveJobs();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [fetchActiveJobs]);
+    const fetchIfMounted = async () => {
+      if (mounted) {
+        await fetchActiveJobs();
+      }
+    };
+
+    // Initial fetch
+    if (!initialized) {
+      fetchIfMounted();
+    }
+
+    // Set up polling
+    const interval = setInterval(fetchIfMounted, 5000);
+
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [initialized, fetchActiveJobs]);
 
   const activeJobs = getActiveJobs();
   const completedJobs = getUnseenCompleted();

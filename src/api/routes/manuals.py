@@ -11,7 +11,7 @@ import shutil
 
 from fastapi import APIRouter, HTTPException, File, UploadFile, Query
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 from ..schemas import ManualSummary, ManualDetail, ManualListResponse, SourceVideoInfo
 from ..dependencies import CurrentUser, UserStorageDep, ProjectStorageDep, TrashStorageDep
@@ -265,19 +265,14 @@ async def update_manual_title(
         raise HTTPException(status_code=404, detail="Manual not found")
 
     try:
-        # Get current metadata
-        metadata = storage.get_manual_metadata(manual_id) or {}
-
-        # Update title
-        metadata["title"] = update.title.strip()
-
-        # Save metadata
-        storage.save_manual_metadata(manual_id, metadata)
+        # Update title in metadata
+        new_title = update.title.strip()
+        storage.update_manual_metadata(manual_id, {"title": new_title})
 
         return {
             "status": "saved",
             "manual_id": manual_id,
-            "title": metadata["title"],
+            "title": new_title,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save title: {str(e)}")

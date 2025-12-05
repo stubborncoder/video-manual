@@ -40,6 +40,11 @@ def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_jobs_completed_at ON jobs(completed_at)"
         )
 
+        # Index for unseen jobs query (used for notifications)
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_jobs_user_seen ON jobs(user_id, seen, started_at)"
+        )
+
 
 @contextmanager
 def get_connection() -> Generator[sqlite3.Connection, None, None]:
