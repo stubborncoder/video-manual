@@ -7,6 +7,7 @@ from .projects import router as projects_router
 from .trash import router as trash_router
 from .compile_stream import router as compile_stream_router
 from .jobs import router as jobs_router
+from .admin import router as admin_router
 
 __all__ = [
     "auth_router",
@@ -16,4 +17,5 @@ __all__ = [
     "trash_router",
     "compile_stream_router",
     "jobs_router",
+    "admin_router",
 ]

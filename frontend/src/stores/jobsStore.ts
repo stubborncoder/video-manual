@@ -10,6 +10,9 @@ interface JobsState {
   /** All jobs indexed by ID */
   jobs: Record<string, JobInfo>;
 
+  /** Job IDs to suppress from toast notifications (shown in dialogs instead) */
+  suppressedJobIds: Set<string>;
+
   /** Whether initial load has completed */
   initialized: boolean;
 
@@ -31,15 +34,22 @@ interface JobsState {
   /** Mark a job as seen */
   markSeen: (id: string) => Promise<void>;
 
-  /** Get unseen completed jobs */
+  /** Suppress a job from toast notifications */
+  suppressJob: (id: string) => void;
+
+  /** Unsuppress a job (show in toast again) */
+  unsuppressJob: (id: string) => void;
+
+  /** Get unseen completed jobs (excluding suppressed) */
   getUnseenCompleted: () => JobInfo[];
 
-  /** Get active (processing) jobs */
+  /** Get active (processing) jobs (excluding suppressed) */
   getActiveJobs: () => JobInfo[];
 }
 
 export const useJobsStore = create<JobsState>((set, get) => ({
   jobs: {},
+  suppressedJobIds: new Set(),
   initialized: false,
   loading: false,
 
@@ -122,17 +132,33 @@ export const useJobsStore = create<JobsState>((set, get) => ({
     }
   },
 
+  suppressJob: (id) => {
+    set((state) => {
+      const newSuppressed = new Set(state.suppressedJobIds);
+      newSuppressed.add(id);
+      return { suppressedJobIds: newSuppressed };
+    });
+  },
+
+  unsuppressJob: (id) => {
+    set((state) => {
+      const newSuppressed = new Set(state.suppressedJobIds);
+      newSuppressed.delete(id);
+      return { suppressedJobIds: newSuppressed };
+    });
+  },
+
   getUnseenCompleted: () => {
-    const { jobs } = get();
+    const { jobs, suppressedJobIds } = get();
     return Object.values(jobs).filter(
-      (job) => job.status === "complete" && !job.seen
+      (job) => job.status === "complete" && !job.seen && !suppressedJobIds.has(job.id)
     );
   },
 
   getActiveJobs: () => {
-    const { jobs } = get();
+    const { jobs, suppressedJobIds } = get();
     return Object.values(jobs).filter(
-      (job) => job.status === "pending" || job.status === "processing"
+      (job) => (job.status === "pending" || job.status === "processing") && !suppressedJobIds.has(job.id)
     );
   },
 }));

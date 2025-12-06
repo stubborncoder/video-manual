@@ -69,6 +69,7 @@ import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, 
 import { manuals, manualProject, projects, type ManualSummary, type ManualDetail, type ProjectSummary, type ManualEvaluation } from "@/lib/api";
 import { useVideoProcessing } from "@/hooks/useWebSocket";
 import { ProcessingProgress } from "@/components/processing/ProcessingProgress";
+import { useJobsStore } from "@/stores/jobsStore";
 import { SUPPORTED_LANGUAGES, getScoreColorByRaw, getScoreColorByPercentage, getScoreLevel, SCORE_LEVEL_DESCRIPTIONS } from "@/lib/constants";
 
 // Extended manual info with additional data
@@ -156,6 +157,7 @@ function ManualsPageContent() {
   const [generateLanguage, setGenerateLanguage] = useState("English");
   const [overrideWarningOpen, setOverrideWarningOpen] = useState(false);
   const { state: processingState, startProcessing, reset: resetProcessing } = useVideoProcessing();
+  const { suppressJob, unsuppressJob } = useJobsStore();
 
   // Evaluation state
   const [evaluateDialogOpen, setEvaluateDialogOpen] = useState(false);
@@ -192,6 +194,20 @@ function ManualsPageContent() {
     loadManuals();
     loadProjects();
   }, []);
+
+  // Suppress job from toast when generate dialog is open (to avoid duplicate UI)
+  useEffect(() => {
+    const jobId = processingState.jobId;
+    if (generateDialogOpen && jobId) {
+      suppressJob(jobId);
+    }
+    return () => {
+      // Unsuppress when dialog closes or component unmounts
+      if (jobId) {
+        unsuppressJob(jobId);
+      }
+    };
+  }, [generateDialogOpen, processingState.jobId, suppressJob, unsuppressJob]);
 
   async function loadManuals() {
     try {
