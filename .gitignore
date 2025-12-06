@@ -45,6 +45,11 @@ uv.lock
 # Data directory (user uploads, manuals, checkpoints)
 data/
 
+# SQLite database
+*.db
+*.sqlite
+*.sqlite3
+
 # Testing
 .pytest_cache/
 .coverage
