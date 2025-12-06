@@ -360,6 +360,8 @@ class UsageSummary(BaseModel):
     total_requests: int
     total_input_tokens: int
     total_output_tokens: int
+    total_cached_tokens: int = 0
+    total_cache_read_tokens: int = 0
     total_cost_usd: float
 
 

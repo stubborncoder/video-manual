@@ -341,6 +341,8 @@ class UsageTracking:
                    SUM(request_count) as total_requests,
                    SUM(total_input_tokens) as total_input_tokens,
                    SUM(total_output_tokens) as total_output_tokens,
+                   SUM(total_cached_tokens) as total_cached_tokens,
+                   SUM(total_cache_read_tokens) as total_cache_read_tokens,
                    SUM(total_cost_usd) as total_cost_usd
             FROM usage_daily
             WHERE 1=1
@@ -356,6 +358,88 @@ class UsageTracking:
             params.append(end_date)
 
         query += " GROUP BY user_id ORDER BY total_cost_usd DESC"
+
+        with get_connection() as conn:
+            cursor = conn.execute(query, params)
+            return [dict(row) for row in cursor.fetchall()]
+
+    @staticmethod
+    def get_model_summary(
+        start_date: Optional[str] = None, end_date: Optional[str] = None
+    ) -> list[dict]:
+        """Get usage summary grouped by model.
+
+        Args:
+            start_date: Optional start date (YYYY-MM-DD)
+            end_date: Optional end date (YYYY-MM-DD)
+
+        Returns:
+            List of model usage summaries
+        """
+        query = """
+            SELECT model,
+                   SUM(request_count) as total_requests,
+                   SUM(total_input_tokens) as total_input_tokens,
+                   SUM(total_output_tokens) as total_output_tokens,
+                   SUM(total_cached_tokens) as total_cached_tokens,
+                   SUM(total_cache_read_tokens) as total_cache_read_tokens,
+                   SUM(total_cost_usd) as total_cost_usd
+            FROM usage_daily
+            WHERE 1=1
+        """
+        params = []
+
+        if start_date:
+            query += " AND date >= ?"
+            params.append(start_date)
+
+        if end_date:
+            query += " AND date <= ?"
+            params.append(end_date)
+
+        query += " GROUP BY model ORDER BY total_cost_usd DESC"
+
+        with get_connection() as conn:
+            cursor = conn.execute(query, params)
+            return [dict(row) for row in cursor.fetchall()]
+
+    @staticmethod
+    def get_manual_usage(
+        start_date: Optional[str] = None, end_date: Optional[str] = None
+    ) -> list[dict]:
+        """Get usage summary grouped by manual.
+
+        Args:
+            start_date: Optional start date (YYYY-MM-DD)
+            end_date: Optional end date (YYYY-MM-DD)
+
+        Returns:
+            List of manual usage summaries
+        """
+        query = """
+            SELECT manual_id,
+                   COUNT(*) as total_requests,
+                   SUM(input_tokens) as total_input_tokens,
+                   SUM(output_tokens) as total_output_tokens,
+                   SUM(cached_tokens) as total_cached_tokens,
+                   SUM(cache_read_tokens) as total_cache_read_tokens,
+                   SUM(cost_usd) as total_cost_usd,
+                   MIN(timestamp) as first_request,
+                   MAX(timestamp) as last_request
+            FROM llm_requests
+            WHERE manual_id IS NOT NULL
+        """
+        params = []
+
+        if start_date:
+            query += " AND date(timestamp) >= ?"
+            params.append(start_date)
+
+        if end_date:
+            query += " AND date(timestamp) <= ?"
+            params.append(end_date)
+
+        query += " GROUP BY manual_id ORDER BY total_cost_usd DESC"
 
         with get_connection() as conn:
             cursor = conn.execute(query, params)

@@ -1,6 +1,6 @@
 """Authentication routes."""
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Cookie, Response
 
 from ..schemas import LoginRequest, UserSession
 from ...storage.user_storage import UserStorage
@@ -49,11 +49,14 @@ async def logout(response: Response) -> dict:
 
 @router.get("/me")
 async def get_me(
-    session_user_id: str | None = None,
+    session_user_id: str | None = Cookie(default=None),
 ) -> dict:
-    """Get current user info."""
-    from fastapi import Cookie
-    # This will be handled by the dependency in actual use
+    """Get current user info including role."""
     if not session_user_id:
         return {"authenticated": False}
-    return {"authenticated": True, "user_id": session_user_id}
+
+    # Get user role from database
+    user = UserManagement.get_user(session_user_id)
+    role = user.get("role", "user") if user else "user"
+
+    return {"authenticated": True, "user_id": session_user_id, "role": role}

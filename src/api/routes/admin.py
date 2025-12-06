@@ -99,6 +99,8 @@ async def get_usage_summary(
             total_requests=s["total_requests"],
             total_input_tokens=s["total_input_tokens"],
             total_output_tokens=s["total_output_tokens"],
+            total_cached_tokens=s.get("total_cached_tokens", 0),
+            total_cache_read_tokens=s.get("total_cache_read_tokens", 0),
             total_cost_usd=s["total_cost_usd"],
         )
         for s in summaries
@@ -120,6 +122,40 @@ async def get_daily_usage(
         end_date: Optional end date (YYYY-MM-DD)
     """
     return UsageTracking.get_daily_summary(start_date, end_date)
+
+
+@router.get("/usage/models")
+async def get_model_usage(
+    admin_user: AdminUser,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> list[dict]:
+    """Get usage breakdown by model/API.
+
+    Requires admin role.
+
+    Args:
+        start_date: Optional start date (YYYY-MM-DD)
+        end_date: Optional end date (YYYY-MM-DD)
+    """
+    return UsageTracking.get_model_summary(start_date, end_date)
+
+
+@router.get("/usage/manuals")
+async def get_manual_usage(
+    admin_user: AdminUser,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+) -> list[dict]:
+    """Get usage breakdown by manual.
+
+    Requires admin role.
+
+    Args:
+        start_date: Optional start date (YYYY-MM-DD)
+        end_date: Optional end date (YYYY-MM-DD)
+    """
+    return UsageTracking.get_manual_usage(start_date, end_date)
 
 
 @router.post("/users/{user_id}/role")

@@ -9,7 +9,7 @@ interface RequestOptions extends RequestInit {
   params?: Record<string, string>;
 }
 
-async function request<T>(
+export async function request<T>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<T> {
@@ -81,7 +81,7 @@ export const auth = {
     request<{ status: string }>("/api/auth/logout", { method: "POST" }),
 
   me: () =>
-    request<{ authenticated: boolean; user_id?: string }>("/api/auth/me"),
+    request<{ authenticated: boolean; user_id?: string; role?: string }>("/api/auth/me"),
 };
 
 // Videos

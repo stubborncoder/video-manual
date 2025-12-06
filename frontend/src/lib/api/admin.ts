@@ -19,6 +19,8 @@ export interface UsageSummary {
   total_requests: number;
   total_input_tokens: number;
   total_output_tokens: number;
+  total_cached_tokens: number;
+  total_cache_read_tokens: number;
   total_cost_usd: number;
 }
 
@@ -42,6 +44,28 @@ export interface DailyUsage {
   total_cached_tokens: number;
   total_cache_read_tokens: number;
   total_cost_usd: number;
+}
+
+export interface ModelUsage {
+  model: string;
+  total_requests: number;
+  total_input_tokens: number;
+  total_output_tokens: number;
+  total_cached_tokens: number;
+  total_cache_read_tokens: number;
+  total_cost_usd: number;
+}
+
+export interface ManualUsage {
+  manual_id: string;
+  total_requests: number;
+  total_input_tokens: number;
+  total_output_tokens: number;
+  total_cached_tokens: number;
+  total_cache_read_tokens: number;
+  total_cost_usd: number;
+  first_request: string;
+  last_request: string;
 }
 
 export const adminApi = {
@@ -82,6 +106,26 @@ export const adminApi = {
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
     return request<DailyUsage[]>("/api/admin/usage/daily", { params });
+  },
+
+  /**
+   * Get usage breakdown by model/API
+   */
+  getModelUsage: (startDate?: string, endDate?: string) => {
+    const params: Record<string, string> = {};
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+    return request<ModelUsage[]>("/api/admin/usage/models", { params });
+  },
+
+  /**
+   * Get usage breakdown by manual
+   */
+  getManualUsage: (startDate?: string, endDate?: string) => {
+    const params: Record<string, string> = {};
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+    return request<ManualUsage[]>("/api/admin/usage/manuals", { params });
   },
 
   /**
