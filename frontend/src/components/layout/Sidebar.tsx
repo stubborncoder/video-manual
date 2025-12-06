@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -14,6 +15,7 @@ import {
   Sun,
   Moon,
   FileVideo,
+  Shield,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
@@ -41,6 +43,20 @@ export function Sidebar() {
   const router = useRouter();
   const { collapsed, toggleCollapsed } = useSidebar();
   const { theme, setTheme } = useTheme();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdmin = async () => {
+      try {
+        const session = await auth.me();
+        setIsAdmin(session.role === "admin");
+      } catch {
+        setIsAdmin(false);
+      }
+    };
+    checkAdmin();
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -125,6 +141,35 @@ export function Sidebar() {
 
         {/* Footer */}
         <div className="p-2 space-y-1">
+          {/* Admin link - only for admins */}
+          {isAdmin && (
+            collapsed ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link href="/admin">
+                    <Button
+                      variant={pathname.startsWith("/admin") ? "secondary" : "ghost"}
+                      className="w-full justify-center px-2 hover:text-primary"
+                    >
+                      <Shield className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">Admin</TooltipContent>
+              </Tooltip>
+            ) : (
+              <Link href="/admin">
+                <Button
+                  variant={pathname.startsWith("/admin") ? "secondary" : "ghost"}
+                  className="w-full justify-start text-muted-foreground hover:text-primary"
+                >
+                  <Shield className="mr-2 h-4 w-4" />
+                  Admin
+                </Button>
+              </Link>
+            )
+          )}
+
           {/* Toggle sidebar */}
           {collapsed ? (
             <Tooltip>
