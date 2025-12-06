@@ -11,9 +11,9 @@ import shutil
 
 from fastapi import APIRouter, HTTPException, File, UploadFile, Query
 from fastapi.responses import FileResponse
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
-from ..schemas import ManualSummary, ManualDetail, ManualListResponse, SourceVideoInfo
+from ..schemas import ManualSummary, ManualDetail, ManualListResponse, SourceVideoInfo, LanguageEvaluation
 from ..dependencies import CurrentUser, UserStorageDep, ProjectStorageDep, TrashStorageDep
 from ...storage.version_storage import VersionStorage
 from ...storage.screenshot_store import ScreenshotStore
@@ -40,6 +40,11 @@ class ManualContentUpdate(BaseModel):
     language: str = "en"
 
 
+class ManualTitleUpdate(BaseModel):
+    """Request to update manual title."""
+    title: str = Field(..., min_length=1, max_length=200)
+
+
 class ManualEvaluationRequest(BaseModel):
     """Request to evaluate a manual."""
     language: str = "en"
@@ -55,6 +60,38 @@ class ManualEvaluationRequest(BaseModel):
         return normalize_language_to_code(v)
 
 router = APIRouter(prefix="/manuals", tags=["manuals"])
+
+
+def _derive_title_from_video(video_path: str) -> str:
+    """Derive a display title from video filename.
+
+    Removes file extension and returns the base name.
+    Example: "Visualizar documento contable.mp4" -> "Visualizar documento contable"
+    """
+    if not video_path:
+        return ""
+    return Path(video_path).stem
+
+
+def _get_manual_title(metadata: dict, manual_id: str) -> str:
+    """Get display title for a manual.
+
+    Priority:
+    1. Explicit title in metadata (user-editable)
+    2. Derived from source video filename
+    3. Fallback to manual ID
+    """
+    # Check for explicit title
+    if metadata.get("title"):
+        return metadata["title"]
+
+    # Derive from video filename
+    video_path = metadata.get("video_path", "")
+    if video_path:
+        return _derive_title_from_video(video_path)
+
+    # Fallback to manual ID
+    return manual_id
 
 
 @router.get("")
@@ -82,6 +119,7 @@ async def list_manuals(
         project_id = None
         target_audience = None
         target_objective = None
+        title = manual_id  # Default fallback
         metadata = storage.get_manual_metadata(manual_id)
         if metadata:
             video_path = metadata.get("video_path", "")
@@ -94,13 +132,38 @@ async def list_manuals(
             project_id = metadata.get("project_id")
             target_audience = metadata.get("target_audience")
             target_objective = metadata.get("target_objective")
+            title = _get_manual_title(metadata, manual_id)
+
+        # Get evaluation status for each language
+        evaluations: dict[str, LanguageEvaluation] = {}
+        version_storage = VersionStorage(user_id, manual_id)
+        all_evals = version_storage.list_evaluations()
+
+        # Group by language (most recent for each lang)
+        latest_by_lang: dict[str, dict] = {}
+        for eval_info in all_evals:
+            lang = eval_info.get("language", "en")
+            if lang not in latest_by_lang:
+                latest_by_lang[lang] = eval_info
+
+        # Create evaluation status for each language
+        for lang in languages:
+            if lang in latest_by_lang:
+                evaluations[lang] = LanguageEvaluation(
+                    score=latest_by_lang[lang].get("overall_score"),
+                    evaluated=True
+                )
+            else:
+                evaluations[lang] = LanguageEvaluation(evaluated=False)
 
         manuals.append(
             ManualSummary(
                 id=manual_id,
+                title=title,
                 created_at=created_at,
                 screenshot_count=len(screenshots),
                 languages=languages,
+                evaluations=evaluations,
                 source_video=source_video,
                 project_id=project_id,
                 target_audience=target_audience,
@@ -131,8 +194,9 @@ async def get_manual(
 
     screenshots = storage.list_screenshots(manual_id)
 
-    # Get source video info from metadata
+    # Get source video info and title from metadata
     source_video = None
+    title = manual_id  # Default fallback
     metadata = storage.get_manual_metadata(manual_id)
     if metadata:
         video_path = metadata.get("video_path", "")
@@ -143,9 +207,11 @@ async def get_manual(
                 name=video_name,
                 exists=video_exists,
             )
+        title = _get_manual_title(metadata, manual_id)
 
     return ManualDetail(
         id=manual_id,
+        title=title,
         content=content,
         language=language,
         screenshots=[str(s) for s in screenshots],
@@ -204,6 +270,35 @@ async def update_manual_content(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save: {str(e)}")
+
+
+@router.put("/{manual_id}/title")
+async def update_manual_title(
+    manual_id: str,
+    update: ManualTitleUpdate,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+) -> dict:
+    """Update manual title.
+
+    The title is stored in metadata.json and applies to all languages.
+    """
+    manual_dir = storage.manuals_dir / manual_id
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    try:
+        # Update title in metadata
+        new_title = update.title.strip()
+        storage.update_manual_metadata(manual_id, {"title": new_title})
+
+        return {
+            "status": "saved",
+            "manual_id": manual_id,
+            "title": new_title,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save title: {str(e)}")
 
 
 @router.get("/{manual_id}/screenshots/{filename}")
@@ -329,10 +424,16 @@ async def extract_frames(
     if not video_path_str:
         raise HTTPException(status_code=400, detail="No source video associated with this manual")
 
-    video_name = Path(video_path_str).name
-    video_path = storage.videos_dir / video_name
-    if not video_path.exists():
-        raise HTTPException(status_code=404, detail="Source video not found")
+    # Prefer optimized video for better codec compatibility (e.g., AV1 WebM won't work with OpenCV)
+    manual_dir = storage.get_manual_path(manual_id)
+    optimized_video = manual_dir / "video_optimized.mp4"
+    if optimized_video.exists():
+        video_path = optimized_video
+    else:
+        video_name = Path(video_path_str).name
+        video_path = storage.videos_dir / video_name
+        if not video_path.exists():
+            raise HTTPException(status_code=404, detail="Source video not found")
 
     # Create temp directory for frames
     frames_dir = Path(tempfile.gettempdir()) / "manual_frames" / manual_id
@@ -421,10 +522,16 @@ async def replace_screenshot_from_frame(
     if not video_path_str:
         raise HTTPException(status_code=400, detail="No source video associated with this manual")
 
-    video_name = Path(video_path_str).name
-    video_path = storage.videos_dir / video_name
-    if not video_path.exists():
-        raise HTTPException(status_code=404, detail="Source video not found")
+    # Prefer optimized video for better codec compatibility (e.g., AV1 WebM won't work with OpenCV)
+    manual_dir = storage.get_manual_path(manual_id)
+    optimized_video = manual_dir / "video_optimized.mp4"
+    if optimized_video.exists():
+        video_path = optimized_video
+    else:
+        video_name = Path(video_path_str).name
+        video_path = storage.videos_dir / video_name
+        if not video_path.exists():
+            raise HTTPException(status_code=404, detail="Source video not found")
 
     screenshot_path = storage.manuals_dir / manual_id / "screenshots" / filename
 
@@ -1243,7 +1350,19 @@ Provide your evaluation as valid JSON only, with no additional text before or af
             status_code=500,
             detail=f"Failed to parse evaluation response: {str(e)}"
         )
+    except (asyncio.TimeoutError, TimeoutError):
+        raise HTTPException(
+            status_code=504,
+            detail="Evaluation timed out. The manual may be too long or the API is experiencing delays. Please try again."
+        )
     except Exception as e:
+        # Check for timeout-related errors from HTTP libraries (httpx, requests, etc.)
+        error_msg = str(e).lower()
+        if "timeout" in error_msg or "timed out" in error_msg:
+            raise HTTPException(
+                status_code=504,
+                detail="Evaluation timed out. The manual may be too long or the API is experiencing delays. Please try again."
+            )
         raise HTTPException(
             status_code=500,
             detail=f"Evaluation failed: {str(e)}"

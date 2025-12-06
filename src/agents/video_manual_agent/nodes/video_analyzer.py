@@ -191,9 +191,15 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
                     f"({optimization_result['compression_ratio']}x compression)"
                 )
 
-                # Update metadata with optimization status
+                # Update metadata with optimization status and details
                 if manual_dir:
-                    update_optimized(manual_dir, True)
+                    update_optimized(
+                        manual_dir,
+                        True,
+                        original_size=optimization_result['original_size'],
+                        optimized_size=optimization_result['optimized_size'],
+                        compression_ratio=optimization_result['compression_ratio'],
+                    )
 
             except Exception as e:
                 print(f"Warning: Video optimization failed: {e}")

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { Suspense, useEffect, useState, useMemo, useRef, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -15,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -52,7 +54,6 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -64,7 +65,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown, ClipboardCheck, Users, Target, History, Clock, MoreHorizontal, HelpCircle } from "lucide-react";
+import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown, ClipboardCheck, Users, Target, History, Clock, MoreHorizontal, HelpCircle, Expand } from "lucide-react";
 import { manuals, manualProject, projects, type ManualSummary, type ManualDetail, type ProjectSummary, type ManualEvaluation } from "@/lib/api";
 import { useVideoProcessing } from "@/hooks/useWebSocket";
 import { ProcessingProgress } from "@/components/processing/ProcessingProgress";
@@ -76,7 +77,10 @@ interface ManualWithProject extends ManualSummary {
   tags?: string[];
 }
 
-export default function ManualsPage() {
+function ManualsPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [manualList, setManualList] = useState<ManualWithProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedManual, setSelectedManual] = useState<ManualDetail | null>(null);
@@ -86,12 +90,48 @@ export default function ManualsPage() {
 
   // Project data
   const [projectList, setProjectList] = useState<ProjectSummary[]>([]);
-  const [filterProjectId, setFilterProjectId] = useState<string>("__all__");
   const [filterOpen, setFilterOpen] = useState(false);
 
   // Tag filter state
-  const [filterTags, setFilterTags] = useState<string[]>([]);
   const [tagFilterOpen, setTagFilterOpen] = useState(false);
+
+  // Initialize filter state from URL params
+  const filterProjectId = searchParams.get("project") || "__all__";
+  const filterTags = useMemo(() => {
+    const tagsParam = searchParams.get("tags");
+    return tagsParam ? tagsParam.split(",").filter(Boolean) : [];
+  }, [searchParams]);
+
+  // Update URL when filters change
+  const updateFilters = useCallback(
+    (projectId: string, tags: string[]) => {
+      const params = new URLSearchParams();
+      if (projectId !== "__all__") {
+        params.set("project", projectId);
+      }
+      if (tags.length > 0) {
+        params.set("tags", tags.join(","));
+      }
+      const queryString = params.toString();
+      router.replace(queryString ? `?${queryString}` : "/dashboard/manuals", { scroll: false });
+    },
+    [router]
+  );
+
+  const setFilterProjectId = useCallback(
+    (projectId: string) => {
+      updateFilters(projectId, filterTags);
+    },
+    [updateFilters, filterTags]
+  );
+
+  const setFilterTags = useCallback(
+    (tagsOrUpdater: string[] | ((prev: string[]) => string[])) => {
+      const newTags = typeof tagsOrUpdater === "function" ? tagsOrUpdater(filterTags) : tagsOrUpdater;
+      updateFilters(filterProjectId, newTags);
+    },
+    [updateFilters, filterProjectId, filterTags]
+  );
 
   // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -544,11 +584,27 @@ export default function ManualsPage() {
     return Array.from(tags).sort();
   }, [manualList]);
 
+  // Build edit URL with filter params preserved
+  const getEditUrl = useCallback(
+    (manualId: string) => {
+      const params = new URLSearchParams();
+      if (filterProjectId !== "__all__") {
+        params.set("project", filterProjectId);
+      }
+      if (filterTags.length > 0) {
+        params.set("tags", filterTags.join(","));
+      }
+      const queryString = params.toString();
+      return queryString
+        ? `/dashboard/manuals/${manualId}/edit?${queryString}`
+        : `/dashboard/manuals/${manualId}/edit`;
+    },
+    [filterProjectId, filterTags]
+  );
+
   // Get selected project name for display
   const selectedProjectName = filterProjectId === "__all__"
     ? "All Projects"
-    : filterProjectId === "__unassigned__"
-    ? "Unassigned"
     : projectList.find((p) => p.id === filterProjectId)?.name || "Select project";
 
   // Filter manuals by project and tags
@@ -557,11 +613,7 @@ export default function ManualsPage() {
 
     // Filter by project
     if (filterProjectId !== "__all__") {
-      if (filterProjectId === "__unassigned__") {
-        result = result.filter((m) => !m.project_id);
-      } else {
-        result = result.filter((m) => m.project_id === filterProjectId);
-      }
+      result = result.filter((m) => m.project_id === filterProjectId);
     }
 
     // Filter by tags (AND logic - must have all selected tags)
@@ -618,18 +670,6 @@ export default function ManualsPage() {
                           className={`mr-2 h-4 w-4 ${filterProjectId === "__all__" ? "opacity-100" : "opacity-0"}`}
                         />
                         All Projects
-                      </CommandItem>
-                      <CommandItem
-                        value="__unassigned__"
-                        onSelect={() => {
-                          setFilterProjectId("__unassigned__");
-                          setFilterOpen(false);
-                        }}
-                      >
-                        <Check
-                          className={`mr-2 h-4 w-4 ${filterProjectId === "__unassigned__" ? "opacity-100" : "opacity-0"}`}
-                        />
-                        Unassigned
                       </CommandItem>
                       {projectList.map((project) => (
                         <CommandItem
@@ -759,11 +799,21 @@ export default function ManualsPage() {
               {/* Subtle gradient overlay on hover */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
+              {/* Export loading overlay */}
+              {exportingManual === manual.id && (
+                <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10">
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-sm font-medium">Exporting...</span>
+                  </div>
+                </div>
+              )}
+
               <CardHeader className="pb-0 relative">
                 <div className="flex items-start justify-between gap-2">
                   {/* Editorial title with serif font */}
                   <CardTitle className="font-display text-lg tracking-tight leading-tight line-clamp-2 flex-1">
-                    {manual.id}
+                    {manual.title || manual.id}
                   </CardTitle>
                 </div>
 
@@ -798,13 +848,33 @@ export default function ManualsPage() {
                     </Link>
                   )}
 
-                  {/* Languages */}
-                  <div className="flex items-center gap-1.5">
-                    {(manual.languages.length > 0 ? manual.languages : ["en"]).map((lang) => (
-                      <Badge key={lang} variant="outline" className="text-xs px-1.5 py-0 font-mono uppercase">
-                        {lang}
-                      </Badge>
-                    ))}
+                  {/* Languages with evaluation scores */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {(manual.languages.length > 0 ? manual.languages : ["en"]).map((lang) => {
+                      const evaluation = manual.evaluations?.[lang];
+                      const hasScore = evaluation?.evaluated && evaluation?.score != null;
+                      const scoreColors = hasScore ? getScoreColorByRaw(evaluation.score!) : null;
+
+                      return (
+                        <div key={lang} className="flex items-center gap-0.5">
+                          <Badge variant="outline" className="text-xs px-1.5 py-0 font-mono uppercase rounded-r-none border-r-0">
+                            {lang}
+                          </Badge>
+                          {hasScore && scoreColors ? (
+                            <Badge
+                              variant="outline"
+                              className={`text-xs px-1 py-0 rounded-l-none font-medium border-0 ${scoreColors.bgLight} ${scoreColors.text}`}
+                            >
+                              {evaluation.score}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs px-1 py-0 rounded-l-none text-muted-foreground">
+                              —
+                            </Badge>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </CardHeader>
@@ -870,7 +940,7 @@ export default function ManualsPage() {
                     <Eye className="mr-2 h-4 w-4" />
                     View Manual
                   </Button>
-                  <Link href={`/dashboard/manuals/${manual.id}/edit`} className="contents">
+                  <Link href={getEditUrl(manual.id)} className="contents">
                     <Button size="sm" variant="outline" title="Edit manual content">
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -1018,13 +1088,13 @@ export default function ManualsPage() {
                   );
                 })()}
 
-                {/* Evaluation Score & Button */}
-                <div className="flex items-center gap-2 ml-auto">
+                {/* Evaluation Score Card */}
+                <div className="ml-auto">
                   {loadingViewEval ? (
-                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Loading score...
-                    </span>
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-lg border bg-muted/30">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Loading...</span>
+                    </div>
                   ) : viewingEvaluation ? (
                     <button
                       onClick={() => {
@@ -1034,18 +1104,26 @@ export default function ManualsPage() {
                           openEvaluateDialog(manual, viewingLanguage);
                         }
                       }}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md transition-colors ${(() => {
-                        const colors = getScoreColorByRaw(viewingEvaluation.overall_score);
-                        return `${colors.bgLight} ${colors.text} ${colors.hoverBg}`;
-                      })()}`}
-                      title="View evaluation details"
+                      className="group flex flex-col items-center px-5 py-3 rounded-lg border bg-muted/30 cursor-pointer transition-all duration-200 hover:border-primary/50 hover:bg-muted/50 active:scale-[0.98]"
+                      title="Click to view full evaluation details"
                     >
-                      <ClipboardCheck className="h-4 w-4" />
-                      <span className="font-semibold">{viewingEvaluation.overall_score}/10</span>
+                      {/* Card Header */}
+                      <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-1">Eval Score</span>
+                      {/* Score Display */}
+                      <div className="flex items-baseline gap-0.5">
+                        <span className={`text-3xl font-bold ${getScoreColorByRaw(viewingEvaluation.overall_score).text}`}>
+                          {viewingEvaluation.overall_score}
+                        </span>
+                        <span className="text-lg text-muted-foreground">/10</span>
+                      </div>
+                      {/* View action hint */}
+                      <span className="text-xs text-muted-foreground mt-1 flex items-center gap-1 group-hover:text-primary transition-colors">
+                        View Details
+                        <Eye className="h-3 w-3" />
+                      </span>
                     </button>
                   ) : (
                     <Button
-                      size="sm"
                       variant="outline"
                       onClick={() => {
                         const manual = manualList.find((m) => m.id === selectedManual.id);
@@ -1054,10 +1132,10 @@ export default function ManualsPage() {
                           openEvaluateDialog(manual, viewingLanguage);
                         }
                       }}
-                      className="h-7 text-xs"
+                      className="gap-2"
                     >
-                      <ClipboardCheck className="mr-1.5 h-3.5 w-3.5" />
-                      Evaluate
+                      <ClipboardCheck className="h-4 w-4" />
+                      Evaluate Quality
                     </Button>
                   )}
                 </div>
@@ -1066,122 +1144,100 @@ export default function ManualsPage() {
           </SheetHeader>
 
           {selectedManual && (
-            <div className="flex-1 overflow-hidden flex flex-col">
-              <Tabs defaultValue="content" className="flex-1 flex flex-col overflow-hidden">
-                <div className="px-6 pt-4 border-b">
-                  <TabsList className="shrink-0 mb-4 w-fit">
-                  <TabsTrigger value="content">Content</TabsTrigger>
-                  <TabsTrigger value="screenshots">
-                    Screenshots ({selectedManual.screenshots.length})
-                  </TabsTrigger>
-                </TabsList>
-                </div>
-
-                <TabsContent value="content" className="flex-1 overflow-y-auto mt-0 p-6">
-                  <div className="prose prose-base dark:prose-invert max-w-none pb-8">
-                    <ReactMarkdown
-                      remarkPlugins={[remarkGfm]}
-                      components={{
-                        img: ({ src, alt }) => {
-                          // Transform markdown image references to API URLs
-                          const srcStr = typeof src === "string" ? src : "";
-                          const filename = srcStr.split("/").pop() || srcStr;
-                          const apiUrl = `/api/manuals/${selectedManual.id}/screenshots/${filename}`;
-                          return (
-                            <span className="block my-6">
-                              <img
-                                src={apiUrl}
-                                alt={alt || "Screenshot"}
-                                className="rounded-lg border shadow-sm w-full"
-                              />
-                              {alt && (
-                                <span className="block text-center text-sm text-muted-foreground mt-2">
-                                  {alt}
-                                </span>
-                              )}
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="prose prose-base dark:prose-invert max-w-none pb-8">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    img: ({ src, alt }) => {
+                      // Transform markdown image references to API URLs
+                      const srcStr = typeof src === "string" ? src : "";
+                      const filename = srcStr.split("/").pop() || srcStr;
+                      const apiUrl = `/api/manuals/${selectedManual.id}/screenshots/${filename}`;
+                      return (
+                        <span className="block my-6">
+                          <img
+                            src={apiUrl}
+                            alt={alt || "Screenshot"}
+                            className="rounded-lg border shadow-sm max-w-full mx-auto"
+                            style={{ maxHeight: '70vh' }}
+                            onLoad={(e) => {
+                              const img = e.currentTarget;
+                              const isPortrait = img.naturalHeight > img.naturalWidth;
+                              if (isPortrait) {
+                                // Portrait: limit width to ~40% so it doesn't dominate
+                                img.style.maxWidth = '40%';
+                              }
+                            }}
+                          />
+                          {alt && (
+                            <span className="block text-center text-sm text-muted-foreground mt-2">
+                              {alt}
                             </span>
-                          );
-                        },
-                        h1: ({ children }) => (
-                          <h1 className="text-3xl font-bold mt-8 mb-4 first:mt-0 pb-2 border-b">{children}</h1>
-                        ),
-                        h2: ({ children }) => (
-                          <h2 className="text-2xl font-semibold mt-8 mb-4">{children}</h2>
-                        ),
-                        h3: ({ children }) => (
-                          <h3 className="text-xl font-medium mt-6 mb-3">{children}</h3>
-                        ),
-                        h4: ({ children }) => (
-                          <h4 className="text-lg font-medium mt-4 mb-2">{children}</h4>
-                        ),
-                        p: ({ children }) => (
-                          <p className="my-4 leading-7 text-foreground/90">{children}</p>
-                        ),
-                        ul: ({ children }) => (
-                          <ul className="my-4 ml-6 list-disc space-y-2">{children}</ul>
-                        ),
-                        ol: ({ children }) => (
-                          <ol className="my-4 ml-6 list-decimal space-y-2">{children}</ol>
-                        ),
-                        li: ({ children }) => (
-                          <li className="leading-7">{children}</li>
-                        ),
-                        code: ({ children, className }) => {
-                          const isInline = !className;
-                          return isInline ? (
-                            <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>
-                          ) : (
-                            <pre className="bg-muted p-4 rounded-lg overflow-x-auto my-4">
-                              <code className="text-sm font-mono">{children}</code>
-                            </pre>
-                          );
-                        },
-                        pre: ({ children }) => <>{children}</>,
-                        blockquote: ({ children }) => (
-                          <blockquote className="border-l-4 border-primary/50 bg-muted/50 pl-4 pr-4 py-3 my-4 italic rounded-r-lg">
-                            {children}
-                          </blockquote>
-                        ),
-                        strong: ({ children }) => (
-                          <strong className="font-semibold text-foreground">{children}</strong>
-                        ),
-                        hr: () => <hr className="my-8 border-border" />,
-                        table: ({ children }) => (
-                          <div className="my-4 overflow-x-auto">
-                            <table className="w-full border-collapse border border-border rounded-lg">{children}</table>
-                          </div>
-                        ),
-                        th: ({ children }) => (
-                          <th className="border border-border bg-muted px-4 py-2 text-left font-semibold">{children}</th>
-                        ),
-                        td: ({ children }) => (
-                          <td className="border border-border px-4 py-2">{children}</td>
-                        ),
-                      }}
-                    >
-                      {selectedManual.content}
-                    </ReactMarkdown>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="screenshots" className="flex-1 overflow-y-auto mt-0 p-6">
-                  <div className="grid grid-cols-1 gap-6 pb-8">
-                    {selectedManual.screenshots.map((screenshot, idx) => (
-                      <div key={idx} className="border rounded-lg overflow-hidden shadow-sm">
-                        <img
-                          src={`/api/manuals/${selectedManual.id}/screenshots/${screenshot.split("/").pop()}`}
-                          alt={`Screenshot ${idx + 1}`}
-                          className="w-full"
-                        />
-                        <div className="px-4 py-3 text-sm text-muted-foreground bg-muted/50 flex items-center justify-between">
-                          <span className="font-medium">Step {idx + 1}</span>
-                          <span className="text-xs">{screenshot.split("/").pop()}</span>
-                        </div>
+                          )}
+                        </span>
+                      );
+                    },
+                    h1: ({ children }) => (
+                      <h1 className="text-3xl font-bold mt-8 mb-4 first:mt-0 pb-2 border-b">{children}</h1>
+                    ),
+                    h2: ({ children }) => (
+                      <h2 className="text-2xl font-semibold mt-8 mb-4">{children}</h2>
+                    ),
+                    h3: ({ children }) => (
+                      <h3 className="text-xl font-medium mt-6 mb-3">{children}</h3>
+                    ),
+                    h4: ({ children }) => (
+                      <h4 className="text-lg font-medium mt-4 mb-2">{children}</h4>
+                    ),
+                    p: ({ children }) => (
+                      <p className="my-4 leading-7 text-foreground/90">{children}</p>
+                    ),
+                    ul: ({ children }) => (
+                      <ul className="my-4 ml-6 list-disc space-y-2">{children}</ul>
+                    ),
+                    ol: ({ children }) => (
+                      <ol className="my-4 ml-6 list-decimal space-y-2">{children}</ol>
+                    ),
+                    li: ({ children }) => (
+                      <li className="leading-7">{children}</li>
+                    ),
+                    code: ({ children, className }) => {
+                      const isInline = !className;
+                      return isInline ? (
+                        <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>
+                      ) : (
+                        <pre className="bg-muted p-4 rounded-lg overflow-x-auto my-4">
+                          <code className="text-sm font-mono">{children}</code>
+                        </pre>
+                      );
+                    },
+                    pre: ({ children }) => <>{children}</>,
+                    blockquote: ({ children }) => (
+                      <blockquote className="border-l-4 border-primary/50 bg-muted/50 pl-4 pr-4 py-3 my-4 italic rounded-r-lg">
+                        {children}
+                      </blockquote>
+                    ),
+                    strong: ({ children }) => (
+                      <strong className="font-semibold text-foreground">{children}</strong>
+                    ),
+                    hr: () => <hr className="my-8 border-border" />,
+                    table: ({ children }) => (
+                      <div className="my-4 overflow-x-auto">
+                        <table className="w-full border-collapse border border-border rounded-lg">{children}</table>
                       </div>
-                    ))}
-                  </div>
-                </TabsContent>
-              </Tabs>
+                    ),
+                    th: ({ children }) => (
+                      <th className="border border-border bg-muted px-4 py-2 text-left font-semibold">{children}</th>
+                    ),
+                    td: ({ children }) => (
+                      <td className="border border-border px-4 py-2">{children}</td>
+                    ),
+                  }}
+                >
+                  {selectedManual.content}
+                </ReactMarkdown>
+              </div>
             </div>
           )}
         </SheetContent>
@@ -1503,18 +1559,50 @@ export default function ManualsPage() {
             {(manualToEvaluate?.target_audience || manualToEvaluate?.target_objective) && (
               <div className="flex flex-wrap gap-x-6 gap-y-2 pt-2 border-t text-sm">
                 {manualToEvaluate?.target_audience && (
-                  <div className="flex items-start gap-2">
-                    <Users className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                    <span className="text-muted-foreground">Audience:</span>
-                    <span className="line-clamp-1">{manualToEvaluate.target_audience}</span>
-                  </div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <div className="flex items-center gap-2 cursor-pointer hover:text-foreground transition-colors">
+                        <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="text-muted-foreground">Audience:</span>
+                        <span className="line-clamp-1">{manualToEvaluate.target_audience}</span>
+                        <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent side="bottom" align="start" className="w-96 p-0">
+                      <div className="p-3 border-b">
+                        <p className="font-medium text-sm flex items-center gap-2">
+                          <Users className="h-4 w-4" />
+                          Target Audience
+                        </p>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto p-3">
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{manualToEvaluate.target_audience}</p>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 )}
                 {manualToEvaluate?.target_objective && (
-                  <div className="flex items-start gap-2">
-                    <Target className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                    <span className="text-muted-foreground">Objective:</span>
-                    <span className="line-clamp-1">{manualToEvaluate.target_objective}</span>
-                  </div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <div className="flex items-center gap-2 cursor-pointer hover:text-foreground transition-colors">
+                        <Target className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span className="text-muted-foreground">Objective:</span>
+                        <span className="line-clamp-1">{manualToEvaluate.target_objective}</span>
+                        <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      </div>
+                    </PopoverTrigger>
+                    <PopoverContent side="bottom" align="start" className="w-96 p-0">
+                      <div className="p-3 border-b">
+                        <p className="font-medium text-sm flex items-center gap-2">
+                          <Target className="h-4 w-4" />
+                          Target Objective
+                        </p>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto p-3">
+                        <p className="text-sm leading-relaxed whitespace-pre-wrap">{manualToEvaluate.target_objective}</p>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 )}
               </div>
             )}
@@ -1796,5 +1884,27 @@ export default function ManualsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// Loading fallback for Suspense
+function ManualsLoading() {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Manuals</h1>
+        <p className="text-muted-foreground">View and manage your generated manuals</p>
+      </div>
+      <div className="text-center py-8 text-muted-foreground">Loading manuals...</div>
+    </div>
+  );
+}
+
+// Main export wrapped in Suspense
+export default function ManualsPage() {
+  return (
+    <Suspense fallback={<ManualsLoading />}>
+      <ManualsPageContent />
+    </Suspense>
   );
 }

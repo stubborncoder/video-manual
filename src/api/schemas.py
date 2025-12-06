@@ -49,11 +49,19 @@ class SourceVideoInfo(BaseModel):
     exists: bool = True
 
 
+class LanguageEvaluation(BaseModel):
+    """Evaluation status for a language."""
+    score: Optional[int] = None  # None if not evaluated
+    evaluated: bool = False
+
+
 class ManualSummary(BaseModel):
     id: str
+    title: str = ""  # Display title (derived from video name or manual content)
     created_at: Optional[str] = None
     screenshot_count: int = 0
     languages: list[str] = []
+    evaluations: dict[str, LanguageEvaluation] = {}  # lang -> evaluation status
     source_video: Optional[SourceVideoInfo] = None
     project_id: Optional[str] = None
     target_audience: Optional[str] = None
@@ -62,6 +70,7 @@ class ManualSummary(BaseModel):
 
 class ManualDetail(BaseModel):
     id: str
+    title: str = ""  # Display title
     content: str
     language: str
     screenshots: list[str] = []
@@ -127,6 +136,30 @@ class ProjectDetail(BaseModel):
 
 class ProjectListResponse(BaseModel):
     projects: list[ProjectSummary]
+
+
+# ==================== Jobs ====================
+
+
+class JobInfo(BaseModel):
+    """Information about a video processing job."""
+    id: str
+    user_id: str
+    video_name: str
+    manual_id: Optional[str] = None
+    status: str  # 'pending', 'processing', 'complete', 'error'
+    current_node: Optional[str] = None
+    node_index: Optional[int] = None
+    total_nodes: Optional[int] = None
+    error: Optional[str] = None
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+    seen: bool = False
+
+
+class JobListResponse(BaseModel):
+    """Response for listing jobs."""
+    jobs: list[JobInfo]
 
 
 # ==================== Processing ====================

@@ -14,6 +14,7 @@ from ...core.events import EventType
 from ...core.sanitization import sanitize_target_audience, sanitize_target_objective
 from ...storage.project_storage import ProjectStorage, DEFAULT_PROJECT_ID, DEFAULT_CHAPTER_ID
 from ...storage.user_storage import UserStorage
+from ...db import JobStorage
 
 logger = logging.getLogger(__name__)
 
@@ -177,6 +178,25 @@ async def websocket_process_video(
         project_storage = ProjectStorage(auth_user_id)
         project_storage.ensure_default_project()
 
+        # Create job record for tracking
+        video_name = video_path.name
+        job_id = JobStorage.create_job(auth_user_id, video_name)
+
+        try:
+            # Send job_id to client immediately so they can track it
+            await websocket.send_json({
+                "event_type": "job_created",
+                "timestamp": 0,
+                "data": {"job_id": job_id, "video_name": video_name}
+            })
+
+            # Update job status to processing
+            JobStorage.update_job(job_id, status="processing")
+        except Exception as e:
+            # If we fail to notify client or update status, mark job as error
+            JobStorage.mark_error(job_id, f"Failed to start job: {e}")
+            raise
+
         # Create runner and stream events
         runner = VideoManualRunner(auth_user_id)
 
@@ -213,15 +233,31 @@ async def websocket_process_video(
             event_dict = asdict(event)
             event_type = event_dict.pop("event_type")
 
+            event_type_str = event_type.value if hasattr(event_type, "value") else str(event_type)
+
             await websocket.send_json({
-                "event_type": event_type.value if hasattr(event_type, "value") else str(event_type),
+                "event_type": event_type_str,
                 "timestamp": event_dict.pop("timestamp"),
                 "data": event_dict,
             })
 
+            # Update job record based on event type
+            if event.event_type == EventType.NODE_STARTED:
+                JobStorage.update_job(
+                    job_id,
+                    current_node=event_dict.get("node_name"),
+                    node_index=event_dict.get("node_index"),
+                    total_nodes=event_dict.get("total_nodes"),
+                )
+            elif event.event_type == EventType.ERROR:
+                JobStorage.mark_error(job_id, event_dict.get("error_message", "Unknown error"))
+
             # If complete, handle post-processing
             if event.event_type == EventType.COMPLETE and event.result:
                 manual_id = event.result.get("manual_id")
+
+                # Mark job complete with manual ID
+                JobStorage.mark_complete(job_id, manual_id)
 
                 # Add tags if specified
                 if tags and manual_id:
@@ -239,7 +275,8 @@ async def websocket_process_video(
         thread.join(timeout=5)
 
     except WebSocketDisconnect:
-        pass
+        # Job continues in background, client can reconnect via REST API
+        logger.info(f"WebSocket disconnected for job {job_id if 'job_id' in dir() else 'unknown'}")
     except json.JSONDecodeError:
         await websocket.send_json({
             "event_type": "error",
@@ -247,6 +284,9 @@ async def websocket_process_video(
             "data": {"error_message": "Invalid JSON", "recoverable": False}
         })
     except Exception as e:
+        # Mark job as error if it was created
+        if 'job_id' in dir():
+            JobStorage.mark_error(job_id, str(e))
         await websocket.send_json({
             "event_type": "error",
             "timestamp": 0,

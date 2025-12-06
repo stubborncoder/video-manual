@@ -64,6 +64,8 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
     user_id = state["user_id"]
     manual_id = state.get("manual_id")
     output_filename = state.get("output_filename")
+    # Use optimized video for screenshot extraction if available (better codec compatibility)
+    optimized_video_path = state.get("optimized_video_path")
 
     # Get language settings
     language = state.get("output_language", "English")
@@ -117,6 +119,19 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
     screenshot_paths = []
     screenshots_exist = has_screenshots(manual_dir)
 
+    # Determine which video to use for screenshot extraction
+    # Prefer optimized video (MP4) as it has better codec compatibility than some formats (e.g., AV1 WebM)
+    screenshot_source_video = video_path
+    if optimized_video_path and Path(optimized_video_path).exists():
+        screenshot_source_video = optimized_video_path
+        print(f"Using optimized video for screenshots: {Path(optimized_video_path).name}")
+    else:
+        # Also check if optimized video exists in manual_dir (for cached runs)
+        manual_optimized = manual_dir / "video_optimized.mp4"
+        if manual_optimized.exists():
+            screenshot_source_video = str(manual_optimized)
+            print(f"Using cached optimized video for screenshots")
+
     if screenshots_exist:
         print(f"Using existing screenshots: {len(list(screenshots_dir.glob('*.png')))} found")
         # Build screenshot_paths from existing files
@@ -141,7 +156,7 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
             screenshot_path = screenshots_dir / screenshot_filename
 
             try:
-                extract_screenshot_at_timestamp(video_path, timestamp, str(screenshot_path))
+                extract_screenshot_at_timestamp(screenshot_source_video, timestamp, str(screenshot_path))
                 screenshot_paths.append({
                     "figure_number": i,
                     "path": str(screenshot_path),
@@ -149,8 +164,8 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
                     "timestamp": timestamp,
                     "description": keyframe.get('description', ''),
                 })
-            except Exception:
-                pass  # Skip failed screenshots silently
+            except Exception as e:
+                print(f"Warning: Failed to extract screenshot at {timestamp}s: {e}")
 
     llm = ChatGoogleGenerativeAI(
         model=DEFAULT_GEMINI_MODEL,

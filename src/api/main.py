@@ -5,9 +5,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routes import auth_router, videos_router, manuals_router, projects_router, trash_router, compile_stream_router
+from .routes import auth_router, videos_router, manuals_router, projects_router, trash_router, compile_stream_router, jobs_router
 from .websockets import process_video_router, compile_project_router, editor_copilot_router
 from ..config import ensure_directories
+from ..db import init_db
 
 
 @asynccontextmanager
@@ -15,6 +16,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan handler."""
     # Startup
     ensure_directories()
+    init_db()  # Initialize SQLite database
     yield
     # Shutdown (cleanup if needed)
 
@@ -56,6 +58,7 @@ def create_app(
     app.include_router(manuals_router, prefix="/api")
     app.include_router(projects_router, prefix="/api")
     app.include_router(trash_router, prefix="/api")
+    app.include_router(jobs_router, prefix="/api")
     app.include_router(compile_stream_router, prefix="/api/assistant")
 
     # WebSocket routes

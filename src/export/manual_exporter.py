@@ -195,7 +195,10 @@ p {
 
 img {
     max-width: 100%;
+    max-height: 400px;
+    width: auto;
     height: auto;
+    object-fit: contain;
     display: block;
     margin: 15px auto;
     border: 1px solid #e2e8f0;
@@ -436,7 +439,22 @@ class ManualWordExporter(BaseManualExporter):
                     # Add image if it exists
                     if isinstance(img_path, Path) and img_path.exists():
                         try:
-                            doc.add_picture(str(img_path), width=Inches(6))
+                            # Check image dimensions to handle portrait vs landscape
+                            from PIL import Image as PILImage
+                            with PILImage.open(img_path) as pil_img:
+                                img_width, img_height = pil_img.size
+
+                            is_portrait = img_height > img_width
+                            if is_portrait:
+                                # Portrait: limit height to ~4 inches, scale width proportionally
+                                max_height = Inches(4)
+                                aspect_ratio = img_width / img_height
+                                width = Inches(4 * aspect_ratio)
+                                doc.add_picture(str(img_path), width=width)
+                            else:
+                                # Landscape: use full width
+                                doc.add_picture(str(img_path), width=Inches(6))
+
                             if alt_text:
                                 caption = doc.add_paragraph(alt_text)
                                 caption.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
