@@ -23,6 +23,7 @@ class LoginRequest(BaseModel):
 
 class UserSession(BaseModel):
     user_id: str
+    role: str = "user"
     created_at: datetime = Field(default_factory=datetime.now)
 
 
@@ -317,3 +318,51 @@ class ManualEvaluation(BaseModel):
     def validate_language(cls, v: str) -> str:
         """Validate language is a supported ISO code."""
         return normalize_language_to_code(v)
+
+
+# ==================== Admin ====================
+
+
+class UserInfo(BaseModel):
+    """User information for admin dashboard."""
+    id: str
+    display_name: Optional[str] = None
+    email: Optional[str] = None
+    role: str
+    created_at: str
+    last_login: Optional[str] = None
+    total_cost_usd: float = 0.0
+
+
+class UsageRecord(BaseModel):
+    """LLM usage record."""
+    timestamp: str
+    operation: str
+    model: str
+    input_tokens: int
+    output_tokens: int
+    cost_usd: float
+    manual_id: Optional[str] = None
+
+
+class DailyUsage(BaseModel):
+    """Daily usage summary."""
+    user_id: str
+    date: str
+    operations: dict[str, int]  # operation -> request_count
+    total_tokens: int
+    total_cost_usd: float
+
+
+class UsageSummary(BaseModel):
+    """Usage summary for a time period."""
+    user_id: str
+    total_requests: int
+    total_input_tokens: int
+    total_output_tokens: int
+    total_cost_usd: float
+
+
+class SetRoleRequest(BaseModel):
+    """Request to set user role."""
+    role: str = Field(..., pattern="^(user|admin)$")

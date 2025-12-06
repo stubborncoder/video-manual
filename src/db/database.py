@@ -12,6 +12,18 @@ DATABASE_PATH = Path(__file__).parent / "vdocs.db"
 def init_db() -> None:
     """Initialize the database with required tables."""
     with get_connection() as conn:
+        # Users table for user management
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id TEXT PRIMARY KEY,
+                display_name TEXT,
+                email TEXT,
+                role TEXT DEFAULT 'user',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_login TIMESTAMP
+            )
+        """)
+
         # Jobs table for tracking video processing jobs
         conn.execute("""
             CREATE TABLE IF NOT EXISTS jobs (
@@ -30,6 +42,44 @@ def init_db() -> None:
             )
         """)
 
+        # LLM requests table for tracking token usage per request
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS llm_requests (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                operation TEXT NOT NULL,
+                model TEXT NOT NULL,
+                input_tokens INTEGER,
+                output_tokens INTEGER,
+                total_tokens INTEGER,
+                cached_tokens INTEGER DEFAULT 0,
+                cache_creation_tokens INTEGER DEFAULT 0,
+                cache_read_tokens INTEGER DEFAULT 0,
+                cost_usd REAL,
+                manual_id TEXT,
+                job_id TEXT
+            )
+        """)
+
+        # Daily usage aggregates for fast queries
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS usage_daily (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id TEXT NOT NULL,
+                date TEXT NOT NULL,
+                operation TEXT NOT NULL,
+                model TEXT NOT NULL,
+                request_count INTEGER DEFAULT 0,
+                total_input_tokens INTEGER DEFAULT 0,
+                total_output_tokens INTEGER DEFAULT 0,
+                total_cached_tokens INTEGER DEFAULT 0,
+                total_cache_read_tokens INTEGER DEFAULT 0,
+                total_cost_usd REAL DEFAULT 0,
+                UNIQUE(user_id, date, operation, model)
+            )
+        """)
+
         # Index for efficient user job lookups
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_jobs_user_status ON jobs(user_id, status)"
@@ -43,6 +93,16 @@ def init_db() -> None:
         # Index for unseen jobs query (used for notifications)
         conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_jobs_user_seen ON jobs(user_id, seen, started_at)"
+        )
+
+        # Index for LLM requests by user and date
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_llm_requests_user_date ON llm_requests(user_id, timestamp)"
+        )
+
+        # Index for daily usage lookups
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_usage_daily_user_date ON usage_daily(user_id, date)"
         )
 
 
