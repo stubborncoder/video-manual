@@ -4,6 +4,7 @@ from fastapi import APIRouter, Response
 
 from ..schemas import LoginRequest, UserSession
 from ...storage.user_storage import UserStorage
+from ...db.user_management import UserManagement
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -17,6 +18,12 @@ async def login(request: LoginRequest, response: Response) -> UserSession:
     storage = UserStorage(user_id)
     storage.ensure_user_folders()
 
+    # Ensure user record exists in database
+    user = UserManagement.ensure_user_exists(user_id)
+
+    # Update last login timestamp
+    UserManagement.update_last_login(user_id)
+
     # Set session cookie
     response.set_cookie(
         key="session_user_id",
@@ -26,7 +33,11 @@ async def login(request: LoginRequest, response: Response) -> UserSession:
         max_age=60 * 60 * 24 * 7,  # 7 days
     )
 
-    return UserSession(user_id=user_id)
+    # Return session with role information
+    session = UserSession(user_id=user_id)
+    session.role = user.get("role", "user")
+
+    return session
 
 
 @router.post("/logout")

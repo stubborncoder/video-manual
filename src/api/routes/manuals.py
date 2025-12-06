@@ -1285,6 +1285,24 @@ Provide your evaluation as valid JSON only, with no additional text before or af
         response = await asyncio.to_thread(llm.invoke, evaluation_prompt)
         evaluation_text = response.content
 
+        # Log token usage
+        try:
+            from ...db.usage_tracking import UsageTracking
+            usage = response.usage_metadata if hasattr(response, 'usage_metadata') else {}
+            if usage:
+                UsageTracking.log_request(
+                    user_id=user_id,
+                    operation="evaluation",
+                    model=DEFAULT_EVALUATION_MODEL,
+                    input_tokens=usage.get("input_tokens", 0),
+                    output_tokens=usage.get("output_tokens", 0),
+                    cached_tokens=usage.get("cached_content_token_count", 0),
+                    manual_id=manual_id,
+                )
+        except Exception as usage_error:
+            # Don't fail the whole operation if usage tracking fails
+            print(f"Warning: Failed to log token usage: {usage_error}")
+
         # Parse JSON response
         import json
         import re

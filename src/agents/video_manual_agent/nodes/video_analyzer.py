@@ -266,6 +266,27 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
     try:
         print("Analyzing video content...")
         response = llm.invoke([message])
+
+        # Log token usage
+        try:
+            from ....db.usage_tracking import UsageTracking
+            usage = response.usage_metadata if hasattr(response, 'usage_metadata') else {}
+            if usage:
+                job_id = state.get("job_id")
+                UsageTracking.log_request(
+                    user_id=user_id,
+                    operation="video_analysis",
+                    model=DEFAULT_GEMINI_MODEL,
+                    input_tokens=usage.get("input_tokens", 0),
+                    output_tokens=usage.get("output_tokens", 0),
+                    cached_tokens=usage.get("cached_content_token_count", 0),
+                    manual_id=manual_id,
+                    job_id=job_id,
+                )
+        except Exception as usage_error:
+            # Don't fail the whole operation if usage tracking fails
+            print(f"Warning: Failed to log token usage: {usage_error}")
+
     except Exception as e:
         return {
             "status": "error",
