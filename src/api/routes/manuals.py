@@ -904,6 +904,7 @@ class ManualExportRequest(BaseModel):
     format: str = "pdf"  # pdf, word, html
     language: str = "en"
     embed_images: bool = True  # For HTML only
+    template_name: str | None = None  # For Word template-based export
 
 
 @router.post("/{manual_id}/export")
@@ -944,18 +945,42 @@ async def export_manual(
         )
 
     try:
-        # Create exporter
-        exporter = create_manual_exporter(
-            user_id=user_id,
-            manual_id=manual_id,
-            format=export_request.format
-        )
+        # Check if using template-based export for Word format
+        if (
+            export_request.format.lower() in ("word", "docx")
+            and export_request.template_name
+        ):
+            # Use template-based exporter
+            from ...export.template_word_exporter import ManualTemplateExporter
+            from ...storage.template_storage import TemplateStorage
 
-        # Export manual
-        output_path = exporter.export(
-            language=export_request.language,
-            embed_images=export_request.embed_images if export_request.format.lower() == "html" else True,
-        )
+            template_storage = TemplateStorage(user_id)
+            template_path = template_storage.get_template(export_request.template_name)
+
+            if not template_path:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Template not found: {export_request.template_name}"
+                )
+
+            exporter = ManualTemplateExporter(user_id=user_id, manual_id=manual_id)
+            output_path = exporter.export(
+                template_path=template_path,
+                language=export_request.language,
+            )
+        else:
+            # Use standard exporter
+            exporter = create_manual_exporter(
+                user_id=user_id,
+                manual_id=manual_id,
+                format=export_request.format
+            )
+
+            # Export manual
+            output_path = exporter.export(
+                language=export_request.language,
+                embed_images=export_request.embed_images if export_request.format.lower() == "html" else True,
+            )
 
         # Return export details
         output_file = Path(output_path)
@@ -964,6 +989,7 @@ async def export_manual(
             "manual_id": manual_id,
             "format": export_request.format.lower(),
             "language": export_request.language,
+            "template": export_request.template_name,
             "filename": output_file.name,
             "download_url": f"/api/manuals/{manual_id}/exports/{output_file.name}",
             "size_bytes": output_file.stat().st_size,

@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routes import auth_router, videos_router, manuals_router, projects_router, trash_router, compile_stream_router, jobs_router, admin_router
+from .routes import auth_router, videos_router, manuals_router, projects_router, trash_router, compile_stream_router, jobs_router, admin_router, templates_router
 from .websockets import process_video_router, compile_project_router, editor_copilot_router
 from ..config import ensure_directories
 from ..db import init_db
@@ -59,6 +59,7 @@ def create_app(
     app.include_router(projects_router, prefix="/api")
     app.include_router(trash_router, prefix="/api")
     app.include_router(jobs_router, prefix="/api")
+    app.include_router(templates_router, prefix="/api")
     app.include_router(admin_router)  # Admin routes already have /api/admin prefix
     app.include_router(compile_stream_router, prefix="/api/assistant")
 

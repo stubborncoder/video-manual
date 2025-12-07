@@ -9,6 +9,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
 USERS_DIR = DATA_DIR / "users"
 CHECKPOINTS_DIR = DATA_DIR / "checkpoints"
+TEMPLATES_DIR = DATA_DIR / "templates"  # Global Word templates
 
 
 def get_checkpoint_db_path(agent_name: str) -> Path:
@@ -30,3 +31,4 @@ def ensure_directories():
     DATA_DIR.mkdir(exist_ok=True)
     USERS_DIR.mkdir(exist_ok=True)
     CHECKPOINTS_DIR.mkdir(exist_ok=True)
+    TEMPLATES_DIR.mkdir(exist_ok=True)

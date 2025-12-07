@@ -266,6 +266,7 @@ class ExportRequest(BaseModel):
     include_toc: bool = True
     include_chapter_covers: bool = True
     embed_images: bool = True  # for HTML
+    template_name: str | None = None  # For Word template-based export
 
 
 class ExportResponse(BaseModel):

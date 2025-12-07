@@ -532,13 +532,34 @@ async def export_project(
                 include_chapter_covers=request.include_chapter_covers,
             )
         elif format_lower in ("word", "docx"):
-            from ...export.word_exporter import WordExporter
-            exporter = WordExporter(user_id, project_id)
-            output_path = exporter.export(
-                language=request.language,
-                include_toc=request.include_toc,
-                include_chapter_covers=request.include_chapter_covers,
-            )
+            # Check if using template-based export
+            if request.template_name:
+                from ...export.template_word_exporter import ProjectTemplateExporter
+                from ...storage.template_storage import TemplateStorage
+
+                template_storage = TemplateStorage(user_id)
+                template_path = template_storage.get_template(request.template_name)
+
+                if not template_path:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Template not found: {request.template_name}"
+                    )
+
+                exporter = ProjectTemplateExporter(user_id, project_id)
+                output_path = exporter.export(
+                    template_path=template_path,
+                    language=request.language,
+                )
+            else:
+                # Use standard Word exporter
+                from ...export.word_exporter import WordExporter
+                exporter = WordExporter(user_id, project_id)
+                output_path = exporter.export(
+                    language=request.language,
+                    include_toc=request.include_toc,
+                    include_chapter_covers=request.include_chapter_covers,
+                )
         elif format_lower == "html":
             from ...export.html_exporter import HTMLExporter
             exporter = HTMLExporter(user_id, project_id)
