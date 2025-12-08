@@ -73,6 +73,7 @@ class VideoManualRunner:
         output_language: str = "English",
         target_audience: Optional[str] = None,
         target_objective: Optional[str] = None,
+        document_format: str = "step-manual",
     ) -> Iterator[ProgressEvent]:
         """
         Run the video manual agent and yield progress events.
@@ -84,6 +85,7 @@ class VideoManualRunner:
             output_language: Target language for the manual
             target_audience: Target audience for the manual
             target_objective: Target objective of the manual
+            document_format: Document format type (step-manual, quick-guide, etc.)
 
         Yields:
             ProgressEvent objects for each state change
@@ -115,6 +117,7 @@ class VideoManualRunner:
             "output_filename": output_filename,
             "use_scene_detection": use_scene_detection,
             "output_language": output_language,
+            "document_format": document_format,
             "target_audience": target_audience,
             "target_objective": target_objective,
             "video_metadata": None,

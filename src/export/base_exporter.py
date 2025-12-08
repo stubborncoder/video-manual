@@ -9,6 +9,7 @@ from typing import Optional, List, Dict, Any
 from ..storage.project_storage import ProjectStorage
 from ..storage.user_storage import UserStorage
 from ..storage.version_storage import VersionStorage
+from .tag_parser import strip_semantic_tags
 
 
 def slugify(text: str) -> str:
@@ -200,8 +201,16 @@ class BaseExporter(ABC):
         return "".join(lines)
 
     def _get_manual_content(self, manual_id: str, language: str) -> Optional[str]:
-        """Get manual content for a specific language."""
-        return self.user_storage.get_manual_content(manual_id, language)
+        """Get manual content for a specific language.
+
+        Strips semantic tags from the content so that exported documents
+        contain clean markdown without XML-like tags.
+        """
+        content = self.user_storage.get_manual_content(manual_id, language)
+        if content:
+            # Strip semantic tags (e.g., <step>, <note>, <introduction>) for clean export
+            content = strip_semantic_tags(content)
+        return content
 
     def _fix_image_paths(self, content: str, manual_id: str) -> str:
         """Fix relative image paths to absolute paths.

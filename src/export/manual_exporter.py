@@ -14,6 +14,7 @@ from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 
 from ..storage.user_storage import UserStorage
+from .tag_parser import strip_semantic_tags
 
 
 def slugify(text: str) -> str:
@@ -91,8 +92,16 @@ class BaseManualExporter(ABC):
         return str(export_dir / filename)
 
     def _get_manual_content(self, language: str) -> Optional[str]:
-        """Get manual content for a specific language."""
-        return self.user_storage.get_manual_content(self.manual_id, language)
+        """Get manual content for a specific language.
+
+        Strips semantic tags from the content so that exported documents
+        contain clean markdown without XML-like tags.
+        """
+        content = self.user_storage.get_manual_content(self.manual_id, language)
+        if content:
+            # Strip semantic tags (e.g., <step>, <note>, <introduction>) for clean export
+            content = strip_semantic_tags(content)
+        return content
 
     def _fix_image_paths(self, content: str) -> str:
         """Fix relative image paths to absolute paths.
@@ -176,6 +185,7 @@ h2 {
     margin-top: 30px;
     border-bottom: 1px solid #e2e8f0;
     padding-bottom: 5px;
+    page-break-before: always;
 }
 
 h3 {
@@ -299,15 +309,27 @@ blockquote {
         if not content:
             raise ValueError(f"Manual content not found for language: {language}")
 
+        # Get manual metadata for title
+        metadata = self.user_storage.get_manual_metadata(self.manual_id) or {}
+        title = metadata.get("title") or self.manual_id
+
         # Fix image paths
         content = self._fix_image_paths(content)
+
+        # Get language display name
+        language_names = {
+            "en": "English", "es": "Spanish", "fr": "French", "de": "German",
+            "it": "Italian", "pt": "Portuguese", "nl": "Dutch", "pl": "Polish",
+            "ru": "Russian", "zh": "Chinese", "ja": "Japanese", "ko": "Korean",
+        }
+        language_display = language_names.get(language, language.upper())
 
         # Add header
         header = f"""
 <div class="manual-header">
-    <h1>{self.manual_id}</h1>
+    <h1>{title}</h1>
     <div class="meta">
-        Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')} | Language: {language.upper()}
+        Generated: {datetime.now().strftime('%Y-%m-%d %H:%M')} | Language: {language_display}
     </div>
 </div>
 """
@@ -319,10 +341,10 @@ blockquote {
         # Wrap in HTML template
         html = f"""
 <!DOCTYPE html>
-<html>
+<html lang="{language}">
 <head>
     <meta charset="UTF-8">
-    <title>{self.manual_id}</title>
+    <title>{title}</title>
 </head>
 <body>
 {header}
@@ -478,8 +500,13 @@ class ManualWordExporter(BaseManualExporter):
                     code_lines.append(lines[i])
                     i += 1
                 if code_lines:
-                    code_para = doc.add_paragraph('\n'.join(code_lines))
-                    code_para.style = 'Code'
+                    code_para = doc.add_paragraph()
+                    code_run = code_para.add_run('\n'.join(code_lines))
+                    code_run.font.name = 'Consolas'
+                    code_run.font.size = Pt(9)
+                    code_para.paragraph_format.left_indent = Inches(0.25)
+                    code_para.paragraph_format.space_before = Pt(6)
+                    code_para.paragraph_format.space_after = Pt(6)
             # Regular paragraphs
             elif line.strip():
                 doc.add_paragraph(line)

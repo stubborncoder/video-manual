@@ -19,6 +19,7 @@ class VideoManualState(TypedDict):
     output_filename: Optional[str]  # Optional custom filename for the manual
     use_scene_detection: bool  # Whether to use scene detection for keyframes
     output_language: Optional[str]  # Target language for manual (default: English)
+    document_format: Optional[str]  # Document format type (default: step-manual)
 
     # Manual context (immutable across language versions)
     target_audience: Optional[str]  # Who is the manual for (e.g., "beginners", "IT professionals")

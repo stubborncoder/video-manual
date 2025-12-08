@@ -27,8 +27,10 @@ import {
   Check,
   Loader2,
   Sparkles,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TemplatePreviewDialog } from "@/components/dialogs/TemplatePreviewDialog";
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -58,6 +60,7 @@ export default function TemplatesPage() {
   const [deleting, setDeleting] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [customName, setCustomName] = useState("");
+  const [previewTemplate, setPreviewTemplate] = useState<{ name: string; isGlobal: boolean } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadTemplates = useCallback(async () => {
@@ -203,6 +206,7 @@ export default function TemplatesPage() {
                   <TemplateCard
                     key={template.name}
                     template={template}
+                    onPreview={() => setPreviewTemplate({ name: template.name, isGlobal: false })}
                     onDownload={() => window.open(templates.download(template.name))}
                     onDelete={() => {
                       setSelectedTemplate(template);
@@ -238,6 +242,7 @@ export default function TemplatesPage() {
                   <TemplateCard
                     key={template.name}
                     template={template}
+                    onPreview={() => setPreviewTemplate({ name: template.name, isGlobal: true })}
                     onDownload={() => window.open(templates.download(template.name))}
                   />
                 ))}
@@ -348,17 +353,26 @@ export default function TemplatesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Template Preview Dialog */}
+      <TemplatePreviewDialog
+        open={!!previewTemplate}
+        onOpenChange={(open) => !open && setPreviewTemplate(null)}
+        templateName={previewTemplate?.name || ""}
+        isGlobal={previewTemplate?.isGlobal}
+      />
     </div>
   );
 }
 
 interface TemplateCardProps {
   template: TemplateInfo;
+  onPreview: () => void;
   onDownload: () => void;
   onDelete?: () => void;
 }
 
-function TemplateCard({ template, onDownload, onDelete }: TemplateCardProps) {
+function TemplateCard({ template, onPreview, onDownload, onDelete }: TemplateCardProps) {
   return (
     <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/30">
       {/* Gradient accent on hover */}
@@ -401,10 +415,18 @@ function TemplateCard({ template, onDownload, onDelete }: TemplateCardProps) {
             variant="outline"
             size="sm"
             className="flex-1"
+            onClick={onPreview}
+          >
+            <Eye className="mr-2 h-3.5 w-3.5" />
+            Preview
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground"
             onClick={onDownload}
           >
-            <Download className="mr-2 h-3.5 w-3.5" />
-            Download
+            <Download className="h-4 w-4" />
           </Button>
           {onDelete && (
             <Button

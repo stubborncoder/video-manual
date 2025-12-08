@@ -28,8 +28,10 @@ import {
   User,
   LayoutTemplate,
   Sparkles,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TemplatePreviewDialog } from "./TemplatePreviewDialog";
 
 interface ExportDialogProps {
   open: boolean;
@@ -39,10 +41,12 @@ interface ExportDialogProps {
   onExport: (options: ExportOptions) => Promise<void>;
   defaultLanguage?: string;
   showFormat?: boolean;
+  /** Document format (step-manual, quick-guide, reference, summary) - auto-selects matching template */
+  documentFormat?: string;
 }
 
 export interface ExportOptions {
-  format: "pdf" | "word" | "html";
+  format: "pdf" | "word" | "html" | "chunks";
   language: string;
   templateName?: string;
 }
@@ -67,6 +71,12 @@ const FORMAT_OPTIONS = [
     description: "Web-ready format",
     icon: "🌐",
   },
+  {
+    value: "chunks",
+    label: "Chunks",
+    description: "RAG pipeline format",
+    icon: "🔗",
+  },
 ] as const;
 
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -82,6 +92,22 @@ const LANGUAGE_NAMES: Record<string, string> = {
   ko: "Korean",
 };
 
+// Map document formats to their template names
+const FORMAT_TEMPLATE_MAP: Record<string, string> = {
+  "step-manual": "step-manual",
+  "quick-guide": "quick-guide",
+  "reference": "reference",
+  "summary": "summary",
+};
+
+// Human-readable format names
+const FORMAT_DISPLAY_NAMES: Record<string, string> = {
+  "step-manual": "Step-by-step Manual",
+  "quick-guide": "Quick Guide",
+  "reference": "Reference Document",
+  "summary": "Executive Summary",
+};
+
 export function ExportDialog({
   open,
   onOpenChange,
@@ -90,15 +116,20 @@ export function ExportDialog({
   onExport,
   defaultLanguage,
   showFormat = true,
+  documentFormat,
 }: ExportDialogProps) {
   // When showFormat is false, we're doing Word-only export
   const defaultFormat = showFormat ? "pdf" : "word";
-  const [format, setFormat] = useState<"pdf" | "word" | "html">(defaultFormat);
+  const [format, setFormat] = useState<"pdf" | "word" | "html" | "chunks">(defaultFormat);
   const [language, setLanguage] = useState(defaultLanguage || languages[0] || "en");
   const [templateName, setTemplateName] = useState<string>("");
   const [templateList, setTemplateList] = useState<TemplateInfo[]>([]);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [previewTemplate, setPreviewTemplate] = useState<{ name: string; isGlobal: boolean } | null>(null);
+
+  // Get the auto-selected template based on document format
+  const autoSelectedTemplate = documentFormat ? FORMAT_TEMPLATE_MAP[documentFormat] : null;
 
   // Load templates when dialog opens and format is Word
   useEffect(() => {
@@ -112,9 +143,10 @@ export function ExportDialog({
     if (open) {
       setFormat(defaultFormat);
       setLanguage(defaultLanguage || languages[0] || "en");
-      setTemplateName("");
+      // Auto-select template based on document format
+      setTemplateName(autoSelectedTemplate || "");
     }
-  }, [open, defaultLanguage, languages, defaultFormat]);
+  }, [open, defaultLanguage, languages, defaultFormat, autoSelectedTemplate]);
 
   async function loadTemplates() {
     setLoadingTemplates(true);
@@ -131,10 +163,15 @@ export function ExportDialog({
   async function handleExport() {
     setExporting(true);
     try {
+      // For Word export, use the user's selected template (which defaults to autoSelectedTemplate)
+      const effectiveTemplate = format === "word"
+        ? (templateName || undefined)
+        : undefined;
+
       await onExport({
         format,
         language,
-        templateName: format === "word" && templateName ? templateName : undefined,
+        templateName: effectiveTemplate,
       });
       onOpenChange(false);
     } catch (err) {
@@ -145,12 +182,33 @@ export function ExportDialog({
   }
 
   const selectedFormat = FORMAT_OPTIONS.find((f) => f.value === format);
-  const userTemplates = templateList.filter((t) => !t.is_global);
-  const globalTemplates = templateList.filter((t) => t.is_global);
+
+  // Filter templates by document format
+  // When a format filter is set, only show templates that explicitly match that format
+  // Templates without a format only show when there's no format filter (generic export)
+  const matchingUserTemplates = templateList.filter((t) => {
+    if (t.is_global) return false;
+    if (!autoSelectedTemplate) {
+      // No format filter - show all user templates
+      return true;
+    }
+    // Format filter is set - only show if template format matches exactly
+    return t.document_format === autoSelectedTemplate;
+  });
+  const matchingGlobalTemplates = templateList.filter((t) => {
+    if (!t.is_global) return false;
+    if (!autoSelectedTemplate) {
+      // No format filter - show all global templates
+      return true;
+    }
+    // Format filter is set - show if format matches or name matches (for built-in templates)
+    return t.document_format === autoSelectedTemplate || t.name === autoSelectedTemplate;
+  });
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="font-display text-xl flex items-center gap-2">
             <Download className="h-5 w-5 text-primary" />
@@ -169,7 +227,7 @@ export function ExportDialog({
               <RadioGroup
                 value={format}
                 onValueChange={(v) => setFormat(v as typeof format)}
-                className="grid grid-cols-3 gap-3"
+                className="grid grid-cols-4 gap-3"
               >
                 {FORMAT_OPTIONS.map((option) => (
                   <Label
@@ -241,17 +299,8 @@ export function ExportDialog({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {/* No template option */}
-                  <TemplateOption
-                    selected={templateName === ""}
-                    onClick={() => setTemplateName("")}
-                    name="Default"
-                    description="Use standard formatting"
-                    isDefault
-                  />
-
                   {/* User templates */}
-                  {userTemplates.length > 0 && (
+                  {matchingUserTemplates.length > 0 && (
                     <div className="pt-2">
                       <div className="flex items-center gap-2 mb-2">
                         <User className="h-3 w-3 text-muted-foreground" />
@@ -259,11 +308,12 @@ export function ExportDialog({
                           Your Templates
                         </span>
                       </div>
-                      {userTemplates.map((t) => (
+                      {matchingUserTemplates.map((t) => (
                         <TemplateOption
                           key={t.name}
                           selected={templateName === t.name}
                           onClick={() => setTemplateName(t.name)}
+                          onPreview={() => setPreviewTemplate({ name: t.name, isGlobal: false })}
                           name={t.name}
                           description={formatBytes(t.size_bytes)}
                         />
@@ -271,27 +321,18 @@ export function ExportDialog({
                     </div>
                   )}
 
-                  {/* Global templates */}
-                  {globalTemplates.length > 0 && (
-                    <div className="pt-2">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Globe className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                          Default Templates
-                        </span>
-                      </div>
-                      {globalTemplates.map((t) => (
-                        <TemplateOption
-                          key={t.name}
-                          selected={templateName === t.name}
-                          onClick={() => setTemplateName(t.name)}
-                          name={t.name}
-                          description={formatBytes(t.size_bytes)}
-                          isGlobal
-                        />
-                      ))}
-                    </div>
-                  )}
+                  {/* Global templates - show without header if only one */}
+                  {matchingGlobalTemplates.map((t) => (
+                    <TemplateOption
+                      key={t.name}
+                      selected={templateName === t.name}
+                      onClick={() => setTemplateName(t.name)}
+                      onPreview={() => setPreviewTemplate({ name: t.name, isGlobal: true })}
+                      name={FORMAT_DISPLAY_NAMES[t.document_format || ""] || t.name}
+                      description="Built-in template"
+                      isGlobal
+                    />
+                  ))}
                 </div>
               )}
             </div>
@@ -318,78 +359,113 @@ export function ExportDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    {/* Template Preview Dialog - rendered outside main dialog */}
+    <TemplatePreviewDialog
+      open={!!previewTemplate}
+      onOpenChange={(open) => !open && setPreviewTemplate(null)}
+      templateName={previewTemplate?.name || ""}
+      isGlobal={previewTemplate?.isGlobal}
+    />
+    </>
   );
 }
 
 interface TemplateOptionProps {
   selected: boolean;
   onClick: () => void;
+  onPreview: () => void;
   name: string;
   description: string;
   isDefault?: boolean;
   isGlobal?: boolean;
+  isRecommended?: boolean;
 }
 
 function TemplateOption({
   selected,
   onClick,
+  onPreview,
   name,
   description,
   isDefault,
   isGlobal,
+  isRecommended,
 }: TemplateOptionProps) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <div
       className={cn(
-        "w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left",
+        "w-full flex items-center gap-3 p-3 rounded-lg border transition-all",
         selected
           ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+          : isRecommended
+          ? "border-amber-300 bg-amber-50/50 hover:border-amber-400"
           : "border-border hover:border-primary/30 hover:bg-muted/30"
       )}
     >
-      <div
-        className={cn(
-          "flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center",
-          selected ? "bg-primary/20" : "bg-muted"
-        )}
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex items-center gap-3 flex-1 min-w-0 text-left"
       >
-        {isDefault ? (
-          <FileText className={cn("h-5 w-5", selected ? "text-primary" : "text-muted-foreground")} />
-        ) : (
-          <LayoutTemplate className={cn("h-5 w-5", selected ? "text-primary" : "text-muted-foreground")} />
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className={cn("font-medium truncate", selected && "text-primary")}>
-            {name}
-          </span>
-          {isGlobal && (
-            <Sparkles className="h-3 w-3 text-amber-500" />
+        <div
+          className={cn(
+            "flex-shrink-0 w-10 h-10 rounded-lg flex items-center justify-center",
+            selected ? "bg-primary/20" : isRecommended ? "bg-amber-100" : "bg-muted"
+          )}
+        >
+          {isDefault ? (
+            <FileText className={cn("h-5 w-5", selected ? "text-primary" : "text-muted-foreground")} />
+          ) : (
+            <LayoutTemplate className={cn("h-5 w-5", selected ? "text-primary" : isRecommended ? "text-amber-600" : "text-muted-foreground")} />
           )}
         </div>
-        <span className="text-xs text-muted-foreground">{description}</span>
-      </div>
-      <div
-        className={cn(
-          "w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all",
-          selected
-            ? "border-primary bg-primary"
-            : "border-muted-foreground/30"
-        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className={cn("font-medium truncate", selected && "text-primary")}>
+              {name}
+            </span>
+            {isRecommended && (
+              <span className="text-[10px] font-medium text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">
+                Recommended
+              </span>
+            )}
+            {isGlobal && !isRecommended && (
+              <Sparkles className="h-3 w-3 text-amber-500" />
+            )}
+          </div>
+          <span className="text-xs text-muted-foreground">{description}</span>
+        </div>
+        <div
+          className={cn(
+            "w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all",
+            selected
+              ? "border-primary bg-primary"
+              : "border-muted-foreground/30"
+          )}
+        >
+          {selected && (
+            <svg className="w-full h-full text-primary-foreground" viewBox="0 0 16 16">
+              <path
+                fill="currentColor"
+                d="M6.5 10.5L4 8l-.7.7 3.2 3.2 6.5-6.5-.7-.7z"
+              />
+            </svg>
+          )}
+        </div>
+      </button>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onPreview();
+        }}
+        className="p-2 rounded-md hover:bg-muted transition-colors shrink-0"
+        title="Preview template"
       >
-        {selected && (
-          <svg className="w-full h-full text-primary-foreground" viewBox="0 0 16 16">
-            <path
-              fill="currentColor"
-              d="M6.5 10.5L4 8l-.7.7 3.2 3.2 6.5-6.5-.7-.7z"
-            />
-          </svg>
-        )}
-      </div>
-    </button>
+        <Eye className="h-4 w-4 text-muted-foreground" />
+      </button>
+    </div>
   );
 }
 

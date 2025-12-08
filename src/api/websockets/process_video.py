@@ -160,6 +160,7 @@ async def websocket_process_video(
 
         use_scene_detection = message.get("use_scene_detection", True)
         output_language = message.get("output_language", "English")
+        document_format = message.get("document_format", "step-manual")
 
         # Sanitize user inputs to prevent prompt injection
         try:
@@ -214,6 +215,7 @@ async def websocket_process_video(
                     output_language=output_language,
                     target_audience=target_audience,
                     target_objective=target_objective,
+                    document_format=document_format,
                 ):
                     loop.call_soon_threadsafe(event_queue.put_nowait, event)
             finally:

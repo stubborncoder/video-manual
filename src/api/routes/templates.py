@@ -21,6 +21,7 @@ class TemplateInfoResponse(BaseModel):
     is_global: bool
     size_bytes: int
     uploaded_at: str | None = None
+    document_format: str | None = None
 
 
 class TemplateListResponse(BaseModel):
@@ -76,6 +77,7 @@ async def list_templates(storage: TemplateStorageDep) -> TemplateListResponse:
                 is_global=t.is_global,
                 size_bytes=t.size_bytes,
                 uploaded_at=t.uploaded_at,
+                document_format=t.document_format,
             )
             for t in templates
         ],
@@ -89,17 +91,31 @@ async def upload_template(
     storage: TemplateStorageDep,
     file: UploadFile = File(...),
     name: str | None = Form(None),
+    document_format: str | None = Form(None),
 ) -> TemplateUploadResponse:
     """Upload a new Word template.
 
     The template file must be a valid .docx file. If no name is provided,
     the original filename (without extension) will be used.
+
+    Args:
+        file: The .docx template file
+        name: Optional custom name for the template
+        document_format: Document format this template is for (step-manual, quick-guide, reference, summary)
     """
     # Validate file type
     if not file.filename or not file.filename.lower().endswith(".docx"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="File must be a .docx Word document",
+        )
+
+    # Validate document_format if provided
+    valid_formats = {"step-manual", "quick-guide", "reference", "summary"}
+    if document_format and document_format not in valid_formats:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid document format. Must be one of: {', '.join(valid_formats)}",
         )
 
     # Read file content
@@ -109,7 +125,7 @@ async def upload_template(
     template_name = name or file.filename.rsplit(".", 1)[0]
 
     try:
-        info = storage.save_template(content, template_name)
+        info = storage.save_template(content, template_name, document_format)
         return TemplateUploadResponse(
             name=info.name,
             size_bytes=info.size_bytes,
@@ -169,6 +185,7 @@ async def get_template_info(
         is_global=info.is_global,
         size_bytes=info.size_bytes,
         uploaded_at=info.uploaded_at,
+        document_format=info.document_format,
     )
 
 

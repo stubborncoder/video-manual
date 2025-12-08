@@ -165,6 +165,11 @@ export const videos = {
       `/api/videos/${encodeURIComponent(videoName)}`,
       { method: "DELETE", params: { cascade: String(cascade) } }
     ),
+
+  getFormats: () =>
+    request<{ formats: Record<string, { label: string; description: string }> }>(
+      "/api/videos/formats"
+    ),
 };
 
 // Manuals
@@ -189,6 +194,7 @@ export interface ManualSummary {
   project_id?: string;
   target_audience?: string;
   target_objective?: string;
+  document_format?: string;
 }
 
 export interface ManualDetail {
@@ -198,6 +204,7 @@ export interface ManualDetail {
   language: string;
   screenshots: string[];
   source_video?: SourceVideoInfo;
+  document_format?: string;
 }
 
 export interface VersionInfo {
@@ -323,7 +330,7 @@ export const manuals = {
   // Export manual to various formats
   export: (
     manualId: string,
-    format: "pdf" | "word" | "html" = "pdf",
+    format: "pdf" | "word" | "html" | "chunks" = "pdf",
     language = "en",
     embedImages = true,
     templateName?: string
@@ -383,6 +390,22 @@ export const manuals = {
   getEvaluation: (manualId: string, version: string, language = "en") =>
     request<ManualEvaluation>(`/api/manuals/${manualId}/evaluations/${version}`, {
       params: { language },
+    }),
+
+  // Clone manual to different document format
+  clone: (
+    manualId: string,
+    documentFormat: string,
+    title?: string,
+    reformatContent = false
+  ) =>
+    request<ManualSummary>(`/api/manuals/${manualId}/clone`, {
+      method: "POST",
+      body: JSON.stringify({
+        document_format: documentFormat,
+        title,
+        reformat_content: reformatContent,
+      }),
     }),
 };
 
@@ -512,7 +535,7 @@ export const projects = {
 
   export: (
     projectId: string,
-    format: "pdf" | "word" | "html" = "pdf",
+    format: "pdf" | "word" | "html" | "chunks" = "pdf",
     language = "en",
     templateName?: string
   ) =>
@@ -727,6 +750,7 @@ export interface TemplateInfo {
   is_global: boolean;
   size_bytes: number;
   uploaded_at: string | null;
+  document_format: string | null;  // e.g., "step-manual", "quick-guide", etc.
 }
 
 export const templates = {
@@ -735,12 +759,15 @@ export const templates = {
       "/api/templates"
     ),
 
-  upload: (file: File, name?: string): Promise<{ name: string; size_bytes: number; message: string }> => {
+  upload: (file: File, name?: string, documentFormat?: string): Promise<{ name: string; size_bytes: number; message: string }> => {
     return new Promise((resolve, reject) => {
       const formData = new FormData();
       formData.append("file", file);
       if (name) {
         formData.append("name", name);
+      }
+      if (documentFormat) {
+        formData.append("document_format", documentFormat);
       }
 
       fetch("/api/templates", {

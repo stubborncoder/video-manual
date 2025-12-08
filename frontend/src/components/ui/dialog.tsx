@@ -55,7 +55,9 @@ function DialogContent({
   showCloseButton?: boolean
 }) {
   // Check if className contains custom max-w or w- to skip default constraints
-  const hasCustomSize = className?.includes('max-w-[') || className?.includes('w-[') || className?.includes('max-w-screen');
+  // Matches: max-w-[...], max-w-xl, max-w-2xl, max-w-screen-*, w-[...], etc.
+  const hasCustomSize = className?.match(/max-w-(\[|xl|2xl|3xl|4xl|5xl|6xl|7xl|full|screen)/) ||
+                        className?.includes('w-[');
 
   return (
     <DialogPortal data-slot="dialog-portal">

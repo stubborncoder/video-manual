@@ -65,9 +65,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown, ClipboardCheck, Users, Target, History, Clock, MoreHorizontal, HelpCircle, Expand } from "lucide-react";
+import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown, ClipboardCheck, Users, Target, History, Clock, MoreHorizontal, HelpCircle, Expand, Copy } from "lucide-react";
 import { manuals, manualProject, projects, type ManualSummary, type ManualDetail, type ProjectSummary, type ManualEvaluation } from "@/lib/api";
 import { ExportDialog, type ExportOptions } from "@/components/dialogs/ExportDialog";
+import { CloneManualDialog } from "@/components/dialogs/CloneManualDialog";
+import { stripSemanticTags } from "@/lib/tag-utils";
 import { useVideoProcessing } from "@/hooks/useWebSocket";
 import { ProcessingProgress } from "@/components/processing/ProcessingProgress";
 import { useJobsStore } from "@/stores/jobsStore";
@@ -191,6 +193,10 @@ function ManualsPageContent() {
   // Export dialog state
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [manualToExport, setManualToExport] = useState<ManualWithProject | null>(null);
+
+  // Clone dialog state
+  const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
+  const [manualToClone, setManualToClone] = useState<ManualWithProject | null>(null);
 
   // Abort controller ref for cancelling in-flight evaluation requests
   const evalAbortControllerRef = useRef<AbortController | null>(null);
@@ -556,6 +562,24 @@ function ManualsPageContent() {
     }
   }
 
+  // Clone manual to different format
+  function openCloneDialog(manual: ManualWithProject) {
+    setManualToClone(manual);
+    setCloneDialogOpen(true);
+  }
+
+  function handleCloneSuccess(newManual: ManualSummary) {
+    // Add the new manual to the list
+    const manualWithProject: ManualWithProject = {
+      ...newManual,
+      tags: [],
+    };
+    setManualList((prev) => [manualWithProject, ...prev]);
+    toast.success("Manual cloned successfully", {
+      description: `Created "${newManual.title}" in ${newManual.document_format} format`,
+    });
+  }
+
   // Evaluate manual
   async function openEvaluateDialog(manual: ManualWithProject, preferredLanguage?: string) {
     setManualToEvaluate(manual);
@@ -872,41 +896,67 @@ function ManualsPageContent() {
               )}
 
               <CardHeader className="pb-0 relative">
-                <div className="flex items-start justify-between gap-2">
-                  {/* Editorial title with serif font */}
-                  <CardTitle className="font-display text-lg tracking-tight leading-tight line-clamp-2 flex-1">
-                    {manual.title || manual.id}
-                  </CardTitle>
-                </div>
+                {/* Editorial title with serif font */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <CardTitle className="font-display text-lg tracking-tight leading-tight cursor-default overflow-hidden" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const }}>
+                      {manual.title || manual.id}
+                    </CardTitle>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-sm">
+                    <p className="break-words">{manual.title || manual.id}</p>
+                  </TooltipContent>
+                </Tooltip>
+
+                {/* Document format badge */}
+                {manual.document_format && (
+                  <Badge
+                    variant="secondary"
+                    className="mt-1.5 text-[10px] px-1.5 py-0 font-medium bg-primary/10 text-primary hover:bg-primary/20"
+                  >
+                    {manual.document_format === "step-manual" && "Step-by-step"}
+                    {manual.document_format === "quick-guide" && "Quick Guide"}
+                    {manual.document_format === "reference" && "Reference"}
+                    {manual.document_format === "summary" && "Summary"}
+                    {!["step-manual", "quick-guide", "reference", "summary"].includes(manual.document_format) && manual.document_format}
+                  </Badge>
+                )}
 
                 {/* Source, Project & Languages info */}
-                <div className="space-y-1.5 mt-2">
+                <div className="space-y-1.5 mt-2 min-w-0">
                   {/* Source video info */}
                   {manual.source_video && (
-                    <Link
-                      href="/dashboard/videos"
-                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group/link"
-                    >
-                      <Video className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">{manual.source_video.name}</span>
-                      {!manual.source_video.exists && (
-                        <Badge variant="destructive" className="text-xs px-1.5 py-0">
-                          <AlertCircle className="h-3 w-3 mr-0.5" />
-                          deleted
-                        </Badge>
-                      )}
-                    </Link>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          href="/dashboard/videos"
+                          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group/link min-w-0"
+                        >
+                          <Video className="h-3.5 w-3.5 shrink-0" />
+                          <span className="truncate min-w-0">{manual.source_video.name}</span>
+                          {!manual.source_video.exists && (
+                            <Badge variant="destructive" className="text-xs px-1.5 py-0 shrink-0">
+                              <AlertCircle className="h-3 w-3 mr-0.5" />
+                              deleted
+                            </Badge>
+                          )}
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" className="max-w-sm">
+                        <p className="break-all">{manual.source_video.name}</p>
+                      </TooltipContent>
+                    </Tooltip>
                   )}
 
                   {/* Project info */}
                   {manual.project_name && manual.project_id && (
                     <Link
                       href="/dashboard/projects"
-                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+                      className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors min-w-0"
                     >
                       <FolderKanban className="h-3.5 w-3.5 shrink-0 text-primary" />
-                      <span className="truncate">{manual.project_name}</span>
-                      <ArrowUpRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <span className="truncate min-w-0">{manual.project_name}</span>
+                      <ArrowUpRight className="h-3 w-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </Link>
                   )}
 
@@ -1022,43 +1072,25 @@ function ManualsPageContent() {
                         {exportingManual === manual.id ? "Exporting..." : "Export"}
                       </DropdownMenuLabel>
                       <DropdownMenuItem
-                        onClick={() => handleQuickExport(manual, "pdf")}
-                        disabled={exportingManual === manual.id}
-                      >
-                        {exportingManual === manual.id ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <FileDown className="mr-2 h-4 w-4" />
-                        )}
-                        Export as PDF
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
                         onClick={() => openExportDialog(manual)}
                         disabled={exportingManual === manual.id}
                       >
                         {exportingManual === manual.id ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
-                          <FileDown className="mr-2 h-4 w-4" />
+                          <Download className="mr-2 h-4 w-4" />
                         )}
-                        Export as Word...
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleQuickExport(manual, "html")}
-                        disabled={exportingManual === manual.id}
-                      >
-                        {exportingManual === manual.id ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                          <FileDown className="mr-2 h-4 w-4" />
-                        )}
-                        Export as HTML
+                        Export...
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuLabel className="text-xs text-muted-foreground">Generate</DropdownMenuLabel>
                       <DropdownMenuItem onClick={() => openGenerateDialog(manual)}>
                         <Wand2 className="mr-2 h-4 w-4" />
                         Add Language
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openCloneDialog(manual)}>
+                        <Copy className="mr-2 h-4 w-4" />
+                        Clone to Format...
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openEvaluateDialog(manual)}>
                         <ClipboardCheck className="mr-2 h-4 w-4" />
@@ -1096,7 +1128,30 @@ function ManualsPageContent() {
         <SheetContent side="right" fullPage className="p-0 flex flex-col overflow-hidden">
           {/* Fixed Header */}
           <SheetHeader className="border-b p-6 pr-14 space-y-0 shrink-0">
-            <SheetTitle className="text-2xl font-bold">{selectedManual?.id}</SheetTitle>
+            <div className="flex items-center gap-3">
+              <SheetTitle className="text-2xl font-bold">
+                {manualList.find((m) => m.id === selectedManual?.id)?.title || selectedManual?.id}
+              </SheetTitle>
+              {/* Document format badge */}
+              {(() => {
+                const currentManual = manualList.find((m) => m.id === selectedManual?.id);
+                if (!currentManual?.document_format) return null;
+                const formatLabels: Record<string, string> = {
+                  "step-manual": "Step-by-step",
+                  "quick-guide": "Quick Guide",
+                  "reference": "Reference",
+                  "summary": "Summary",
+                };
+                return (
+                  <Badge
+                    variant="secondary"
+                    className="text-xs px-2 py-0.5 font-medium bg-primary/10 text-primary"
+                  >
+                    {formatLabels[currentManual.document_format] || currentManual.document_format}
+                  </Badge>
+                );
+              })()}
+            </div>
 
             {/* Source info in header */}
             {selectedManual && (
@@ -1297,7 +1352,7 @@ function ManualsPageContent() {
                     ),
                   }}
                 >
-                  {selectedManual.content}
+                  {stripSemanticTags(selectedManual.content)}
                 </ReactMarkdown>
               </div>
             </div>
@@ -1955,7 +2010,18 @@ function ManualsPageContent() {
           languages={manualToExport.languages}
           onExport={handleExportWithOptions}
           defaultLanguage={manualToExport.languages[0]}
-          showFormat={false}
+          showFormat={true}
+          documentFormat={manualToExport.document_format}
+        />
+      )}
+
+      {/* Clone Manual Dialog */}
+      {manualToClone && (
+        <CloneManualDialog
+          open={cloneDialogOpen}
+          onOpenChange={setCloneDialogOpen}
+          manual={manualToClone}
+          onSuccess={handleCloneSuccess}
         />
       )}
     </div>

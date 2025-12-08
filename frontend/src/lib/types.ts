@@ -122,11 +122,18 @@ export interface ProcessVideoRequest {
   output_filename?: string;
   use_scene_detection?: boolean;
   output_language?: string;
+  document_format?: string;  // e.g., "step-manual", "quick-guide", "reference", "summary"
   project_id?: string;
   chapter_id?: string;
   tags?: string[];
   target_audience?: string;  // e.g., "Beginners", "Advanced Users"
   target_objective?: string; // e.g., "Quick tutorial", "Comprehensive guide"
+}
+
+// Document format option
+export interface DocumentFormat {
+  label: string;
+  description: string;
 }
 
 // Manual evaluation request

@@ -13,7 +13,7 @@ from fastapi import APIRouter, HTTPException, File, UploadFile, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
 
-from ..schemas import ManualSummary, ManualDetail, ManualListResponse, SourceVideoInfo, LanguageEvaluation
+from ..schemas import ManualSummary, ManualDetail, ManualListResponse, SourceVideoInfo, LanguageEvaluation, CloneManualRequest
 from ..dependencies import CurrentUser, UserStorageDep, ProjectStorageDep, TrashStorageDep
 from ...storage.version_storage import VersionStorage
 from ...storage.screenshot_store import ScreenshotStore
@@ -119,6 +119,7 @@ async def list_manuals(
         project_id = None
         target_audience = None
         target_objective = None
+        document_format = None
         title = manual_id  # Default fallback
         metadata = storage.get_manual_metadata(manual_id)
         if metadata:
@@ -132,6 +133,7 @@ async def list_manuals(
             project_id = metadata.get("project_id")
             target_audience = metadata.get("target_audience")
             target_objective = metadata.get("target_objective")
+            document_format = metadata.get("document_format")
             title = _get_manual_title(metadata, manual_id)
 
         # Get evaluation status for each language
@@ -168,6 +170,7 @@ async def list_manuals(
                 project_id=project_id,
                 target_audience=target_audience,
                 target_objective=target_objective,
+                document_format=document_format,
             )
         )
 
@@ -194,9 +197,10 @@ async def get_manual(
 
     screenshots = storage.list_screenshots(manual_id)
 
-    # Get source video info and title from metadata
+    # Get source video info, title, and document_format from metadata
     source_video = None
     title = manual_id  # Default fallback
+    document_format = None
     metadata = storage.get_manual_metadata(manual_id)
     if metadata:
         video_path = metadata.get("video_path", "")
@@ -208,6 +212,7 @@ async def get_manual(
                 exists=video_exists,
             )
         title = _get_manual_title(metadata, manual_id)
+        document_format = metadata.get("document_format")
 
     return ManualDetail(
         id=manual_id,
@@ -216,6 +221,7 @@ async def get_manual(
         language=language,
         screenshots=[str(s) for s in screenshots],
         source_video=source_video,
+        document_format=document_format,
     )
 
 
@@ -299,6 +305,131 @@ async def update_manual_title(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to save title: {str(e)}")
+
+
+# ==================== Clone Manual ====================
+
+
+@router.post("/{manual_id}/clone")
+async def clone_manual(
+    manual_id: str,
+    clone_request: CloneManualRequest,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+) -> ManualSummary:
+    """Clone a manual to a different document format.
+
+    Creates a complete copy of the manual with the same screenshots but
+    optionally reformatted content for a different document type.
+
+    Args:
+        manual_id: Source manual to clone
+        clone_request: Clone configuration (target format, optional title, reformat flag)
+
+    Returns:
+        ManualSummary of the newly created manual
+    """
+    # Verify source manual exists
+    manual_dir = storage.manuals_dir / manual_id
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    # Get source metadata for format check
+    source_metadata = storage.get_manual_metadata(manual_id)
+    source_format = source_metadata.get("document_format", "step-manual") if source_metadata else "step-manual"
+
+    # Prevent cloning to same format
+    if clone_request.document_format == source_format:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Manual is already in '{source_format}' format. Choose a different format."
+        )
+
+    converted_content = None
+
+    # If reformat_content is True, use AI to convert content
+    if clone_request.reformat_content:
+        try:
+            from ...agents.reformat_agent import create_reformat_agent
+
+            # Get primary language
+            languages = storage.list_manual_languages(manual_id)
+            primary_lang = languages[0] if languages else "en"
+
+            # Run the reformat agent
+            agent = create_reformat_agent()
+            result = agent.reformat(
+                source_manual_id=manual_id,
+                user_id=user_id,
+                source_format=source_format,
+                target_format=clone_request.document_format,
+                language=primary_lang,
+            )
+
+            if result.get("status") == "completed" and result.get("converted_content"):
+                converted_content = result["converted_content"]
+            elif result.get("error"):
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Content reformatting failed: {result['error']}"
+                )
+
+        except ImportError as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Reformat agent not available: {str(e)}"
+            )
+        except Exception as e:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to reformat content: {str(e)}"
+            )
+
+    try:
+        # Clone the manual
+        new_manual_id, new_manual_dir = storage.clone_manual(
+            source_manual_id=manual_id,
+            target_format=clone_request.document_format,
+            title=clone_request.title,
+            content=converted_content,
+        )
+
+        # Build ManualSummary response
+        languages = storage.list_manual_languages(new_manual_id)
+        screenshots = storage.list_screenshots(new_manual_id)
+        new_metadata = storage.get_manual_metadata(new_manual_id)
+
+        # Get source video info
+        source_video = None
+        if new_metadata:
+            video_path = new_metadata.get("video_path", "")
+            sv_info = new_metadata.get("source_video", {})
+            if video_path:
+                source_video = SourceVideoInfo(
+                    name=Path(video_path).name,
+                    exists=sv_info.get("exists", True),
+                )
+
+        return ManualSummary(
+            id=new_manual_id,
+            title=new_metadata.get("title", new_manual_id) if new_metadata else new_manual_id,
+            created_at=datetime.now().isoformat(),
+            screenshot_count=len(screenshots),
+            languages=languages,
+            evaluations={},  # New clone has no evaluations
+            source_video=source_video,
+            project_id=None,  # Cloned manual is not auto-assigned to project
+            target_audience=new_metadata.get("target_audience") if new_metadata else None,
+            target_objective=new_metadata.get("target_objective") if new_metadata else None,
+            document_format=clone_request.document_format,
+        )
+
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Clone failed: {str(e)}")
 
 
 @router.get("/{manual_id}/screenshots/{filename}")
@@ -901,7 +1032,7 @@ async def create_version_snapshot(
 
 class ManualExportRequest(BaseModel):
     """Request to export a manual."""
-    format: str = "pdf"  # pdf, word, html
+    format: str = "pdf"  # pdf, word, html, chunks
     language: str = "en"
     embed_images: bool = True  # For HTML only
     template_name: str | None = None  # For Word template-based export
@@ -930,10 +1061,10 @@ async def export_manual(
         raise HTTPException(status_code=404, detail="Manual not found")
 
     # Validate format
-    if export_request.format.lower() not in ("pdf", "word", "docx", "html"):
+    if export_request.format.lower() not in ("pdf", "word", "docx", "html", "chunks"):
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported format: {export_request.format}. Supported: pdf, word, html"
+            detail=f"Unsupported format: {export_request.format}. Supported: pdf, word, html, chunks"
         )
 
     # Verify manual has content for the requested language
@@ -945,6 +1076,26 @@ async def export_manual(
         )
 
     try:
+        # Handle chunks (RAG) export
+        if export_request.format.lower() == "chunks":
+            from ...export.chunks_exporter import create_chunks_exporter
+
+            exporter = create_chunks_exporter(user_id=user_id, manual_id=manual_id)
+            output_path = exporter.export(language=export_request.language)
+
+            output_file = Path(output_path)
+            return {
+                "status": "success",
+                "manual_id": manual_id,
+                "format": "chunks",
+                "language": export_request.language,
+                "template": None,
+                "filename": output_file.name,
+                "download_url": f"/api/manuals/{manual_id}/exports/{output_file.name}",
+                "size_bytes": output_file.stat().st_size,
+                "created_at": datetime.fromtimestamp(output_file.stat().st_mtime).isoformat(),
+            }
+
         # Check if using template-based export for Word format
         if (
             export_request.format.lower() in ("word", "docx")
@@ -1029,6 +1180,7 @@ async def list_manual_exports(
             '.pdf': 'pdf',
             '.docx': 'word',
             '.html': 'html',
+            '.zip': 'chunks',
         }
         format_type = format_map.get(ext, 'unknown')
 
@@ -1070,6 +1222,7 @@ async def download_manual_export(
         '.pdf': 'application/pdf',
         '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         '.html': 'text/html',
+        '.zip': 'application/zip',
     }
     media_type = media_types.get(ext, 'application/octet-stream')
 
@@ -1201,6 +1354,9 @@ async def evaluate_manual(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    # Get document format for format-specific evaluation
+    document_format = metadata.get("document_format", "step-manual")
+
     # Build evaluation prompt with context if available
     has_context = bool(target_audience or target_objective)
     context_section = ""
@@ -1249,15 +1405,70 @@ async def evaluate_manual(
   }},
 '''
 
-    evaluation_prompt = f"""You are an expert technical documentation evaluator specializing in user manuals and instructional content. Please evaluate the following user manual.
+    # Format-specific evaluation criteria
+    format_criteria = {
+        "step-manual": f'''  "step_quality": {{
+    "score": <number {score_range}>,
+    "explanation": "<are steps sequential and numbered correctly? Is there ONE action per step? Do steps start with action verbs (Click, Select, Enter)? Are screenshots placed after the relevant step?>"
+  }},
+  "procedural_completeness": {{
+    "score": <number {score_range}>,
+    "explanation": "<can a user complete the task by following these steps? Are there missing steps or unclear transitions? Are prerequisites and outcomes clear?>"
+  }},
+''',
+        "quick-guide": f'''  "conciseness": {{
+    "score": <number {score_range}>,
+    "explanation": "<can this be read in 2-3 minutes? Is it scannable with bullet points? Does it focus only on essential information without unnecessary detail?>"
+  }},
+  "key_information_clarity": {{
+    "score": <number {score_range}>,
+    "explanation": "<are the most important points clearly highlighted? Is the guide useful as a quick reference during actual work?>"
+  }},
+''',
+        "reference": f'''  "topic_organization": {{
+    "score": <number {score_range}>,
+    "explanation": "<is content organized by topic/feature rather than workflow? Is it easy to look up specific information? Are sections self-contained?>"
+  }},
+  "comprehensiveness": {{
+    "score": <number {score_range}>,
+    "explanation": "<are all options, parameters, and features documented? Are technical terms defined? Are practical examples provided?>"
+  }},
+''',
+        "summary": f'''  "executive_focus": {{
+    "score": <number {score_range}>,
+    "explanation": "<does it lead with conclusions rather than background? Is it concise enough for decision-makers (under 5 minutes to read)? Does it avoid technical jargon?>"
+  }},
+  "actionability": {{
+    "score": <number {score_range}>,
+    "explanation": "<are recommendations specific and actionable? Are findings evidence-based with clear supporting information? Is the business impact clear?>"
+  }},
+''',
+    }
+
+    format_categories = format_criteria.get(document_format, format_criteria["step-manual"])
+
+    # Human-readable format names
+    format_names = {
+        "step-manual": "Step-by-step Manual",
+        "quick-guide": "Quick Guide",
+        "reference": "Reference Document",
+        "summary": "Executive Summary",
+    }
+    format_name = format_names.get(document_format, "Step-by-step Manual")
+
+    evaluation_prompt = f"""You are an expert technical documentation evaluator. Please evaluate the following **{format_name}**.
 {context_section}
 
-**Manual Content:**
+**Document Type:** {format_name}
+
+**Content:**
 {content}
 
 ---
 
-Evaluate this manual comprehensively across multiple dimensions. Consider that this is a video-generated manual with screenshots, so assess both written and visual content quality.
+Evaluate this {format_name.lower()} comprehensively. This is a video-generated document with screenshots, so assess both written and visual content quality.
+
+**Important:** Evaluate against the standards for a {format_name.lower()}, not a generic document.
 
 Provide your evaluation in the following JSON format:
 
@@ -1265,7 +1476,7 @@ Provide your evaluation in the following JSON format:
   "overall_score": <number {score_range}>,
   "summary": "<brief 2-3 sentence executive summary of the evaluation>",
   "strengths": [
-    "<specific strength with example from the manual>",
+    "<specific strength with example from the document>",
     "<another strength>",
     ...
   ],
@@ -1274,9 +1485,9 @@ Provide your evaluation in the following JSON format:
     "<another area>",
     ...
   ],
-{context_categories}{core_categories}
+{context_categories}{format_categories}{core_categories}
   "recommendations": [
-    "<specific actionable recommendation to improve the manual>",
+    "<specific actionable recommendation to improve the document>",
     "<another recommendation>",
     ...
   ]

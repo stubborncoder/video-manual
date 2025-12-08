@@ -183,7 +183,7 @@ export default function ProjectsPage() {
   const [loadingManual, setLoadingManual] = useState(false);
 
   // Export state
-  const [exporting, setExporting] = useState<"pdf" | "word" | "html" | null>(null);
+  const [exporting, setExporting] = useState<"pdf" | "word" | "html" | "chunks" | null>(null);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   // Project filter state

@@ -67,6 +67,7 @@ class ManualSummary(BaseModel):
     project_id: Optional[str] = None
     target_audience: Optional[str] = None
     target_objective: Optional[str] = None
+    document_format: Optional[str] = None  # Document format type (step-manual, quick-guide, etc.)
 
 
 class ManualDetail(BaseModel):
@@ -76,10 +77,28 @@ class ManualDetail(BaseModel):
     language: str
     screenshots: list[str] = []
     source_video: Optional[SourceVideoInfo] = None
+    document_format: Optional[str] = None  # e.g., "step-manual", "quick-guide"
 
 
 class ManualListResponse(BaseModel):
     manuals: list[ManualSummary]
+
+
+class CloneManualRequest(BaseModel):
+    """Request to clone a manual to a different document format."""
+    document_format: str  # "step-manual", "quick-guide", "reference", "summary"
+    title: Optional[str] = None  # Custom title, defaults to "Original Title (Format)"
+    reformat_content: bool = False  # If true, use AI to adapt content to new format style
+
+    @field_validator('document_format')
+    @classmethod
+    def validate_document_format(cls, v: str) -> str:
+        """Validate document format is a known format type."""
+        from ..agents.video_manual_agent.prompts import DOCUMENT_FORMATS
+        if v not in DOCUMENT_FORMATS:
+            valid_formats = list(DOCUMENT_FORMATS.keys())
+            raise ValueError(f"Invalid document format '{v}'. Valid formats: {valid_formats}")
+        return v
 
 
 # ==================== Projects ====================
@@ -171,6 +190,7 @@ class ProcessVideoRequest(BaseModel):
     output_filename: Optional[str] = None
     use_scene_detection: bool = True
     output_language: str = "English"
+    document_format: str = "step-manual"
     project_id: Optional[str] = None
     chapter_id: Optional[str] = None
     tags: list[str] = []
@@ -194,6 +214,16 @@ class ProcessVideoRequest(BaseModel):
         Returns the ISO 639-1 code.
         """
         return normalize_language_to_code(v)
+
+    @field_validator('document_format')
+    @classmethod
+    def validate_document_format(cls, v: str) -> str:
+        """Validate document format is a known format type."""
+        from ..agents.video_manual_agent.prompts import DOCUMENT_FORMATS
+        if v not in DOCUMENT_FORMATS:
+            valid_formats = list(DOCUMENT_FORMATS.keys())
+            raise ValueError(f"Invalid document format '{v}'. Valid formats: {valid_formats}")
+        return v
 
 
 class CompileProjectRequest(BaseModel):

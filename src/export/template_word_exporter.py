@@ -4,6 +4,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, List, Dict, Any
+import logging
 
 from docxtpl import DocxTemplate, InlineImage
 from docx.shared import Mm, Inches
@@ -11,6 +12,9 @@ from PIL import Image as PILImage
 
 from ..storage.user_storage import UserStorage
 from ..storage.template_storage import TemplateStorage
+from .tag_parser import parse_semantic_tags, strip_semantic_tags, get_title
+
+logger = logging.getLogger(__name__)
 
 
 class ManualTemplateExporter:
@@ -116,16 +120,22 @@ class ManualTemplateExporter:
         Returns:
             Dictionary with template context variables
         """
-        # Parse steps from markdown
-        steps = self._parse_steps_from_markdown(doc, content)
-
         # Get manual metadata
         metadata = self.user_storage.get_manual_metadata(self.manual_id) or {}
+
+        # Parse semantic tags for structured content
+        semantic_content = self._parse_semantic_content(doc, content)
+
+        # Also parse steps from markdown (fallback / legacy support)
+        steps = self._parse_steps_from_markdown(doc, content)
+
+        # Get title from semantic tags or fallback to metadata
+        semantic_title = get_title(content)
 
         # Build context
         context = {
             # Metadata
-            "title": metadata.get("title", self.manual_id),
+            "title": semantic_title or metadata.get("title", self.manual_id),
             "manual_id": self.manual_id,
             "language": language,
             "language_upper": language.upper(),
@@ -135,7 +145,11 @@ class ManualTemplateExporter:
             # Target context
             "target_audience": metadata.get("target_audience", ""),
             "target_objective": metadata.get("target_objective", ""),
-            # Steps
+            # Document format info
+            "document_format": metadata.get("document_format", "step-manual"),
+            # Semantic content blocks - available for all formats
+            **semantic_content,
+            # Legacy steps (for backward compatibility)
             "steps": steps,
             "step_count": len(steps),
             "screenshot_count": sum(1 for s in steps if s.get("has_image")),
@@ -148,10 +162,214 @@ class ManualTemplateExporter:
 
         return context
 
+    def _parse_semantic_content(
+        self, doc: DocxTemplate, content: str
+    ) -> Dict[str, Any]:
+        """Parse semantic tags into structured content for templates.
+
+        This method parses semantic tags (like <step>, <note>, <introduction>)
+        and builds a dictionary of content blocks for template rendering.
+
+        Args:
+            doc: DocxTemplate instance (needed for InlineImage)
+            content: Markdown content with semantic tags
+
+        Returns:
+            Dictionary with semantic content blocks:
+            - introduction: Introduction text (from <introduction> tag)
+            - conclusion: Conclusion text (from <conclusion> tag)
+            - semantic_steps: List of step blocks (from <step> tags)
+            - notes: List of note blocks (from <note> tags)
+            - keypoints: List of key points (from <keypoint> tags)
+            - overview: Overview text (from <overview> tag)
+            - tips: List of tips (from <tip> tags)
+            - sections: List of sections (from <section> tags)
+            - definitions: List of definitions (from <definition> tags)
+            - examples: List of examples (from <example> tags)
+            - highlights: Highlights text (from <highlights> tag)
+            - findings: List of findings (from <finding> tags)
+            - recommendations: List of recommendations (from <recommendation> tags)
+        """
+        screenshots_dir = self.user_storage.manuals_dir / self.manual_id / "screenshots"
+        blocks = parse_semantic_tags(content)
+
+        result: Dict[str, Any] = {
+            "introduction": "",
+            "conclusion": "",
+            "overview": "",
+            "highlights": "",
+            "semantic_steps": [],
+            "notes": [],
+            "keypoints": [],
+            "tips": [],
+            "sections": [],
+            "definitions": [],
+            "examples": [],
+            "findings": [],
+            "recommendations": [],
+        }
+
+        for block in blocks:
+            tag = block.tag_name
+            block_content = block.content
+            attrs = block.attributes
+
+            # Process images in the content
+            processed_content, images = self._extract_images_from_content(
+                doc, block_content, screenshots_dir
+            )
+
+            if tag == "introduction":
+                result["introduction"] = self._strip_markdown(processed_content)
+            elif tag == "conclusion":
+                result["conclusion"] = self._strip_markdown(processed_content)
+            elif tag == "overview":
+                result["overview"] = self._strip_markdown(processed_content)
+            elif tag == "highlights":
+                result["highlights"] = self._strip_markdown(processed_content)
+            elif tag == "step":
+                step_data = {
+                    "number": block.number or len(result["semantic_steps"]) + 1,
+                    "title": self._extract_step_title(processed_content),
+                    "description": self._strip_markdown(
+                        self._remove_step_title(processed_content)
+                    ),
+                    "image": images[0] if images else None,
+                    "alt_text": "",
+                    "has_image": len(images) > 0,
+                }
+                result["semantic_steps"].append(step_data)
+            elif tag == "note":
+                note_data = {
+                    "type": attrs.get("type", "info"),
+                    "content": self._strip_markdown(processed_content),
+                }
+                result["notes"].append(note_data)
+            elif tag == "keypoint":
+                keypoint_data = {
+                    "number": attrs.get("number", len(result["keypoints"]) + 1),
+                    "title": attrs.get("title", ""),
+                    "content": self._strip_markdown(processed_content),
+                    "image": images[0] if images else None,
+                    "has_image": len(images) > 0,
+                }
+                result["keypoints"].append(keypoint_data)
+            elif tag == "tip":
+                tip_data = {
+                    "content": self._strip_markdown(processed_content),
+                    "image": images[0] if images else None,
+                    "has_image": len(images) > 0,
+                }
+                result["tips"].append(tip_data)
+            elif tag == "section":
+                section_data = {
+                    "title": attrs.get("title", ""),
+                    "content": self._strip_markdown(processed_content),
+                    "image": images[0] if images else None,
+                    "has_image": len(images) > 0,
+                }
+                result["sections"].append(section_data)
+            elif tag == "definition":
+                definition_data = {
+                    "term": attrs.get("term", ""),
+                    "content": self._strip_markdown(processed_content),
+                }
+                result["definitions"].append(definition_data)
+            elif tag == "example":
+                example_data = {
+                    "title": attrs.get("title", ""),
+                    "content": self._strip_markdown(processed_content),
+                    "image": images[0] if images else None,
+                    "has_image": len(images) > 0,
+                }
+                result["examples"].append(example_data)
+            elif tag == "finding":
+                finding_data = {
+                    "number": attrs.get("number", len(result["findings"]) + 1),
+                    "title": attrs.get("title", ""),
+                    "content": self._strip_markdown(processed_content),
+                    "image": images[0] if images else None,
+                    "has_image": len(images) > 0,
+                }
+                result["findings"].append(finding_data)
+            elif tag == "recommendation":
+                recommendation_data = {
+                    "number": attrs.get("number", len(result["recommendations"]) + 1),
+                    "title": attrs.get("title", ""),
+                    "content": self._strip_markdown(processed_content),
+                }
+                result["recommendations"].append(recommendation_data)
+
+        return result
+
+    def _extract_images_from_content(
+        self, doc: DocxTemplate, content: str, screenshots_dir: Path
+    ) -> tuple[str, list]:
+        """Extract images from content and return processed content and image list.
+
+        Args:
+            doc: DocxTemplate instance
+            content: Content that may contain image references
+            screenshots_dir: Path to screenshots directory
+
+        Returns:
+            Tuple of (content without images, list of InlineImage objects)
+        """
+        images = []
+        processed_content = content
+
+        for img_match in re.finditer(r"!\[([^\]]*)\]\(([^)]+)\)", content):
+            alt_text = img_match.group(1)
+            img_path = img_match.group(2)
+
+            # Remove the image markdown from content
+            processed_content = processed_content.replace(img_match.group(0), "")
+
+            # Resolve and create inline image
+            resolved_path = self._resolve_image_path(img_path, screenshots_dir)
+            if resolved_path and resolved_path.exists():
+                try:
+                    inline_image = self._create_inline_image(doc, resolved_path)
+                    images.append(inline_image)
+                except Exception as e:
+                    logger.warning(f"Failed to create inline image: {e}")
+
+        return processed_content.strip(), images
+
+    def _extract_step_title(self, content: str) -> str:
+        """Extract title from step content (usually the first heading).
+
+        Args:
+            content: Step content
+
+        Returns:
+            Step title or empty string
+        """
+        # Look for markdown headings
+        match = re.match(r"^#+\s*(.+?)$", content, re.MULTILINE)
+        if match:
+            return match.group(1).strip()
+        return ""
+
+    def _remove_step_title(self, content: str) -> str:
+        """Remove the first heading from step content.
+
+        Args:
+            content: Step content
+
+        Returns:
+            Content without the first heading
+        """
+        # Remove the first heading line
+        return re.sub(r"^#+\s*.+?\n", "", content, count=1).strip()
+
     def _parse_steps_from_markdown(
         self, doc: DocxTemplate, content: str
     ) -> List[Dict[str, Any]]:
         """Parse markdown content into structured steps.
+
+        This is the legacy parser that looks for markdown headings.
+        For new content with semantic tags, use semantic_steps from _parse_semantic_content.
 
         Args:
             doc: DocxTemplate instance (needed for InlineImage creation)
@@ -165,7 +383,9 @@ class ManualTemplateExporter:
         current_step = None
         step_number = 0
 
-        lines = content.split("\n")
+        # Strip semantic tags before parsing to avoid confusion
+        clean_content = strip_semantic_tags(content)
+        lines = clean_content.split("\n")
         i = 0
 
         while i < len(lines):
@@ -353,6 +573,9 @@ class ManualTemplateExporter:
         Returns:
             Plain text without markdown
         """
+        # Remove semantic tags (e.g., <step>, <note>, <introduction>, etc.)
+        # This is critical - leftover XML-like tags will corrupt Word documents
+        text = strip_semantic_tags(text)
         # Remove images
         text = re.sub(r"!\[[^\]]*\]\([^)]+\)", "", text)
         # Remove links, keep text

@@ -18,6 +18,7 @@ class TemplateInfo:
     size_bytes: int
     path: Path
     uploaded_at: Optional[str] = None
+    document_format: Optional[str] = None  # e.g., "step-manual", "quick-guide"
 
     def to_dict(self) -> dict:
         """Convert to dictionary for API responses."""
@@ -26,6 +27,7 @@ class TemplateInfo:
             "is_global": self.is_global,
             "size_bytes": self.size_bytes,
             "uploaded_at": self.uploaded_at,
+            "document_format": self.document_format,
         }
 
 
@@ -88,6 +90,7 @@ class TemplateStorage:
             size_bytes=path.stat().st_size,
             path=path,
             uploaded_at=metadata.get("uploaded_at"),
+            document_format=metadata.get("document_format"),
         )
 
     def _is_temp_file(self, path: Path) -> bool:
@@ -211,12 +214,16 @@ class TemplateStorage:
 
         return None
 
-    def save_template(self, content: bytes, name: str) -> TemplateInfo:
+    def save_template(
+        self, content: bytes, name: str, document_format: Optional[str] = None
+    ) -> TemplateInfo:
         """Save a template file.
 
         Args:
             content: Template file content as bytes
             name: Template name (without .docx extension)
+            document_format: Document format this template is for (e.g., "step-manual", "quick-guide").
+                           If not provided, attempts to read from docx core properties.
 
         Returns:
             TemplateInfo for the saved template
@@ -234,6 +241,10 @@ class TemplateStorage:
         if not self._is_valid_docx(content):
             raise ValueError("Invalid Word document format")
 
+        # Extract document_format from docx if not provided
+        if not document_format:
+            document_format = self._extract_document_format_from_docx(content)
+
         # Ensure directory exists
         self.ensure_directories()
 
@@ -249,6 +260,8 @@ class TemplateStorage:
             "uploaded_at": datetime.now().isoformat(),
             "original_name": name,
         }
+        if document_format:
+            metadata["document_format"] = document_format
         self._save_template_metadata(template_path, metadata)
 
         return self._get_template_info(template_path, is_global=False)
@@ -328,3 +341,24 @@ class TemplateStorage:
                 return all(r in names for r in required)
         except (zipfile.BadZipFile, KeyError):
             return False
+
+    def _extract_document_format_from_docx(self, content: bytes) -> Optional[str]:
+        """Extract document format from docx core properties (category field).
+
+        Args:
+            content: File content as bytes
+
+        Returns:
+            Document format string (e.g., "quick-guide") or None
+        """
+        from io import BytesIO
+        from docx import Document
+
+        try:
+            doc = Document(BytesIO(content))
+            category = doc.core_properties.category
+            if category and category.startswith("vdocs:"):
+                return category.replace("vdocs:", "")
+        except Exception:
+            pass
+        return None

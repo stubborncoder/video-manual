@@ -411,3 +411,138 @@ class UserStorage:
             affected_ids.append(manual_id)
 
         return affected_ids
+
+    # ==================== Clone Manual ====================
+
+    def clone_manual(
+        self,
+        source_manual_id: str,
+        target_format: str,
+        title: Optional[str] = None,
+        content: Optional[str] = None,
+    ) -> tuple[str, Path]:
+        """Clone a manual to a new document format.
+
+        Creates a complete copy of the manual with:
+        - New unique manual ID (based on source ID + format)
+        - Copies all screenshots (symlinked to save disk space)
+        - Uses provided content or copies original content
+        - New metadata with updated document_format and cloned_from reference
+
+        Args:
+            source_manual_id: ID of the manual to clone
+            target_format: Target document format (step-manual, quick-guide, reference, summary)
+            title: Optional custom title (defaults to "Original Title (Format)")
+            content: Optional reformatted content (if None, copies original)
+
+        Returns:
+            Tuple of (new_manual_id, new_manual_path)
+
+        Raises:
+            FileNotFoundError: If source manual doesn't exist
+            ValueError: If target format is invalid
+        """
+        import shutil
+
+        # Validate source exists
+        source_dir = self.manuals_dir / source_manual_id
+        if not source_dir.exists():
+            raise FileNotFoundError(f"Source manual not found: {source_manual_id}")
+
+        # Human-readable format names for titles
+        format_names = {
+            "step-manual": "Step Manual",
+            "quick-guide": "Quick Guide",
+            "reference": "Reference",
+            "summary": "Summary",
+        }
+
+        if target_format not in format_names:
+            raise ValueError(f"Invalid target format: {target_format}")
+
+        # Generate new manual ID
+        base_id = f"{source_manual_id}-{target_format}"
+        new_manual_id = base_id
+        counter = 2
+        while (self.manuals_dir / new_manual_id).exists():
+            new_manual_id = f"{base_id}-{counter}"
+            counter += 1
+
+        # Create new manual directory
+        new_manual_dir = self.manuals_dir / new_manual_id
+        new_manual_dir.mkdir(parents=True, exist_ok=True)
+
+        # Get source metadata
+        source_metadata = self.get_manual_metadata(source_manual_id) or {}
+
+        # Determine title
+        if title:
+            new_title = title
+        else:
+            # Get original title and append format
+            original_title = source_metadata.get("title", "")
+            if not original_title:
+                # Derive from video name if no explicit title
+                video_path = source_metadata.get("video_path", "")
+                original_title = Path(video_path).stem if video_path else source_manual_id
+            new_title = f"{original_title} ({format_names[target_format]})"
+
+        # Copy screenshots directory (use hard links to save space if possible)
+        source_screenshots = source_dir / "screenshots"
+        if source_screenshots.exists():
+            new_screenshots = new_manual_dir / "screenshots"
+            new_screenshots.mkdir(exist_ok=True)
+
+            for screenshot in source_screenshots.glob("*.png"):
+                dest = new_screenshots / screenshot.name
+                try:
+                    # Try hard link first (saves disk space)
+                    dest.hardlink_to(screenshot)
+                except OSError:
+                    # Fall back to copy if hard link fails (cross-device, etc.)
+                    shutil.copy2(screenshot, dest)
+
+        # Copy or create content for each language
+        source_languages = self.list_manual_languages(source_manual_id)
+        if not source_languages:
+            # Legacy structure - check for direct manual.md
+            legacy_path = source_dir / "manual.md"
+            if legacy_path.exists():
+                source_languages = ["en"]
+
+        for lang in source_languages:
+            lang_dir = new_manual_dir / lang
+            lang_dir.mkdir(exist_ok=True)
+
+            if content and lang == source_languages[0]:
+                # Use provided reformatted content for primary language
+                (lang_dir / "manual.md").write_text(content, encoding="utf-8")
+            else:
+                # Copy original content
+                source_content = self.get_manual_content(source_manual_id, lang)
+                if source_content:
+                    (lang_dir / "manual.md").write_text(source_content, encoding="utf-8")
+
+        # Create metadata for cloned manual
+        new_metadata = {
+            "title": new_title,
+            "document_format": target_format,
+            "video_path": source_metadata.get("video_path", ""),
+            "source_video": source_metadata.get("source_video", {}),
+            "cloned_from": {
+                "manual_id": source_manual_id,
+                "source_format": source_metadata.get("document_format", "step-manual"),
+                "cloned_at": datetime.now().isoformat(),
+            },
+            "languages_generated": source_languages,
+            "target_audience": source_metadata.get("target_audience"),
+            "target_objective": source_metadata.get("target_objective"),
+            "created_at": datetime.now().isoformat(),
+        }
+
+        # Save metadata
+        metadata_path = new_manual_dir / "metadata.json"
+        with open(metadata_path, "w", encoding="utf-8") as f:
+            json.dump(new_metadata, f, indent=2, ensure_ascii=False)
+
+        return new_manual_id, new_manual_dir

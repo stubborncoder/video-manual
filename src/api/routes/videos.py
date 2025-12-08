@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 
 from ..schemas import VideoInfo, VideoListResponse, VideoWithManuals
 from ..dependencies import CurrentUser, UserStorageDep, TrashStorageDep
+from ...agents.video_manual_agent.prompts import list_formats
 
 router = APIRouter(prefix="/videos", tags=["videos"])
 
@@ -187,3 +188,13 @@ async def stream_video(
         media_type=media_type,
         filename=video_name,
     )
+
+
+@router.get("/formats")
+async def get_document_formats() -> dict:
+    """Get available document formats for video processing.
+
+    Returns:
+        Dictionary mapping format_id to {label, description}
+    """
+    return {"formats": list_formats()}

@@ -8,6 +8,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 from ..config import DEFAULT_GEMINI_MODEL, LLM_TEXT_TIMEOUT
 from ..prompts.system import MANUAL_GENERATOR_PROMPT
+from ..prompts.document_formats import get_format_prompt, DEFAULT_FORMAT
 from ..tools.video_tools import extract_screenshot_at_timestamp
 from ..state import VideoManualState
 from ..utils.language import get_language_code, get_language_name
@@ -72,6 +73,9 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
     language_code = get_language_code(language)
     language_name = get_language_name(language)
 
+    # Get document format
+    document_format = state.get("document_format", DEFAULT_FORMAT)
+
     # Setup user storage and get manual directory
     user_storage = UserStorage(user_id)
     user_storage.ensure_user_folders()
@@ -105,6 +109,8 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
             metadata["target_audience"] = target_audience
         if target_objective is not None:
             metadata["target_objective"] = target_objective
+        # Store document format in metadata
+        metadata["document_format"] = document_format
         save_metadata(manual_dir, metadata)
 
     # Create shared screenshots directory (at manual level, not language level)
@@ -186,10 +192,13 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
             context_section += f"\nTarget Objective: {target_objective}"
         context_section += "\n\nPlease tailor the manual's tone, level of detail, and explanations to match the target audience and help achieve the stated objective."
 
-    # Create generation prompt with language instruction
-    generation_prompt = f"""{MANUAL_GENERATOR_PROMPT}
+    # Get format-specific prompt
+    format_prompt = get_format_prompt(document_format)
 
-OUTPUT LANGUAGE: Write the entire manual in {language_name}.
+    # Create generation prompt with language instruction
+    generation_prompt = f"""{format_prompt}
+
+OUTPUT LANGUAGE: Write the entire document in {language_name}.
 - Use {language_name} for all explanations, headings, and instructions
 - Keep UI element names/labels exactly as shown in screenshots (do not translate UI text)
 {context_section}
@@ -200,8 +209,8 @@ VIDEO ANALYSIS:
 AVAILABLE SCREENSHOTS:
 {screenshot_refs}
 
-Generate a comprehensive user manual in Markdown format based on the video analysis above.
-Write the manual in {language_name}. Reference the screenshots appropriately throughout the manual.
+Generate the document based on the video analysis above.
+Write in {language_name}. Use the semantic tags as instructed. Reference screenshots appropriately.
 """
 
     try:

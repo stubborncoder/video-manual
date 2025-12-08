@@ -53,6 +53,7 @@ import {
 import { Input } from "@/components/ui/input";
 
 import { manuals, type ManualDetail } from "@/lib/api";
+import { stripSemanticTags } from "@/lib/tag-utils";
 import { useUndoRedo } from "@/hooks/useUndoRedo";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { useKeyboardShortcuts, createEditorShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -64,6 +65,7 @@ import { CopilotPanel } from "@/components/editor/CopilotPanel";
 import { PendingChangesOverlay } from "@/components/editor/PendingChangesOverlay";
 import { SelectionHighlightOverlay } from "@/components/editor/SelectionHighlightOverlay";
 import { LineNumberedTextarea } from "@/components/editor/LineNumberedTextarea";
+import { SemanticTagHighlighter } from "@/components/editor/SemanticTagHighlighter";
 import { ImageLightbox } from "@/components/editor/ImageLightbox";
 import { VideoDrawer } from "@/components/editor/VideoDrawer";
 import { ImageContextMenu } from "@/components/editor/ImageContextMenu";
@@ -399,7 +401,7 @@ export default function ManualEditorPage() {
   }, [manualId, language]);
 
   // Handle export
-  const handleExport = useCallback(async (format: "pdf" | "word" | "html") => {
+  const handleExport = useCallback(async (format: "pdf" | "word" | "html" | "chunks") => {
     try {
       const result = await manuals.export(manualId, format, language);
 
@@ -730,11 +732,13 @@ export default function ManualEditorPage() {
     return currentContent.split("\n").length;
   }, [currentContent]);
 
-  // Preprocess markdown to fix setext heading issues
+  // Preprocess markdown to fix setext heading issues and strip semantic tags for preview
   // (--- without blank line before it becomes h2 instead of hr)
   const processedContent = useMemo(() => {
+    // Strip semantic tags for clean preview display
+    const withoutTags = stripSemanticTags(currentContent);
     // Add blank line before --- that follows non-blank lines (to make them hr, not setext h2)
-    return currentContent.replace(/([^\n])\n(---+)\n/g, '$1\n\n$2\n');
+    return withoutTags.replace(/([^\n])\n(---+)\n/g, '$1\n\n$2\n');
   }, [currentContent]);
 
   if (loading) {
@@ -819,6 +823,20 @@ export default function ManualEditorPage() {
               <span>{manual?.title || manualId}</span>
               <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
             </button>
+          )}
+
+          {/* Document format badge */}
+          {manual?.document_format && (
+            <Badge
+              variant="secondary"
+              className="text-xs px-2 py-0.5 font-medium bg-primary/10 text-primary"
+            >
+              {manual.document_format === "step-manual" && "Step-by-step"}
+              {manual.document_format === "quick-guide" && "Quick Guide"}
+              {manual.document_format === "reference" && "Reference"}
+              {manual.document_format === "summary" && "Summary"}
+              {!["step-manual", "quick-guide", "reference", "summary"].includes(manual.document_format) && manual.document_format}
+            </Badge>
           )}
 
           {availableLanguages.length > 1 && (
@@ -987,10 +1005,12 @@ export default function ManualEditorPage() {
                 value="markdown"
                 className="flex-1 m-0 p-0 min-h-0 overflow-hidden"
               >
-                <LineNumberedTextarea
-                  value={currentContent}
+                <SemanticTagHighlighter
+                  content={currentContent}
                   onChange={handleContentChange}
                   showLineNumbers={showLineNumbers}
+                  showTagHighlighting={true}
+                  showCollapsibleRegions={true}
                   placeholder="Enter markdown content..."
                 />
               </TabsContent>

@@ -93,6 +93,10 @@ export default function VideosPage() {
   const [audienceEnabled, setAudienceEnabled] = useState(false);
   const [objectiveEnabled, setObjectiveEnabled] = useState(false);
 
+  // Document format selection
+  const [documentFormat, setDocumentFormat] = useState<string>("step-manual");
+  const [formatOptions, setFormatOptions] = useState<Record<string, { label: string; description: string }>>({});
+
   // Project filter state
   const [filterProjectId, setFilterProjectId] = useState<string>("__all__");
   const [filterOpen, setFilterOpen] = useState(false);
@@ -102,6 +106,7 @@ export default function VideosPage() {
   useEffect(() => {
     loadVideos();
     loadProjects();
+    loadFormats();
   }, []);
 
   async function loadVideos() {
@@ -156,6 +161,15 @@ export default function VideosPage() {
       setProjectList(res.projects);
     } catch (e) {
       console.error("Failed to load projects:", e);
+    }
+  }
+
+  async function loadFormats() {
+    try {
+      const res = await videos.getFormats();
+      setFormatOptions(res.formats);
+    } catch (e) {
+      console.error("Failed to load formats:", e);
     }
   }
 
@@ -236,6 +250,7 @@ export default function VideosPage() {
       const { jobId } = await startProcessing({
         video_path: selectedVideo.path,
         output_language: outputLanguage,
+        document_format: documentFormat,
         use_scene_detection: true,
         project_id: selectedProjectId,
         target_audience: audience,
@@ -491,6 +506,7 @@ export default function VideosPage() {
                       if (open) {
                         setSelectedVideo(video);
                         setSelectedProjectId("__default__");
+                        setDocumentFormat("step-manual");
                         setTargetAudience("");
                         setTargetObjective("");
                         setAudienceEnabled(false);
@@ -538,6 +554,33 @@ export default function VideosPage() {
 
                             {/* Content */}
                             <div className="flex-1 p-5 space-y-4">
+                              <div className="space-y-2">
+                                <Label className="text-xs font-medium">Document Format</Label>
+                                <Select
+                                  value={documentFormat}
+                                  onValueChange={setDocumentFormat}
+                                >
+                                  <SelectTrigger className="h-9">
+                                    <SelectValue placeholder="Select format...">
+                                      {formatOptions[documentFormat]?.label || "Select format..."}
+                                    </SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent position="popper" sideOffset={4} className="z-[100] w-[280px]">
+                                    {Object.entries(formatOptions).map(([id, format]) => (
+                                      <SelectItem key={id} value={id} className="py-2">
+                                        <div className="flex flex-col items-start">
+                                          <span className="font-medium">{format.label}</span>
+                                          <span className="text-[10px] text-muted-foreground">{format.description}</span>
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                {formatOptions[documentFormat]?.description && (
+                                  <p className="text-[10px] text-muted-foreground">{formatOptions[documentFormat].description}</p>
+                                )}
+                              </div>
+
                               <div className="space-y-2">
                                 <Label className="text-xs font-medium">Language</Label>
                                 <Input
