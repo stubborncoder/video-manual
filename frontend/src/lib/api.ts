@@ -321,19 +321,31 @@ export const manuals = {
     }),
 
   // Export manual to various formats
-  export: (manualId: string, format: "pdf" | "word" | "html" = "pdf", language = "en", embedImages = true) =>
+  export: (
+    manualId: string,
+    format: "pdf" | "word" | "html" = "pdf",
+    language = "en",
+    embedImages = true,
+    templateName?: string
+  ) =>
     request<{
       status: string;
       manual_id: string;
       format: string;
       language: string;
+      template: string | null;
       filename: string;
       download_url: string;
       size_bytes: number;
       created_at: string;
     }>(`/api/manuals/${manualId}/export`, {
       method: "POST",
-      body: JSON.stringify({ format, language, embed_images: embedImages }),
+      body: JSON.stringify({
+        format,
+        language,
+        embed_images: embedImages,
+        template_name: templateName,
+      }),
     }),
 
   listExports: (manualId: string) =>
@@ -501,13 +513,19 @@ export const projects = {
   export: (
     projectId: string,
     format: "pdf" | "word" | "html" = "pdf",
-    language = "en"
+    language = "en",
+    templateName?: string
   ) =>
     request<{ output_path: string; format: string }>(
       `/api/projects/${projectId}/export`,
       {
         method: "POST",
-        body: JSON.stringify({ project_id: projectId, format, language }),
+        body: JSON.stringify({
+          project_id: projectId,
+          format,
+          language,
+          template_name: templateName,
+        }),
       }
     ),
 
@@ -703,4 +721,55 @@ export const trash = {
   empty: () => request<{ status: string; deleted_count: number }>("/api/trash/empty", { method: "DELETE" }),
 };
 
-export default { auth, videos, manuals, manualProject, projects, compilations, exports, jobs, trash };
+// Templates
+export interface TemplateInfo {
+  name: string;
+  is_global: boolean;
+  size_bytes: number;
+  uploaded_at: string | null;
+}
+
+export const templates = {
+  list: () =>
+    request<{ templates: TemplateInfo[]; user_count: number; global_count: number }>(
+      "/api/templates"
+    ),
+
+  upload: (file: File, name?: string): Promise<{ name: string; size_bytes: number; message: string }> => {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      if (name) {
+        formData.append("name", name);
+      }
+
+      fetch("/api/templates", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      })
+        .then(async (response) => {
+          const data = await response.json();
+          if (!response.ok) {
+            reject(new Error(data.detail || "Upload failed"));
+          } else {
+            resolve(data);
+          }
+        })
+        .catch(() => reject(new Error("Network error during upload")));
+    });
+  },
+
+  download: (templateName: string) => `/api/templates/${encodeURIComponent(templateName)}`,
+
+  getInfo: (templateName: string) =>
+    request<TemplateInfo>(`/api/templates/${encodeURIComponent(templateName)}/info`),
+
+  delete: (templateName: string) =>
+    request<{ name: string; deleted: boolean; message: string }>(
+      `/api/templates/${encodeURIComponent(templateName)}`,
+      { method: "DELETE" }
+    ),
+};
+
+export default { auth, videos, manuals, manualProject, projects, compilations, exports, jobs, trash, templates };

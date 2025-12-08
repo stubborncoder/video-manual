@@ -95,6 +95,7 @@ import {
   type ProjectDetail,
   type ManualDetail,
 } from "@/lib/api";
+import { ExportDialog, type ExportOptions } from "@/components/dialogs/ExportDialog";
 import { useProjectCompiler } from "@/hooks/useWebSocket";
 import { CompileSettingsDialog } from "@/components/dialogs/CompileSettingsDialog";
 import { CompilerView } from "@/components/compiler/CompilerView";
@@ -183,6 +184,7 @@ export default function ProjectsPage() {
 
   // Export state
   const [exporting, setExporting] = useState<"pdf" | "word" | "html" | null>(null);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   // Project filter state
   const [filterProjectId, setFilterProjectId] = useState<string>("__all__");
@@ -497,7 +499,34 @@ export default function ProjectsPage() {
     resetCompiler();
   }
 
-  async function handleExport(projectId: string, format: "pdf" | "word" | "html") {
+  function openExportDialog() {
+    setExportDialogOpen(true);
+  }
+
+  async function handleExportWithOptions(options: ExportOptions) {
+    if (!selectedProject) return;
+    setExporting(options.format);
+    try {
+      const result = await projects.export(
+        selectedProject.id,
+        options.format,
+        options.language,
+        options.templateName
+      );
+      toast.success("Export complete", {
+        description: result.output_path,
+      });
+    } catch (e) {
+      console.error("Failed to export project:", e);
+      toast.error("Failed to export project", {
+        description: e instanceof Error ? e.message : "Unknown error",
+      });
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  async function handleQuickExport(projectId: string, format: "pdf" | "html") {
     setExporting(format);
     try {
       const result = await projects.export(projectId, format);
@@ -858,13 +887,13 @@ export default function ProjectsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => handleExport(selectedProject.id, "pdf")} disabled={exporting !== null}>
+                      <DropdownMenuItem onClick={() => handleQuickExport(selectedProject.id, "pdf")} disabled={exporting !== null}>
                         PDF Document
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleExport(selectedProject.id, "word")} disabled={exporting !== null}>
-                        Word Document
+                      <DropdownMenuItem onClick={() => openExportDialog()} disabled={exporting !== null}>
+                        Word Document...
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleExport(selectedProject.id, "html")} disabled={exporting !== null}>
+                      <DropdownMenuItem onClick={() => handleQuickExport(selectedProject.id, "html")} disabled={exporting !== null}>
                         HTML
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -1202,7 +1231,7 @@ export default function ProjectsPage() {
                       <div className="flex gap-3">
                         <Button
                           variant="outline"
-                          onClick={() => handleExport(selectedProject.id, "pdf")}
+                          onClick={() => handleQuickExport(selectedProject.id, "pdf")}
                           disabled={selectedProject.manuals.length === 0 || exporting !== null}
                         >
                           {exporting === "pdf" ? (
@@ -1214,7 +1243,7 @@ export default function ProjectsPage() {
                         </Button>
                         <Button
                           variant="outline"
-                          onClick={() => handleExport(selectedProject.id, "word")}
+                          onClick={() => openExportDialog()}
                           disabled={selectedProject.manuals.length === 0 || exporting !== null}
                         >
                           {exporting === "word" ? (
@@ -1222,11 +1251,11 @@ export default function ProjectsPage() {
                           ) : (
                             <FileDown className="h-4 w-4 mr-2" />
                           )}
-                          {exporting === "word" ? "Exporting..." : "Export Word"}
+                          {exporting === "word" ? "Exporting..." : "Export Word..."}
                         </Button>
                         <Button
                           variant="outline"
-                          onClick={() => handleExport(selectedProject.id, "html")}
+                          onClick={() => handleQuickExport(selectedProject.id, "html")}
                           disabled={selectedProject.manuals.length === 0 || exporting !== null}
                         >
                           {exporting === "html" ? (
@@ -1612,6 +1641,19 @@ export default function ProjectsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Export Dialog */}
+      {selectedProject && (
+        <ExportDialog
+          open={exportDialogOpen}
+          onOpenChange={setExportDialogOpen}
+          title={selectedProject.name}
+          languages={["en"]}
+          onExport={handleExportWithOptions}
+          defaultLanguage="en"
+          showFormat={false}
+        />
+      )}
     </div>
   );
 }

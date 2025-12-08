@@ -171,8 +171,9 @@ class ManualTemplateExporter:
         while i < len(lines):
             line = lines[i]
 
-            # Detect step headers (## Step N or ### Step N)
-            step_match = re.match(r"^#{2,3}\s+(?:Step\s+)?(\d+)[\s:.]*(.*)$", line, re.I)
+            # Detect step headers - matches ## or ### followed by any word and a number
+            # Examples: "## Step 1:", "### Paso 1:", "## 1. Title", "### Étape 1 -", etc.
+            step_match = re.match(r"^#{2,3}\s+(?:\w+\s+)?(\d+)[\s:.,-]*(.*)$", line, re.I)
             if step_match:
                 # Save previous step if exists
                 if current_step is not None:
@@ -208,9 +209,14 @@ class ManualTemplateExporter:
                         current_step["image"] = inline_image
                         current_step["alt_text"] = alt_text
                         current_step["has_image"] = True
-                    except Exception:
-                        # If image fails, continue without it
+                    except Exception as e:
+                        # If image fails, log the error and continue without it
+                        import logging
+                        logging.warning(f"Failed to create inline image from {resolved_path}: {e}")
                         current_step["alt_text"] = f"[Image: {alt_text}]"
+                else:
+                    import logging
+                    logging.warning(f"Image not found: {img_path} -> resolved to: {resolved_path}")
 
                 i += 1
                 continue
@@ -319,8 +325,11 @@ class ManualTemplateExporter:
         Returns:
             InlineImage object for template insertion
         """
+        # Ensure absolute path
+        abs_path = image_path.resolve()
+
         # Get image dimensions to maintain aspect ratio
-        with PILImage.open(image_path) as img:
+        with PILImage.open(abs_path) as img:
             img_width, img_height = img.size
 
         # Calculate scaling to fit within bounds while maintaining aspect ratio
@@ -329,11 +338,11 @@ class ManualTemplateExporter:
         if aspect_ratio > (max_width_mm / max_height_mm):
             # Width-constrained
             width = Mm(max_width_mm)
-            return InlineImage(doc, str(image_path), width=width)
+            return InlineImage(doc, str(abs_path), width=width)
         else:
             # Height-constrained
             height = Mm(max_height_mm)
-            return InlineImage(doc, str(image_path), height=height)
+            return InlineImage(doc, str(abs_path), height=height)
 
     def _strip_markdown(self, text: str) -> str:
         """Strip markdown formatting from text.

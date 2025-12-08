@@ -90,6 +90,13 @@ class TemplateStorage:
             uploaded_at=metadata.get("uploaded_at"),
         )
 
+    def _is_temp_file(self, path: Path) -> bool:
+        """Check if a file is a temporary Word file.
+
+        Word creates temporary files starting with ~$ when a document is open.
+        """
+        return path.name.startswith("~$")
+
     def list_templates(self) -> List[TemplateInfo]:
         """List all available templates (user + global).
 
@@ -103,12 +110,14 @@ class TemplateStorage:
         # First add global templates
         if self.global_templates_dir.exists():
             for path in self.global_templates_dir.glob("*.docx"):
-                templates[path.stem] = self._get_template_info(path, is_global=True)
+                if not self._is_temp_file(path):
+                    templates[path.stem] = self._get_template_info(path, is_global=True)
 
         # Then add/override with user templates
         if self.templates_dir.exists():
             for path in self.templates_dir.glob("*.docx"):
-                templates[path.stem] = self._get_template_info(path, is_global=False)
+                if not self._is_temp_file(path):
+                    templates[path.stem] = self._get_template_info(path, is_global=False)
 
         return sorted(templates.values(), key=lambda t: (t.is_global, t.name))
 
@@ -121,7 +130,8 @@ class TemplateStorage:
         templates = []
         if self.templates_dir.exists():
             for path in self.templates_dir.glob("*.docx"):
-                templates.append(self._get_template_info(path, is_global=False))
+                if not self._is_temp_file(path):
+                    templates.append(self._get_template_info(path, is_global=False))
         return sorted(templates, key=lambda t: t.name)
 
     def list_global_templates(self) -> List[TemplateInfo]:
@@ -133,7 +143,8 @@ class TemplateStorage:
         templates = []
         if self.global_templates_dir.exists():
             for path in self.global_templates_dir.glob("*.docx"):
-                templates.append(self._get_template_info(path, is_global=True))
+                if not self._is_temp_file(path):
+                    templates.append(self._get_template_info(path, is_global=True))
         return sorted(templates, key=lambda t: t.name)
 
     def get_template(self, name: str) -> Optional[Path]:

@@ -67,6 +67,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown, ClipboardCheck, Users, Target, History, Clock, MoreHorizontal, HelpCircle, Expand } from "lucide-react";
 import { manuals, manualProject, projects, type ManualSummary, type ManualDetail, type ProjectSummary, type ManualEvaluation } from "@/lib/api";
+import { ExportDialog, type ExportOptions } from "@/components/dialogs/ExportDialog";
 import { useVideoProcessing } from "@/hooks/useWebSocket";
 import { ProcessingProgress } from "@/components/processing/ProcessingProgress";
 import { useJobsStore } from "@/stores/jobsStore";
@@ -186,6 +187,10 @@ function ManualsPageContent() {
 
   // Export loading state (tracks which manual/format is exporting)
   const [exportingManual, setExportingManual] = useState<string | null>(null);
+
+  // Export dialog state
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [manualToExport, setManualToExport] = useState<ManualWithProject | null>(null);
 
   // Abort controller ref for cancelling in-flight evaluation requests
   const evalAbortControllerRef = useRef<AbortController | null>(null);
@@ -481,9 +486,50 @@ function ManualsPageContent() {
     }
   }
 
-  // Export manual
-  async function handleExport(manual: ManualWithProject, format: "pdf" | "word" | "html") {
-    // Prevent multiple exports of the same manual simultaneously
+  // Open export dialog
+  function openExportDialog(manual: ManualWithProject) {
+    setManualToExport(manual);
+    setExportDialogOpen(true);
+  }
+
+  // Export manual with options
+  async function handleExportWithOptions(options: ExportOptions) {
+    if (!manualToExport) return;
+
+    const manual = manualToExport;
+    setExportingManual(manual.id);
+    try {
+      const result = await manuals.export(
+        manual.id,
+        options.format,
+        options.language,
+        true,
+        options.templateName
+      );
+
+      // Trigger automatic download
+      const link = document.createElement('a');
+      link.href = result.download_url;
+      link.download = result.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      const templateInfo = options.templateName ? ` using "${options.templateName}" template` : "";
+      toast.success(`Exported as ${options.format.toUpperCase()}`, {
+        description: `${result.filename} (${(result.size_bytes / 1024).toFixed(1)} KB)${templateInfo}`
+      });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Export failed";
+      toast.error("Export failed", { description: message });
+      throw e; // Re-throw to let dialog handle it
+    } finally {
+      setExportingManual(null);
+    }
+  }
+
+  // Quick export (PDF/HTML without dialog)
+  async function handleQuickExport(manual: ManualWithProject, format: "pdf" | "html") {
     if (exportingManual === manual.id) return;
 
     setExportingManual(manual.id);
@@ -976,7 +1022,7 @@ function ManualsPageContent() {
                         {exportingManual === manual.id ? "Exporting..." : "Export"}
                       </DropdownMenuLabel>
                       <DropdownMenuItem
-                        onClick={() => handleExport(manual, "pdf")}
+                        onClick={() => handleQuickExport(manual, "pdf")}
                         disabled={exportingManual === manual.id}
                       >
                         {exportingManual === manual.id ? (
@@ -987,7 +1033,7 @@ function ManualsPageContent() {
                         Export as PDF
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => handleExport(manual, "word")}
+                        onClick={() => openExportDialog(manual)}
                         disabled={exportingManual === manual.id}
                       >
                         {exportingManual === manual.id ? (
@@ -995,10 +1041,10 @@ function ManualsPageContent() {
                         ) : (
                           <FileDown className="mr-2 h-4 w-4" />
                         )}
-                        Export as Word
+                        Export as Word...
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => handleExport(manual, "html")}
+                        onClick={() => handleQuickExport(manual, "html")}
                         disabled={exportingManual === manual.id}
                       >
                         {exportingManual === manual.id ? (
@@ -1899,6 +1945,19 @@ function ManualsPageContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Export Dialog */}
+      {manualToExport && (
+        <ExportDialog
+          open={exportDialogOpen}
+          onOpenChange={setExportDialogOpen}
+          title={manualToExport.title}
+          languages={manualToExport.languages}
+          onExport={handleExportWithOptions}
+          defaultLanguage={manualToExport.languages[0]}
+          showFormat={false}
+        />
+      )}
     </div>
   );
 }

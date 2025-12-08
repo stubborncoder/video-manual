@@ -16,6 +16,7 @@ import {
   Moon,
   FileVideo,
   Shield,
+  LayoutTemplate,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ const navItems = [
   { href: "/dashboard/videos", label: "Videos", icon: Video },
   { href: "/dashboard/manuals", label: "Manuals", icon: FileText },
   { href: "/dashboard/projects", label: "Projects", icon: FolderKanban },
+  { href: "/dashboard/templates", label: "Templates", icon: LayoutTemplate },
   { href: "/dashboard/trash", label: "Trash", icon: Trash2 },
 ];
 
