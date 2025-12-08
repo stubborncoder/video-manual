@@ -1,0 +1,342 @@
+{
+  "common": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "confirm": "Confirmar",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "search": "Buscar",
+    "noResults": "No se encontraron resultados",
+    "actions": "Acciones",
+    "name": "Nombre",
+    "description": "Descripción",
+    "createdAt": "Creado",
+    "updatedAt": "Actualizado",
+    "status": "Estado",
+    "export": "Exportar",
+    "download": "Descargar",
+    "upload": "Subir",
+    "preview": "Vista previa",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "select": "Seleccionar",
+    "selected": "Seleccionado",
+    "all": "Todo",
+    "none": "Ninguno",
+    "yes": "Sí",
+    "no": "No",
+    "or": "o",
+    "and": "y"
+  },
+  "sidebar": {
+    "dashboard": "Panel",
+    "videos": "Videos",
+    "manuals": "Manuales",
+    "projects": "Proyectos",
+    "templates": "Plantillas",
+    "trash": "Papelera",
+    "admin": "Admin",
+    "collapse": "Contraer",
+    "expand": "Expandir barra lateral",
+    "lightMode": "Modo Claro",
+    "darkMode": "Modo Oscuro",
+    "toggleTheme": "Cambiar a modo {mode}",
+    "logout": "Cerrar sesión",
+    "language": "Idioma"
+  },
+  "dashboard": {
+    "title": "Panel",
+    "welcome": "Bienvenido a vDocs",
+    "stats": {
+      "videos": "Videos",
+      "videosDesc": "Disponibles para procesar",
+      "manuals": "Manuales",
+      "manualsDesc": "Manuales generados",
+      "projects": "Proyectos",
+      "projectsDesc": "Colecciones organizadas"
+    },
+    "quickActions": {
+      "title": "Acciones Rápidas",
+      "description": "Tareas comunes para empezar",
+      "processVideo": "Procesar un Video",
+      "processVideoDesc": "Generar un manual desde un video",
+      "createProject": "Crear un Proyecto",
+      "createProjectDesc": "Organizar manuales juntos"
+    },
+    "gettingStarted": {
+      "title": "Primeros Pasos",
+      "description": "Cómo usar la plataforma",
+      "step1": "Sube o selecciona un video de tu carpeta de videos",
+      "step2": "Procésalo para generar un manual paso a paso",
+      "step3": "Organiza los manuales en proyectos",
+      "step4": "Compila proyectos en documentos unificados",
+      "step5": "Exporta a PDF, Word o HTML"
+    }
+  },
+  "videos": {
+    "title": "Videos",
+    "description": "Sube y administra tus archivos de video",
+    "upload": "Subir Video",
+    "uploadDescription": "Arrastra y suelta o haz clic para subir",
+    "process": "Procesar",
+    "processing": "Procesando...",
+    "processed": "Procesado",
+    "pending": "Pendiente",
+    "noVideos": "No hay videos aún",
+    "noVideosDesc": "Sube tu primer video para comenzar",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar este video?",
+    "deleteSuccess": "Video eliminado exitosamente",
+    "uploadSuccess": "Video subido exitosamente",
+    "processSuccess": "Video procesado exitosamente",
+    "selectVideo": "Selecciona un video para procesar",
+    "manualFormat": "Formato del Manual",
+    "outputLanguage": "Idioma de Salida",
+    "formats": {
+      "stepManual": "Manual Paso a Paso",
+      "stepManualDesc": "Pasos numerados detallados con capturas",
+      "quickGuide": "Guía Rápida",
+      "quickGuideDesc": "Resumen condensado para referencia rápida",
+      "troubleshooting": "Guía de Solución de Problemas",
+      "troubleshootingDesc": "Formato problema-solución",
+      "faq": "Formato FAQ",
+      "faqDesc": "Estilo de preguntas y respuestas"
+    }
+  },
+  "manuals": {
+    "title": "Manuales",
+    "description": "Ver y administrar tus manuales generados",
+    "noManuals": "No hay manuales aún",
+    "noManualsDesc": "Procesa un video para generar tu primer manual",
+    "edit": "Editar Manual",
+    "view": "Ver Manual",
+    "clone": "Clonar Manual",
+    "export": "Exportar Manual",
+    "delete": "Eliminar Manual",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar este manual?",
+    "deleteSuccess": "Manual eliminado exitosamente",
+    "moveToTrash": "Mover a la Papelera",
+    "restore": "Restaurar",
+    "addToProject": "Agregar a Proyecto",
+    "removeFromProject": "Quitar del Proyecto"
+  },
+  "projects": {
+    "title": "Proyectos",
+    "description": "Organiza tus manuales en proyectos",
+    "create": "Crear Proyecto",
+    "noProjects": "No hay proyectos aún",
+    "noProjectsDesc": "Crea tu primer proyecto para organizar manuales",
+    "edit": "Editar Proyecto",
+    "delete": "Eliminar Proyecto",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar este proyecto?",
+    "deleteSuccess": "Proyecto eliminado exitosamente",
+    "compile": "Compilar",
+    "compileSettings": "Configuración de Compilación",
+    "addManuals": "Agregar Manuales",
+    "removeManual": "Quitar Manual",
+    "manualCount": "{count} manual(es)",
+    "emptyProject": "Este proyecto no tiene manuales aún"
+  },
+  "templates": {
+    "title": "Plantillas",
+    "description": "Administra tus plantillas de documentos Word",
+    "upload": "Subir Plantilla",
+    "noTemplates": "No hay plantillas aún",
+    "noTemplatesDesc": "Sube tu primera plantilla de Word",
+    "preview": "Vista previa de Plantilla",
+    "delete": "Eliminar Plantilla",
+    "deleteConfirm": "¿Estás seguro de que quieres eliminar esta plantilla?",
+    "deleteSuccess": "Plantilla eliminada exitosamente",
+    "uploadSuccess": "Plantilla subida exitosamente",
+    "default": "Predeterminada",
+    "setDefault": "Establecer como Predeterminada"
+  },
+  "trash": {
+    "title": "Papelera",
+    "description": "Ver y restaurar elementos eliminados",
+    "empty": "La papelera está vacía",
+    "emptyDesc": "Los elementos eliminados aparecerán aquí",
+    "restore": "Restaurar",
+    "restoreAll": "Restaurar Todo",
+    "deletePermanently": "Eliminar Permanentemente",
+    "emptyTrash": "Vaciar Papelera",
+    "deleteConfirm": "Esta acción no se puede deshacer. ¿Estás seguro?"
+  },
+  "export": {
+    "title": "Exportar",
+    "format": "Formato",
+    "language": "Idioma",
+    "template": "Plantilla",
+    "selectFormat": "Selecciona un formato",
+    "selectLanguage": "Selecciona el idioma de salida",
+    "selectTemplate": "Selecciona una plantilla (opcional)",
+    "noTemplate": "Sin plantilla",
+    "exporting": "Exportando...",
+    "exportSuccess": "Exportación completada exitosamente",
+    "formats": {
+      "pdf": "PDF",
+      "pdfDesc": "Formato de documento portátil",
+      "word": "Word",
+      "wordDesc": "Documento de Microsoft Word",
+      "html": "HTML",
+      "htmlDesc": "Formato de página web",
+      "chunks": "Chunks",
+      "chunksDesc": "Formato para pipeline RAG"
+    }
+  },
+  "clone": {
+    "title": "Clonar Manual",
+    "description": "Crear una copia en un formato diferente",
+    "targetFormat": "Formato de Destino",
+    "targetLanguage": "Idioma de Destino",
+    "cloning": "Clonando...",
+    "cloneSuccess": "Manual clonado exitosamente"
+  },
+  "compile": {
+    "title": "Compilar Proyecto",
+    "description": "Combinar manuales en un solo documento",
+    "includeTableOfContents": "Incluir Tabla de Contenidos",
+    "includePageNumbers": "Incluir Números de Página",
+    "compiling": "Compilando...",
+    "compileSuccess": "Proyecto compilado exitosamente"
+  },
+  "editor": {
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "saved": "Guardado",
+    "unsavedChanges": "Cambios sin guardar",
+    "undo": "Deshacer",
+    "redo": "Rehacer",
+    "bold": "Negrita",
+    "italic": "Cursiva",
+    "underline": "Subrayado",
+    "heading": "Encabezado",
+    "list": "Lista",
+    "link": "Enlace",
+    "image": "Imagen",
+    "addStep": "Agregar Paso",
+    "deleteStep": "Eliminar Paso",
+    "moveUp": "Mover Arriba",
+    "moveDown": "Mover Abajo"
+  },
+  "landing": {
+    "nav": {
+      "features": "Características",
+      "howItWorks": "Cómo Funciona",
+      "signIn": "Iniciar Sesión",
+      "getStarted": "Comenzar"
+    },
+    "hero": {
+      "badge": "Documentación con IA",
+      "title": "Transforma Videos en",
+      "titleHighlight": "Manuales Profesionales",
+      "description": "Sube cualquier video tutorial o demo y deja que la IA genere documentación hermosa, paso a paso, con capturas de pantalla automáticamente.",
+      "cta": "Empezar a Crear",
+      "ctaSecondary": "Ver Cómo Funciona"
+    },
+    "features": {
+      "title": "Todo lo que necesitas para",
+      "titleHighlight": "documentación perfecta",
+      "ai": {
+        "title": "Análisis de Video con IA",
+        "description": "La IA avanzada entiende el contenido de tu video, identificando pasos clave y momentos importantes automáticamente."
+      },
+      "screenshots": {
+        "title": "Capturas Inteligentes",
+        "description": "Captura automáticamente los fotogramas más relevantes en cada paso, con recorte y resaltado inteligente."
+      },
+      "export": {
+        "title": "Múltiples Formatos de Exportación",
+        "description": "Exporta tus manuales como PDF, documentos Word o páginas HTML con plantillas personalizables."
+      },
+      "projects": {
+        "title": "Organización de Proyectos",
+        "description": "Agrupa manuales relacionados en proyectos y compílalos en documentación completa."
+      },
+      "templates": {
+        "title": "Plantillas Personalizadas",
+        "description": "Usa tus propias plantillas de Word para cumplir con las guías de marca y requisitos de estilo."
+      },
+      "multilingual": {
+        "title": "Soporte Multilingüe",
+        "description": "Genera manuales en múltiples idiomas desde el mismo contenido de video."
+      }
+    },
+    "steps": {
+      "title": "Cómo Funciona",
+      "step1": {
+        "badge": "Paso 1",
+        "title": "Subir Video",
+        "description": "Sube cualquier video tutorial, demo o instructivo. Soportamos todos los formatos de video comunes."
+      },
+      "step2": {
+        "badge": "Paso 2",
+        "title": "Procesamiento con IA",
+        "description": "Nuestra IA analiza tu video, identifica los pasos clave y extrae las capturas relevantes."
+      },
+      "step3": {
+        "badge": "Paso 3",
+        "title": "Revisar y Editar",
+        "description": "Revisa el manual generado, haz ajustes y personaliza el contenido según sea necesario."
+      },
+      "step4": {
+        "badge": "Paso 4",
+        "title": "Exportar y Compartir",
+        "description": "Exporta en tu formato preferido y comparte con tu equipo o clientes."
+      }
+    },
+    "stats": {
+      "videos": "Videos Procesados",
+      "manuals": "Manuales Creados",
+      "users": "Usuarios Felices",
+      "hours": "Horas Ahorradas"
+    },
+    "cta": {
+      "title": "¿Listo para transformar tus videos?",
+      "description": "Comienza a crear documentación profesional en minutos, no horas.",
+      "button": "Comenzar Gratis"
+    },
+    "footer": {
+      "product": "Producto",
+      "features": "Características",
+      "pricing": "Precios",
+      "changelog": "Changelog",
+      "company": "Empresa",
+      "about": "Acerca de",
+      "blog": "Blog",
+      "careers": "Carreras",
+      "legal": "Legal",
+      "privacy": "Privacidad",
+      "terms": "Términos",
+      "copyright": "Todos los derechos reservados."
+    }
+  },
+  "auth": {
+    "signIn": "Iniciar Sesión",
+    "signUp": "Registrarse",
+    "signOut": "Cerrar Sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "noAccount": "¿No tienes una cuenta?",
+    "hasAccount": "¿Ya tienes una cuenta?",
+    "invalidCredentials": "Correo o contraseña inválidos",
+    "welcomeBack": "Bienvenido de nuevo"
+  },
+  "admin": {
+    "title": "Admin",
+    "users": "Usuarios",
+    "usage": "Uso",
+    "tokenUsage": "Uso de Tokens",
+    "totalTokens": "Tokens Totales",
+    "inputTokens": "Tokens de Entrada",
+    "outputTokens": "Tokens de Salida",
+    "userManagement": "Gestión de Usuarios",
+    "role": "Rol",
+    "lastLogin": "Último Acceso"
+  }
+}

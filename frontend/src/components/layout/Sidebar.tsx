@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import {
   Video,
   FileText,
@@ -27,17 +28,18 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { auth } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "./SidebarContext";
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: Home },
-  { href: "/dashboard/videos", label: "Videos", icon: Video },
-  { href: "/dashboard/manuals", label: "Manuals", icon: FileText },
-  { href: "/dashboard/projects", label: "Projects", icon: FolderKanban },
-  { href: "/dashboard/templates", label: "Templates", icon: LayoutTemplate },
-  { href: "/dashboard/trash", label: "Trash", icon: Trash2 },
+const navItemsConfig = [
+  { href: "/dashboard", labelKey: "dashboard", icon: Home },
+  { href: "/dashboard/videos", labelKey: "videos", icon: Video },
+  { href: "/dashboard/manuals", labelKey: "manuals", icon: FileText },
+  { href: "/dashboard/projects", labelKey: "projects", icon: FolderKanban },
+  { href: "/dashboard/templates", labelKey: "templates", icon: LayoutTemplate },
+  { href: "/dashboard/trash", labelKey: "trash", icon: Trash2 },
 ];
 
 export function Sidebar() {
@@ -46,6 +48,7 @@ export function Sidebar() {
   const { collapsed, toggleCollapsed } = useSidebar();
   const { theme, setTheme } = useTheme();
   const [isAdmin, setIsAdmin] = useState(false);
+  const t = useTranslations("sidebar");
 
   // Check if user is admin
   useEffect(() => {
@@ -103,10 +106,11 @@ export function Sidebar() {
         {/* Navigation */}
         <nav className="flex-1 p-2">
           <ul className="space-y-1">
-            {navItems.map((item) => {
+            {navItemsConfig.map((item) => {
               const isActive =
                 pathname === item.href ||
                 (item.href !== "/dashboard" && pathname.startsWith(item.href));
+              const label = t(item.labelKey);
 
               const button = (
                 <Button
@@ -117,7 +121,7 @@ export function Sidebar() {
                   )}
                 >
                   <item.icon className={cn("h-4 w-4", !collapsed && "mr-2")} />
-                  {!collapsed && item.label}
+                  {!collapsed && label}
                 </Button>
               );
 
@@ -128,7 +132,7 @@ export function Sidebar() {
                       <TooltipTrigger asChild>
                         <Link href={item.href}>{button}</Link>
                       </TooltipTrigger>
-                      <TooltipContent side="right">{item.label}</TooltipContent>
+                      <TooltipContent side="right">{label}</TooltipContent>
                     </Tooltip>
                   ) : (
                     <Link href={item.href}>{button}</Link>
@@ -157,7 +161,7 @@ export function Sidebar() {
                     </Button>
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent side="right">Admin</TooltipContent>
+                <TooltipContent side="right">{t("admin")}</TooltipContent>
               </Tooltip>
             ) : (
               <Link href="/admin">
@@ -166,7 +170,7 @@ export function Sidebar() {
                   className="w-full justify-start text-muted-foreground hover:text-primary"
                 >
                   <Shield className="mr-2 h-4 w-4" />
-                  Admin
+                  {t("admin")}
                 </Button>
               </Link>
             )
@@ -184,7 +188,7 @@ export function Sidebar() {
                   <PanelLeft className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right">Expand sidebar</TooltipContent>
+              <TooltipContent side="right">{t("expand")}</TooltipContent>
             </Tooltip>
           ) : (
             <Button
@@ -193,8 +197,22 @@ export function Sidebar() {
               onClick={toggleCollapsed}
             >
               <PanelLeftClose className="mr-2 h-4 w-4" />
-              Collapse
+              {t("collapse")}
             </Button>
+          )}
+
+          {/* Language toggle */}
+          {collapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <LanguageToggle collapsed />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="right">{t("language")}</TooltipContent>
+            </Tooltip>
+          ) : (
+            <LanguageToggle />
           )}
 
           {/* Theme toggle */}
@@ -211,7 +229,7 @@ export function Sidebar() {
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">
-                Toggle {theme === "dark" ? "light" : "dark"} mode
+                {theme === "dark" ? t("lightMode") : t("darkMode")}
               </TooltipContent>
             </Tooltip>
           ) : (
@@ -222,7 +240,7 @@ export function Sidebar() {
             >
               <Sun className="mr-2 h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
               <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              {theme === "dark" ? "Light" : "Dark"} Mode
+              {theme === "dark" ? t("lightMode") : t("darkMode")}
             </Button>
           )}
 
@@ -238,7 +256,7 @@ export function Sidebar() {
                   <LogOut className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right">Logout</TooltipContent>
+              <TooltipContent side="right">{t("logout")}</TooltipContent>
             </Tooltip>
           ) : (
             <Button
@@ -247,7 +265,7 @@ export function Sidebar() {
               onClick={handleLogout}
             >
               <LogOut className="mr-2 h-4 w-4" />
-              Logout
+              {t("logout")}
             </Button>
           )}
         </div>

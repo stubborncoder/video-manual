@@ -1,0 +1,342 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "confirm": "Confirm",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "search": "Search",
+    "noResults": "No results found",
+    "actions": "Actions",
+    "name": "Name",
+    "description": "Description",
+    "createdAt": "Created",
+    "updatedAt": "Updated",
+    "status": "Status",
+    "export": "Export",
+    "download": "Download",
+    "upload": "Upload",
+    "preview": "Preview",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "select": "Select",
+    "selected": "Selected",
+    "all": "All",
+    "none": "None",
+    "yes": "Yes",
+    "no": "No",
+    "or": "or",
+    "and": "and"
+  },
+  "sidebar": {
+    "dashboard": "Dashboard",
+    "videos": "Videos",
+    "manuals": "Manuals",
+    "projects": "Projects",
+    "templates": "Templates",
+    "trash": "Trash",
+    "admin": "Admin",
+    "collapse": "Collapse",
+    "expand": "Expand sidebar",
+    "lightMode": "Light Mode",
+    "darkMode": "Dark Mode",
+    "toggleTheme": "Toggle {mode} mode",
+    "logout": "Logout",
+    "language": "Language"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome to vDocs",
+    "stats": {
+      "videos": "Videos",
+      "videosDesc": "Available for processing",
+      "manuals": "Manuals",
+      "manualsDesc": "Generated manuals",
+      "projects": "Projects",
+      "projectsDesc": "Organized collections"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "description": "Common tasks to get started",
+      "processVideo": "Process a Video",
+      "processVideoDesc": "Generate a manual from video",
+      "createProject": "Create a Project",
+      "createProjectDesc": "Organize manuals together"
+    },
+    "gettingStarted": {
+      "title": "Getting Started",
+      "description": "How to use the platform",
+      "step1": "Upload or select a video from your videos folder",
+      "step2": "Process it to generate a step-by-step manual",
+      "step3": "Organize manuals into projects",
+      "step4": "Compile projects into unified documents",
+      "step5": "Export to PDF, Word, or HTML"
+    }
+  },
+  "videos": {
+    "title": "Videos",
+    "description": "Upload and manage your video files",
+    "upload": "Upload Video",
+    "uploadDescription": "Drag and drop or click to upload",
+    "process": "Process",
+    "processing": "Processing...",
+    "processed": "Processed",
+    "pending": "Pending",
+    "noVideos": "No videos yet",
+    "noVideosDesc": "Upload your first video to get started",
+    "deleteConfirm": "Are you sure you want to delete this video?",
+    "deleteSuccess": "Video deleted successfully",
+    "uploadSuccess": "Video uploaded successfully",
+    "processSuccess": "Video processed successfully",
+    "selectVideo": "Select a video to process",
+    "manualFormat": "Manual Format",
+    "outputLanguage": "Output Language",
+    "formats": {
+      "stepManual": "Step-by-Step Manual",
+      "stepManualDesc": "Detailed numbered steps with screenshots",
+      "quickGuide": "Quick Guide",
+      "quickGuideDesc": "Condensed overview for quick reference",
+      "troubleshooting": "Troubleshooting Guide",
+      "troubleshootingDesc": "Problem-solution format",
+      "faq": "FAQ Format",
+      "faqDesc": "Question and answer style"
+    }
+  },
+  "manuals": {
+    "title": "Manuals",
+    "description": "View and manage your generated manuals",
+    "noManuals": "No manuals yet",
+    "noManualsDesc": "Process a video to generate your first manual",
+    "edit": "Edit Manual",
+    "view": "View Manual",
+    "clone": "Clone Manual",
+    "export": "Export Manual",
+    "delete": "Delete Manual",
+    "deleteConfirm": "Are you sure you want to delete this manual?",
+    "deleteSuccess": "Manual deleted successfully",
+    "moveToTrash": "Move to Trash",
+    "restore": "Restore",
+    "addToProject": "Add to Project",
+    "removeFromProject": "Remove from Project"
+  },
+  "projects": {
+    "title": "Projects",
+    "description": "Organize your manuals into projects",
+    "create": "Create Project",
+    "noProjects": "No projects yet",
+    "noProjectsDesc": "Create your first project to organize manuals",
+    "edit": "Edit Project",
+    "delete": "Delete Project",
+    "deleteConfirm": "Are you sure you want to delete this project?",
+    "deleteSuccess": "Project deleted successfully",
+    "compile": "Compile",
+    "compileSettings": "Compile Settings",
+    "addManuals": "Add Manuals",
+    "removeManual": "Remove Manual",
+    "manualCount": "{count} manual(s)",
+    "emptyProject": "This project has no manuals yet"
+  },
+  "templates": {
+    "title": "Templates",
+    "description": "Manage your Word document templates",
+    "upload": "Upload Template",
+    "noTemplates": "No templates yet",
+    "noTemplatesDesc": "Upload your first Word template",
+    "preview": "Preview Template",
+    "delete": "Delete Template",
+    "deleteConfirm": "Are you sure you want to delete this template?",
+    "deleteSuccess": "Template deleted successfully",
+    "uploadSuccess": "Template uploaded successfully",
+    "default": "Default",
+    "setDefault": "Set as Default"
+  },
+  "trash": {
+    "title": "Trash",
+    "description": "View and restore deleted items",
+    "empty": "Trash is empty",
+    "emptyDesc": "Deleted items will appear here",
+    "restore": "Restore",
+    "restoreAll": "Restore All",
+    "deletePermanently": "Delete Permanently",
+    "emptyTrash": "Empty Trash",
+    "deleteConfirm": "This action cannot be undone. Are you sure?"
+  },
+  "export": {
+    "title": "Export",
+    "format": "Format",
+    "language": "Language",
+    "template": "Template",
+    "selectFormat": "Select a format",
+    "selectLanguage": "Select output language",
+    "selectTemplate": "Select a template (optional)",
+    "noTemplate": "No template",
+    "exporting": "Exporting...",
+    "exportSuccess": "Export completed successfully",
+    "formats": {
+      "pdf": "PDF",
+      "pdfDesc": "Portable document format",
+      "word": "Word",
+      "wordDesc": "Microsoft Word document",
+      "html": "HTML",
+      "htmlDesc": "Web page format",
+      "chunks": "Chunks",
+      "chunksDesc": "RAG pipeline format"
+    }
+  },
+  "clone": {
+    "title": "Clone Manual",
+    "description": "Create a copy in a different format",
+    "targetFormat": "Target Format",
+    "targetLanguage": "Target Language",
+    "cloning": "Cloning...",
+    "cloneSuccess": "Manual cloned successfully"
+  },
+  "compile": {
+    "title": "Compile Project",
+    "description": "Combine manuals into a single document",
+    "includeTableOfContents": "Include Table of Contents",
+    "includePageNumbers": "Include Page Numbers",
+    "compiling": "Compiling...",
+    "compileSuccess": "Project compiled successfully"
+  },
+  "editor": {
+    "save": "Save",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "unsavedChanges": "Unsaved changes",
+    "undo": "Undo",
+    "redo": "Redo",
+    "bold": "Bold",
+    "italic": "Italic",
+    "underline": "Underline",
+    "heading": "Heading",
+    "list": "List",
+    "link": "Link",
+    "image": "Image",
+    "addStep": "Add Step",
+    "deleteStep": "Delete Step",
+    "moveUp": "Move Up",
+    "moveDown": "Move Down"
+  },
+  "landing": {
+    "nav": {
+      "features": "Features",
+      "howItWorks": "How it Works",
+      "signIn": "Sign In",
+      "getStarted": "Get Started"
+    },
+    "hero": {
+      "badge": "AI-Powered Documentation",
+      "title": "Transform Videos into",
+      "titleHighlight": "Professional Manuals",
+      "description": "Upload any tutorial or demo video and let AI generate beautiful, step-by-step documentation with screenshots automatically.",
+      "cta": "Start Creating",
+      "ctaSecondary": "See How it Works"
+    },
+    "features": {
+      "title": "Everything you need for",
+      "titleHighlight": "perfect documentation",
+      "ai": {
+        "title": "AI Video Analysis",
+        "description": "Advanced AI understands your video content, identifying key steps and important moments automatically."
+      },
+      "screenshots": {
+        "title": "Smart Screenshots",
+        "description": "Automatically captures the most relevant frames at each step, with intelligent cropping and highlighting."
+      },
+      "export": {
+        "title": "Multiple Export Formats",
+        "description": "Export your manuals as PDF, Word documents, or HTML pages with customizable templates."
+      },
+      "projects": {
+        "title": "Project Organization",
+        "description": "Group related manuals into projects and compile them into comprehensive documentation."
+      },
+      "templates": {
+        "title": "Custom Templates",
+        "description": "Use your own Word templates to match your brand guidelines and style requirements."
+      },
+      "multilingual": {
+        "title": "Multilingual Support",
+        "description": "Generate manuals in multiple languages from the same video content."
+      }
+    },
+    "steps": {
+      "title": "How it Works",
+      "step1": {
+        "badge": "Step 1",
+        "title": "Upload Video",
+        "description": "Upload any tutorial, demo, or instructional video. We support all common video formats."
+      },
+      "step2": {
+        "badge": "Step 2",
+        "title": "AI Processing",
+        "description": "Our AI analyzes your video, identifies key steps, and extracts relevant screenshots."
+      },
+      "step3": {
+        "badge": "Step 3",
+        "title": "Review & Edit",
+        "description": "Review the generated manual, make adjustments, and customize the content as needed."
+      },
+      "step4": {
+        "badge": "Step 4",
+        "title": "Export & Share",
+        "description": "Export in your preferred format and share with your team or customers."
+      }
+    },
+    "stats": {
+      "videos": "Videos Processed",
+      "manuals": "Manuals Created",
+      "users": "Happy Users",
+      "hours": "Hours Saved"
+    },
+    "cta": {
+      "title": "Ready to transform your videos?",
+      "description": "Start creating professional documentation in minutes, not hours.",
+      "button": "Get Started Free"
+    },
+    "footer": {
+      "product": "Product",
+      "features": "Features",
+      "pricing": "Pricing",
+      "changelog": "Changelog",
+      "company": "Company",
+      "about": "About",
+      "blog": "Blog",
+      "careers": "Careers",
+      "legal": "Legal",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "copyright": "All rights reserved."
+    }
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "signOut": "Sign Out",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "invalidCredentials": "Invalid email or password",
+    "welcomeBack": "Welcome back"
+  },
+  "admin": {
+    "title": "Admin",
+    "users": "Users",
+    "usage": "Usage",
+    "tokenUsage": "Token Usage",
+    "totalTokens": "Total Tokens",
+    "inputTokens": "Input Tokens",
+    "outputTokens": "Output Tokens",
+    "userManagement": "User Management",
+    "role": "Role",
+    "lastLogin": "Last Login"
+  }
+}

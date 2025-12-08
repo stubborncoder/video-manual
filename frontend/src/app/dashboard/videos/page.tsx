@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +64,8 @@ interface VideoWithManuals extends VideoInfo {
 }
 
 export default function VideosPage() {
+  const t = useTranslations("videos");
+  const tc = useTranslations("common");
   const [videoList, setVideoList] = useState<VideoWithManuals[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVideo, setSelectedVideo] = useState<VideoInfo | null>(null);
@@ -292,9 +295,9 @@ export default function VideosPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Videos</h1>
+          <h1 className="text-3xl font-bold">{t("title")}</h1>
           <p className="text-muted-foreground">
-            Manage and process your videos
+            {t("description")}
           </p>
         </div>
 
@@ -368,12 +371,12 @@ export default function VideosPage() {
             {uploading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Uploading...
+                {tc("loading")}
               </>
             ) : (
               <>
                 <Upload className="mr-2 h-4 w-4" />
-                Upload Video
+                {t("upload")}
               </>
             )}
           </Button>
@@ -403,19 +406,17 @@ export default function VideosPage() {
 
       {loading ? (
         <div className="text-center py-8 text-muted-foreground">
-          Loading videos...
+          {tc("loading")}
         </div>
       ) : filteredVideos.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center">
             <Video className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground">
-              {filterProjectId === "__all__" ? "No videos found" : "No videos in this project"}
+              {t("noVideos")}
             </p>
             <p className="text-sm text-muted-foreground mt-1">
-              {filterProjectId === "__all__"
-                ? "Upload a video to get started"
-                : "Process a video and assign it to this project, or select a different filter"}
+              {t("noVideosDesc")}
             </p>
           </CardContent>
         </Card>
@@ -518,7 +519,7 @@ export default function VideosPage() {
                     <DialogTrigger asChild>
                       <Button size="sm" className="flex-1">
                         <Wand2 className="mr-2 h-4 w-4" />
-                        Process
+                        {t("process")}
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-[95vw] w-[1600px] h-[85vh] p-0 gap-0 overflow-hidden">

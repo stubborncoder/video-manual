@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Video, FileText, FolderKanban, Plus } from "lucide-react";
 import { videos, manuals, projects } from "@/lib/api";
 
 export default function DashboardPage() {
+  const t = useTranslations("dashboard");
   const [stats, setStats] = useState({
     videoCount: 0,
     manualCount: 0,
@@ -39,12 +40,20 @@ export default function DashboardPage() {
     loadStats();
   }, []);
 
+  const gettingStartedSteps = [
+    t("gettingStarted.step1"),
+    t("gettingStarted.step2"),
+    t("gettingStarted.step3"),
+    t("gettingStarted.step4"),
+    t("gettingStarted.step5"),
+  ];
+
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <h1 className="text-3xl font-bold">{t("title")}</h1>
         <p className="text-muted-foreground">
-          Welcome to vDocs
+          {t("welcome")}
         </p>
       </div>
 
@@ -55,12 +64,12 @@ export default function DashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">Videos</p>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">{t("stats.videos")}</p>
                   <p className="font-display text-4xl tracking-tight">
                     {loading ? "..." : stats.videoCount}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Available for processing
+                    {t("stats.videosDesc")}
                   </p>
                 </div>
                 <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
@@ -76,12 +85,12 @@ export default function DashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">Manuals</p>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">{t("stats.manuals")}</p>
                   <p className="font-display text-4xl tracking-tight">
                     {loading ? "..." : stats.manualCount}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Generated manuals
+                    {t("stats.manualsDesc")}
                   </p>
                 </div>
                 <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
@@ -97,12 +106,12 @@ export default function DashboardPage() {
             <CardContent className="p-6">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-1">Projects</p>
+                  <p className="text-sm font-medium text-muted-foreground mb-1">{t("stats.projects")}</p>
                   <p className="font-display text-4xl tracking-tight">
                     {loading ? "..." : stats.projectCount}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Organized collections
+                    {t("stats.projectsDesc")}
                   </p>
                 </div>
                 <div className="flex items-center justify-center h-12 w-12 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
@@ -118,9 +127,9 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="font-display text-xl">Quick Actions</CardTitle>
+            <CardTitle className="font-display text-xl">{t("quickActions.title")}</CardTitle>
             <CardDescription>
-              Common tasks to get started
+              {t("quickActions.description")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -130,8 +139,8 @@ export default function DashboardPage() {
                   <Video className="h-5 w-5" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium">Process a Video</p>
-                  <p className="text-sm text-muted-foreground">Generate a manual from video</p>
+                  <p className="font-medium">{t("quickActions.processVideo")}</p>
+                  <p className="text-sm text-muted-foreground">{t("quickActions.processVideoDesc")}</p>
                 </div>
                 <Plus className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
@@ -142,8 +151,8 @@ export default function DashboardPage() {
                   <FolderKanban className="h-5 w-5" />
                 </div>
                 <div className="flex-1">
-                  <p className="font-medium">Create a Project</p>
-                  <p className="text-sm text-muted-foreground">Organize manuals together</p>
+                  <p className="font-medium">{t("quickActions.createProject")}</p>
+                  <p className="text-sm text-muted-foreground">{t("quickActions.createProjectDesc")}</p>
                 </div>
                 <Plus className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
               </div>
@@ -153,20 +162,14 @@ export default function DashboardPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="font-display text-xl">Getting Started</CardTitle>
+            <CardTitle className="font-display text-xl">{t("gettingStarted.title")}</CardTitle>
             <CardDescription>
-              How to use the platform
+              {t("gettingStarted.description")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <ol className="space-y-3">
-              {[
-                "Upload or select a video from your videos folder",
-                "Process it to generate a step-by-step manual",
-                "Organize manuals into projects",
-                "Compile projects into unified documents",
-                "Export to PDF, Word, or HTML",
-              ].map((step, i) => (
+              {gettingStartedSteps.map((step, i) => (
                 <li key={i} className="flex items-start gap-3">
                   <span className="flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-primary text-xs font-semibold shrink-0">
                     {i + 1}
