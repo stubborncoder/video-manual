@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState, useMemo, useRef, useCallback } from "rea
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -86,7 +86,11 @@ function ManualsPageContent() {
   const t = useTranslations("manuals");
   const tc = useTranslations("common");
   const tp = useTranslations("projects");
+  const locale = useLocale();
   const router = useRouter();
+
+  // Date locale mapping
+  const dateLocale = locale === "es" ? "es-ES" : "en-US";
 
   // Helper to get translated name for default project
   const getProjectDisplayName = (project: { name: string; is_default?: boolean }) => {
@@ -1043,7 +1047,7 @@ function ManualsPageContent() {
                 {/* Created date - subtle */}
                 {manual.created_at && (
                   <p className="text-xs text-muted-foreground/60 mb-3">
-                    {new Date(manual.created_at).toLocaleDateString('en-US', {
+                    {new Date(manual.created_at).toLocaleDateString(dateLocale, {
                       month: 'short',
                       day: 'numeric',
                       year: 'numeric'
@@ -1751,7 +1755,7 @@ function ManualsPageContent() {
                     </span>
                     <span className="flex items-center gap-2">
                       <Clock className="h-3.5 w-3.5" />
-                      {new Date(evaluationResult.evaluated_at).toLocaleDateString('en-US', {
+                      {new Date(evaluationResult.evaluated_at).toLocaleDateString(dateLocale, {
                         month: 'short',
                         day: 'numeric',
                         year: 'numeric',
@@ -1970,7 +1974,7 @@ function ManualsPageContent() {
                         </div>
                         <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                           <Clock className="h-3 w-3 shrink-0" />
-                          {new Date(evalItem.evaluated_at).toLocaleDateString('en-US', {
+                          {new Date(evalItem.evaluated_at).toLocaleDateString(dateLocale, {
                             month: 'short',
                             day: 'numeric',
                           })}
