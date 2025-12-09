@@ -693,8 +693,8 @@ function ManualsPageContent() {
 
   // Get selected project name for display
   const selectedProjectName = filterProjectId === "__all__"
-    ? "All Projects"
-    : projectList.find((p) => p.id === filterProjectId)?.name || "Select project";
+    ? t("allProjects")
+    : projectList.find((p) => p.id === filterProjectId)?.name || t("selectProject");
 
   // Filter manuals by project and tags
   const filteredManuals = useMemo(() => {
@@ -744,9 +744,9 @@ function ManualsPageContent() {
               </PopoverTrigger>
               <PopoverContent className="w-[200px] p-0">
                 <Command>
-                  <CommandInput placeholder="Search projects..." />
+                  <CommandInput placeholder={t("searchProjects")} />
                   <CommandList>
-                    <CommandEmpty>No project found.</CommandEmpty>
+                    <CommandEmpty>{t("noProjectFound")}</CommandEmpty>
                     <CommandGroup>
                       <CommandItem
                         value="__all__"
@@ -758,7 +758,7 @@ function ManualsPageContent() {
                         <Check
                           className={`mr-2 h-4 w-4 ${filterProjectId === "__all__" ? "opacity-100" : "opacity-0"}`}
                         />
-                        All Projects
+                        {t("allProjects")}
                       </CommandItem>
                       {projectList.map((project) => (
                         <CommandItem
@@ -794,7 +794,7 @@ function ManualsPageContent() {
                     <Tag className="h-4 w-4 mr-2 shrink-0 text-muted-foreground" />
                     <span className="truncate">
                       {filterTags.length === 0
-                        ? "All Tags"
+                        ? t("allTags")
                         : `${filterTags.length} tag${filterTags.length > 1 ? "s" : ""}`}
                     </span>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -802,9 +802,9 @@ function ManualsPageContent() {
                 </PopoverTrigger>
                 <PopoverContent className="w-[200px] p-0">
                   <Command>
-                    <CommandInput placeholder="Search tags..." />
+                    <CommandInput placeholder={t("searchTags")} />
                     <CommandList>
-                      <CommandEmpty>No tags found.</CommandEmpty>
+                      <CommandEmpty>{t("noTagsFound")}</CommandEmpty>
                       <CommandGroup>
                         {filterTags.length > 0 && (
                           <CommandItem
@@ -812,7 +812,7 @@ function ManualsPageContent() {
                             className="text-muted-foreground"
                           >
                             <X className="mr-2 h-4 w-4" />
-                            Clear all
+                            {t("clearAll")}
                           </CommandItem>
                         )}
                         {allTags.map((tag) => {
@@ -859,7 +859,7 @@ function ManualsPageContent() {
               {t("noManualsDesc")}
             </p>
             <Link href="/dashboard/videos">
-              <Button className="mt-4">Go to Videos</Button>
+              <Button className="mt-4">{t("goToVideos")}</Button>
             </Link>
           </CardContent>
         </Card>
@@ -867,9 +867,9 @@ function ManualsPageContent() {
         <Card>
           <CardContent className="py-8 text-center">
             <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No manuals match this filter</p>
+            <p className="text-muted-foreground">{t("noManualsMatchFilter")}</p>
             <Button variant="outline" className="mt-4" onClick={() => { setFilterProjectId("__all__"); setFilterTags([]); }}>
-              Show All
+              {t("showAll")}
             </Button>
           </CardContent>
         </Card>
@@ -1053,7 +1053,7 @@ function ManualsPageContent() {
                     onClick={() => handleView(manual.id, manual.languages[0] || "en")}
                   >
                     <Eye className="mr-2 h-4 w-4" />
-                    View Manual
+                    {t("view")}
                   </Button>
                   <Link href={getEditUrl(manual.id)} className="contents">
                     <Button size="sm" variant="outline" title="Edit manual content">
@@ -1072,7 +1072,7 @@ function ManualsPageContent() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
                       <DropdownMenuLabel className="text-xs text-muted-foreground">
-                        {exportingManual === manual.id ? "Exporting..." : "Export"}
+                        {exportingManual === manual.id ? t("exporting") : t("export")}
                       </DropdownMenuLabel>
                       <DropdownMenuItem
                         onClick={() => openExportDialog(manual)}
@@ -1083,31 +1083,31 @@ function ManualsPageContent() {
                         ) : (
                           <Download className="mr-2 h-4 w-4" />
                         )}
-                        Export...
+                        {t("export")}...
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuLabel className="text-xs text-muted-foreground">Generate</DropdownMenuLabel>
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">{t("generate")}</DropdownMenuLabel>
                       <DropdownMenuItem onClick={() => openGenerateDialog(manual)}>
                         <Wand2 className="mr-2 h-4 w-4" />
-                        Add Language
+                        {t("addLanguage")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openCloneDialog(manual)}>
                         <Copy className="mr-2 h-4 w-4" />
-                        Clone to Format...
+                        {t("cloneToFormat")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openEvaluateDialog(manual)}>
                         <ClipboardCheck className="mr-2 h-4 w-4" />
-                        Evaluate Quality
+                        {t("evaluateQuality")}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuLabel className="text-xs text-muted-foreground">Organize</DropdownMenuLabel>
+                      <DropdownMenuLabel className="text-xs text-muted-foreground">{t("organize")}</DropdownMenuLabel>
                       <DropdownMenuItem onClick={() => openAssignDialog(manual)}>
                         <FolderKanban className="mr-2 h-4 w-4" />
-                        Assign to Project
+                        {t("assignToProject")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openTagsDialog(manual)}>
                         <Tag className="mr-2 h-4 w-4" />
-                        Manage Tags
+                        {t("manageTags")}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
@@ -1115,7 +1115,7 @@ function ManualsPageContent() {
                         className="text-destructive focus:text-destructive focus:bg-destructive/10"
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
-                        Delete Manual
+                        {t("deleteManual")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
