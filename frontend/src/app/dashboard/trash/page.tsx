@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,8 @@ function getItemIcon(type: string) {
 }
 
 export default function TrashPage() {
+  const t = useTranslations("trash");
+  const tc = useTranslations("common");
   const [items, setItems] = useState<TrashItem[]>([]);
   const [stats, setStats] = useState<TrashStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -121,9 +124,9 @@ export default function TrashPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Trash</h1>
+          <h1 className="text-3xl font-bold">{t("title")}</h1>
           <p className="text-muted-foreground">
-            Items in trash will be permanently deleted after 30 days
+            {t("description")}
           </p>
         </div>
 
@@ -156,13 +159,13 @@ export default function TrashPage() {
 
       {loading ? (
         <div className="text-center py-8 text-muted-foreground">
-          Loading trash...
+          {tc("loading")}
         </div>
       ) : items.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center">
             <Trash2 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">Trash is empty</p>
+            <p className="text-muted-foreground">{t("empty")}</p>
           </CardContent>
         </Card>
       ) : (

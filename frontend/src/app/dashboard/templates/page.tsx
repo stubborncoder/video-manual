@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { templates, TemplateInfo } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -50,6 +51,8 @@ function formatDate(dateStr: string | null): string {
 }
 
 export default function TemplatesPage() {
+  const t = useTranslations("templates");
+  const tc = useTranslations("common");
   const [templateList, setTemplateList] = useState<TemplateInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -130,14 +133,14 @@ export default function TemplatesPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="font-display text-3xl tracking-tight">Templates</h1>
+          <h1 className="font-display text-3xl tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground mt-1">
-            Word templates for exporting manuals with custom branding
+            {t("description")}
           </p>
         </div>
         <Button onClick={() => fileInputRef.current?.click()} className="gap-2">
           <Plus className="h-4 w-4" />
-          Upload Template
+          {t("upload")}
         </Button>
         <input
           ref={fileInputRef}

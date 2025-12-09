@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 // Validation constants
 const VALIDATION_LIMITS = {
@@ -141,6 +142,8 @@ interface ProjectDeleteInfo extends ProjectSummary {
 }
 
 export default function ProjectsPage() {
+  const t = useTranslations("projects");
+  const tc = useTranslations("common");
   const [projectList, setProjectList] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -589,9 +592,9 @@ export default function ProjectsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Projects</h1>
+          <h1 className="text-3xl font-bold">{t("title")}</h1>
           <p className="text-muted-foreground">
-            Organize and compile your manuals
+            {t("description")}
           </p>
         </div>
 
@@ -700,15 +703,15 @@ export default function ProjectsPage() {
 
       {loading ? (
         <div className="text-center py-8 text-muted-foreground">
-          Loading projects...
+          {tc("loading")}
         </div>
       ) : projectList.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center">
             <FolderKanban className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No projects found</p>
+            <p className="text-muted-foreground">{t("noProjects")}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Create a project to organize your manuals
+              {t("noProjectsDesc")}
             </p>
           </CardContent>
         </Card>

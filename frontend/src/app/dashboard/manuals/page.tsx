@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState, useMemo, useRef, useCallback } from "rea
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -82,6 +83,8 @@ interface ManualWithProject extends ManualSummary {
 }
 
 function ManualsPageContent() {
+  const t = useTranslations("manuals");
+  const tc = useTranslations("common");
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -716,9 +719,9 @@ function ManualsPageContent() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Manuals</h1>
+          <h1 className="text-3xl font-bold">{t("title")}</h1>
           <p className="text-muted-foreground">
-            View and manage your generated manuals
+            {t("description")}
           </p>
         </div>
 
@@ -845,15 +848,15 @@ function ManualsPageContent() {
 
       {loading ? (
         <div className="text-center py-8 text-muted-foreground">
-          Loading manuals...
+          {tc("loading")}
         </div>
       ) : manualList.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center">
             <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No manuals found</p>
+            <p className="text-muted-foreground">{t("noManuals")}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Process a video to generate your first manual
+              {t("noManualsDesc")}
             </p>
             <Link href="/dashboard/videos">
               <Button className="mt-4">Go to Videos</Button>
