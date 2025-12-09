@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { adminApi, UserInfo } from "@/lib/api/admin";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,7 @@ import {
 } from "@/components/ui/select";
 
 export default function UsersPage() {
+  const t = useTranslations("admin");
   const [users, setUsers] = useState<UserInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +34,7 @@ export default function UsersPage() {
       setUsers(data);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load users");
+      setError(err instanceof Error ? err.message : t("failedToLoadUsers"));
     } finally {
       setLoading(false);
     }
@@ -48,12 +50,12 @@ export default function UsersPage() {
       // Reload users
       await loadUsers();
     } catch (err) {
-      alert(`Failed to change role: ${err instanceof Error ? err.message : "Unknown error"}`);
+      alert(`${t("failedToChangeRole")}: ${err instanceof Error ? err.message : "Unknown error"}`);
     }
   };
 
   const formatDate = (dateStr?: string) => {
-    if (!dateStr) return "Never";
+    if (!dateStr) return t("never");
     return new Date(dateStr).toLocaleString();
   };
 
@@ -64,7 +66,7 @@ export default function UsersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <p className="text-muted-foreground">Loading users...</p>
+        <p className="text-muted-foreground">{t("loadingUsers")}</p>
       </div>
     );
   }
@@ -74,7 +76,7 @@ export default function UsersPage() {
       <div className="py-12">
         <p className="text-destructive">Error: {error}</p>
         <Button onClick={loadUsers} className="mt-4">
-          Retry
+          {t("retry")}
         </Button>
       </div>
     );
@@ -83,9 +85,9 @@ export default function UsersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Users</h1>
+        <h1 className="text-3xl font-bold">{t("users")}</h1>
         <p className="text-muted-foreground">
-          Manage user accounts and permissions
+          {t("manageUsersDesc")}
         </p>
       </div>
 
@@ -93,20 +95,20 @@ export default function UsersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>User ID</TableHead>
-              <TableHead>Display Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead>Last Login</TableHead>
-              <TableHead className="text-right">Total Cost</TableHead>
+              <TableHead>{t("userId")}</TableHead>
+              <TableHead>{t("displayName")}</TableHead>
+              <TableHead>{t("email")}</TableHead>
+              <TableHead>{t("role")}</TableHead>
+              <TableHead>{t("created")}</TableHead>
+              <TableHead>{t("lastLogin")}</TableHead>
+              <TableHead className="text-right">{t("totalCost")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {users.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground">
-                  No users found
+                  {t("noUsersFound")}
                 </TableCell>
               </TableRow>
             ) : (
@@ -126,8 +128,8 @@ export default function UsersPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="user">{t("user")}</SelectItem>
+                        <SelectItem value="admin">{t("admin")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>

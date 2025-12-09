@@ -29,85 +29,20 @@ import {
 } from "@/components/ui/dialog";
 import { auth } from "@/lib/api";
 
-const features = [
-  {
-    icon: Video,
-    title: "AI Video Analysis",
-    description:
-      "Advanced AI automatically extracts key frames, identifies actions, and generates detailed descriptions from your video content.",
-  },
-  {
-    icon: FileText,
-    title: "Smart Manual Generation",
-    description:
-      "Transform analyzed content into publication-ready manuals with intelligent formatting, organization, and professional layouts.",
-  },
-  {
-    icon: Edit3,
-    title: "Rich Text Editor",
-    description:
-      "Edit and refine your manuals with a powerful editor featuring AI assistance, formatting tools, and visual annotations.",
-  },
-  {
-    icon: FolderKanban,
-    title: "Project Compilation",
-    description:
-      "Organize multiple manuals into comprehensive projects with custom ordering, sections, and export options.",
-  },
-  {
-    icon: Download,
-    title: "Multi-Format Export",
-    description:
-      "Export your documentation in various formats including PDF, HTML, and Markdown for maximum flexibility.",
-  },
-  {
-    icon: Globe,
-    title: "Multilingual Export",
-    description:
-      "Generate your manuals in multiple languages with AI-powered translation, reaching global audiences effortlessly.",
-  },
-];
-
-const steps = [
-  {
-    number: "01",
-    title: "Upload Your Video",
-    description:
-      "Start by uploading your video content. We support all major formats and handle files up to 2GB with ease.",
-    badges: ["MP4", "MOV", "AVI", "WebM"],
-  },
-  {
-    number: "02",
-    title: "AI Analysis",
-    description:
-      "Our AI processes your video, identifying key moments, extracting frames, and generating detailed descriptions automatically.",
-    badges: ["Frame Extraction", "Action Recognition"],
-  },
-  {
-    number: "03",
-    title: "Review & Edit",
-    description:
-      "Refine the generated manual with our powerful editor. Add context, adjust formatting, and perfect every detail.",
-    badges: ["Rich Editor", "AI Copilot", "Version Control"],
-  },
-  {
-    number: "04",
-    title: "Publish & Share",
-    description:
-      "Export your manual in multiple formats or share directly with your team. Track views and gather feedback.",
-    badges: ["PDF Export", "HTML Export", "Share Links"],
-  },
-];
-
-const stats = [
-  { value: "10K+", label: "Manuals Created" },
-  { value: "95%", label: "Time Saved" },
-  { value: "500+", label: "Teams" },
-  { value: "4.9/5", label: "User Rating" },
-];
+// Feature icons mapping
+const featureIcons = {
+  ai: Video,
+  screenshots: FileText,
+  export: Edit3,
+  projects: FolderKanban,
+  templates: Download,
+  multilingual: Globe,
+};
 
 export default function LandingPage() {
   const t = useTranslations("landing");
+  const tAuth = useTranslations("auth");
+  const tc = useTranslations("common");
   const [loginOpen, setLoginOpen] = useState(false);
   const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -118,7 +53,7 @@ export default function LandingPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId.trim()) {
-      setError("Please enter a user ID");
+      setError(tAuth("pleaseEnterUserId"));
       return;
     }
 
@@ -129,7 +64,7 @@ export default function LandingPage() {
       await auth.login(userId.trim());
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      setError(err instanceof Error ? err.message : tAuth("loginFailed"));
     } finally {
       setLoading(false);
     }
@@ -511,11 +446,16 @@ export default function LandingPage() {
       <section className="bg-primary py-8 text-primary-foreground">
         <div className="mx-auto max-w-[1400px] px-6">
           <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
-            {stats.map((stat) => (
-              <div key={stat.label} className="text-center">
+            {[
+              { value: "10K+", labelKey: "stats.manuals" },
+              { value: "95%", labelKey: "stats.hours" },
+              { value: "500+", labelKey: "stats.users" },
+              { value: "4.9/5", labelKey: "stats.videos" },
+            ].map((stat) => (
+              <div key={stat.labelKey} className="text-center">
                 <div className="mb-2 font-display text-4xl">{stat.value}</div>
                 <div className="text-sm font-medium uppercase tracking-wide opacity-90">
-                  {stat.label}
+                  {t(stat.labelKey)}
                 </div>
               </div>
             ))}
@@ -547,33 +487,35 @@ export default function LandingPage() {
         <div className="relative mx-auto max-w-[1100px] px-6">
           <div className="mb-20 text-center">
             <p className="mb-4 text-xs font-bold uppercase tracking-widest text-primary">
-              Features
+              {t("nav.features")}
             </p>
             <h2 className="mb-6 font-display text-4xl leading-tight lg:text-5xl">
-              Everything you need to create professional documentation
+              {t("features.title")} <span className="text-primary">{t("features.titleHighlight")}</span>
             </h2>
             <p className="mx-auto max-w-[600px] text-lg text-muted-foreground">
-              Powerful AI tools combined with intuitive design to deliver
-              exceptional results
+              {t("features.subtitle")}
             </p>
           </div>
 
           <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {features.map((feature) => (
-              <div
-                key={feature.title}
-                className="group relative overflow-hidden rounded-lg border border-border bg-card p-8 transition-all duration-300 hover:-translate-y-1 hover:border-primary hover:shadow-lg"
-              >
-                <div className="absolute left-0 right-0 top-0 h-1 origin-left scale-x-0 bg-primary transition-transform duration-300 group-hover:scale-x-100" />
-                <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-lg border border-primary bg-primary/10">
-                  <feature.icon className="h-7 w-7 text-primary" />
+            {(["ai", "screenshots", "export", "projects", "templates", "multilingual"] as const).map((key) => {
+              const Icon = featureIcons[key];
+              return (
+                <div
+                  key={key}
+                  className="group relative overflow-hidden rounded-lg border border-border bg-card p-8 transition-all duration-300 hover:-translate-y-1 hover:border-primary hover:shadow-lg"
+                >
+                  <div className="absolute left-0 right-0 top-0 h-1 origin-left scale-x-0 bg-primary transition-transform duration-300 group-hover:scale-x-100" />
+                  <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-lg border border-primary bg-primary/10">
+                    <Icon className="h-7 w-7 text-primary" />
+                  </div>
+                  <h3 className="mb-4 font-display text-xl font-semibold">{t(`features.${key}.title`)}</h3>
+                  <p className="leading-relaxed text-muted-foreground">
+                    {t(`features.${key}.description`)}
+                  </p>
                 </div>
-                <h3 className="mb-4 font-display text-xl font-semibold">{feature.title}</h3>
-                <p className="leading-relaxed text-muted-foreground">
-                  {feature.description}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>
@@ -583,30 +525,23 @@ export default function LandingPage() {
         <div className="mx-auto max-w-[1100px] px-6">
           <div className="mb-20 text-center">
             <h2 className="font-display text-4xl leading-tight lg:text-5xl">
-              From Video to Manual in Minutes
+              {t("steps.title")}
             </h2>
           </div>
 
           <div className="grid gap-12 md:grid-cols-2">
-            {steps.map((step) => (
+            {(["step1", "step2", "step3", "step4"] as const).map((stepKey, index) => (
               <div
-                key={step.number}
+                key={stepKey}
                 className="rounded-lg border border-border bg-background p-10 transition-all duration-300 hover:border-primary hover:shadow-lg"
               >
                 <div className="mb-4 font-display text-4xl text-primary/80">
-                  {step.number}
+                  {t(`steps.${stepKey}.badge`)}
                 </div>
-                <h3 className="mb-4 font-display text-2xl font-semibold">{step.title}</h3>
+                <h3 className="mb-4 font-display text-2xl font-semibold">{t(`steps.${stepKey}.title`)}</h3>
                 <p className="mb-6 leading-relaxed text-muted-foreground">
-                  {step.description}
+                  {t(`steps.${stepKey}.description`)}
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  {step.badges.map((badge) => (
-                    <Badge key={badge} variant="secondary">
-                      {badge}
-                    </Badge>
-                  ))}
-                </div>
               </div>
             ))}
           </div>
@@ -623,11 +558,10 @@ export default function LandingPage() {
 
             <div className="relative z-10 mx-auto max-w-[700px]">
               <h2 className="mb-6 font-display text-3xl leading-tight md:text-4xl">
-                Ready to Transform Your Documentation?
+                {t("cta.title")}
               </h2>
               <p className="mb-10 text-lg leading-relaxed opacity-95">
-                Join thousands of teams creating better documentation, faster.
-                Start your free trial today.
+                {t("cta.description")}
               </p>
               <div className="flex flex-col justify-center gap-4 sm:flex-row">
                 <Button
@@ -636,7 +570,7 @@ export default function LandingPage() {
                   className="bg-white text-primary hover:bg-white/90"
                   onClick={() => setLoginOpen(true)}
                 >
-                  Start Free Trial
+                  {t("cta.button")}
                 </Button>
                 <Button
                   size="lg"
@@ -644,7 +578,7 @@ export default function LandingPage() {
                   className="border-2 border-white/50 bg-white/10 text-white hover:bg-white/20"
                   onClick={() => scrollToSection("how-it-works")}
                 >
-                  Schedule Demo
+                  {t("hero.ctaSecondary")}
                 </Button>
               </div>
             </div>
@@ -659,21 +593,21 @@ export default function LandingPage() {
             <div className="max-w-[350px]">
               <div className="mb-4 font-display text-xl">vDocs</div>
               <p className="leading-relaxed text-muted-foreground">
-                AI-powered documentation from video.
+                {t("hero.badge")}
               </p>
             </div>
 
             <div>
               <h4 className="mb-4 text-sm font-bold uppercase tracking-wider">
-                Product
+                {t("footer.product")}
               </h4>
               <ul className="space-y-3">
                 <li>
                   <a
-                    href="#"
+                    href="#features"
                     className="text-sm text-muted-foreground transition-colors hover:text-primary"
                   >
-                    Features
+                    {t("footer.features")}
                   </a>
                 </li>
                 <li>
@@ -681,7 +615,7 @@ export default function LandingPage() {
                     href="#"
                     className="text-sm text-muted-foreground transition-colors hover:text-primary"
                   >
-                    Pricing
+                    {t("footer.pricing")}
                   </a>
                 </li>
                 <li>
@@ -689,15 +623,7 @@ export default function LandingPage() {
                     href="#"
                     className="text-sm text-muted-foreground transition-colors hover:text-primary"
                   >
-                    Use Cases
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-sm text-muted-foreground transition-colors hover:text-primary"
-                  >
-                    Documentation
+                    {t("footer.changelog")}
                   </a>
                 </li>
               </ul>
@@ -705,7 +631,7 @@ export default function LandingPage() {
 
             <div>
               <h4 className="mb-4 text-sm font-bold uppercase tracking-wider">
-                Company
+                {t("footer.company")}
               </h4>
               <ul className="space-y-3">
                 <li>
@@ -713,7 +639,7 @@ export default function LandingPage() {
                     href="#"
                     className="text-sm text-muted-foreground transition-colors hover:text-primary"
                   >
-                    About
+                    {t("footer.about")}
                   </a>
                 </li>
                 <li>
@@ -721,7 +647,7 @@ export default function LandingPage() {
                     href="#"
                     className="text-sm text-muted-foreground transition-colors hover:text-primary"
                   >
-                    Blog
+                    {t("footer.blog")}
                   </a>
                 </li>
                 <li>
@@ -729,15 +655,7 @@ export default function LandingPage() {
                     href="#"
                     className="text-sm text-muted-foreground transition-colors hover:text-primary"
                   >
-                    Careers
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-sm text-muted-foreground transition-colors hover:text-primary"
-                  >
-                    Contact
+                    {t("footer.careers")}
                   </a>
                 </li>
               </ul>
@@ -745,7 +663,7 @@ export default function LandingPage() {
 
             <div>
               <h4 className="mb-4 text-sm font-bold uppercase tracking-wider">
-                Legal
+                {t("footer.legal")}
               </h4>
               <ul className="space-y-3">
                 <li>
@@ -753,7 +671,7 @@ export default function LandingPage() {
                     href="#"
                     className="text-sm text-muted-foreground transition-colors hover:text-primary"
                   >
-                    Privacy
+                    {t("footer.privacy")}
                   </a>
                 </li>
                 <li>
@@ -761,15 +679,7 @@ export default function LandingPage() {
                     href="#"
                     className="text-sm text-muted-foreground transition-colors hover:text-primary"
                   >
-                    Terms
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-sm text-muted-foreground transition-colors hover:text-primary"
-                  >
-                    Security
+                    {t("footer.terms")}
                   </a>
                 </li>
               </ul>
@@ -778,7 +688,7 @@ export default function LandingPage() {
 
           <div className="border-t border-border pt-8">
             <p className="text-sm text-muted-foreground">
-              © 2025 vDocs. All rights reserved.
+              © 2025 vDocs. {t("footer.copyright")}
             </p>
           </div>
         </div>
@@ -789,19 +699,19 @@ export default function LandingPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-display text-2xl">
-              Welcome Back
+              {tAuth("welcomeBack")}
             </DialogTitle>
             <DialogDescription>
-              Enter your user ID to continue to the dashboard
+              {tAuth("userIdPlaceholder")}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleLogin}>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="userId">User ID</Label>
+                <Label htmlFor="userId">{tAuth("userId")}</Label>
                 <Input
                   id="userId"
-                  placeholder="Enter your user ID"
+                  placeholder={tAuth("userIdPlaceholder")}
                   value={userId}
                   onChange={(e) => setUserId(e.target.value)}
                   disabled={loading}
@@ -816,10 +726,10 @@ export default function LandingPage() {
                 variant="outline"
                 onClick={() => setLoginOpen(false)}
               >
-                Cancel
+                {tc("cancel")}
               </Button>
               <Button type="submit" disabled={loading}>
-                {loading ? "Signing in..." : "Sign In"}
+                {loading ? tAuth("signingIn") : tAuth("signIn")}
               </Button>
             </DialogFooter>
           </form>
