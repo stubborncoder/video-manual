@@ -211,8 +211,8 @@ export default function ProjectsPage() {
       setProjectList(res.projects);
     } catch (e) {
       console.error("Failed to load projects:", e);
-      toast.error("Failed to load projects", {
-        description: e instanceof Error ? e.message : "Unknown error",
+      toast.error(t("loadFailed"), {
+        description: e instanceof Error ? e.message : tc("error"),
       });
     } finally {
       setLoading(false);
@@ -245,15 +245,15 @@ export default function ProjectsPage() {
 
     try {
       await projects.create(newProjectName.trim(), newProjectDesc.trim());
-      toast.success("Project created");
+      toast.success(t("projectCreated"));
       setCreateDialogOpen(false);
       setNewProjectName("");
       setNewProjectDesc("");
       await loadProjects();
     } catch (e) {
       console.error("Failed to create project:", e);
-      toast.error("Failed to create project", {
-        description: e instanceof Error ? e.message : "Unknown error",
+      toast.error(t("createFailed"), {
+        description: e instanceof Error ? e.message : tc("error"),
       });
     }
   }
@@ -294,7 +294,7 @@ export default function ProjectsPage() {
     setSaving(true);
     try {
       await projects.update(editProjectId, editName.trim(), editDescription.trim());
-      toast.success("Project updated");
+      toast.success(t("projectUpdated"));
       setEditDialogOpen(false);
       await loadProjects();
       // Refresh detail view if open
@@ -304,8 +304,8 @@ export default function ProjectsPage() {
       }
     } catch (e) {
       console.error("Failed to update project:", e);
-      toast.error("Failed to update project", {
-        description: e instanceof Error ? e.message : "Unknown error",
+      toast.error(t("updateFailed"), {
+        description: e instanceof Error ? e.message : tc("error"),
       });
     } finally {
       setSaving(false);
@@ -324,9 +324,9 @@ export default function ProjectsPage() {
     setDeleting(true);
     try {
       await projects.delete(projectToDelete.id, deleteManuals);
-      toast.success("Project moved to trash", {
+      toast.success(t("movedToTrash"), {
         description: deleteManuals
-          ? `${projectToDelete.name} and ${projectToDelete.manual_count} manual(s)`
+          ? `${projectToDelete.name} + ${projectToDelete.manual_count} ${t("manuals")}`
           : projectToDelete.name,
       });
       setDeleteDialogOpen(false);
@@ -334,8 +334,8 @@ export default function ProjectsPage() {
       await loadProjects();
     } catch (e) {
       console.error("Failed to delete project:", e);
-      toast.error("Failed to delete project", {
-        description: e instanceof Error ? e.message : "Unknown error",
+      toast.error(t("deleteFailed"), {
+        description: e instanceof Error ? e.message : tc("error"),
       });
     } finally {
       setDeleting(false);
@@ -349,8 +349,8 @@ export default function ProjectsPage() {
       setProjectSheetOpen(true);
     } catch (e) {
       console.error("Failed to load project details:", e);
-      toast.error("Failed to load project details", {
-        description: e instanceof Error ? e.message : "Unknown error",
+      toast.error(t("loadDetailsFailed"), {
+        description: e instanceof Error ? e.message : tc("error"),
       });
     }
   }
@@ -384,7 +384,7 @@ export default function ProjectsPage() {
 
     try {
       await projects.addChapter(selectedProject.id, newChapterTitle.trim(), newChapterDesc.trim());
-      toast.success("Chapter added");
+      toast.success(t("chapterAdded"));
       setAddChapterDialogOpen(false);
       setNewChapterTitle("");
       setNewChapterDesc("");
@@ -393,8 +393,8 @@ export default function ProjectsPage() {
       setSelectedProject(detail);
     } catch (e) {
       console.error("Failed to add chapter:", e);
-      toast.error("Failed to add chapter", {
-        description: e instanceof Error ? e.message : "Unknown error",
+      toast.error(t("chapterAddFailed"), {
+        description: e instanceof Error ? e.message : tc("error"),
       });
     }
   }
@@ -427,15 +427,15 @@ export default function ProjectsPage() {
 
     try {
       await projects.updateChapter(selectedProject.id, editChapterId, editChapterTitle.trim(), editChapterDesc.trim());
-      toast.success("Chapter updated");
+      toast.success(t("chapterUpdated"));
       setEditChapterId(null);
       // Refresh project detail
       const detail = await projects.get(selectedProject.id);
       setSelectedProject(detail);
     } catch (e) {
       console.error("Failed to update chapter:", e);
-      toast.error("Failed to update chapter", {
-        description: e instanceof Error ? e.message : "Unknown error",
+      toast.error(t("chapterUpdateFailed"), {
+        description: e instanceof Error ? e.message : tc("error"),
       });
     }
   }
@@ -445,14 +445,14 @@ export default function ProjectsPage() {
 
     try {
       await projects.deleteChapter(selectedProject.id, chapterId);
-      toast.success("Chapter deleted");
+      toast.success(t("chapterDeleted"));
       // Refresh project detail
       const detail = await projects.get(selectedProject.id);
       setSelectedProject(detail);
     } catch (e) {
       console.error("Failed to delete chapter:", e);
-      toast.error("Failed to delete chapter", {
-        description: e instanceof Error ? e.message : "Unknown error",
+      toast.error(t("chapterDeleteFailed"), {
+        description: e instanceof Error ? e.message : tc("error"),
       });
     }
   }
@@ -462,14 +462,14 @@ export default function ProjectsPage() {
 
     try {
       await projects.removeManual(selectedProject.id, manualId);
-      toast.success("Manual removed from project");
+      toast.success(t("manualRemovedFromProject"));
       // Refresh project detail
       const detail = await projects.get(selectedProject.id);
       setSelectedProject(detail);
     } catch (e) {
       console.error("Failed to remove manual from project:", e);
-      toast.error("Failed to remove manual from project", {
-        description: e instanceof Error ? e.message : "Unknown error",
+      toast.error(t("manualRemoveFailed"), {
+        description: e instanceof Error ? e.message : tc("error"),
       });
     }
   }
@@ -516,13 +516,13 @@ export default function ProjectsPage() {
         options.language,
         options.templateName
       );
-      toast.success("Export complete", {
+      toast.success(t("exportComplete"), {
         description: result.output_path,
       });
     } catch (e) {
       console.error("Failed to export project:", e);
-      toast.error("Failed to export project", {
-        description: e instanceof Error ? e.message : "Unknown error",
+      toast.error(t("exportFailed"), {
+        description: e instanceof Error ? e.message : tc("error"),
       });
     } finally {
       setExporting(null);
@@ -533,13 +533,13 @@ export default function ProjectsPage() {
     setExporting(format);
     try {
       const result = await projects.export(projectId, format);
-      toast.success("Export complete", {
+      toast.success(t("exportComplete"), {
         description: result.output_path,
       });
     } catch (e) {
       console.error("Failed to export project:", e);
-      toast.error("Failed to export project", {
-        description: e instanceof Error ? e.message : "Unknown error",
+      toast.error(t("exportFailed"), {
+        description: e instanceof Error ? e.message : tc("error"),
       });
     } finally {
       setExporting(null);
@@ -554,8 +554,8 @@ export default function ProjectsPage() {
       setViewManualOpen(true);
     } catch (e) {
       console.error("Failed to load manual:", e);
-      toast.error("Failed to load manual", {
-        description: e instanceof Error ? e.message : "Unknown error",
+      toast.error(tc("error"), {
+        description: e instanceof Error ? e.message : tc("error"),
       });
     } finally {
       setLoadingManual(false);
@@ -568,8 +568,8 @@ export default function ProjectsPage() {
     : projectList.filter((p) => p.id === filterProjectId);
 
   const selectedFilterName = filterProjectId === "__all__"
-    ? "All Projects"
-    : projectList.find((p) => p.id === filterProjectId)?.name || "Select project";
+    ? t("allProjects")
+    : projectList.find((p) => p.id === filterProjectId)?.name || t("allProjects");
 
   // Show compiler view when compiling
   if (isCompiling && compileProjectId) {
@@ -615,9 +615,9 @@ export default function ProjectsPage() {
             </PopoverTrigger>
             <PopoverContent className="w-[200px] p-0">
               <Command>
-                <CommandInput placeholder="Search projects..." />
+                <CommandInput placeholder={t("searchProjects")} />
                 <CommandList>
-                  <CommandEmpty>No project found.</CommandEmpty>
+                  <CommandEmpty>{t("noProjectFound")}</CommandEmpty>
                   <CommandGroup>
                     <CommandItem
                       value="__all__"
@@ -629,7 +629,7 @@ export default function ProjectsPage() {
                       <Check
                         className={`mr-2 h-4 w-4 ${filterProjectId === "__all__" ? "opacity-100" : "opacity-0"}`}
                       />
-                      All Projects
+                      {t("allProjects")}
                     </CommandItem>
                     {projectList.map((project) => (
                       <CommandItem
@@ -656,17 +656,17 @@ export default function ProjectsPage() {
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                New Project
+                {t("newProject")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Create Project</DialogTitle>
+                <DialogTitle>{t("createProject")}</DialogTitle>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label>Name</Label>
+                    <Label>{t("name")}</Label>
                     <span className="text-xs text-muted-foreground">
                       {newProjectName.length}/{VALIDATION_LIMITS.PROJECT_NAME_MAX_LENGTH}
                     </span>
@@ -674,13 +674,13 @@ export default function ProjectsPage() {
                   <Input
                     value={newProjectName}
                     onChange={(e) => setNewProjectName(e.target.value)}
-                    placeholder="Project name"
+                    placeholder={t("projectName")}
                     maxLength={VALIDATION_LIMITS.PROJECT_NAME_MAX_LENGTH}
                   />
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label>Description</Label>
+                    <Label>{tc("description")}</Label>
                     <span className="text-xs text-muted-foreground">
                       {newProjectDesc.length}/{VALIDATION_LIMITS.PROJECT_DESC_MAX_LENGTH}
                     </span>
@@ -688,12 +688,12 @@ export default function ProjectsPage() {
                   <Input
                     value={newProjectDesc}
                     onChange={(e) => setNewProjectDesc(e.target.value)}
-                    placeholder="Optional description"
+                    placeholder={t("optionalDesc")}
                     maxLength={VALIDATION_LIMITS.PROJECT_DESC_MAX_LENGTH}
                   />
                 </div>
                 <Button onClick={handleCreate} className="w-full">
-                  Create
+                  {t("create")}
                 </Button>
               </div>
             </DialogContent>
@@ -719,9 +719,9 @@ export default function ProjectsPage() {
         <Card>
           <CardContent className="py-8 text-center">
             <FolderKanban className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">No projects match this filter</p>
+            <p className="text-muted-foreground">{t("noMatchingProjects")}</p>
             <Button variant="outline" className="mt-4" onClick={() => setFilterProjectId("__all__")}>
-              Show All
+              {t("showAll")}
             </Button>
           </CardContent>
         </Card>
@@ -749,7 +749,7 @@ export default function ProjectsPage() {
                       {project.is_default && (
                         <Badge variant="secondary" className="shrink-0 text-[10px] font-semibold">
                           <Star className="h-3 w-3 mr-1" />
-                          Default
+                          {t("default")}
                         </Badge>
                       )}
                     </CardTitle>
@@ -783,7 +783,7 @@ export default function ProjectsPage() {
                     </div>
                     <div className="flex flex-col">
                       <span className="text-lg font-semibold leading-none">{project.manual_count}</span>
-                      <span className="text-xs text-muted-foreground">manuals</span>
+                      <span className="text-xs text-muted-foreground">{t("manuals")}</span>
                     </div>
                   </div>
 
@@ -794,7 +794,7 @@ export default function ProjectsPage() {
                       </div>
                       <div className="flex flex-col">
                         <span className="text-lg font-semibold leading-none">{project.chapter_count}</span>
-                        <span className="text-xs text-muted-foreground">chapters</span>
+                        <span className="text-xs text-muted-foreground">{t("chapters")}</span>
                       </div>
                     </div>
                   )}
@@ -808,7 +808,7 @@ export default function ProjectsPage() {
                     onClick={() => handleViewDetails(project.id)}
                   >
                     <Eye className="mr-2 h-4 w-4" />
-                    View Project
+                    {t("viewProject")}
                   </Button>
                   {!project.is_default && (
                     <Button
@@ -858,7 +858,7 @@ export default function ProjectsPage() {
                   {selectedProject.is_default && (
                     <Badge variant="secondary">
                       <Star className="h-3 w-3 mr-1" />
-                      Default
+                      {t("default")}
                     </Badge>
                   )}
                 </SheetTitle>
@@ -873,7 +873,7 @@ export default function ProjectsPage() {
                     disabled={selectedProject.manuals.length === 0}
                   >
                     <Wand2 className="h-4 w-4 mr-2" />
-                    Compile
+                    {t("compile")}
                   </Button>
 
                   {/* Export Dropdown */}
@@ -885,19 +885,19 @@ export default function ProjectsPage() {
                         ) : (
                           <FileDown className="h-4 w-4 mr-2" />
                         )}
-                        {exporting ? `Exporting ${exporting.toUpperCase()}...` : "Export"}
+                        {exporting ? `${t("exporting")} ${exporting.toUpperCase()}...` : t("export")}
                         {!exporting && <ChevronDown className="h-4 w-4 ml-2" />}
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
                       <DropdownMenuItem onClick={() => handleQuickExport(selectedProject.id, "pdf")} disabled={exporting !== null}>
-                        PDF Document
+                        {t("pdfDocument")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openExportDialog()} disabled={exporting !== null}>
-                        Word Document...
+                        {t("wordDocument")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleQuickExport(selectedProject.id, "html")} disabled={exporting !== null}>
-                        HTML
+                        {t("html")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -906,7 +906,7 @@ export default function ProjectsPage() {
                     <>
                       <Button variant="outline" onClick={() => openEditDialog(selectedProject)}>
                         <Edit2 className="h-4 w-4 mr-2" />
-                        Edit
+                        {tc("edit")}
                       </Button>
                       <Button
                         variant="outline"
@@ -936,23 +936,23 @@ export default function ProjectsPage() {
                   <TabsList>
                     <TabsTrigger value="chapters">
                       <BookOpen className="h-4 w-4 mr-2" />
-                      Chapters ({selectedProject.chapters.length})
+                      {t("chaptersTab")} ({selectedProject.chapters.length})
                     </TabsTrigger>
                     <TabsTrigger value="manuals">
                       <FileText className="h-4 w-4 mr-2" />
-                      Manuals ({selectedProject.manuals.length})
+                      {t("manualsTab")} ({selectedProject.manuals.length})
                     </TabsTrigger>
                     <TabsTrigger value="videos">
                       <Video className="h-4 w-4 mr-2" />
-                      Videos ({selectedProject.videos?.length || 0})
+                      {t("videosTab")} ({selectedProject.videos?.length || 0})
                     </TabsTrigger>
                     <TabsTrigger value="settings">
                       <Settings className="h-4 w-4 mr-2" />
-                      Export Settings
+                      {t("exportSettings")}
                     </TabsTrigger>
                     <TabsTrigger value="versions">
                       <History className="h-4 w-4 mr-2" />
-                      Compilations
+                      {t("compilations")}
                     </TabsTrigger>
                   </TabsList>
                 </div>
@@ -961,19 +961,19 @@ export default function ProjectsPage() {
                 <TabsContent value="chapters" className="flex-1 overflow-auto p-6 space-y-4">
                   <div className="flex justify-between items-center">
                     <p className="text-sm text-muted-foreground">
-                      Organize your manuals into chapters for better structure
+                      {t("organizeChaptersDesc")}
                     </p>
                     <Button size="sm" onClick={() => setAddChapterDialogOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
-                      Add Chapter
+                      {t("addChapter")}
                     </Button>
                   </div>
 
                   {selectedProject.chapters.length === 0 ? (
                     <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
                       <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                      <p className="text-lg font-medium">No chapters yet</p>
-                      <p className="text-sm mt-1">Add chapters to organize your manuals</p>
+                      <p className="text-lg font-medium">{t("noChaptersYet")}</p>
+                      <p className="text-sm mt-1">{t("addChaptersToOrganize")}</p>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -1099,8 +1099,8 @@ export default function ProjectsPage() {
                   {selectedProject.manuals.length === 0 ? (
                     <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
                       <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                      <p className="text-lg font-medium">No manuals in this project</p>
-                      <p className="text-sm mt-1">Process a video to generate manuals</p>
+                      <p className="text-lg font-medium">{t("noManualsInProject")}</p>
+                      <p className="text-sm mt-1">{t("processVideoToGenerate")}</p>
                     </div>
                   ) : (
                     <div className="grid gap-4 md:grid-cols-2">
@@ -1158,8 +1158,8 @@ export default function ProjectsPage() {
                   {!selectedProject.videos || selectedProject.videos.length === 0 ? (
                     <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
                       <Video className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                      <p className="text-lg font-medium">No videos in this project</p>
-                      <p className="text-sm mt-1">Videos are automatically linked when you generate manuals</p>
+                      <p className="text-lg font-medium">{t("noVideosInProject")}</p>
+                      <p className="text-sm mt-1">{t("videosAutoLinked")}</p>
                     </div>
                   ) : (
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
