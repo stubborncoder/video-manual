@@ -180,7 +180,7 @@ export default function TemplatesPage() {
               <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary/10">
                 <User className="h-4 w-4 text-primary" />
               </div>
-              <h2 className="font-display text-xl">Your Templates</h2>
+              <h2 className="font-display text-xl">{t("yourTemplates")}</h2>
               <Badge variant="secondary" className="ml-auto">
                 {userTemplates.length}
               </Badge>
@@ -196,10 +196,10 @@ export default function TemplatesPage() {
                     <Upload className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <p className="text-muted-foreground">
-                    No custom templates yet
+                    {t("noCustomTemplates")}
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Click to upload a .docx template
+                    {t("clickToUpload")}
                   </p>
                 </CardContent>
               </Card>
@@ -227,7 +227,7 @@ export default function TemplatesPage() {
               <div className="flex items-center justify-center h-8 w-8 rounded-lg bg-primary/10">
                 <Globe className="h-4 w-4 text-primary" />
               </div>
-              <h2 className="font-display text-xl">Default Templates</h2>
+              <h2 className="font-display text-xl">{t("defaultTemplates")}</h2>
               <Badge variant="secondary" className="ml-auto">
                 {globalTemplates.length}
               </Badge>
@@ -236,7 +236,7 @@ export default function TemplatesPage() {
             {globalTemplates.length === 0 ? (
               <Card className="border-dashed">
                 <CardContent className="flex items-center justify-center py-8 text-muted-foreground">
-                  No default templates available
+                  {t("noDefaultTemplates")}
                 </CardContent>
               </Card>
             ) : (
@@ -259,9 +259,9 @@ export default function TemplatesPage() {
       <Dialog open={uploadOpen} onOpenChange={setUploadOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="font-display text-xl">Upload Template</DialogTitle>
+            <DialogTitle className="font-display text-xl">{t("uploadDialogTitle")}</DialogTitle>
             <DialogDescription>
-              Give your template a name to identify it when exporting
+              {t("uploadDialogDesc")}
             </DialogDescription>
           </DialogHeader>
 
@@ -280,7 +280,7 @@ export default function TemplatesPage() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="template-name">Template Name</Label>
+              <Label htmlFor="template-name">{t("templateName")}</Label>
               <Input
                 id="template-name"
                 placeholder="e.g., company-brand"
@@ -288,7 +288,7 @@ export default function TemplatesPage() {
                 onChange={(e) => setCustomName(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Use lowercase letters, numbers, and hyphens
+                {t("templateNameHint")}
               </p>
             </div>
           </div>
@@ -302,18 +302,18 @@ export default function TemplatesPage() {
                 setCustomName("");
               }}
             >
-              Cancel
+              {tc("cancel")}
             </Button>
             <Button onClick={handleUpload} disabled={uploading || !uploadFile}>
               {uploading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Uploading...
+                  {t("uploading")}
                 </>
               ) : (
                 <>
                   <Upload className="mr-2 h-4 w-4" />
-                  Upload
+                  {tc("upload")}
                 </>
               )}
             </Button>
@@ -325,16 +325,15 @@ export default function TemplatesPage() {
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="font-display text-xl">Delete Template</DialogTitle>
+            <DialogTitle className="font-display text-xl">{t("deleteDialogTitle")}</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete &ldquo;{selectedTemplate?.name}&rdquo;? This action
-              cannot be undone.
+              {t("deleteDialogDesc", { name: selectedTemplate?.name || "" })}
             </DialogDescription>
           </DialogHeader>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>
-              Cancel
+              {tc("cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -344,12 +343,12 @@ export default function TemplatesPage() {
               {deleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
+                  {t("deleting")}
                 </>
               ) : (
                 <>
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
+                  {tc("delete")}
                 </>
               )}
             </Button>
@@ -376,6 +375,7 @@ interface TemplateCardProps {
 }
 
 function TemplateCard({ template, onPreview, onDownload, onDelete }: TemplateCardProps) {
+  const tc = useTranslations("common");
   return (
     <Card className="group relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5 hover:border-primary/30">
       {/* Gradient accent on hover */}
@@ -421,7 +421,7 @@ function TemplateCard({ template, onPreview, onDownload, onDelete }: TemplateCar
             onClick={onPreview}
           >
             <Eye className="mr-2 h-3.5 w-3.5" />
-            Preview
+            {tc("preview")}
           </Button>
           <Button
             variant="ghost"

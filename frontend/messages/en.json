@@ -259,7 +259,20 @@
     "deleteSuccess": "Template deleted successfully",
     "uploadSuccess": "Template uploaded successfully",
     "default": "Default",
-    "setDefault": "Set as Default"
+    "setDefault": "Set as Default",
+    "yourTemplates": "Your Templates",
+    "noCustomTemplates": "No custom templates yet",
+    "clickToUpload": "Click to upload a .docx template",
+    "defaultTemplates": "Default Templates",
+    "noDefaultTemplates": "No default templates available",
+    "uploadDialogTitle": "Upload Template",
+    "uploadDialogDesc": "Give your template a name to identify it when exporting",
+    "templateName": "Template Name",
+    "templateNameHint": "Use lowercase letters, numbers, and hyphens",
+    "uploading": "Uploading...",
+    "deleteDialogTitle": "Delete Template",
+    "deleteDialogDesc": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+    "deleting": "Deleting..."
   },
   "trash": {
     "title": "Trash",

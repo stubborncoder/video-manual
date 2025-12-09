@@ -259,7 +259,20 @@
     "deleteSuccess": "Plantilla eliminada exitosamente",
     "uploadSuccess": "Plantilla subida exitosamente",
     "default": "Predeterminada",
-    "setDefault": "Establecer como Predeterminada"
+    "setDefault": "Establecer como Predeterminada",
+    "yourTemplates": "Tus Plantillas",
+    "noCustomTemplates": "Sin plantillas personalizadas aún",
+    "clickToUpload": "Haz clic para subir una plantilla .docx",
+    "defaultTemplates": "Plantillas Predeterminadas",
+    "noDefaultTemplates": "No hay plantillas predeterminadas disponibles",
+    "uploadDialogTitle": "Subir Plantilla",
+    "uploadDialogDesc": "Dale un nombre a tu plantilla para identificarla al exportar",
+    "templateName": "Nombre de Plantilla",
+    "templateNameHint": "Usa letras minúsculas, números y guiones",
+    "uploading": "Subiendo...",
+    "deleteDialogTitle": "Eliminar Plantilla",
+    "deleteDialogDesc": "¿Estás seguro de que quieres eliminar \"{name}\"? Esta acción no se puede deshacer.",
+    "deleting": "Eliminando..."
   },
   "trash": {
     "title": "Papelera",
