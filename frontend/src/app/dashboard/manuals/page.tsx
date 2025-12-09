@@ -644,7 +644,7 @@ function ManualsPageContent() {
 
     setEvaluating(true);
     try {
-      const result = await manuals.evaluate(manualToEvaluate.id, selectedLanguage);
+      const result = await manuals.evaluate(manualToEvaluate.id, selectedLanguage, locale);
       setEvaluationResult(result);
       toast.success("Evaluation complete and saved");
 

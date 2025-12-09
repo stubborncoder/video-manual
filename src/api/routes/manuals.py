@@ -48,6 +48,7 @@ class ManualTitleUpdate(BaseModel):
 class ManualEvaluationRequest(BaseModel):
     """Request to evaluate a manual."""
     language: str = "en"
+    user_language: Optional[str] = None  # User's UI language preference
 
     @field_validator('language')
     @classmethod
@@ -57,6 +58,18 @@ class ManualEvaluationRequest(BaseModel):
         Accepts both language names ("English") and codes ("en").
         Returns the ISO 639-1 code.
         """
+        return normalize_language_to_code(v)
+
+    @field_validator('user_language')
+    @classmethod
+    def validate_user_language(cls, v: Optional[str]) -> Optional[str]:
+        """Validate and normalize user language to ISO code.
+
+        Accepts both language names ("English") and codes ("en").
+        Returns the ISO 639-1 code, or None if not provided.
+        """
+        if v is None:
+            return None
         return normalize_language_to_code(v)
 
 router = APIRouter(prefix="/manuals", tags=["manuals"])
@@ -1456,6 +1469,14 @@ async def evaluate_manual(
     }
     format_name = format_names.get(document_format, "Step-by-step Manual")
 
+    # Determine the language for the evaluation response
+    # Use user_language if provided, otherwise fall back to manual language, then English
+    evaluation_language_code = evaluation_request.user_language or evaluation_request.language
+    evaluation_language_name = SUPPORTED_LANGUAGES.get(evaluation_language_code, "English")
+
+    # Language instruction for the LLM
+    language_instruction = f"\n\n**CRITICAL: Provide your entire evaluation response in {evaluation_language_name}.** All text in your response (summary, strengths, areas for improvement, explanations, recommendations) must be written in {evaluation_language_name}."
+
     evaluation_prompt = f"""You are an expert technical documentation evaluator. Please evaluate the following **{format_name}**.
 {context_section}
 
@@ -1469,6 +1490,7 @@ async def evaluate_manual(
 Evaluate this {format_name.lower()} comprehensively. This is a video-generated document with screenshots, so assess both written and visual content quality.
 
 **Important:** Evaluate against the standards for a {format_name.lower()}, not a generic document.
+{language_instruction}
 
 Provide your evaluation in the following JSON format:
 

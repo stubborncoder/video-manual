@@ -368,10 +368,10 @@ export const manuals = {
       }>;
     }>(`/api/manuals/${manualId}/exports`),
 
-  evaluate: (manualId: string, language = "en") =>
+  evaluate: (manualId: string, language = "en", userLanguage?: string) =>
     request<ManualEvaluation>(`/api/manuals/${manualId}/evaluate`, {
       method: "POST",
-      body: JSON.stringify({ language }),
+      body: JSON.stringify({ language, user_language: userLanguage }),
     }),
 
   // Stored evaluations
