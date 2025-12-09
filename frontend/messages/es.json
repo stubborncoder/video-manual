@@ -607,7 +607,9 @@
         "wordDocument": "Documento Word",
         "wordDocumentDesc": "Archivos .docx totalmente editables que los equipos pueden revisar, comentar y refinar colaborativamente",
         "markdown": "Markdown",
-        "markdownDesc": "Formato markdown limpio ideal para bases de conocimiento, wikis y pipelines de ingestión de IA/LLM"
+        "markdownDesc": "Formato markdown limpio ideal para bases de conocimiento, wikis y pipelines de ingestión de IA/LLM",
+        "semanticChunks": "Fragmentos Semánticos",
+        "semanticChunksDesc": "Fragmentos optimizados para pipelines RAG con contexto y metadatos preservados"
       }
     }
   },

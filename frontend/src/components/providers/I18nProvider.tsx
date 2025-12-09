@@ -48,7 +48,11 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const currentLocale = mounted ? locale : defaultLocale;
 
   return (
-    <NextIntlClientProvider locale={currentLocale} messages={messages[currentLocale]}>
+    <NextIntlClientProvider
+      locale={currentLocale}
+      messages={messages[currentLocale]}
+      timeZone="UTC"
+    >
       <I18nContext.Provider value={{ locale: currentLocale, setLocale }}>
         {children}
       </I18nContext.Provider>

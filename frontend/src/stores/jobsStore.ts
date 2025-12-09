@@ -58,8 +58,10 @@ export const useJobsStore = create<JobsState>((set, get) => ({
     try {
       const response = await jobsApi.listActive();
       const jobsMap: Record<string, JobInfo> = {};
-      for (const job of response.jobs) {
-        jobsMap[job.id] = job;
+      if (response.jobs) {
+        for (const job of response.jobs) {
+          jobsMap[job.id] = job;
+        }
       }
       set((state) => ({
         jobs: { ...state.jobs, ...jobsMap },
@@ -77,8 +79,10 @@ export const useJobsStore = create<JobsState>((set, get) => ({
     try {
       const response = await jobsApi.list();
       const jobsMap: Record<string, JobInfo> = {};
-      for (const job of response.jobs) {
-        jobsMap[job.id] = job;
+      if (response.jobs) {
+        for (const job of response.jobs) {
+          jobsMap[job.id] = job;
+        }
       }
       set({
         jobs: jobsMap,

@@ -607,7 +607,9 @@
         "wordDocument": "Word Document",
         "wordDocumentDesc": "Fully editable .docx files that teams can review, comment on, and refine collaboratively",
         "markdown": "Markdown",
-        "markdownDesc": "Clean markdown format ideal for knowledge bases, wikis, and AI/LLM ingestion pipelines"
+        "markdownDesc": "Clean markdown format ideal for knowledge bases, wikis, and AI/LLM ingestion pipelines",
+        "semanticChunks": "Semantic Chunks",
+        "semanticChunksDesc": "AI-ready chunks optimized for RAG pipelines with preserved context and metadata"
       }
     }
   },

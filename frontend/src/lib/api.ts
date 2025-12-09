@@ -61,9 +61,9 @@ export async function request<T>(
     throw new Error(errorMessage);
   }
 
-  // Successful response but not JSON (shouldn't happen, but handle it)
-  if (!isJson) {
-    throw new Error("Server returned non-JSON response");
+  // Handle successful responses with no content (204) or empty body
+  if (response.status === 204 || !isJson) {
+    return {} as T;
   }
 
   return response.json();
