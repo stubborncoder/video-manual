@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
+import { useTranslations } from "next-intl";
 import {
   Video,
   FileText,
@@ -106,6 +107,7 @@ const stats = [
 ];
 
 export default function LandingPage() {
+  const t = useTranslations("landing");
   const [loginOpen, setLoginOpen] = useState(false);
   const [userId, setUserId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -158,13 +160,13 @@ export default function LandingPage() {
                 onClick={() => scrollToSection("features")}
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                Features
+                {t("nav.features")}
               </button>
               <button
                 onClick={() => scrollToSection("how-it-works")}
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
-                How it Works
+                {t("nav.howItWorks")}
               </button>
 
               <div className="flex items-center gap-3">
@@ -173,10 +175,10 @@ export default function LandingPage() {
                   size="sm"
                   onClick={() => setLoginOpen(true)}
                 >
-                  Sign In
+                  {t("nav.signIn")}
                 </Button>
                 <Button size="sm" onClick={() => setLoginOpen(true)}>
-                  Get Started
+                  {t("nav.getStarted")}
                 </Button>
                 <Button
                   variant="outline"
@@ -200,27 +202,25 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 items-center gap-8 lg:gap-12 lg:grid-cols-[1.2fr_1fr]">
             <div>
               <span className="mb-3 inline-block rounded bg-primary px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-primary-foreground">
-                AI-Powered Documentation
+                {t("hero.badge")}
               </span>
               <h1 className="mb-3 font-display text-3xl leading-tight tracking-tight sm:text-4xl lg:text-5xl">
-                Transform Video into
-                <span className="block text-primary">Visual Documentation</span>
+                {t("hero.title")}
+                <span className="block text-primary">{t("hero.titleHighlight")}</span>
               </h1>
               <p className="mb-5 max-w-[540px] text-base leading-relaxed text-muted-foreground lg:text-lg">
-                Create comprehensive, step-by-step visual manuals from your
-                video content. Advanced AI extracts, analyzes, and presents
-                information beautifully.
+                {t("hero.description")}
               </p>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button size="default" onClick={() => setLoginOpen(true)}>
-                  Start Creating
+                  {t("hero.cta")}
                 </Button>
                 <Button
                   variant="outline"
                   size="default"
                   onClick={() => scrollToSection("how-it-works")}
                 >
-                  View Demo
+                  {t("hero.ctaSecondary")}
                 </Button>
               </div>
             </div>
