@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { manuals, ManualSummary } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -66,6 +67,8 @@ export function CloneManualDialog({
   manual,
   onSuccess,
 }: CloneManualDialogProps) {
+  const t = useTranslations("clone");
+  const tc = useTranslations("common");
   const [targetFormat, setTargetFormat] = useState<string>("");
   const [customTitle, setCustomTitle] = useState("");
   const [reformatContent, setReformatContent] = useState(false);
@@ -124,10 +127,10 @@ export function CloneManualDialog({
         <DialogHeader className="shrink-0">
           <DialogTitle className="font-display text-xl flex items-center gap-2">
             <Copy className="h-5 w-5 text-primary" />
-            Clone to Different Format
+            {t("title")}
           </DialogTitle>
           <DialogDescription>
-            Create a copy of &quot;{manual.title}&quot; in a different document format
+            {t("description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -145,7 +148,7 @@ export function CloneManualDialog({
 
           {/* Target Format Selection */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium">Target Format</Label>
+            <Label className="text-sm font-medium">{t("targetFormat")}</Label>
             <RadioGroup
               value={targetFormat}
               onValueChange={setTargetFormat}
@@ -303,18 +306,18 @@ export function CloneManualDialog({
             onClick={() => onOpenChange(false)}
             disabled={cloning}
           >
-            Cancel
+            {tc("cancel")}
           </Button>
           <Button onClick={handleClone} disabled={cloning || !targetFormat}>
             {cloning ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {reformatContent ? "Reformatting..." : "Cloning..."}
+                {t("cloning")}
               </>
             ) : (
               <>
                 <Copy className="mr-2 h-4 w-4" />
-                Clone Manual
+                {t("title")}
               </>
             )}
           </Button>

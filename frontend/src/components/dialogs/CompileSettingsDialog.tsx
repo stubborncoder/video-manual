@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,8 @@ export function CompileSettingsDialog({
   projectName,
   onStartCompile,
 }: CompileSettingsDialogProps) {
+  const t = useTranslations("compile");
+  const tc = useTranslations("common");
   const [loading, setLoading] = useState(true);
   const [compileInfo, setCompileInfo] = useState<CompileInfo | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -105,9 +108,9 @@ export function CompileSettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Compile Project: {projectName}</DialogTitle>
+          <DialogTitle>{t("title")}: {projectName}</DialogTitle>
           <DialogDescription>
-            Configure compilation settings and verify language availability.
+            {t("description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -255,7 +258,7 @@ export function CompileSettingsDialog({
                     onCheckedChange={(checked) => setIncludeToc(checked === true)}
                   />
                   <Label htmlFor="include-toc" className="font-normal">
-                    Include Table of Contents
+                    {t("includeTableOfContents")}
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
@@ -265,7 +268,7 @@ export function CompileSettingsDialog({
                     onCheckedChange={(checked) => setIncludeChapterCovers(checked === true)}
                   />
                   <Label htmlFor="include-chapter-covers" className="font-normal">
-                    Include Chapter Cover Pages
+                    {t("includePageNumbers")}
                   </Label>
                 </div>
               </div>
@@ -275,10 +278,10 @@ export function CompileSettingsDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {tc("cancel")}
           </Button>
           <Button onClick={handleStartCompile} disabled={!canCompile}>
-            Start Compilation
+            {t("compiling")}
           </Button>
         </DialogFooter>
       </DialogContent>
