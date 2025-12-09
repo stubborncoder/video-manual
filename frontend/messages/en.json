@@ -560,6 +560,55 @@
       "privacy": "Privacy",
       "terms": "Terms",
       "copyright": "All rights reserved."
+    },
+    "heroAnimation": {
+      "completedSteps": {
+        "upload": "Upload",
+        "ai": "AI",
+        "generate": "Generate",
+        "edit": "Edit",
+        "compile": "Compile",
+        "export": "Export"
+      },
+      "phase1": {
+        "uploadVideo": "Upload Video",
+        "uploadFormats": "MP4, MOV, AVI, WebM",
+        "aiAnalysis": "AI Analysis",
+        "processingFrames": "Processing frames...",
+        "generateManual": "Generate Manual",
+        "creatingDocs": "Creating documentation..."
+      },
+      "phase2": {
+        "title": "Edit & Refine",
+        "frameReplace": "Frame Replace",
+        "frameReplaceDesc": "Replace auto-extracted frames with your own screenshots or images for clearer instructions",
+        "visualAnnotations": "Visual Annotations",
+        "visualAnnotationsDesc": "Add arrows, circles, highlights and numbered callouts to guide users through each step",
+        "richTextEditor": "Rich Text Editor",
+        "richTextEditorDesc": "Edit and enhance AI-generated text with formatting, links, and custom instructions",
+        "aiCopilot": "AI Copilot",
+        "aiCopilotDesc": "Get intelligent suggestions, rewrite sections, or expand descriptions with AI assistance"
+      },
+      "phase3": {
+        "title": "Compile Project",
+        "projectWorkspace": "Project Workspace",
+        "projectWorkspaceDesc": "Create projects to group related manuals together - perfect for product suites or training series",
+        "customStructure": "Custom Structure",
+        "customStructureDesc": "Drag and drop manuals to arrange chapters and sections in your preferred order",
+        "autoToc": "Auto Table of Contents",
+        "autoTocDesc": "Automatically generate navigation with clickable links to all sections and steps",
+        "multilingualExport": "Multilingual Export",
+        "multilingualExportDesc": "Generate your manual in multiple languages with AI-powered translation"
+      },
+      "phase4": {
+        "title": "Export & Share",
+        "pdfExport": "PDF Export",
+        "pdfExportDesc": "Professional print-ready documents with images, formatting, and page numbers intact",
+        "wordDocument": "Word Document",
+        "wordDocumentDesc": "Fully editable .docx files that teams can review, comment on, and refine collaboratively",
+        "markdown": "Markdown",
+        "markdownDesc": "Clean markdown format ideal for knowledge bases, wikis, and AI/LLM ingestion pipelines"
+      }
     }
   },
   "auth": {

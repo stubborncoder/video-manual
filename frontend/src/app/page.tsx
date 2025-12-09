@@ -176,7 +176,7 @@ export default function LandingPage() {
               <div className="completed-phases absolute top-3 left-3 right-3 flex items-center justify-center gap-1.5 flex-wrap">
                 <div className="completed-step completed-step-1 flex items-center gap-1 rounded-full bg-white/25 backdrop-blur px-2 py-1 text-white text-[10px] font-medium">
                   <Video className="h-2.5 w-2.5" />
-                  <span>Upload</span>
+                  <span>{t("heroAnimation.completedSteps.upload")}</span>
                   <svg className="h-2.5 w-2.5 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
@@ -187,32 +187,32 @@ export default function LandingPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <span>AI</span>
+                  <span>{t("heroAnimation.completedSteps.ai")}</span>
                 </div>
                 <div className="completed-step completed-step-3 flex items-center gap-1 rounded-full bg-white/25 backdrop-blur px-2 py-1 text-white text-[10px] font-medium">
                   <FileText className="h-2.5 w-2.5" />
-                  <span>Generate</span>
+                  <span>{t("heroAnimation.completedSteps.generate")}</span>
                   <svg className="h-2.5 w-2.5 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
                 <div className="completed-step completed-step-4 flex items-center gap-1 rounded-full bg-white/25 backdrop-blur px-2 py-1 text-white text-[10px] font-medium">
                   <Edit3 className="h-2.5 w-2.5" />
-                  <span>Edit</span>
+                  <span>{t("heroAnimation.completedSteps.edit")}</span>
                   <svg className="h-2.5 w-2.5 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
                 <div className="completed-step completed-step-5 flex items-center gap-1 rounded-full bg-white/25 backdrop-blur px-2 py-1 text-white text-[10px] font-medium">
                   <FolderKanban className="h-2.5 w-2.5" />
-                  <span>Compile</span>
+                  <span>{t("heroAnimation.completedSteps.compile")}</span>
                   <svg className="h-2.5 w-2.5 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
                 <div className="completed-step completed-step-6 flex items-center gap-1 rounded-full bg-white/25 backdrop-blur px-2 py-1 text-white text-[10px] font-medium">
                   <Download className="h-2.5 w-2.5" />
-                  <span>Export</span>
+                  <span>{t("heroAnimation.completedSteps.export")}</span>
                   <svg className="h-2.5 w-2.5 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
@@ -229,8 +229,8 @@ export default function LandingPage() {
                       <Video className="h-6 w-6" />
                     </div>
                     <div>
-                      <div className="font-semibold">Upload Video</div>
-                      <div className="text-white/70 text-sm">MP4, MOV, AVI, WebM</div>
+                      <div className="font-semibold">{t("heroAnimation.phase1.uploadVideo")}</div>
+                      <div className="text-white/70 text-sm">{t("heroAnimation.phase1.uploadFormats")}</div>
                     </div>
                     <svg className="check-icon h-6 w-6 text-green-300 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -244,8 +244,8 @@ export default function LandingPage() {
                       <div className="ai-spinner h-6 w-6 rounded-full border-2 border-white/80 border-t-transparent" />
                     </div>
                     <div>
-                      <div className="font-semibold">AI Analysis</div>
-                      <div className="text-white/70 text-sm">Processing frames...</div>
+                      <div className="font-semibold">{t("heroAnimation.phase1.aiAnalysis")}</div>
+                      <div className="text-white/70 text-sm">{t("heroAnimation.phase1.processingFrames")}</div>
                     </div>
                     <svg className="check-icon h-6 w-6 text-green-300 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -259,8 +259,8 @@ export default function LandingPage() {
                       <FileText className="h-6 w-6" />
                     </div>
                     <div>
-                      <div className="font-semibold">Generate Manual</div>
-                      <div className="text-white/70 text-sm">Creating documentation...</div>
+                      <div className="font-semibold">{t("heroAnimation.phase1.generateManual")}</div>
+                      <div className="text-white/70 text-sm">{t("heroAnimation.phase1.creatingDocs")}</div>
                     </div>
                     <svg className="check-icon h-6 w-6 text-green-300 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -272,7 +272,7 @@ export default function LandingPage() {
                 <div className="phase phase-2 absolute inset-4 top-9 flex flex-col justify-center">
                   <div className="flex items-center gap-2 mb-4">
                     <Edit3 className="h-6 w-6 text-white" />
-                    <span className="text-white text-lg font-semibold">Edit & Refine</span>
+                    <span className="text-white text-lg font-semibold">{t("heroAnimation.phase2.title")}</span>
                   </div>
                   <div className="flex flex-col gap-3">
                     <div className="feature-item rounded-xl bg-white/15 backdrop-blur border border-white/20 px-4 py-3">
@@ -282,9 +282,9 @@ export default function LandingPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
                         </div>
-                        <div className="text-white font-medium">Frame Replace</div>
+                        <div className="text-white font-medium">{t("heroAnimation.phase2.frameReplace")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">Replace auto-extracted frames with your own screenshots or images for clearer instructions</div>
+                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase2.frameReplaceDesc")}</div>
                     </div>
                     <div className="feature-item rounded-xl bg-white/15 backdrop-blur border border-white/20 px-4 py-3">
                       <div className="flex items-center gap-3 mb-1">
@@ -293,9 +293,9 @@ export default function LandingPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                           </svg>
                         </div>
-                        <div className="text-white font-medium">Visual Annotations</div>
+                        <div className="text-white font-medium">{t("heroAnimation.phase2.visualAnnotations")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">Add arrows, circles, highlights and numbered callouts to guide users through each step</div>
+                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase2.visualAnnotationsDesc")}</div>
                     </div>
                     <div className="feature-item rounded-xl bg-white/15 backdrop-blur border border-white/20 px-4 py-3">
                       <div className="flex items-center gap-3 mb-1">
@@ -304,9 +304,9 @@ export default function LandingPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         </div>
-                        <div className="text-white font-medium">Rich Text Editor</div>
+                        <div className="text-white font-medium">{t("heroAnimation.phase2.richTextEditor")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">Edit and enhance AI-generated text with formatting, links, and custom instructions</div>
+                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase2.richTextEditorDesc")}</div>
                     </div>
                     <div className="feature-item rounded-xl bg-white/15 backdrop-blur border border-white/20 px-4 py-3">
                       <div className="flex items-center gap-3 mb-1">
@@ -315,9 +315,9 @@ export default function LandingPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                           </svg>
                         </div>
-                        <div className="text-white font-medium">AI Copilot</div>
+                        <div className="text-white font-medium">{t("heroAnimation.phase2.aiCopilot")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">Get intelligent suggestions, rewrite sections, or expand descriptions with AI assistance</div>
+                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase2.aiCopilotDesc")}</div>
                     </div>
                   </div>
                 </div>
@@ -326,7 +326,7 @@ export default function LandingPage() {
                 <div className="phase phase-3 absolute inset-4 top-9 flex flex-col justify-center">
                   <div className="flex items-center gap-2 mb-4">
                     <FolderKanban className="h-6 w-6 text-white" />
-                    <span className="text-white text-lg font-semibold">Compile Project</span>
+                    <span className="text-white text-lg font-semibold">{t("heroAnimation.phase3.title")}</span>
                   </div>
                   <div className="flex flex-col gap-3">
                     <div className="compile-item rounded-xl bg-white/15 backdrop-blur border border-white/20 px-4 py-3">
@@ -336,9 +336,9 @@ export default function LandingPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                           </svg>
                         </div>
-                        <div className="text-white font-medium">Project Workspace</div>
+                        <div className="text-white font-medium">{t("heroAnimation.phase3.projectWorkspace")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">Create projects to group related manuals together - perfect for product suites or training series</div>
+                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase3.projectWorkspaceDesc")}</div>
                     </div>
                     <div className="compile-item rounded-xl bg-white/15 backdrop-blur border border-white/20 px-4 py-3">
                       <div className="flex items-center gap-3 mb-1">
@@ -347,9 +347,9 @@ export default function LandingPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
                           </svg>
                         </div>
-                        <div className="text-white font-medium">Custom Structure</div>
+                        <div className="text-white font-medium">{t("heroAnimation.phase3.customStructure")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">Drag and drop manuals to arrange chapters and sections in your preferred order</div>
+                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase3.customStructureDesc")}</div>
                     </div>
                     <div className="compile-item rounded-xl bg-white/15 backdrop-blur border border-white/20 px-4 py-3">
                       <div className="flex items-center gap-3 mb-1">
@@ -358,9 +358,9 @@ export default function LandingPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         </div>
-                        <div className="text-white font-medium">Auto Table of Contents</div>
+                        <div className="text-white font-medium">{t("heroAnimation.phase3.autoToc")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">Automatically generate navigation with clickable links to all sections and steps</div>
+                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase3.autoTocDesc")}</div>
                     </div>
                     <div className="compile-item rounded-xl bg-white/15 backdrop-blur border border-white/20 px-4 py-3">
                       <div className="flex items-center gap-3 mb-1">
@@ -369,9 +369,9 @@ export default function LandingPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                           </svg>
                         </div>
-                        <div className="text-white font-medium">Multilingual Export</div>
+                        <div className="text-white font-medium">{t("heroAnimation.phase3.multilingualExport")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">Generate your manual in multiple languages with AI-powered translation</div>
+                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase3.multilingualExportDesc")}</div>
                     </div>
                   </div>
                 </div>
@@ -380,7 +380,7 @@ export default function LandingPage() {
                 <div className="phase phase-4 absolute inset-4 top-9 flex flex-col justify-center">
                   <div className="flex items-center gap-2 mb-4">
                     <Download className="h-6 w-6 text-white" />
-                    <span className="text-white text-lg font-semibold">Export & Share</span>
+                    <span className="text-white text-lg font-semibold">{t("heroAnimation.phase4.title")}</span>
                   </div>
                   <div className="flex flex-col gap-3">
                     <div className="export-item rounded-xl bg-red-500/20 backdrop-blur border border-red-400/30 px-4 py-3">
@@ -390,9 +390,9 @@ export default function LandingPage() {
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/>
                           </svg>
                         </div>
-                        <div className="text-white font-medium">PDF Export</div>
+                        <div className="text-white font-medium">{t("heroAnimation.phase4.pdfExport")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">Professional print-ready documents with images, formatting, and page numbers intact</div>
+                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase4.pdfExportDesc")}</div>
                     </div>
                     <div className="export-item rounded-xl bg-blue-500/20 backdrop-blur border border-blue-400/30 px-4 py-3">
                       <div className="flex items-center gap-3 mb-1">
@@ -401,9 +401,9 @@ export default function LandingPage() {
                             <path d="M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 2v16h12V4H6zm2 3h8v2H8V7zm0 4h8v2H8v-2zm0 4h5v2H8v-2z"/>
                           </svg>
                         </div>
-                        <div className="text-white font-medium">Word Document</div>
+                        <div className="text-white font-medium">{t("heroAnimation.phase4.wordDocument")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">Fully editable .docx files that teams can review, comment on, and refine collaboratively</div>
+                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase4.wordDocumentDesc")}</div>
                     </div>
                     <div className="export-item rounded-xl bg-gray-500/20 backdrop-blur border border-gray-400/30 px-4 py-3">
                       <div className="flex items-center gap-3 mb-1">
@@ -412,9 +412,9 @@ export default function LandingPage() {
                             <path d="M20.56 18H3.44C2.65 18 2 17.37 2 16.59V7.41C2 6.63 2.65 6 3.44 6H20.56C21.35 6 22 6.63 22 7.41V16.59C22 17.37 21.35 18 20.56 18zM5 15V9H6.5L8.25 11.5L10 9H11.5V15H10V11.5L8.25 14L6.5 11.5V15H5zM13.5 9H17.5V10.5H15V11.5H17.5V15H13.5V13.5H16V12.5H13.5V9Z"/>
                           </svg>
                         </div>
-                        <div className="text-white font-medium">Markdown</div>
+                        <div className="text-white font-medium">{t("heroAnimation.phase4.markdown")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">Clean markdown format ideal for knowledge bases, wikis, and AI/LLM ingestion pipelines</div>
+                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase4.markdownDesc")}</div>
                     </div>
                   </div>
                 </div>

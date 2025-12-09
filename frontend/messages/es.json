@@ -560,6 +560,55 @@
       "privacy": "Privacidad",
       "terms": "Términos",
       "copyright": "Todos los derechos reservados."
+    },
+    "heroAnimation": {
+      "completedSteps": {
+        "upload": "Subir",
+        "ai": "IA",
+        "generate": "Generar",
+        "edit": "Editar",
+        "compile": "Compilar",
+        "export": "Exportar"
+      },
+      "phase1": {
+        "uploadVideo": "Subir Video",
+        "uploadFormats": "MP4, MOV, AVI, WebM",
+        "aiAnalysis": "Análisis IA",
+        "processingFrames": "Procesando fotogramas...",
+        "generateManual": "Generar Manual",
+        "creatingDocs": "Creando documentación..."
+      },
+      "phase2": {
+        "title": "Editar y Refinar",
+        "frameReplace": "Reemplazo de Fotogramas",
+        "frameReplaceDesc": "Reemplaza los fotogramas extraídos automáticamente con tus propias capturas o imágenes para instrucciones más claras",
+        "visualAnnotations": "Anotaciones Visuales",
+        "visualAnnotationsDesc": "Agrega flechas, círculos, resaltados y llamadas numeradas para guiar a los usuarios en cada paso",
+        "richTextEditor": "Editor de Texto Enriquecido",
+        "richTextEditorDesc": "Edita y mejora el texto generado por IA con formato, enlaces e instrucciones personalizadas",
+        "aiCopilot": "Copiloto IA",
+        "aiCopilotDesc": "Obtén sugerencias inteligentes, reescribe secciones o amplía descripciones con asistencia de IA"
+      },
+      "phase3": {
+        "title": "Compilar Proyecto",
+        "projectWorkspace": "Espacio de Trabajo",
+        "projectWorkspaceDesc": "Crea proyectos para agrupar manuales relacionados - perfecto para suites de productos o series de capacitación",
+        "customStructure": "Estructura Personalizada",
+        "customStructureDesc": "Arrastra y suelta manuales para organizar capítulos y secciones en tu orden preferido",
+        "autoToc": "Tabla de Contenidos Automática",
+        "autoTocDesc": "Genera automáticamente navegación con enlaces a todas las secciones y pasos",
+        "multilingualExport": "Exportación Multilingüe",
+        "multilingualExportDesc": "Genera tu manual en múltiples idiomas con traducción impulsada por IA"
+      },
+      "phase4": {
+        "title": "Exportar y Compartir",
+        "pdfExport": "Exportar PDF",
+        "pdfExportDesc": "Documentos profesionales listos para imprimir con imágenes, formato y números de página intactos",
+        "wordDocument": "Documento Word",
+        "wordDocumentDesc": "Archivos .docx totalmente editables que los equipos pueden revisar, comentar y refinar colaborativamente",
+        "markdown": "Markdown",
+        "markdownDesc": "Formato markdown limpio ideal para bases de conocimiento, wikis y pipelines de ingestión de IA/LLM"
+      }
     }
   },
   "auth": {
