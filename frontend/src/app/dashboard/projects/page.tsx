@@ -106,7 +106,9 @@ import type { CompileSettings } from "@/lib/types";
 // Validation helper
 interface ValidationResult {
   isValid: boolean;
-  error?: string;
+  errorKey?: "required" | "tooLong" | "invalidChars";
+  fieldName?: string;
+  maxLength?: number;
 }
 
 function validateInput(
@@ -118,18 +120,27 @@ function validateInput(
   const trimmed = value.trim();
 
   if (required && !trimmed) {
-    return { isValid: false, error: `${fieldName} is required` };
+    return { isValid: false, errorKey: "required", fieldName };
   }
 
   if (trimmed.length > maxLength) {
-    return { isValid: false, error: `${fieldName} too long (max ${maxLength} characters)` };
+    return { isValid: false, errorKey: "tooLong", fieldName, maxLength };
   }
 
   if (INVALID_CHARS_PATTERN.test(trimmed)) {
-    return { isValid: false, error: `${fieldName} contains invalid characters (< >)` };
+    return { isValid: false, errorKey: "invalidChars", fieldName };
   }
 
   return { isValid: true };
+}
+
+// Helper to get validation error message
+function getValidationError(
+  result: ValidationResult,
+  tc: (key: string, params?: Record<string, string | number>) => string
+): string | null {
+  if (result.isValid || !result.errorKey) return null;
+  return tc(result.errorKey, { field: result.fieldName || "", max: result.maxLength || 0 });
 }
 
 // Extended info for delete confirmation
@@ -223,23 +234,23 @@ export default function ProjectsPage() {
     // Validate name
     const nameValidation = validateInput(
       newProjectName,
-      "Project name",
+      t("projectName"),
       VALIDATION_LIMITS.PROJECT_NAME_MAX_LENGTH
     );
     if (!nameValidation.isValid) {
-      toast.error(nameValidation.error!);
+      toast.error(getValidationError(nameValidation, tc)!);
       return;
     }
 
     // Validate description (optional field)
     const descValidation = validateInput(
       newProjectDesc,
-      "Description",
+      tc("description"),
       VALIDATION_LIMITS.PROJECT_DESC_MAX_LENGTH,
       false
     );
     if (!descValidation.isValid) {
-      toast.error(descValidation.error!);
+      toast.error(getValidationError(descValidation, tc)!);
       return;
     }
 
@@ -271,23 +282,23 @@ export default function ProjectsPage() {
     // Validate name
     const nameValidation = validateInput(
       editName,
-      "Project name",
+      t("projectName"),
       VALIDATION_LIMITS.PROJECT_NAME_MAX_LENGTH
     );
     if (!nameValidation.isValid) {
-      toast.error(nameValidation.error!);
+      toast.error(getValidationError(nameValidation, tc)!);
       return;
     }
 
     // Validate description (optional field)
     const descValidation = validateInput(
       editDescription,
-      "Description",
+      tc("description"),
       VALIDATION_LIMITS.PROJECT_DESC_MAX_LENGTH,
       false
     );
     if (!descValidation.isValid) {
-      toast.error(descValidation.error!);
+      toast.error(getValidationError(descValidation, tc)!);
       return;
     }
 
@@ -362,23 +373,23 @@ export default function ProjectsPage() {
     // Validate title
     const titleValidation = validateInput(
       newChapterTitle,
-      "Chapter title",
+      t("chapterTitle"),
       VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH
     );
     if (!titleValidation.isValid) {
-      toast.error(titleValidation.error!);
+      toast.error(getValidationError(titleValidation, tc)!);
       return;
     }
 
     // Validate description (optional field)
     const descValidation = validateInput(
       newChapterDesc,
-      "Chapter description",
+      t("chapterDescription"),
       VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH,
       false
     );
     if (!descValidation.isValid) {
-      toast.error(descValidation.error!);
+      toast.error(getValidationError(descValidation, tc)!);
       return;
     }
 
@@ -405,23 +416,23 @@ export default function ProjectsPage() {
     // Validate title
     const titleValidation = validateInput(
       editChapterTitle,
-      "Chapter title",
+      t("chapterTitle"),
       VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH
     );
     if (!titleValidation.isValid) {
-      toast.error(titleValidation.error!);
+      toast.error(getValidationError(titleValidation, tc)!);
       return;
     }
 
     // Validate description (optional field)
     const descValidation = validateInput(
       editChapterDesc,
-      "Chapter description",
+      t("chapterDescription"),
       VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH,
       false
     );
     if (!descValidation.isValid) {
-      toast.error(descValidation.error!);
+      toast.error(getValidationError(descValidation, tc)!);
       return;
     }
 
