@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { templates, TemplateInfo } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
@@ -118,6 +119,8 @@ export function ExportDialog({
   showFormat = true,
   documentFormat,
 }: ExportDialogProps) {
+  const t = useTranslations("export");
+  const tc = useTranslations("common");
   // When showFormat is false, we're doing Word-only export
   const defaultFormat = showFormat ? "pdf" : "word";
   const [format, setFormat] = useState<"pdf" | "word" | "html" | "chunks">(defaultFormat);
@@ -212,10 +215,10 @@ export function ExportDialog({
         <DialogHeader>
           <DialogTitle className="font-display text-xl flex items-center gap-2">
             <Download className="h-5 w-5 text-primary" />
-            Export {title}
+            {t("title")} {title}
           </DialogTitle>
           <DialogDescription>
-            Choose your export format and options
+            {t("selectFormat")}
           </DialogDescription>
         </DialogHeader>
 
@@ -223,7 +226,7 @@ export function ExportDialog({
           {/* Format Selection */}
           {showFormat && (
             <div className="space-y-3">
-              <Label className="text-sm font-medium">Format</Label>
+              <Label className="text-sm font-medium">{t("format")}</Label>
               <RadioGroup
                 value={format}
                 onValueChange={(v) => setFormat(v as typeof format)}
@@ -259,7 +262,7 @@ export function ExportDialog({
           {/* Language Selection */}
           {languages.length > 1 && (
             <div className="space-y-2">
-              <Label htmlFor="language">Language</Label>
+              <Label htmlFor="language">{t("language")}</Label>
               <Select value={language} onValueChange={setLanguage}>
                 <SelectTrigger id="language">
                   <SelectValue />
@@ -281,7 +284,7 @@ export function ExportDialog({
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium flex items-center gap-2">
                   <LayoutTemplate className="h-4 w-4 text-primary" />
-                  Word Template
+                  {t("template")}
                 </Label>
                 {loadingTemplates && (
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -291,10 +294,7 @@ export function ExportDialog({
               {!loadingTemplates && templateList.length === 0 ? (
                 <div className="rounded-lg border border-dashed p-4 text-center">
                   <p className="text-sm text-muted-foreground">
-                    No templates available
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Default formatting will be used
+                    {t("noTemplate")}
                   </p>
                 </div>
               ) : (
@@ -341,18 +341,18 @@ export function ExportDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {tc("cancel")}
           </Button>
           <Button onClick={handleExport} disabled={exporting}>
             {exporting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Exporting...
+                {t("exporting")}
               </>
             ) : (
               <>
                 <Download className="mr-2 h-4 w-4" />
-                Export as {selectedFormat?.label}
+                {tc("export")} {selectedFormat?.label}
               </>
             )}
           </Button>

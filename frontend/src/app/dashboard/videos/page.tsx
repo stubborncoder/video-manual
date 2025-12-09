@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -63,6 +64,15 @@ interface VideoWithManuals extends VideoInfo {
 }
 
 export default function VideosPage() {
+  const t = useTranslations("videos");
+  const tc = useTranslations("common");
+  const tp = useTranslations("projects");
+
+  // Helper to get translated name for default project
+  const getProjectDisplayName = (project: { name: string; is_default?: boolean }) => {
+    return project.is_default ? tp("defaultProjectName") : project.name;
+  };
+
   const [videoList, setVideoList] = useState<VideoWithManuals[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVideo, setSelectedVideo] = useState<VideoInfo | null>(null);
@@ -285,16 +295,16 @@ export default function VideosPage() {
 
   // Get selected project name for display
   const selectedProjectName = filterProjectId === "__all__"
-    ? "All Projects"
-    : projectList.find((p) => p.id === filterProjectId)?.name || "Select project";
+    ? t("allProjects")
+    : projectList.find((p) => p.id === filterProjectId)?.name || t("selectProject");
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Videos</h1>
+          <h1 className="text-3xl font-bold">{t("title")}</h1>
           <p className="text-muted-foreground">
-            Manage and process your videos
+            {t("description")}
           </p>
         </div>
 
@@ -315,9 +325,9 @@ export default function VideosPage() {
             </PopoverTrigger>
             <PopoverContent className="w-[200px] p-0">
               <Command>
-                <CommandInput placeholder="Search projects..." />
+                <CommandInput placeholder={t("searchProjects")} />
                 <CommandList>
-                  <CommandEmpty>No project found.</CommandEmpty>
+                  <CommandEmpty>{t("noProjectFound")}</CommandEmpty>
                   <CommandGroup>
                     <CommandItem
                       value="__all__"
@@ -329,12 +339,12 @@ export default function VideosPage() {
                       <Check
                         className={`mr-2 h-4 w-4 ${filterProjectId === "__all__" ? "opacity-100" : "opacity-0"}`}
                       />
-                      All Projects
+                      {t("allProjects")}
                     </CommandItem>
                     {projectList.map((project) => (
                       <CommandItem
                         key={project.id}
-                        value={project.name}
+                        value={getProjectDisplayName(project)}
                         onSelect={() => {
                           setFilterProjectId(project.id);
                           setFilterOpen(false);
@@ -343,7 +353,7 @@ export default function VideosPage() {
                         <Check
                           className={`mr-2 h-4 w-4 ${filterProjectId === project.id ? "opacity-100" : "opacity-0"}`}
                         />
-                        {project.name}
+                        {getProjectDisplayName(project)}
                       </CommandItem>
                     ))}
                   </CommandGroup>
@@ -368,12 +378,12 @@ export default function VideosPage() {
             {uploading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Uploading...
+                {tc("loading")}
               </>
             ) : (
               <>
                 <Upload className="mr-2 h-4 w-4" />
-                Upload Video
+                {t("upload")}
               </>
             )}
           </Button>
@@ -403,19 +413,17 @@ export default function VideosPage() {
 
       {loading ? (
         <div className="text-center py-8 text-muted-foreground">
-          Loading videos...
+          {tc("loading")}
         </div>
       ) : filteredVideos.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center">
             <Video className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
             <p className="text-muted-foreground">
-              {filterProjectId === "__all__" ? "No videos found" : "No videos in this project"}
+              {t("noVideos")}
             </p>
             <p className="text-sm text-muted-foreground mt-1">
-              {filterProjectId === "__all__"
-                ? "Upload a video to get started"
-                : "Process a video and assign it to this project, or select a different filter"}
+              {t("noVideosDesc")}
             </p>
           </CardContent>
         </Card>
@@ -518,7 +526,7 @@ export default function VideosPage() {
                     <DialogTrigger asChild>
                       <Button size="sm" className="flex-1">
                         <Wand2 className="mr-2 h-4 w-4" />
-                        Process
+                        {t("process")}
                       </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-[95vw] w-[1600px] h-[85vh] p-0 gap-0 overflow-hidden">
@@ -549,20 +557,20 @@ export default function VideosPage() {
                           <div className="w-[280px] border-l bg-background flex flex-col">
                             {/* Header - aligned top */}
                             <div className="px-5 py-4 border-b">
-                              <h2 className="text-sm font-semibold">Generate Manual</h2>
+                              <h2 className="text-sm font-semibold">{t("generateManual")}</h2>
                             </div>
 
                             {/* Content */}
                             <div className="flex-1 p-5 space-y-4">
                               <div className="space-y-2">
-                                <Label className="text-xs font-medium">Document Format</Label>
+                                <Label className="text-xs font-medium">{t("documentFormat")}</Label>
                                 <Select
                                   value={documentFormat}
                                   onValueChange={setDocumentFormat}
                                 >
                                   <SelectTrigger className="h-9">
-                                    <SelectValue placeholder="Select format...">
-                                      {formatOptions[documentFormat]?.label || "Select format..."}
+                                    <SelectValue placeholder={t("selectFormat")}>
+                                      {formatOptions[documentFormat]?.label || t("selectFormat")}
                                     </SelectValue>
                                   </SelectTrigger>
                                   <SelectContent position="popper" sideOffset={4} className="z-[100] w-[280px]">
@@ -582,7 +590,7 @@ export default function VideosPage() {
                               </div>
 
                               <div className="space-y-2">
-                                <Label className="text-xs font-medium">Language</Label>
+                                <Label className="text-xs font-medium">{t("language")}</Label>
                                 <Input
                                   value={outputLanguage}
                                   onChange={(e) => setOutputLanguage(e.target.value)}
@@ -592,22 +600,22 @@ export default function VideosPage() {
                               </div>
 
                               <div className="space-y-2">
-                                <Label className="text-xs font-medium">Project</Label>
+                                <Label className="text-xs font-medium">{t("project")}</Label>
                                 <Select
                                   value={selectedProjectId}
                                   onValueChange={setSelectedProjectId}
                                 >
                                   <SelectTrigger className="h-9">
-                                    <SelectValue placeholder="Select project..." />
+                                    <SelectValue placeholder={t("selectProject")} />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {projectList.map((project) => (
                                       <SelectItem key={project.id} value={project.id}>
                                         <div className="flex items-center gap-2">
                                           <FolderKanban className="h-3.5 w-3.5" />
-                                          <span className="truncate">{project.name}</span>
+                                          <span className="truncate">{getProjectDisplayName(project)}</span>
                                           {project.is_default && (
-                                            <span className="text-[10px] text-muted-foreground">(default)</span>
+                                            <span className="text-[10px] text-muted-foreground">({tp("default")})</span>
                                           )}
                                         </div>
                                       </SelectItem>
@@ -621,7 +629,7 @@ export default function VideosPage() {
                             <div className="p-5 border-t">
                               <Button onClick={handleProcess} className="w-full h-10">
                                 <Wand2 className="mr-2 h-4 w-4" />
-                                Generate
+                                {t("generate")}
                               </Button>
                             </div>
                           </div>
@@ -630,7 +638,7 @@ export default function VideosPage() {
                           <div className="w-[280px] border-l bg-muted/30 flex flex-col">
                             {/* Header - aligned top, same style */}
                             <div className="px-5 py-4 border-b border-border/50">
-                              <h2 className="text-sm font-semibold">Optional Context</h2>
+                              <h2 className="text-sm font-semibold">{t("optionalContext")}</h2>
                             </div>
 
                             {/* Content - textareas fill space */}
@@ -651,7 +659,7 @@ export default function VideosPage() {
                                       htmlFor="audience-toggle"
                                       className="text-xs font-medium cursor-pointer"
                                     >
-                                      Target Audience
+                                      {t("targetAudience")}
                                     </Label>
                                   </div>
                                   {audienceEnabled && (
@@ -691,7 +699,7 @@ export default function VideosPage() {
                                       htmlFor="objective-toggle"
                                       className="text-xs font-medium cursor-pointer"
                                     >
-                                      Objective
+                                      {t("objective")}
                                     </Label>
                                   </div>
                                   {objectiveEnabled && (
@@ -762,7 +770,7 @@ export default function VideosPage() {
                   }}
                 >
                   <Wand2 className="mr-2 h-4 w-4" />
-                  Process this Video
+                  {t("processThisVideo")}
                 </Button>
               </div>
             </div>
@@ -776,13 +784,13 @@ export default function VideosPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <Trash2 className="h-5 w-5" />
-              Delete Video?
+              {t("deleteVideo")}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-4">
                 <p>
-                  Are you sure you want to delete <strong>{videoToDelete?.name}</strong>?
-                  The video will be moved to trash and can be recovered within 30 days.
+                  {t("deleteVideoConfirm")} <strong>{videoToDelete?.name}</strong>?
+                  {t("videoMovedToTrash")}
                 </p>
 
                 {videoManuals.length > 0 && (
@@ -790,7 +798,7 @@ export default function VideosPage() {
                     <div className="flex items-center gap-2 text-foreground">
                       <AlertTriangle className="h-4 w-4 text-amber-500" />
                       <span className="font-medium">
-                        This video has {videoManuals.length} associated manual(s)
+                        {t("videoHasManuals", { count: videoManuals.length })}
                       </span>
                     </div>
 
@@ -823,7 +831,7 @@ export default function VideosPage() {
                         htmlFor="cascade"
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                       >
-                        Also delete associated manuals
+                        {t("alsoDeleteManuals")}
                       </label>
                     </div>
                   </div>
@@ -832,7 +840,7 @@ export default function VideosPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={deleting}>{tc("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
@@ -841,14 +849,14 @@ export default function VideosPage() {
               {deleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
+                  {t("deleting")}
                 </>
               ) : (
                 <>
                   <Trash2 className="mr-2 h-4 w-4" />
                   {cascadeDelete
-                    ? `Delete Video & ${videoManuals.length} Manual(s)`
-                    : "Delete Video"}
+                    ? t("deleteVideoAndManuals", { count: videoManuals.length })
+                    : tc("delete")}
                 </>
               )}
             </AlertDialogAction>

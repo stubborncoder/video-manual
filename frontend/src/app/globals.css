@@ -1197,6 +1197,11 @@ mark.editor-selection-highlight {
   animation: spin 1s linear infinite, spinner-visibility 40s ease forwards;
 }
 
+.hero-flow .ai-complete-icon {
+  opacity: 0;
+  animation: ai-icon-visibility 40s ease forwards;
+}
+
 .hero-flow .flow-ai .check-icon {
   animation: check-ai 40s ease forwards;
 }
@@ -1386,6 +1391,13 @@ mark.editor-selection-highlight {
   7% { opacity: 1; }
   8% { opacity: 1; }
   9%, 100% { opacity: 0; }
+}
+
+@keyframes ai-icon-visibility {
+  0%, 8% { opacity: 0; }
+  9% { opacity: 1; }
+  16% { opacity: 1; }
+  17%, 100% { opacity: 0; }
 }
 
 @keyframes check-ai {

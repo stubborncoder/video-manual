@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,8 @@ function getItemIcon(type: string) {
 }
 
 export default function TrashPage() {
+  const t = useTranslations("trash");
+  const tc = useTranslations("common");
   const [items, setItems] = useState<TrashItem[]>([]);
   const [stats, setStats] = useState<TrashStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,7 +68,7 @@ export default function TrashPage() {
       setStats(res.stats);
     } catch (e) {
       console.error("Failed to load trash:", e);
-      toast.error("Failed to load trash");
+      toast.error(t("loadFailed"));
     } finally {
       setLoading(false);
     }
@@ -75,11 +78,11 @@ export default function TrashPage() {
     setRestoring(item.trash_id);
     try {
       await trash.restore(item.item_type, item.trash_id);
-      toast.success("Item restored", { description: item.original_name });
+      toast.success(t("itemRestored"), { description: item.original_name });
       await loadTrash();
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Restore failed";
-      toast.error("Restore failed", { description: message });
+      const message = e instanceof Error ? e.message : t("restoreFailed");
+      toast.error(t("restoreFailed"), { description: message });
     } finally {
       setRestoring(null);
     }
@@ -89,11 +92,11 @@ export default function TrashPage() {
     setDeleting(item.trash_id);
     try {
       await trash.permanentDelete(item.item_type, item.trash_id);
-      toast.success("Permanently deleted", { description: item.original_name });
+      toast.success(t("permanentlyDeleted"), { description: item.original_name });
       await loadTrash();
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Delete failed";
-      toast.error("Delete failed", { description: message });
+      const message = e instanceof Error ? e.message : t("deleteFailed");
+      toast.error(t("deleteFailed"), { description: message });
     } finally {
       setDeleting(null);
     }
@@ -102,11 +105,11 @@ export default function TrashPage() {
   async function handleEmptyTrash() {
     try {
       const res = await trash.empty();
-      toast.success("Trash emptied", { description: `${res.deleted_count} items deleted` });
+      toast.success(t("trashEmptied"), { description: t("itemsDeleted", { count: res.deleted_count }) });
       await loadTrash();
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Failed to empty trash";
-      toast.error("Failed to empty trash", { description: message });
+      const message = e instanceof Error ? e.message : t("emptyTrashFailed");
+      toast.error(t("emptyTrashFailed"), { description: message });
     }
   }
 
@@ -121,9 +124,9 @@ export default function TrashPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Trash</h1>
+          <h1 className="text-3xl font-bold">{t("title")}</h1>
           <p className="text-muted-foreground">
-            Items in trash will be permanently deleted after 30 days
+            {t("description")}
           </p>
         </div>
 
@@ -132,21 +135,20 @@ export default function TrashPage() {
             <AlertDialogTrigger asChild>
               <Button variant="destructive">
                 <Trash2 className="mr-2 h-4 w-4" />
-                Empty Trash ({stats.total})
+                {t("emptyTrashCount", { count: stats.total })}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Empty Trash?</AlertDialogTitle>
+                <AlertDialogTitle>{t("emptyTrashTitle")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will permanently delete all {stats.total} items in trash.
-                  This action cannot be undone.
+                  {t("emptyTrashDesc", { count: stats.total })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel>{tc("cancel")}</AlertDialogCancel>
                 <AlertDialogAction onClick={handleEmptyTrash}>
-                  Empty Trash
+                  {t("emptyTrash")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -156,13 +158,13 @@ export default function TrashPage() {
 
       {loading ? (
         <div className="text-center py-8 text-muted-foreground">
-          Loading trash...
+          {tc("loading")}
         </div>
       ) : items.length === 0 ? (
         <Card>
           <CardContent className="py-8 text-center">
             <Trash2 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">Trash is empty</p>
+            <p className="text-muted-foreground">{t("empty")}</p>
           </CardContent>
         </Card>
       ) : (
@@ -173,7 +175,7 @@ export default function TrashPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Video className="h-5 w-5" />
-                  Videos ({groupedItems.video.length})
+                  {t("videos")} ({groupedItems.video.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -199,7 +201,7 @@ export default function TrashPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="h-5 w-5" />
-                  Manuals ({groupedItems.manual.length})
+                  {t("manuals")} ({groupedItems.manual.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -225,7 +227,7 @@ export default function TrashPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <FolderKanban className="h-5 w-5" />
-                  Projects ({groupedItems.project.length})
+                  {t("projects")} ({groupedItems.project.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -265,6 +267,8 @@ function TrashItemRow({
   isRestoring,
   isDeleting,
 }: TrashItemRowProps) {
+  const t = useTranslations("trash");
+  const tc = useTranslations("common");
   const daysLeft = getDaysUntilExpiry(item.expires_at);
 
   return (
@@ -276,10 +280,10 @@ function TrashItemRow({
         <div>
           <p className="font-medium">{item.original_name}</p>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <span>Deleted {formatDate(item.deleted_at)}</span>
+            <span>{t("deleted", { date: formatDate(item.deleted_at) })}</span>
             {item.cascade_deleted && (
               <span className="text-xs bg-muted px-1.5 py-0.5 rounded">
-                cascade deleted
+                {t("cascadeDeleted")}
               </span>
             )}
           </div>
@@ -289,7 +293,7 @@ function TrashItemRow({
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-1 text-sm text-muted-foreground">
           <Clock className="h-3 w-3" />
-          <span>{daysLeft} days left</span>
+          <span>{t("daysLeft", { count: daysLeft })}</span>
         </div>
 
         <div className="flex gap-2">
@@ -300,7 +304,7 @@ function TrashItemRow({
             disabled={isRestoring || isDeleting}
           >
             <RotateCcw className="mr-1 h-3 w-3" />
-            Restore
+            {t("restore")}
           </Button>
 
           <AlertDialog>
@@ -311,21 +315,20 @@ function TrashItemRow({
                 disabled={isRestoring || isDeleting}
               >
                 <Trash2 className="mr-1 h-3 w-3" />
-                Delete
+                {tc("delete")}
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Permanently Delete?</AlertDialogTitle>
+                <AlertDialogTitle>{t("permanentDeleteTitle")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Are you sure you want to permanently delete "{item.original_name}"?
-                  This action cannot be undone.
+                  {t("permanentDeleteDesc", { name: item.original_name })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel>{tc("cancel")}</AlertDialogCancel>
                 <AlertDialogAction onClick={() => onDelete(item)}>
-                  Delete Permanently
+                  {t("deletePermanently")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>

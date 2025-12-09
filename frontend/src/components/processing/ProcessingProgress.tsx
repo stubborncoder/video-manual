@@ -1,27 +1,30 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Circle, Loader2, AlertCircle, Wifi } from "lucide-react";
 import type { ProcessingState } from "@/lib/types";
-
-const NODE_LABELS: Record<string, string> = {
-  analyze_video: "Analyzing Video",
-  identify_keyframes: "Identifying Keyframes",
-  generate_manual: "Generating Manual",
-};
-
-const NODE_DESCRIPTIONS: Record<string, string> = {
-  analyze_video: "Uploading and analyzing video content with AI...",
-  identify_keyframes: "Detecting key moments and extracting frames...",
-  generate_manual: "Creating step-by-step instructions...",
-};
 
 interface ProcessingProgressProps {
   state: ProcessingState;
 }
 
 export function ProcessingProgress({ state }: ProcessingProgressProps) {
+  const t = useTranslations("videos.processing");
+
+  const NODE_LABELS: Record<string, string> = {
+    analyze_video: t("analyzeVideo"),
+    identify_keyframes: t("identifyKeyframes"),
+    generate_manual: t("generateManual"),
+  };
+
+  const NODE_DESCRIPTIONS: Record<string, string> = {
+    analyze_video: t("analyzeVideoDesc"),
+    identify_keyframes: t("identifyKeyframesDesc"),
+    generate_manual: t("generateManualDesc"),
+  };
+
   const nodes = ["analyze_video", "identify_keyframes", "generate_manual"];
 
   const progress =
@@ -45,7 +48,7 @@ export function ProcessingProgress({ state }: ProcessingProgressProps) {
           {state.status === "error" && (
             <AlertCircle className="h-5 w-5 text-destructive" />
           )}
-          Processing Video
+          {t("title")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -55,12 +58,12 @@ export function ProcessingProgress({ state }: ProcessingProgressProps) {
             <Wifi className="h-5 w-5 animate-pulse text-primary" />
             <div>
               <p className="font-medium">
-                {isConnecting ? "Connecting..." : "Starting processing..."}
+                {isConnecting ? t("connecting") : t("starting")}
               </p>
               <p className="text-sm text-muted-foreground">
                 {isConnecting
-                  ? "Establishing connection to server"
-                  : "Initializing video analysis pipeline"}
+                  ? t("connectingDesc")
+                  : t("startingDesc")}
               </p>
             </div>
           </div>
@@ -102,10 +105,10 @@ export function ProcessingProgress({ state }: ProcessingProgressProps) {
                   <p className="font-medium">{NODE_LABELS[node] || node}</p>
                   <p className="text-sm text-muted-foreground truncate">
                     {details
-                      ? formatDetails(details)
+                      ? formatDetails(details, t)
                       : isCurrent
                         ? NODE_DESCRIPTIONS[node]
-                        : "Waiting..."}
+                        : t("waiting")}
                   </p>
                 </div>
               </div>
@@ -117,7 +120,7 @@ export function ProcessingProgress({ state }: ProcessingProgressProps) {
           <div className="p-3 bg-destructive/10 text-destructive rounded-lg flex items-start gap-2">
             <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-medium">Processing failed</p>
+              <p className="font-medium">{t("failed")}</p>
               <p className="text-sm">{state.error}</p>
             </div>
           </div>
@@ -127,10 +130,10 @@ export function ProcessingProgress({ state }: ProcessingProgressProps) {
           <div className="p-3 bg-green-500/10 text-green-700 dark:text-green-400 rounded-lg flex items-start gap-2">
             <CheckCircle2 className="h-5 w-5 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="font-medium">Manual generated successfully!</p>
+              <p className="font-medium">{t("success")}</p>
               {getManualId(state.result) && (
                 <p className="text-sm mt-1">
-                  Manual ID: {getManualId(state.result)}
+                  {t("manualId")}: {getManualId(state.result)}
                 </p>
               )}
             </div>
@@ -146,16 +149,19 @@ function getManualId(result: Record<string, unknown>): string | null {
   return typeof id === "string" ? id : null;
 }
 
-function formatDetails(details: Record<string, unknown>): string {
+function formatDetails(
+  details: Record<string, unknown>,
+  t: (key: string) => string
+): string {
   const parts: string[] = [];
 
-  if (details.duration) parts.push(`Duration: ${details.duration}`);
+  if (details.duration) parts.push(`${t("duration")}: ${details.duration}`);
   if (details.resolution) parts.push(`${details.resolution}`);
   if (details.keyframes_count)
-    parts.push(`${details.keyframes_count} keyframes`);
+    parts.push(`${details.keyframes_count} ${t("keyframes")}`);
   if (details.screenshots_count)
-    parts.push(`${details.screenshots_count} screenshots`);
-  if (details.cached) parts.push("(cached)");
+    parts.push(`${details.screenshots_count} ${t("screenshots")}`);
+  if (details.cached) parts.push(t("cached"));
 
-  return parts.join(" • ") || "Processing...";
+  return parts.join(" • ") || t("processingText");
 }

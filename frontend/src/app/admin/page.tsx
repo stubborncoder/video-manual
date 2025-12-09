@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import { adminApi, UsageSummary, UserInfo, DailyUsage } from "@/lib/api/admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import {
 } from "recharts";
 
 export default function AdminDashboardPage() {
+  const t = useTranslations("admin");
   const [summary, setSummary] = useState<UsageSummary[]>([]);
   const [users, setUsers] = useState<UserInfo[]>([]);
   const [dailyUsage, setDailyUsage] = useState<DailyUsage[]>([]);
@@ -112,7 +114,7 @@ export default function AdminDashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <p className="text-muted-foreground">Loading dashboard...</p>
+        <p className="text-muted-foreground">{t("loadingDashboard")}</p>
       </div>
     );
   }
@@ -120,9 +122,9 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <h1 className="text-2xl font-bold">{t("dashboard")}</h1>
         <p className="text-sm text-muted-foreground">
-          System overview for the last 30 days
+          {t("systemOverview")}
         </p>
       </div>
 
@@ -130,51 +132,51 @@ export default function AdminDashboardPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Total Cost</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("totalCost")}</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatCost(totalCost)}</div>
-            <p className="text-xs text-muted-foreground">Last 30 days</p>
+            <p className="text-xs text-muted-foreground">{t("last30Days")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">API Requests</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("apiRequests")}</CardTitle>
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatNumber(totalRequests)}</div>
-            <p className="text-xs text-muted-foreground">LLM calls</p>
+            <p className="text-xs text-muted-foreground">{t("llmCalls")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Tokens</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("tokens")}</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatNumber(totalTokens)}</div>
-            <p className="text-xs text-muted-foreground">Input + Output</p>
+            <p className="text-xs text-muted-foreground">{t("inputOutput")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Cached</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("cached")}</CardTitle>
             <Database className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatNumber(totalCached)}</div>
-            <p className="text-xs text-muted-foreground">Tokens saved</p>
+            <p className="text-xs text-muted-foreground">{t("tokensSaved")}</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Users</CardTitle>
+            <CardTitle className="text-sm font-medium">{t("users")}</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -184,7 +186,7 @@ export default function AdminDashboardPage() {
                 {" "}/ {totalUsers}
               </span>
             </div>
-            <p className="text-xs text-muted-foreground">{adminCount} admin(s)</p>
+            <p className="text-xs text-muted-foreground">{t("admins", { count: adminCount })}</p>
           </CardContent>
         </Card>
       </div>
@@ -193,12 +195,12 @@ export default function AdminDashboardPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="py-3">
-            <CardTitle className="text-base">Daily Cost</CardTitle>
+            <CardTitle className="text-base">{t("dailyCost")}</CardTitle>
           </CardHeader>
           <CardContent>
             {chartData.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                No usage data yet
+                {t("noUsageDataYet")}
               </p>
             ) : (
               <ResponsiveContainer width="100%" height={200}>
@@ -231,12 +233,12 @@ export default function AdminDashboardPage() {
 
         <Card>
           <CardHeader className="py-3">
-            <CardTitle className="text-base">Daily Requests</CardTitle>
+            <CardTitle className="text-base">{t("dailyRequests")}</CardTitle>
           </CardHeader>
           <CardContent>
             {chartData.length === 0 ? (
               <p className="text-sm text-muted-foreground text-center py-8">
-                No usage data yet
+                {t("noUsageDataYet")}
               </p>
             ) : (
               <ResponsiveContainer width="100%" height={200}>
@@ -265,16 +267,16 @@ export default function AdminDashboardPage() {
         {/* Top Users */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between py-3">
-            <CardTitle className="text-base">Top Users by Cost</CardTitle>
+            <CardTitle className="text-base">{t("topUsersByCost")}</CardTitle>
             <Link href="/admin/usage">
               <Button variant="ghost" size="sm" className="gap-1 h-7">
-                View all <ArrowRight className="h-3 w-3" />
+                {t("viewAll")} <ArrowRight className="h-3 w-3" />
               </Button>
             </Link>
           </CardHeader>
           <CardContent>
             {topUsers.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No usage data yet</p>
+              <p className="text-sm text-muted-foreground">{t("noUsageDataYet")}</p>
             ) : (
               <div className="space-y-3">
                 {topUsers.map((user, index) => (
@@ -306,16 +308,16 @@ export default function AdminDashboardPage() {
         {/* Recent Users */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between py-3">
-            <CardTitle className="text-base">Recent Users</CardTitle>
+            <CardTitle className="text-base">{t("recentUsers")}</CardTitle>
             <Link href="/admin/users">
               <Button variant="ghost" size="sm" className="gap-1 h-7">
-                Manage <ArrowRight className="h-3 w-3" />
+                {t("manage")} <ArrowRight className="h-3 w-3" />
               </Button>
             </Link>
           </CardHeader>
           <CardContent>
             {users.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No users yet</p>
+              <p className="text-sm text-muted-foreground">{t("noUsersYet")}</p>
             ) : (
               <div className="space-y-3">
                 {users.slice(0, 5).map((user) => (
@@ -333,7 +335,7 @@ export default function AdminDashboardPage() {
                     <span className="text-xs text-muted-foreground">
                       {user.last_login
                         ? new Date(user.last_login).toLocaleDateString()
-                        : "Never"}
+                        : t("never")}
                     </span>
                   </div>
                 ))}
