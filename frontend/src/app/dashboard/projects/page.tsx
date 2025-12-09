@@ -155,6 +155,16 @@ interface ProjectDeleteInfo extends ProjectSummary {
 export default function ProjectsPage() {
   const t = useTranslations("projects");
   const tc = useTranslations("common");
+
+  // Helper to get translated name/description for default project
+  const getProjectDisplayName = (project: { name: string; is_default?: boolean }) => {
+    return project.is_default ? t("defaultProjectName") : project.name;
+  };
+
+  const getProjectDisplayDescription = (project: { description: string; is_default?: boolean }) => {
+    return project.is_default ? t("defaultProjectDescription") : project.description;
+  };
+
   const [projectList, setProjectList] = useState<ProjectSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -337,8 +347,8 @@ export default function ProjectsPage() {
       await projects.delete(projectToDelete.id, deleteManuals);
       toast.success(t("movedToTrash"), {
         description: deleteManuals
-          ? `${projectToDelete.name} + ${projectToDelete.manual_count} ${t("manuals")}`
-          : projectToDelete.name,
+          ? `${getProjectDisplayName(projectToDelete)} + ${projectToDelete.manual_count} ${t("manuals")}`
+          : getProjectDisplayName(projectToDelete),
       });
       setDeleteDialogOpen(false);
       setProjectToDelete(null);
@@ -580,7 +590,10 @@ export default function ProjectsPage() {
 
   const selectedFilterName = filterProjectId === "__all__"
     ? t("allProjects")
-    : projectList.find((p) => p.id === filterProjectId)?.name || t("allProjects");
+    : (() => {
+        const project = projectList.find((p) => p.id === filterProjectId);
+        return project ? getProjectDisplayName(project) : t("allProjects");
+      })();
 
   // Show compiler view when compiling
   if (isCompiling && compileProjectId) {
@@ -645,7 +658,7 @@ export default function ProjectsPage() {
                     {projectList.map((project) => (
                       <CommandItem
                         key={project.id}
-                        value={project.name}
+                        value={getProjectDisplayName(project)}
                         onSelect={() => {
                           setFilterProjectId(project.id);
                           setFilterOpen(false);
@@ -654,7 +667,7 @@ export default function ProjectsPage() {
                         <Check
                           className={`mr-2 h-4 w-4 ${filterProjectId === project.id ? "opacity-100" : "opacity-0"}`}
                         />
-                        {project.name}
+                        {getProjectDisplayName(project)}
                       </CommandItem>
                     ))}
                   </CommandGroup>
@@ -756,7 +769,7 @@ export default function ProjectsPage() {
                   <div className="flex-1 min-w-0">
                     {/* Editorial title with serif font */}
                     <CardTitle className="font-display text-xl tracking-tight leading-tight flex items-center gap-2">
-                      {project.name}
+                      {getProjectDisplayName(project)}
                       {project.is_default && (
                         <Badge variant="secondary" className="shrink-0 text-[10px] font-semibold">
                           <Star className="h-3 w-3 mr-1" />
@@ -765,9 +778,9 @@ export default function ProjectsPage() {
                       )}
                     </CardTitle>
 
-                    {project.description && (
+                    {(project.description || project.is_default) && (
                       <CardDescription className="text-sm leading-relaxed line-clamp-2 mt-1">
-                        {project.description}
+                        {getProjectDisplayDescription(project)}
                       </CardDescription>
                     )}
                   </div>
@@ -865,7 +878,7 @@ export default function ProjectsPage() {
               <SheetHeader className="border-b p-6 pr-14 space-y-0">
                 <SheetTitle className="text-2xl font-bold flex items-center gap-2">
                   <FolderKanban className="h-6 w-6" />
-                  {selectedProject.name}
+                  {getProjectDisplayName(selectedProject)}
                   {selectedProject.is_default && (
                     <Badge variant="secondary">
                       <Star className="h-3 w-3 mr-1" />
@@ -873,8 +886,8 @@ export default function ProjectsPage() {
                     </Badge>
                   )}
                 </SheetTitle>
-                {selectedProject.description && (
-                  <p className="text-muted-foreground mt-1">{selectedProject.description}</p>
+                {(selectedProject.description || selectedProject.is_default) && (
+                  <p className="text-muted-foreground mt-1">{getProjectDisplayDescription(selectedProject)}</p>
                 )}
 
                 {/* Action Bar */}

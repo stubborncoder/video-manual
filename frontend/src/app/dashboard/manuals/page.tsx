@@ -85,7 +85,13 @@ interface ManualWithProject extends ManualSummary {
 function ManualsPageContent() {
   const t = useTranslations("manuals");
   const tc = useTranslations("common");
+  const tp = useTranslations("projects");
   const router = useRouter();
+
+  // Helper to get translated name for default project
+  const getProjectDisplayName = (project: { name: string; is_default?: boolean }) => {
+    return project.is_default ? tp("defaultProjectName") : project.name;
+  };
   const searchParams = useSearchParams();
 
   const [manualList, setManualList] = useState<ManualWithProject[]>([]);
@@ -763,7 +769,7 @@ function ManualsPageContent() {
                       {projectList.map((project) => (
                         <CommandItem
                           key={project.id}
-                          value={project.name}
+                          value={getProjectDisplayName(project)}
                           onSelect={() => {
                             setFilterProjectId(project.id);
                             setFilterOpen(false);
@@ -772,7 +778,7 @@ function ManualsPageContent() {
                           <Check
                             className={`mr-2 h-4 w-4 ${filterProjectId === project.id ? "opacity-100" : "opacity-0"}`}
                           />
-                          {project.name}
+                          {getProjectDisplayName(project)}
                         </CommandItem>
                       ))}
                     </CommandGroup>
@@ -1421,8 +1427,8 @@ function ManualsPageContent() {
                 <SelectContent>
                   {projectList.map((project) => (
                     <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                      {project.is_default && " (default)"}
+                      {getProjectDisplayName(project)}
+                      {project.is_default && ` (${tp("default")})`}
                     </SelectItem>
                   ))}
                 </SelectContent>

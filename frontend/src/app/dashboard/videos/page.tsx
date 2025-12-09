@@ -66,6 +66,13 @@ interface VideoWithManuals extends VideoInfo {
 export default function VideosPage() {
   const t = useTranslations("videos");
   const tc = useTranslations("common");
+  const tp = useTranslations("projects");
+
+  // Helper to get translated name for default project
+  const getProjectDisplayName = (project: { name: string; is_default?: boolean }) => {
+    return project.is_default ? tp("defaultProjectName") : project.name;
+  };
+
   const [videoList, setVideoList] = useState<VideoWithManuals[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedVideo, setSelectedVideo] = useState<VideoInfo | null>(null);
@@ -337,7 +344,7 @@ export default function VideosPage() {
                     {projectList.map((project) => (
                       <CommandItem
                         key={project.id}
-                        value={project.name}
+                        value={getProjectDisplayName(project)}
                         onSelect={() => {
                           setFilterProjectId(project.id);
                           setFilterOpen(false);
@@ -346,7 +353,7 @@ export default function VideosPage() {
                         <Check
                           className={`mr-2 h-4 w-4 ${filterProjectId === project.id ? "opacity-100" : "opacity-0"}`}
                         />
-                        {project.name}
+                        {getProjectDisplayName(project)}
                       </CommandItem>
                     ))}
                   </CommandGroup>
@@ -606,9 +613,9 @@ export default function VideosPage() {
                                       <SelectItem key={project.id} value={project.id}>
                                         <div className="flex items-center gap-2">
                                           <FolderKanban className="h-3.5 w-3.5" />
-                                          <span className="truncate">{project.name}</span>
+                                          <span className="truncate">{getProjectDisplayName(project)}</span>
                                           {project.is_default && (
-                                            <span className="text-[10px] text-muted-foreground">(default)</span>
+                                            <span className="text-[10px] text-muted-foreground">({tp("default")})</span>
                                           )}
                                         </div>
                                       </SelectItem>
