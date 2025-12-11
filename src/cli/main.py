@@ -39,6 +39,7 @@ from ..storage.user_storage import UserStorage
 from ..storage.project_storage import ProjectStorage
 from ..storage.version_storage import VersionStorage
 from ..config import ensure_directories
+from ..core.constants import normalize_language_to_code
 
 app = typer.Typer(
     name="vdocs",
@@ -327,6 +328,13 @@ def process_video(
     # Parse tags if provided
     tag_list = [t.strip() for t in tags.split(",")] if tags else None
 
+    # Validate and normalize language to ISO code
+    try:
+        language_code = normalize_language_to_code(language)
+    except ValueError as e:
+        console.print(f"[red]Error: {e}[/red]")
+        raise typer.Exit(1)
+
     # Validate chapter requires project
     if chapter and not project:
         console.print("[red]Error: --chapter requires --project[/red]")
@@ -347,7 +355,7 @@ def process_video(
             console.print(f"[red]Error: Video file not found: {video}[/red]")
             raise typer.Exit(1)
         process_with_streaming(
-            video, user, output, not no_scene_detection, language,
+            video, user, output, not no_scene_detection, language_code,
             project_id=project, chapter_id=chapter, tags=tag_list
         )
         return
@@ -381,7 +389,7 @@ def process_video(
 
     console.print()
     process_with_streaming(
-        selected_video, user, output, not no_scene_detection, language,
+        selected_video, user, output, not no_scene_detection, language_code,
         project_id=project, chapter_id=chapter, tags=tag_list
     )
 

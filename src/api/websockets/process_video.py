@@ -12,6 +12,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Cookie
 from ...core.runners import VideoManualRunner
 from ...core.events import EventType
 from ...core.sanitization import sanitize_target_audience, sanitize_target_objective
+from ...core.constants import normalize_language_to_code
 from ...storage.project_storage import ProjectStorage, DEFAULT_PROJECT_ID, DEFAULT_CHAPTER_ID
 from ...storage.user_storage import UserStorage
 from ...db import JobStorage
@@ -159,8 +160,19 @@ async def websocket_process_video(
             return
 
         use_scene_detection = message.get("use_scene_detection", True)
-        output_language = message.get("output_language", "English")
         document_format = message.get("document_format", "step-manual")
+
+        # Validate and normalize language to ISO code
+        try:
+            output_language = normalize_language_to_code(message.get("output_language", "English"))
+        except ValueError as e:
+            await websocket.send_json({
+                "event_type": "error",
+                "timestamp": 0,
+                "data": {"error_message": str(e), "recoverable": True}
+            })
+            await websocket.close()
+            return
 
         # Sanitize user inputs to prevent prompt injection
         try:
