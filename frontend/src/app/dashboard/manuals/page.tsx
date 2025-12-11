@@ -1546,7 +1546,7 @@ function ManualsPageContent() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Wand2 className="h-5 w-5" />
-              Generate Language
+              {t("generateLanguage")}
             </DialogTitle>
           </DialogHeader>
 

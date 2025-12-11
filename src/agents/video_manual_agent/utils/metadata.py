@@ -522,3 +522,193 @@ def get_target_objective(manual_dir: Path) -> Optional[str]:
     if metadata is None:
         return None
     return metadata.get("target_objective")
+
+
+# ==================== Source Languages ====================
+
+
+def get_source_languages(manual_dir: Path) -> Optional[Dict[str, Any]]:
+    """Get the detected source languages for a manual's video.
+
+    Args:
+        manual_dir: Path to the manual directory
+
+    Returns:
+        Dictionary with audio, ui_text, and confidence keys, or None if not detected
+    """
+    metadata = load_metadata(manual_dir)
+    if metadata is None:
+        return None
+    return metadata.get("source_languages")
+
+
+def update_source_languages(
+    manual_dir: Path,
+    source_languages: Dict[str, Any],
+) -> None:
+    """Update the source languages in metadata.
+
+    Args:
+        manual_dir: Path to the manual directory
+        source_languages: Dictionary with audio, ui_text, and confidence keys
+    """
+    metadata = load_metadata(manual_dir) or create_metadata("")
+    metadata["source_languages"] = source_languages
+    save_metadata(manual_dir, metadata)
+
+
+# ==================== Additional Videos ====================
+
+
+def get_additional_videos(manual_dir: Path) -> List[Dict[str, Any]]:
+    """Get list of additional videos for a manual.
+
+    Args:
+        manual_dir: Path to the manual directory
+
+    Returns:
+        List of additional video dictionaries, each containing:
+        - id: Unique identifier
+        - filename: Relative path in videos/ folder
+        - label: User-friendly label
+        - language: Optional ISO language code
+        - added_at: ISO timestamp
+        - duration_seconds: Video duration
+        - size_bytes: File size
+    """
+    metadata = load_metadata(manual_dir)
+    if metadata is None:
+        return []
+    return metadata.get("additional_videos", [])
+
+
+def add_additional_video(
+    manual_dir: Path,
+    video_id: str,
+    filename: str,
+    label: str,
+    language: Optional[str] = None,
+    duration_seconds: float = 0,
+    size_bytes: int = 0,
+) -> None:
+    """Add an additional video to metadata.
+
+    Args:
+        manual_dir: Path to the manual directory
+        video_id: Unique identifier for this video
+        filename: Filename in the videos/ subfolder
+        label: User-friendly label (e.g., "English UI")
+        language: Optional ISO language code (e.g., "en")
+        duration_seconds: Video duration in seconds
+        size_bytes: File size in bytes
+    """
+    metadata = load_metadata(manual_dir) or create_metadata("")
+    additional_videos = metadata.get("additional_videos", [])
+
+    # Check if video_id already exists
+    for video in additional_videos:
+        if video["id"] == video_id:
+            raise ValueError(f"Video with id '{video_id}' already exists")
+
+    additional_videos.append({
+        "id": video_id,
+        "filename": filename,
+        "label": label,
+        "language": language,
+        "added_at": datetime.now().isoformat(),
+        "duration_seconds": duration_seconds,
+        "size_bytes": size_bytes,
+    })
+
+    metadata["additional_videos"] = additional_videos
+    save_metadata(manual_dir, metadata)
+
+
+def remove_additional_video(manual_dir: Path, video_id: str) -> bool:
+    """Remove an additional video from metadata.
+
+    Args:
+        manual_dir: Path to the manual directory
+        video_id: ID of the video to remove
+
+    Returns:
+        True if video was found and removed, False otherwise
+    """
+    metadata = load_metadata(manual_dir)
+    if metadata is None:
+        return False
+
+    additional_videos = metadata.get("additional_videos", [])
+    original_count = len(additional_videos)
+
+    additional_videos = [v for v in additional_videos if v["id"] != video_id]
+
+    if len(additional_videos) == original_count:
+        return False  # Video not found
+
+    metadata["additional_videos"] = additional_videos
+    save_metadata(manual_dir, metadata)
+    return True
+
+
+def get_additional_video_by_id(
+    manual_dir: Path, video_id: str
+) -> Optional[Dict[str, Any]]:
+    """Get a specific additional video by ID.
+
+    Args:
+        manual_dir: Path to the manual directory
+        video_id: ID of the video to find
+
+    Returns:
+        Video dictionary if found, None otherwise
+    """
+    additional_videos = get_additional_videos(manual_dir)
+    for video in additional_videos:
+        if video["id"] == video_id:
+            return video
+    return None
+
+
+def get_video_path_by_id(manual_dir: Path, video_id: str) -> Optional[Path]:
+    """Get the file path for a video by ID.
+
+    Handles both "primary" (the main video) and additional video IDs.
+
+    Args:
+        manual_dir: Path to the manual directory
+        video_id: Video ID ("primary" or an additional video ID)
+
+    Returns:
+        Path to the video file, or None if not found
+    """
+    if video_id == "primary":
+        # Primary video: prefer optimized, fall back to original
+        optimized = manual_dir / "video_optimized.mp4"
+        if optimized.exists():
+            return optimized
+
+        # Check metadata for original video path
+        metadata = load_metadata(manual_dir)
+        if metadata and metadata.get("video_path"):
+            original = Path(metadata["video_path"])
+            if original.exists():
+                return original
+
+        # Last resort: check for video.mp4 in manual dir
+        default = manual_dir / "video.mp4"
+        if default.exists():
+            return default
+
+        return None
+
+    # Additional video
+    video_info = get_additional_video_by_id(manual_dir, video_id)
+    if video_info is None:
+        return None
+
+    video_path = manual_dir / "videos" / video_info["filename"]
+    if video_path.exists():
+        return video_path
+
+    return None

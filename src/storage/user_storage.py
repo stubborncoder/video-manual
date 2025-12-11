@@ -232,6 +232,21 @@ class UserStorage:
             return sorted(screenshots_dir.glob("*.png"))
         return []
 
+    def get_manual_videos_dir(self, manual_id: str, create: bool = True) -> Path:
+        """Get the videos subfolder for a manual (additional video sources).
+
+        Args:
+            manual_id: ID of the manual
+            create: If True, create the directory if it doesn't exist
+
+        Returns:
+            Path to the videos subfolder
+        """
+        videos_dir = self.manuals_dir / manual_id / "videos"
+        if create:
+            videos_dir.mkdir(parents=True, exist_ok=True)
+        return videos_dir
+
     def list_videos(self) -> List[Path]:
         """List all video files in user's videos directory.
 
