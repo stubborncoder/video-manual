@@ -11,6 +11,13 @@ USERS_DIR = DATA_DIR / "users"
 CHECKPOINTS_DIR = DATA_DIR / "checkpoints"
 TEMPLATES_DIR = DATA_DIR / "templates"  # Global Word templates
 
+# Video upload limits
+MAX_VIDEO_UPLOAD_SIZE = 500 * 1024 * 1024  # 500MB
+
+# Frame extraction defaults
+FRAME_EXTRACTION_DEFAULT_WINDOW = 5.0  # seconds before/after timestamp
+FRAME_EXTRACTION_DEFAULT_COUNT = 10  # number of frames to extract
+
 
 def get_checkpoint_db_path(agent_name: str) -> Path:
     """Get checkpoint DB path for a specific agent.

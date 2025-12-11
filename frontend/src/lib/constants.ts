@@ -13,6 +13,22 @@ export const MAX_TARGET_AUDIENCE_LENGTH = 500;
 /** Maximum length for target objective description field */
 export const MAX_TARGET_OBJECTIVE_LENGTH = 500;
 
+// ==================== Video Upload ====================
+
+/** Maximum file size for video uploads (500MB) */
+export const MAX_VIDEO_UPLOAD_SIZE = 500 * 1024 * 1024;
+
+/** Accepted video file formats */
+export const ACCEPTED_VIDEO_FORMATS = ".mp4,.webm,.mov,.avi,.mkv,.m4v";
+
+// ==================== Frame Extraction ====================
+
+/** Default window size (seconds before/after timestamp) for frame extraction */
+export const FRAME_EXTRACTION_DEFAULT_WINDOW = 5.0;
+
+/** Default number of frames to extract */
+export const FRAME_EXTRACTION_DEFAULT_COUNT = 10;
+
 // ==================== Evaluation Scoring ====================
 
 /** Minimum score value for manual evaluations (1 = poor quality) */

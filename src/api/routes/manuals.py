@@ -28,6 +28,11 @@ from ..dependencies import CurrentUser, UserStorageDep, ProjectStorageDep, Trash
 from ...storage.version_storage import VersionStorage
 from ...storage.screenshot_store import ScreenshotStore
 from ...core.sanitization import sanitize_target_audience, sanitize_target_objective
+from ...config import (
+    MAX_VIDEO_UPLOAD_SIZE,
+    FRAME_EXTRACTION_DEFAULT_WINDOW,
+    FRAME_EXTRACTION_DEFAULT_COUNT,
+)
 from ...core.constants import (
     SUPPORTED_LANGUAGES,
     DEFAULT_EVALUATION_MODEL,
@@ -562,8 +567,8 @@ async def extract_frames(
     user_id: CurrentUser,
     storage: UserStorageDep,
     timestamp: float = Query(..., description="Center timestamp in seconds"),
-    window: float = Query(5.0, description="Window size in seconds (before/after)"),
-    count: int = Query(10, description="Number of frames to extract"),
+    window: float = Query(FRAME_EXTRACTION_DEFAULT_WINDOW, description="Window size in seconds (before/after)"),
+    count: int = Query(FRAME_EXTRACTION_DEFAULT_COUNT, description="Number of frames to extract"),
     video_id: str = Query("primary", description="Video ID to extract frames from ('primary' or additional video ID)"),
 ):
     """Extract frames from source video around a timestamp.

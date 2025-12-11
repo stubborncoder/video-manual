@@ -23,6 +23,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { manuals, type UploadProgress, type AdditionalVideoUploadResponse } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { MAX_VIDEO_UPLOAD_SIZE, ACCEPTED_VIDEO_FORMATS } from "@/lib/constants";
 
 // Common UI languages
 const LANGUAGES = [
@@ -47,8 +48,6 @@ const LANGUAGES = [
   { code: "hi", label: "Hindi" },
 ];
 
-const ACCEPTED_FORMATS = ".mp4,.webm,.mov,.avi,.mkv,.m4v";
-const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
 
 interface AddVideoDialogProps {
   open: boolean;
@@ -91,8 +90,8 @@ export function AddVideoDialog({
     if (!selectedFile) return;
 
     // Validate file size
-    if (selectedFile.size > MAX_FILE_SIZE) {
-      setError(`File too large. Maximum size is ${Math.round(MAX_FILE_SIZE / 1024 / 1024)}MB.`);
+    if (selectedFile.size > MAX_VIDEO_UPLOAD_SIZE) {
+      setError(`File too large. Maximum size is ${Math.round(MAX_VIDEO_UPLOAD_SIZE / 1024 / 1024)}MB.`);
       return;
     }
 
@@ -209,7 +208,7 @@ export function AddVideoDialog({
             <input
               ref={fileInputRef}
               type="file"
-              accept={ACCEPTED_FORMATS}
+              accept={ACCEPTED_VIDEO_FORMATS}
               className="hidden"
               onChange={handleFileSelect}
               disabled={uploading}
@@ -241,7 +240,7 @@ export function AddVideoDialog({
                 <Upload className="h-10 w-10 mx-auto text-muted-foreground" />
                 <p className="text-sm font-medium">Drop video here or click to browse</p>
                 <p className="text-xs text-muted-foreground">
-                  MP4, WebM, MOV, AVI, MKV • Max {Math.round(MAX_FILE_SIZE / 1024 / 1024)}MB
+                  MP4, WebM, MOV, AVI, MKV • Max {Math.round(MAX_VIDEO_UPLOAD_SIZE / 1024 / 1024)}MB
                 </p>
               </div>
             )}
