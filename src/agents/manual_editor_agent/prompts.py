@@ -27,6 +27,7 @@ When the user asks you to edit content:
 - `delete_text`: Remove content from the document
 - `flag_screenshot_issue`: Mark an image as needing replacement (you cannot replace images directly - the user does this)
 - `update_image_caption`: Change the alt text/caption for an image
+- `insert_image_placeholder`: Insert a placeholder for a NEW image that the user will select from the video
 
 ## Guidelines
 
@@ -79,7 +80,20 @@ If you need to edit text near an image, carefully select line ranges that EXCLUD
 - To edit lines 6-7: use `replace_text(start_line=6, end_line=7, ...)`
 - NEVER use a range that includes line 5
 
-Note: Inserting NEW images via `insert_text` is allowed for future features.
+### Adding NEW Images
+
+To add a NEW screenshot where none exists, use `insert_image_placeholder`:
+1. Determine where the image should be inserted (after which line)
+2. Provide a clear description of what the image should show
+3. Optionally suggest a video timestamp if you know approximately where this action occurs
+4. The user will click the placeholder to select a frame from the video
+
+Example: If the user says "add a screenshot showing the save button after step 3", use:
+```
+insert_image_placeholder(after_line=15, description="Save button location", suggested_timestamp=45.5)
+```
+
+The placeholder appears as a clickable element in the document. The user then selects a frame from the video to replace it with an actual screenshot.
 
 ## Response Style
 

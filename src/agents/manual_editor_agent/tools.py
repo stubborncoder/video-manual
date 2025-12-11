@@ -5,7 +5,7 @@ for user review. The user must accept or reject each change.
 """
 
 import uuid
-from typing import Dict, Any, Literal
+from typing import Dict, Any, Literal, Optional
 from langchain_core.tools import tool
 
 
@@ -174,6 +174,47 @@ def update_image_caption(
     }
 
 
+@tool
+def insert_image_placeholder(
+    after_line: int,
+    description: str,
+    suggested_timestamp: Optional[float] = None,
+) -> Dict[str, Any]:
+    """Insert a placeholder for a new image that the user will select from the video.
+
+    Use this when the user asks to add a screenshot or image at a specific location.
+    The placeholder will be shown in the document, and the user can click it to
+    select a frame from the source video.
+
+    Args:
+        after_line: Line number after which to insert (1-indexed, 0 = at beginning)
+        description: What the image should show (e.g., "the login button highlighted")
+        suggested_timestamp: Optional video timestamp in seconds where this frame might be found
+
+    Returns:
+        Dict with change_id and status for tracking
+    """
+    change_id = generate_change_id()
+
+    # Format timestamp for the placeholder URL (0 if not provided)
+    timestamp = suggested_timestamp if suggested_timestamp is not None else 0
+
+    # Create the placeholder markdown
+    # Format: ![IMAGE_NEEDED: description](placeholder:timestamp)
+    placeholder_content = f"![IMAGE_NEEDED: {description}](placeholder:{timestamp})"
+
+    return {
+        "change_id": change_id,
+        "type": "image_placeholder",
+        "after_line": after_line,
+        "new_content": placeholder_content,
+        "description": description,
+        "suggested_timestamp": timestamp,
+        "reason": f"Add screenshot: {description}",
+        "status": "pending",
+    }
+
+
 # Export all tools for the agent
 EDITOR_TOOLS = [
     replace_text,
@@ -181,4 +222,5 @@ EDITOR_TOOLS = [
     delete_text,
     flag_screenshot_issue,
     update_image_caption,
+    insert_image_placeholder,
 ]

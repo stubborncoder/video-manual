@@ -731,8 +731,16 @@
     "imageReplacedFromFrame": "Imagen reemplazada desde fotograma de video",
     "replaceFailed": "Error al reemplazar",
     "imageDeleted": "Imagen eliminada",
+    "imageInserted": "Imagen insertada",
+    "insertFailed": "Error al insertar imagen",
     "sourceVideoNotAvailable": "Video fuente no disponible",
     "loadFailed": "Error al cargar"
+  },
+  "imagePlaceholder": {
+    "title": "Captura Necesaria",
+    "selectFrame": "Seleccionar Fotograma del Video",
+    "suggestedTime": "Sugerido: {time}",
+    "noVideoAvailable": "No hay video fuente disponible para seleccionar fotograma"
   },
   "videoDrawer": {
     "selectFrame": "Seleccionar Fotograma",
