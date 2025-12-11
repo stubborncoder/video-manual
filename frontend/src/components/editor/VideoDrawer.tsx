@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { X, Play, Pause, Check, SkipBack, SkipForward, Video, Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -319,6 +320,7 @@ export function VideoDrawer({
   const handleDeleteVideo = useCallback(async () => {
     if (selectedVideoId === "primary") return; // Can't delete primary video
 
+    const videoLabel = availableVideos.find((v) => v.id === selectedVideoId)?.label;
     setDeletingVideo(true);
     try {
       await manuals.deleteVideo(manualId, selectedVideoId);
@@ -328,12 +330,15 @@ export function VideoDrawer({
       // Reload video list
       await loadAvailableVideos();
       setShowDeleteDialog(false);
+      toast.success("Video deleted", { description: videoLabel });
     } catch (error) {
       console.error("Failed to delete video:", error);
+      const message = error instanceof Error ? error.message : "Unknown error";
+      toast.error("Failed to delete video", { description: message });
     } finally {
       setDeletingVideo(false);
     }
-  }, [selectedVideoId, manualId, onVideoChange, loadAvailableVideos]);
+  }, [selectedVideoId, manualId, onVideoChange, loadAvailableVideos, availableVideos]);
 
   // Skip forward/backward
   const skipTime = useCallback((seconds: number) => {
