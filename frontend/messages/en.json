@@ -763,6 +763,9 @@
     "askAI": "Ask AI",
     "delete": "Delete"
   },
+  "previewContextMenu": {
+    "insertScreenshot": "Insert Screenshot"
+  },
   "versionHistory": {
     "title": "Version History",
     "versions": "Versions",

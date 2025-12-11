@@ -72,6 +72,7 @@ import { VideoDrawer } from "@/components/editor/VideoDrawer";
 import { AddVideoDialog } from "@/components/editor/AddVideoDialog";
 import { ImageContextMenu } from "@/components/editor/ImageContextMenu";
 import { ImagePlaceholder } from "@/components/editor/ImagePlaceholder";
+import { PreviewContextMenu } from "@/components/editor/PreviewContextMenu";
 import type { ImageContext } from "@/components/editor/ImageContextChip";
 
 // Active image state for lightbox
@@ -130,6 +131,9 @@ export default function ManualEditorPage() {
     suggestedTimestamp: number;
     markdownLine: string;
   } | null>(null);
+
+  // Direct screenshot insertion state (for context menu "Insert Screenshot")
+  const [directInsertLine, setDirectInsertLine] = useState<number | null>(null);
 
   // Image context for AI chat (similar to text selection)
   const [imageContext, setImageContext] = useState<ImageContext | null>(null);
@@ -862,6 +866,76 @@ export default function ManualEditorPage() {
     [activePlaceholder, manualId, recordChange, t]
   );
 
+  // Handle direct screenshot insertion from context menu
+  const handleDirectInsertScreenshot = useCallback(
+    (afterLine: number | null) => {
+      if (!manual?.source_video?.exists) {
+        toast.error(t("sourceVideoNotAvailable"));
+        return;
+      }
+      // Store the insertion line (or null for end of document)
+      setDirectInsertLine(afterLine);
+      setSelectedFrameTimestamp(0); // Start at beginning
+      setVideoDrawerOpen(true);
+    },
+    [manual?.source_video?.exists, t]
+  );
+
+  // Handle confirming frame selection for direct insertion
+  const handleDirectInsertFrameConfirm = useCallback(
+    async (timestamp: number, videoId?: string) => {
+      try {
+        // Extract frame from video and save as new screenshot
+        const vid = videoId || "primary";
+        const response = await fetch(
+          `/api/manuals/${manualId}/screenshots/extract?timestamp=${timestamp}&video_id=${vid}`,
+          { method: "POST" }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to extract frame");
+        }
+
+        const result = await response.json();
+        const newImageFilename = result.filename;
+
+        // Create image markdown
+        const newImageMarkdown = `![Screenshot](${newImageFilename})`;
+
+        // Insert at the specified line or at end
+        const lines = currentContentRef.current.split("\n");
+        let newLines: string[];
+
+        if (directInsertLine !== null && directInsertLine > 0 && directInsertLine <= lines.length) {
+          // Insert after the specified line
+          newLines = [
+            ...lines.slice(0, directInsertLine),
+            "",
+            newImageMarkdown,
+            "",
+            ...lines.slice(directInsertLine),
+          ];
+        } else {
+          // Insert at end
+          newLines = [...lines, "", newImageMarkdown];
+        }
+
+        const newContent = newLines.join("\n");
+        recordChange(newContent, "Insert screenshot");
+        currentContentRef.current = newContent;
+        toast.success(t("imageInserted"));
+
+        // Close video drawer and clear state
+        setVideoDrawerOpen(false);
+        setDirectInsertLine(null);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to insert image";
+        toast.error(t("insertFailed"), { description: message });
+      }
+    },
+    [directInsertLine, manualId, recordChange, t]
+  );
+
   // Calculate total lines for overlay positioning
   const totalLines = useMemo(() => {
     return currentContent.split("\n").length;
@@ -1071,23 +1145,29 @@ export default function ManualEditorPage() {
                 value="preview"
                 className="flex-1 m-0 p-0 min-h-0 overflow-hidden"
               >
-                <div
-                  ref={previewContainerRef}
-                  className="h-full overflow-y-auto p-6 relative"
+                <PreviewContextMenu
+                  hasVideo={!!manual?.source_video?.exists}
+                  onInsertScreenshot={handleDirectInsertScreenshot}
+                  contentRef={previewRef}
+                  markdownContent={currentContent}
                 >
-                  {/* Pending changes overlay */}
-                  <PendingChangesOverlay
-                    changes={pendingChanges}
-                    containerRef={previewContainerRef}
-                    totalLines={totalLines}
-                    onAccept={acceptChange}
-                    onReject={rejectChange}
-                  />
-
                   <div
-                    ref={previewRef}
-                    className="prose prose-base dark:prose-invert max-w-none relative"
+                    ref={previewContainerRef}
+                    className="h-full overflow-y-auto p-6 relative"
                   >
+                    {/* Pending changes overlay */}
+                    <PendingChangesOverlay
+                      changes={pendingChanges}
+                      containerRef={previewContainerRef}
+                      totalLines={totalLines}
+                      onAccept={acceptChange}
+                      onReject={rejectChange}
+                    />
+
+                    <div
+                      ref={previewRef}
+                      className="prose prose-base dark:prose-invert max-w-none relative"
+                    >
                   {/* Selection highlight overlay - renders pre-calculated highlight rects */}
                   <SelectionHighlightOverlay
                     selection={selection}
@@ -1161,9 +1241,10 @@ export default function ManualEditorPage() {
                     }}
                   >
                     {processedContent}
-                  </ReactMarkdown>
+                    </ReactMarkdown>
+                    </div>
                   </div>
-                </div>
+                </PreviewContextMenu>
               </TabsContent>
 
               <TabsContent
@@ -1277,14 +1358,23 @@ export default function ManualEditorPage() {
           open={videoDrawerOpen}
           onOpenChange={(open) => {
             setVideoDrawerOpen(open);
-            // Clear placeholder state if drawer is closed without selecting
-            if (!open) setActivePlaceholder(null);
+            // Clear state if drawer is closed without selecting
+            if (!open) {
+              setActivePlaceholder(null);
+              setDirectInsertLine(null);
+            }
           }}
           videoUrl={`/api/videos/${manual.source_video.name}/stream`}
           currentTimestamp={selectedFrameTimestamp}
           manualId={manualId}
           onFrameSelect={handleFrameSelect}
-          onConfirmFrame={activePlaceholder ? handlePlaceholderFrameConfirm : handleConfirmFrame}
+          onConfirmFrame={
+            activePlaceholder
+              ? handlePlaceholderFrameConfirm
+              : directInsertLine !== null
+                ? handleDirectInsertFrameConfirm
+                : handleConfirmFrame
+          }
           onAddVideo={handleOpenAddVideoDialog}
           selectedVideoId={selectedVideoId}
           onVideoChange={setSelectedVideoId}

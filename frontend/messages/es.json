@@ -763,6 +763,9 @@
     "askAI": "Preguntar a IA",
     "delete": "Eliminar"
   },
+  "previewContextMenu": {
+    "insertScreenshot": "Insertar Captura"
+  },
   "versionHistory": {
     "title": "Historial de Versiones",
     "versions": "Versiones",
