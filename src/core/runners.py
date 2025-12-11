@@ -1,10 +1,13 @@
 """Agent runners that yield progress events for CLI and TUI consumption."""
 
+import logging
 from pathlib import Path
 from typing import Iterator, Optional, Any
 import threading
 import queue
 import time
+
+logger = logging.getLogger(__name__)
 
 from .events import (
     ProgressEvent,
@@ -583,15 +586,28 @@ class ManualEditorRunner:
         # Update document content if provided
         if document_content:
             self._document_content = document_content
+            logger.info(f"[EDITOR RUNNER] Document content updated, {len(document_content)} chars, {document_content.count(chr(10))+1} lines")
+        else:
+            logger.warning("[EDITOR RUNNER] No document_content provided, using cached version")
 
         # Build context message
         context_parts = []
 
         # Add document content with line numbers for reference
+        # IMPORTANT: Make it clear this is the CURRENT document state - ignore any previous versions
         lines = self._document_content.split('\n')
         numbered_lines = [f"{i+1}: {line}" for i, line in enumerate(lines)]
         numbered_content = '\n'.join(numbered_lines)
-        context_parts.append(f"## Current Document (with line numbers)\n\n```\n{numbered_content}\n```")
+        logger.info(f"[EDITOR RUNNER] Sending {len(lines)} lines to agent")
+        context_parts.append(f"""## Current Document State (LATEST VERSION - ignore any document content from previous messages)
+
+**Total lines: {len(lines)}**
+
+IMPORTANT: Use ONLY these line numbers for any text operations. The line numbers shown here are the definitive, current state of the document.
+
+```
+{numbered_content}
+```""")
 
         # Add selection context if present
         if selection:

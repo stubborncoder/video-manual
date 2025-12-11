@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
+import { stripSemanticTags } from "@/lib/tag-utils";
 import {
   Dialog,
   DialogContent,
@@ -85,6 +86,15 @@ export function VersionHistoryDialog({
   const [previewVersion, setPreviewVersion] = useState<string | null>(null);
   const [previewContent, setPreviewContent] = useState<string | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
+
+  // Process preview content to strip semantic tags for clean display
+  const processedPreviewContent = useMemo(() => {
+    if (!previewContent) return null;
+    // Strip semantic tags for clean preview display
+    const withoutTags = stripSemanticTags(previewContent);
+    // Add blank line before --- that follows non-blank lines (to make them hr, not setext h2)
+    return withoutTags.replace(/([^\n])\n(---+)\n/g, '$1\n\n$2\n');
+  }, [previewContent]);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [versionToRestore, setVersionToRestore] = useState<VersionInfo | null>(null);
   const [restoring, setRestoring] = useState(false);
@@ -93,7 +103,7 @@ export function VersionHistoryDialog({
     if (!manualId) return;
     setLoading(true);
     try {
-      const data = await manuals.listVersions(manualId);
+      const data = await manuals.listVersions(manualId, language);
       setVersions(data.versions);
       setCurrentVersion(data.current_version);
     } catch (e) {
@@ -102,7 +112,7 @@ export function VersionHistoryDialog({
     } finally {
       setLoading(false);
     }
-  }, [manualId]);
+  }, [manualId, language, t]);
 
   useEffect(() => {
     if (open) {
@@ -267,7 +277,7 @@ export function VersionHistoryDialog({
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
-                ) : previewContent ? (
+                ) : processedPreviewContent ? (
                   <div className="p-6">
                     <div className="prose prose-sm dark:prose-invert max-w-none">
                       <ReactMarkdown
@@ -378,7 +388,7 @@ export function VersionHistoryDialog({
                           ),
                         }}
                       >
-                        {previewContent}
+                        {processedPreviewContent}
                       </ReactMarkdown>
                     </div>
                   </div>

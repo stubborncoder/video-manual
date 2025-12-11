@@ -1117,14 +1117,40 @@ async def list_manual_versions(
     manual_id: str,
     user_id: CurrentUser,
     storage: UserStorageDep,
+    language: str = None,
 ) -> dict:
-    """List all versions for a manual."""
+    """List all versions for a manual, optionally filtered by language."""
     manual_dir = storage.manuals_dir / manual_id
     if not manual_dir.exists():
         raise HTTPException(status_code=404, detail="Manual not found")
 
     version_storage = VersionStorage(user_id, manual_id)
     versions = version_storage.list_versions()
+
+    # Filter versions by language if specified
+    if language:
+        filtered_versions = []
+        current_version = version_storage.get_current_version()
+
+        for v in versions:
+            version_num = v["version"]
+            has_language = False
+
+            if version_num == current_version:
+                # Check current manual directory
+                manual_path = manual_dir / language / "manual.md"
+                has_language = manual_path.exists()
+            else:
+                # Check version snapshot directory
+                snapshot_dir = version_storage.versions_dir / f"v{version_num}"
+                if snapshot_dir.exists():
+                    manual_path = snapshot_dir / language / "manual.md"
+                    has_language = manual_path.exists()
+
+            if has_language:
+                filtered_versions.append(v)
+
+        versions = filtered_versions
 
     return {
         "manual_id": manual_id,

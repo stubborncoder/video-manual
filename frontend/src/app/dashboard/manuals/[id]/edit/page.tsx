@@ -164,11 +164,45 @@ export default function ManualEditorPage() {
     currentContentRef.current = currentContent;
   }, [currentContent]);
 
+  // Track applied changes to prevent double-application during rapid updates
+  const appliedChangesRef = useRef<Set<string>>(new Set());
+
   const handleApplyChange = useCallback(
     (change: PendingDocumentChange) => {
+      // Prevent double-application (can happen with rapid state updates)
+      if (appliedChangesRef.current.has(change.id)) {
+        console.log("[handleApplyChange] Change already applied:", change.id);
+        return;
+      }
+      appliedChangesRef.current.add(change.id);
+
       // Use ref to get latest content (avoid stale closure)
       const content = currentContentRef.current;
       const lines = content.split("\n");
+
+      // Safeguard: Protect existing images from being deleted or modified
+      // Images are markdown references like ![caption](filename.png)
+      const imageLinePattern = /^!\[.*\]\(.*\)$/;
+      const isImageLine = (line: string) => imageLinePattern.test(line.trim());
+
+      if (change.type === "text_replace" || change.type === "text_delete") {
+        if (change.startLine && change.endLine) {
+          // Check if any line in the range is an existing image
+          for (let i = change.startLine - 1; i < change.endLine && i < lines.length; i++) {
+            if (isImageLine(lines[i])) {
+              console.error("[handleApplyChange] Rejected: change affects existing image line", i + 1);
+              toast.error("Cannot modify existing images", {
+                description: `Line ${i + 1} contains an image. Use the image tools to modify images.`,
+              });
+              appliedChangesRef.current.delete(change.id);
+              return;
+            }
+          }
+        }
+      }
+
+      // Note: We allow new images to be inserted (text_insert with image syntax)
+      // This enables future features like inserting images from video at specific points
 
       let newLines: string[];
 
@@ -182,6 +216,7 @@ export default function ManualEditorPage() {
             newLines = [...before, ...newContentLines, ...after];
           } else {
             console.error("text_replace missing required fields", change);
+            appliedChangesRef.current.delete(change.id); // Allow retry
             return;
           }
           break;
@@ -198,6 +233,7 @@ export default function ManualEditorPage() {
             ];
           } else {
             console.error("text_insert missing required fields", change);
+            appliedChangesRef.current.delete(change.id); // Allow retry
             return;
           }
           break;
@@ -210,6 +246,7 @@ export default function ManualEditorPage() {
             newLines = [...before, ...after];
           } else {
             console.error("text_delete missing required fields", change);
+            appliedChangesRef.current.delete(change.id); // Allow retry
             return;
           }
           break;
@@ -221,11 +258,16 @@ export default function ManualEditorPage() {
 
         default:
           console.error("Unknown change type", change.type);
+          appliedChangesRef.current.delete(change.id); // Allow retry
           return;
       }
 
       const newContent = newLines.join("\n");
       recordChange(newContent, `Applied: ${change.reason || change.type}`);
+
+      // Update the ref immediately so subsequent changes see the updated content
+      currentContentRef.current = newContent;
+
       toast.success(t("changeApplied"));
     },
     [recordChange, t]
@@ -344,6 +386,13 @@ export default function ManualEditorPage() {
       setManual(manualData);
       setOriginalContent(manualData.content);
       setAvailableLanguages(languagesData.languages);
+
+      // If current language isn't in available languages, redirect to first available
+      if (languagesData.languages.length > 0 && !languagesData.languages.includes(language)) {
+        const firstLang = languagesData.languages[0];
+        router.replace(`/dashboard/manuals/${manualId}/edit?lang=${firstLang}`);
+        return;
+      }
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to load manual";
       toast.error(t("loadFailed"), { description: message });
@@ -859,7 +908,7 @@ export default function ManualEditorPage() {
             </Badge>
           )}
 
-          {availableLanguages.length > 1 && (
+          {availableLanguages.length > 1 ? (
             <Select value={language} onValueChange={handleLanguageChange}>
               <SelectTrigger className="w-[100px] h-8">
                 <SelectValue />
@@ -872,7 +921,11 @@ export default function ManualEditorPage() {
                 ))}
               </SelectContent>
             </Select>
-          )}
+          ) : availableLanguages.length === 1 ? (
+            <Badge variant="outline" className="text-xs">
+              {availableLanguages[0].toUpperCase()}
+            </Badge>
+          ) : null}
 
           {hasUnsavedChanges && (
             <Badge variant="secondary" className="text-xs">
