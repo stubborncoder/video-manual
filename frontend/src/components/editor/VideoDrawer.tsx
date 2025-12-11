@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, Play, Pause, Check, SkipBack, SkipForward, Video, Plus } from "lucide-react";
+import { X, Play, Pause, Check, SkipBack, SkipForward, Video, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -91,6 +92,8 @@ export function VideoDrawer({
   const [loadingFrames, setLoadingFrames] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState("0.5");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletingVideo, setDeletingVideo] = useState(false);
 
   // Video selection state - use external state if provided, otherwise internal
   const [availableVideos, setAvailableVideos] = useState<VideoOption[]>([]);
@@ -186,9 +189,15 @@ export function VideoDrawer({
       setActiveVideoUrl(video.url);
       setFrames([]); // Clear frames, will reload for new video
       initialSeekDoneRef.current = false;
-      // Reload frames for the new video
+      // Reload frames for the new video at current time
+      // Note: We pass videoId explicitly, so loadFrames doesn't need to be in deps
       loadFrames(currentTime, videoId);
     }
+    // Note: loadFrames is intentionally excluded from deps to avoid infinite loops.
+    // When selectedVideoId changes, loadFrames is recreated, which would cause
+    // handleVideoChange to be recreated, leading to unnecessary re-renders.
+    // Since we pass videoId explicitly to loadFrames, this is safe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availableVideos, currentTime, onVideoChange]);
 
   // Load frames around a timestamp (with video_id support)
@@ -308,6 +317,30 @@ export function VideoDrawer({
     onConfirmFrame(currentTime, selectedVideoId);
     onOpenChange(false);
   }, [currentTime, selectedVideoId, onConfirmFrame, onOpenChange]);
+
+  // Handle deleting the current video
+  const handleDeleteVideo = useCallback(async () => {
+    if (selectedVideoId === "primary") return; // Can't delete primary video
+
+    const videoLabel = availableVideos.find((v) => v.id === selectedVideoId)?.label;
+    setDeletingVideo(true);
+    try {
+      await manuals.deleteVideo(manualId, selectedVideoId);
+      // Switch back to primary video
+      setInternalSelectedVideoId("primary");
+      onVideoChange?.("primary");
+      // Reload video list
+      await loadAvailableVideos();
+      setShowDeleteDialog(false);
+      toast.success("Video deleted", { description: videoLabel });
+    } catch (error) {
+      console.error("Failed to delete video:", error);
+      const message = error instanceof Error ? error.message : "Unknown error";
+      toast.error("Failed to delete video", { description: message });
+    } finally {
+      setDeletingVideo(false);
+    }
+  }, [selectedVideoId, manualId, onVideoChange, loadAvailableVideos, availableVideos]);
 
   // Skip forward/backward
   const skipTime = useCallback((seconds: number) => {
@@ -502,6 +535,20 @@ export function VideoDrawer({
                 </SelectContent>
               </Select>
 
+              {/* Delete Video Button - only for non-primary videos */}
+              {selectedVideoId !== "primary" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDeleteDialog(true)}
+                  disabled={deletingVideo}
+                  className="h-9 border-red-900/50 text-red-400 hover:text-red-300 hover:bg-red-950/50 hover:border-red-800 cursor-pointer gap-2 transition-colors"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
+              )}
+
               {/* Add Video Button */}
               {onAddVideo && (
                 <Button
@@ -544,6 +591,32 @@ export function VideoDrawer({
             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmReplace}>
               {t("replaceImage")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Video Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent className="z-[110]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Video?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the video{" "}
+              <span className="font-medium">
+                {availableVideos.find((v) => v.id === selectedVideoId)?.label}
+              </span>
+              . This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingVideo}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteVideo}
+              disabled={deletingVideo}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {deletingVideo ? "Deleting..." : "Delete Video"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
