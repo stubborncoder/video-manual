@@ -187,7 +187,7 @@ export function VideoDrawer({
       // Reload frames for the new video
       loadFrames(currentTime, videoId);
     }
-  }, [availableVideos, currentTime, onVideoChange]);
+  }, [availableVideos, currentTime, onVideoChange, loadFrames]);
 
   // Load frames around a timestamp (with video_id support)
   const loadFrames = useCallback(async (timestamp: number, videoId?: string) => {
