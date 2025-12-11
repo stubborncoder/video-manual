@@ -17,7 +17,7 @@ interface PreviewContextMenuProps {
   /** Callback when user wants to insert a screenshot */
   onInsertScreenshot: (afterLine: number | null) => void;
   /** Reference to the content container for position detection */
-  contentRef?: React.RefObject<HTMLDivElement>;
+  contentRef?: React.RefObject<HTMLDivElement | null>;
   /** The markdown content for line detection */
   markdownContent?: string;
 }
