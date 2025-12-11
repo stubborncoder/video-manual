@@ -133,6 +133,7 @@ export default function ManualEditorPage() {
   } | null>(null);
 
   // Direct screenshot insertion state (for context menu "Insert Screenshot")
+  const [isDirectInsertMode, setIsDirectInsertMode] = useState(false);
   const [directInsertLine, setDirectInsertLine] = useState<number | null>(null);
 
   // Image context for AI chat (similar to text selection)
@@ -874,6 +875,7 @@ export default function ManualEditorPage() {
         return;
       }
       // Store the insertion line (or null for end of document)
+      setIsDirectInsertMode(true);
       setDirectInsertLine(afterLine);
       setSelectedFrameTimestamp(0); // Start at beginning
       setVideoDrawerOpen(true);
@@ -927,6 +929,7 @@ export default function ManualEditorPage() {
 
         // Close video drawer and clear state
         setVideoDrawerOpen(false);
+        setIsDirectInsertMode(false);
         setDirectInsertLine(null);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to insert image";
@@ -1361,6 +1364,7 @@ export default function ManualEditorPage() {
             // Clear state if drawer is closed without selecting
             if (!open) {
               setActivePlaceholder(null);
+              setIsDirectInsertMode(false);
               setDirectInsertLine(null);
             }
           }}
@@ -1371,7 +1375,7 @@ export default function ManualEditorPage() {
           onConfirmFrame={
             activePlaceholder
               ? handlePlaceholderFrameConfirm
-              : directInsertLine !== null
+              : isDirectInsertMode
                 ? handleDirectInsertFrameConfirm
                 : handleConfirmFrame
           }
