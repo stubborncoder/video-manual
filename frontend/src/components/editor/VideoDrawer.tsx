@@ -184,6 +184,8 @@ export function VideoDrawer({
       setActiveVideoUrl(video.url);
       setFrames([]); // Clear frames, will reload for new video
       initialSeekDoneRef.current = false;
+      // Update initial timestamp to current time so video seeks to correct position
+      initialTimestampRef.current = currentTime;
       // Reload frames for the new video
       loadFrames(currentTime, videoId);
     }
