@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -53,21 +54,6 @@ function formatDate(isoString: string): string {
   });
 }
 
-function getTimeAgo(isoString: string): string {
-  const date = new Date(isoString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffMins < 1) return "just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return formatDate(isoString);
-}
-
 export function VersionHistoryDialog({
   open,
   onOpenChange,
@@ -75,7 +61,25 @@ export function VersionHistoryDialog({
   language,
   onRestored,
 }: VersionHistoryDialogProps) {
+  const t = useTranslations("versionHistory");
+  const tCommon = useTranslations("common");
   const [loading, setLoading] = useState(false);
+
+  // Format time ago with translations
+  const getTimeAgo = (isoString: string): string => {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return t("justNow");
+    if (diffMins < 60) return t("minutesAgo", { n: diffMins });
+    if (diffHours < 24) return t("hoursAgo", { n: diffHours });
+    if (diffDays < 7) return t("daysAgo", { n: diffDays });
+    return formatDate(isoString);
+  };
   const [versions, setVersions] = useState<VersionInfo[]>([]);
   const [currentVersion, setCurrentVersion] = useState<string>("");
   const [previewVersion, setPreviewVersion] = useState<string | null>(null);
@@ -94,7 +98,7 @@ export function VersionHistoryDialog({
       setCurrentVersion(data.current_version);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to load versions";
-      toast.error("Failed to load version history", { description: message });
+      toast.error(t("loadFailed"), { description: message });
     } finally {
       setLoading(false);
     }
@@ -134,7 +138,7 @@ export function VersionHistoryDialog({
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to load version";
-      toast.error("Failed to load version content", { description: message });
+      toast.error(t("loadContentFailed"), { description: message });
       setPreviewContent(null);
     } finally {
       setLoadingPreview(false);
@@ -152,13 +156,13 @@ export function VersionHistoryDialog({
     setRestoring(true);
     try {
       await manuals.restoreVersion(manualId, versionToRestore.version, language);
-      toast.success(`Restored to version ${versionToRestore.version}`);
+      toast.success(t("restored", { version: versionToRestore.version }));
       setRestoreDialogOpen(false);
       onOpenChange(false);
       onRestored();
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to restore";
-      toast.error("Restore failed", { description: message });
+      toast.error(t("restoreFailed"), { description: message });
     } finally {
       setRestoring(false);
     }
@@ -171,15 +175,15 @@ export function VersionHistoryDialog({
           <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <History className="h-5 w-5" />
-              Version History
+              {t("title")}
             </DialogTitle>
           </DialogHeader>
 
           <div className="flex-1 flex gap-4 min-h-0 overflow-hidden">
             {/* Version List */}
-            <div className="w-64 shrink-0 flex flex-col border rounded-lg overflow-hidden">
+            <div className="w-72 shrink-0 flex flex-col border rounded-lg overflow-hidden">
               <div className="px-3 py-2 border-b bg-muted/30 shrink-0">
-                <span className="text-sm font-medium">Versions</span>
+                <span className="text-sm font-medium">{t("versions")}</span>
               </div>
               <ScrollArea className="flex-1 min-h-0">
                 {loading ? (
@@ -189,7 +193,7 @@ export function VersionHistoryDialog({
                 ) : versions.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No version history</p>
+                    <p className="text-sm">{t("noVersionHistory")}</p>
                   </div>
                 ) : (
                   <div className="p-2 space-y-1">
@@ -211,7 +215,7 @@ export function VersionHistoryDialog({
                               </span>
                               {version.is_current && (
                                 <Badge variant="default" className="text-xs">
-                                  Current
+                                  {t("current")}
                                 </Badge>
                               )}
                             </div>
@@ -219,8 +223,8 @@ export function VersionHistoryDialog({
                               <Clock className="h-3 w-3" />
                               <span>{getTimeAgo(version.created_at)}</span>
                             </div>
-                            {version.notes && (
-                              <p className="text-xs text-muted-foreground mt-1 truncate">
+                            {version.notes && !version.is_current && (
+                              <p className="text-xs text-muted-foreground mt-1 truncate max-w-[210px]" title={version.notes}>
                                 {version.notes}
                               </p>
                             )}
@@ -240,9 +244,9 @@ export function VersionHistoryDialog({
                 <span className="text-sm font-medium">
                   {previewVersion
                     ? versions.find(v => v.version === previewVersion)?.is_current
-                      ? `Current Version (v${previewVersion})`
-                      : `Preview: v${previewVersion}`
-                    : "Select a version"}
+                      ? t("currentVersion", { version: previewVersion })
+                      : t("previewVersion", { version: previewVersion })
+                    : t("selectVersion")}
                 </span>
                 {previewVersion && !versions.find(v => v.version === previewVersion)?.is_current && (
                   <Button
@@ -254,7 +258,7 @@ export function VersionHistoryDialog({
                     disabled={restoring}
                   >
                     <RotateCcw className="h-4 w-4 mr-1.5" />
-                    Restore
+                    {t("restore")}
                   </Button>
                 )}
               </div>
@@ -382,7 +386,7 @@ export function VersionHistoryDialog({
                   <div className="flex items-center justify-center py-8 text-muted-foreground">
                     <div className="text-center">
                       <Eye className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">Select a version to preview</p>
+                      <p className="text-sm">{t("selectVersionToPreview")}</p>
                     </div>
                   </div>
                 )}
@@ -396,22 +400,21 @@ export function VersionHistoryDialog({
       <AlertDialog open={restoreDialogOpen} onOpenChange={setRestoreDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Restore Version?</AlertDialogTitle>
+            <AlertDialogTitle>{t("restoreVersion")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will restore version {versionToRestore?.version}. Your current
-              content will be saved as a new version before restoring.
+              {t("restoreVersionDesc", { version: versionToRestore?.version ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={restoring}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={restoring}>{tCommon("cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleRestore} disabled={restoring}>
               {restoring ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Restoring...
+                  {t("restoring")}
                 </>
               ) : (
-                "Restore"
+                t("restore")
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -41,26 +42,6 @@ interface EditorStatusBarProps {
   lastError?: Error | null;
 }
 
-/**
- * Format time since last save
- */
-function formatTimeSince(date: Date | null): string {
-  if (!date) return "Never saved";
-
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSecs = Math.floor(diffMs / 1000);
-  const diffMins = Math.floor(diffSecs / 60);
-  const diffHours = Math.floor(diffMins / 60);
-
-  if (diffSecs < 10) return "Saved just now";
-  if (diffSecs < 60) return `Saved ${diffSecs}s ago`;
-  if (diffMins === 1) return "Saved 1m ago";
-  if (diffMins < 60) return `Saved ${diffMins}m ago`;
-  if (diffHours === 1) return "Saved 1h ago";
-  return `Saved ${diffHours}h ago`;
-}
-
 export function EditorStatusBar({
   canUndo,
   canRedo,
@@ -75,10 +56,29 @@ export function EditorStatusBar({
   onOpenVersionHistory,
   lastError,
 }: EditorStatusBarProps) {
+  const t = useTranslations("editorStatusBar");
   // Combined unsaved state
   const hasAnyChanges = hasUnsavedChanges || hasImageChanges;
   // Update time display every 10 seconds
   const [, setTick] = useState(0);
+
+  /**
+   * Format time since last save with translations
+   */
+  const formatTimeSince = (date: Date | null): string => {
+    if (!date) return t("neverSaved");
+
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSecs = Math.floor(diffMs / 1000);
+    const diffMins = Math.floor(diffSecs / 60);
+    const diffHours = Math.floor(diffMins / 60);
+
+    if (diffSecs < 10) return t("savedJustNow");
+    if (diffSecs < 60) return t("savedSecondsAgo", { n: diffSecs });
+    if (diffMins < 60) return t("savedMinutesAgo", { n: diffMins });
+    return t("savedHoursAgo", { n: diffHours });
+  };
 
   useEffect(() => {
     const timer = setInterval(() => setTick((t) => t + 1), 10000);
@@ -102,7 +102,7 @@ export function EditorStatusBar({
                 <Undo2 className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
+            <TooltipContent>{t("undo")}</TooltipContent>
           </Tooltip>
 
           <Tooltip>
@@ -117,7 +117,7 @@ export function EditorStatusBar({
                 <Redo2 className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Redo (Ctrl+Shift+Z)</TooltipContent>
+            <TooltipContent>{t("redo")}</TooltipContent>
           </Tooltip>
 
           <div className="h-4 w-px bg-border mx-1" />
@@ -133,7 +133,7 @@ export function EditorStatusBar({
                 <History className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Version History</TooltipContent>
+            <TooltipContent>{t("versionHistory")}</TooltipContent>
           </Tooltip>
         </div>
 
@@ -144,18 +144,18 @@ export function EditorStatusBar({
               <TooltipTrigger asChild>
                 <div className="flex items-center gap-1.5 text-destructive cursor-help">
                   <AlertCircle className="h-4 w-4" />
-                  <span>Save failed</span>
+                  <span>{t("saveFailed")}</span>
                 </div>
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-xs">
-                <p className="font-medium">Error saving manual</p>
+                <p className="font-medium">{t("errorSavingManual")}</p>
                 <p className="text-xs text-muted-foreground mt-1">{lastError.message}</p>
               </TooltipContent>
             </Tooltip>
           ) : isSaving ? (
             <div className="flex items-center gap-1.5">
               <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Saving...</span>
+              <span>{t("saving")}</span>
             </div>
           ) : (
             <div className="flex items-center gap-1.5">
@@ -171,8 +171,8 @@ export function EditorStatusBar({
               <div className="h-4 w-px bg-border" />
               <Badge variant="secondary" className="text-xs">
                 {hasImageChanges && unsavedChangesCount === 0
-                  ? "Image changes"
-                  : `${unsavedChangesCount} unsaved change${unsavedChangesCount !== 1 ? "s" : ""}${hasImageChanges ? " + images" : ""}`}
+                  ? t("imageChanges")
+                  : `${unsavedChangesCount === 1 ? t("unsavedChanges", { n: unsavedChangesCount }) : t("unsavedChangesPlural", { n: unsavedChangesCount })}${hasImageChanges ? ` ${t("plusImages")}` : ""}`}
               </Badge>
             </>
           )}
@@ -193,10 +193,10 @@ export function EditorStatusBar({
                 ) : (
                   <Save className="h-4 w-4 mr-1.5" />
                 )}
-                Save
+                {t("saveButton")}
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Save (Ctrl+S)</TooltipContent>
+            <TooltipContent>{t("saveTooltip")}</TooltipContent>
           </Tooltip>
         </div>
       </div>
