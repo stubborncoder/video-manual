@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +46,8 @@ export function ImageContextMenu({
   onOpenFull,
   onAskAI,
 }: ImageContextMenuProps) {
+  const t = useTranslations("imageContextMenu");
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -60,35 +63,35 @@ export function ImageContextMenu({
         {onOpenFull && (
           <DropdownMenuItem onClick={onOpenFull}>
             <Maximize2 className="h-4 w-4 mr-2" />
-            Open Full View
+            {t("openFull")}
           </DropdownMenuItem>
         )}
 
         {hasVideo && onReplaceFromVideo && (
           <DropdownMenuItem onClick={onReplaceFromVideo}>
             <Video className="h-4 w-4 mr-2" />
-            Replace from Video
+            {t("replaceFromVideo")}
           </DropdownMenuItem>
         )}
 
         {onUpload && (
           <DropdownMenuItem onClick={onUpload}>
             <Upload className="h-4 w-4 mr-2" />
-            Upload New Image
+            {t("uploadImage")}
           </DropdownMenuItem>
         )}
 
         {onAnnotate && (
           <DropdownMenuItem onClick={onAnnotate}>
             <Pencil className="h-4 w-4 mr-2" />
-            Annotate
+            {t("annotate")}
           </DropdownMenuItem>
         )}
 
         {onEditCaption && (
           <DropdownMenuItem onClick={onEditCaption}>
             <Type className="h-4 w-4 mr-2" />
-            Edit Caption
+            {t("editCaption")}
           </DropdownMenuItem>
         )}
 
@@ -97,7 +100,7 @@ export function ImageContextMenu({
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={onAskAI}>
               <MessageSquare className="h-4 w-4 mr-2" />
-              Ask AI About Image
+              {t("askAI")}
             </DropdownMenuItem>
           </>
         )}
@@ -110,7 +113,7 @@ export function ImageContextMenu({
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="h-4 w-4 mr-2" />
-              Delete Image
+              {t("delete")}
             </DropdownMenuItem>
           </>
         )}

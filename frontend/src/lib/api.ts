@@ -322,12 +322,12 @@ export const manuals = {
     ),
 
   // Version history
-  listVersions: (manualId: string) =>
+  listVersions: (manualId: string, language?: string) =>
     request<{
       manual_id: string;
       current_version: string;
       versions: VersionInfo[];
-    }>(`/api/manuals/${manualId}/versions`),
+    }>(`/api/manuals/${manualId}/versions${language ? `?language=${language}` : ""}`),
 
   getVersionContent: (manualId: string, version: string, language = "en") =>
     request<{

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { X, Play, Pause, Check, SkipBack, SkipForward, Video, Plus, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
@@ -82,6 +83,7 @@ export function VideoDrawer({
   selectedVideoId: externalSelectedVideoId,
   onVideoChange,
 }: VideoDrawerProps) {
+  const t = useTranslations("videoDrawer");
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -115,7 +117,7 @@ export function VideoDrawer({
       if (response.primary.exists) {
         videos.push({
           id: "primary",
-          label: response.primary.label || "Original Video",
+          label: response.primary.label || t("originalVideo"),
           url: videoUrl,
           duration: response.primary.duration_seconds || 0,
         });
@@ -139,14 +141,14 @@ export function VideoDrawer({
       // Fallback to just primary video
       setAvailableVideos([{
         id: "primary",
-        label: "Original Video",
+        label: t("originalVideo"),
         url: videoUrl,
         duration: 0,
       }]);
     } finally {
       setLoadingVideos(false);
     }
-  }, [manualId, videoUrl]);
+  }, [manualId, videoUrl, t]);
 
   // Reset state when drawer opens (but preserve video selection)
   useEffect(() => {
@@ -395,7 +397,7 @@ export function VideoDrawer({
         <div className="flex items-center justify-between px-6 py-3 shrink-0 border-b border-white/5">
           <div className="flex items-center gap-6">
             <h2 className="text-white font-semibold text-lg tracking-tight">
-              Select Frame
+              {t("selectFrame")}
             </h2>
             <div className="flex items-center gap-2 text-white/50 text-sm font-mono">
               <span className="text-emerald-400">{formatTime(currentTime)}</span>
@@ -410,7 +412,7 @@ export function VideoDrawer({
               className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-lg shadow-emerald-900/30 transition-all hover:shadow-emerald-900/50 cursor-pointer"
             >
               <Check className="h-4 w-4" />
-              Use This Frame
+              {t("useThisFrame")}
             </Button>
             <Button
               variant="ghost"
@@ -451,7 +453,7 @@ export function VideoDrawer({
                 size="icon"
                 onClick={() => skipTime(-5)}
                 className="text-white/70 hover:text-white hover:bg-white/10 cursor-pointer h-9 w-9"
-                title="Back 5 seconds"
+                title={t("backSeconds")}
               >
                 <SkipBack className="h-4 w-4" />
               </Button>
@@ -474,7 +476,7 @@ export function VideoDrawer({
                 size="icon"
                 onClick={() => skipTime(5)}
                 className="text-white/70 hover:text-white hover:bg-white/10 cursor-pointer h-9 w-9"
-                title="Forward 5 seconds"
+                title={t("forwardSeconds")}
               >
                 <SkipForward className="h-4 w-4" />
               </Button>
@@ -514,7 +516,7 @@ export function VideoDrawer({
             {/* Right: Video Source Selector */}
             <div className="flex items-center gap-3">
               <span className="text-white/40 text-xs uppercase tracking-wider font-medium">
-                Source
+                {t("source")}
               </span>
 
               <Select value={selectedVideoId} onValueChange={handleVideoChange}>
@@ -556,7 +558,7 @@ export function VideoDrawer({
                   className="h-9 border-dashed border-zinc-600 text-white/70 hover:text-white hover:bg-zinc-800 hover:border-zinc-500 cursor-pointer gap-2 transition-colors"
                 >
                   <Plus className="h-4 w-4" />
-                  Add Video
+                  {t("addVideo")}
                 </Button>
               )}
             </div>
@@ -580,17 +582,15 @@ export function VideoDrawer({
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent className="z-[110]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Replace Image?</AlertDialogTitle>
+            <AlertDialogTitle>{t("replaceImage")}</AlertDialogTitle>
             <AlertDialogDescription>
-              This will replace the current screenshot with the frame at{" "}
-              <span className="font-mono font-medium">{formatTime(currentTime)}</span>.
-              This action cannot be undone.
+              {t("replaceImageDesc", { time: formatTime(currentTime) })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmReplace}>
-              Replace Image
+              {t("replaceImage")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

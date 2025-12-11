@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -82,6 +83,8 @@ interface ActiveImageState {
 }
 
 export default function ManualEditorPage() {
+  const t = useTranslations("editManual");
+  const tCommon = useTranslations("common");
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -161,11 +164,45 @@ export default function ManualEditorPage() {
     currentContentRef.current = currentContent;
   }, [currentContent]);
 
+  // Track applied changes to prevent double-application during rapid updates
+  const appliedChangesRef = useRef<Set<string>>(new Set());
+
   const handleApplyChange = useCallback(
     (change: PendingDocumentChange) => {
+      // Prevent double-application (can happen with rapid state updates)
+      if (appliedChangesRef.current.has(change.id)) {
+        console.log("[handleApplyChange] Change already applied:", change.id);
+        return;
+      }
+      appliedChangesRef.current.add(change.id);
+
       // Use ref to get latest content (avoid stale closure)
       const content = currentContentRef.current;
       const lines = content.split("\n");
+
+      // Safeguard: Protect existing images from being deleted or modified
+      // Images are markdown references like ![caption](filename.png)
+      const imageLinePattern = /^!\[.*\]\(.*\)$/;
+      const isImageLine = (line: string) => imageLinePattern.test(line.trim());
+
+      if (change.type === "text_replace" || change.type === "text_delete") {
+        if (change.startLine && change.endLine) {
+          // Check if any line in the range is an existing image
+          for (let i = change.startLine - 1; i < change.endLine && i < lines.length; i++) {
+            if (isImageLine(lines[i])) {
+              console.error("[handleApplyChange] Rejected: change affects existing image line", i + 1);
+              toast.error("Cannot modify existing images", {
+                description: `Line ${i + 1} contains an image. Use the image tools to modify images.`,
+              });
+              appliedChangesRef.current.delete(change.id);
+              return;
+            }
+          }
+        }
+      }
+
+      // Note: We allow new images to be inserted (text_insert with image syntax)
+      // This enables future features like inserting images from video at specific points
 
       let newLines: string[];
 
@@ -179,6 +216,7 @@ export default function ManualEditorPage() {
             newLines = [...before, ...newContentLines, ...after];
           } else {
             console.error("text_replace missing required fields", change);
+            appliedChangesRef.current.delete(change.id); // Allow retry
             return;
           }
           break;
@@ -195,6 +233,7 @@ export default function ManualEditorPage() {
             ];
           } else {
             console.error("text_insert missing required fields", change);
+            appliedChangesRef.current.delete(change.id); // Allow retry
             return;
           }
           break;
@@ -207,6 +246,7 @@ export default function ManualEditorPage() {
             newLines = [...before, ...after];
           } else {
             console.error("text_delete missing required fields", change);
+            appliedChangesRef.current.delete(change.id); // Allow retry
             return;
           }
           break;
@@ -218,14 +258,19 @@ export default function ManualEditorPage() {
 
         default:
           console.error("Unknown change type", change.type);
+          appliedChangesRef.current.delete(change.id); // Allow retry
           return;
       }
 
       const newContent = newLines.join("\n");
       recordChange(newContent, `Applied: ${change.reason || change.type}`);
-      toast.success("Change applied");
+
+      // Update the ref immediately so subsequent changes see the updated content
+      currentContentRef.current = newContent;
+
+      toast.success(t("changeApplied"));
     },
-    [recordChange]
+    [recordChange, t]
   );
 
   // Use editor copilot hook
@@ -285,13 +330,13 @@ export default function ManualEditorPage() {
     const result = await saveNow();
     if (result.success) {
       setHasImageChanges(false); // Reset image changes flag
-      toast.success("Manual saved");
+      toast.success(t("manualSaved"));
     } else {
-      toast.error("Save failed", {
+      toast.error(t("saveFailed"), {
         description: result.error?.message || "An unknown error occurred"
       });
     }
-  }, [hasUnsavedChanges, hasImageChanges, isSaving, saveNow]);
+  }, [hasUnsavedChanges, hasImageChanges, isSaving, saveNow, t]);
 
   // Handle undo with toast
   const handleUndo = useCallback(() => {
@@ -341,9 +386,16 @@ export default function ManualEditorPage() {
       setManual(manualData);
       setOriginalContent(manualData.content);
       setAvailableLanguages(languagesData.languages);
+
+      // If current language isn't in available languages, redirect to first available
+      if (languagesData.languages.length > 0 && !languagesData.languages.includes(language)) {
+        const firstLang = languagesData.languages[0];
+        router.replace(`/dashboard/manuals/${manualId}/edit?lang=${firstLang}`);
+        return;
+      }
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to load manual";
-      toast.error("Load failed", { description: message });
+      toast.error(t("loadFailed"), { description: message });
       router.push("/dashboard/manuals");
     } finally {
       setLoading(false);
@@ -416,14 +468,14 @@ export default function ManualEditorPage() {
       link.click();
       document.body.removeChild(link);
 
-      toast.success(`Exported as ${format.toUpperCase()}`, {
+      toast.success(t("exportedAs", { format: format.toUpperCase() }), {
         description: `${result.filename} (${(result.size_bytes / 1024).toFixed(1)} KB)`
       });
     } catch (e) {
       const message = e instanceof Error ? e.message : "Export failed";
-      toast.error("Export failed", { description: message });
+      toast.error(t("exportFailed"), { description: message });
     }
-  }, [manualId, language]);
+  }, [manualId, language, t]);
 
   // Title editing handlers
   const startEditingTitle = useCallback(() => {
@@ -451,14 +503,14 @@ export default function ManualEditorPage() {
       // Update local state
       setManual((prev) => prev ? { ...prev, title: trimmedTitle } : prev);
       setIsEditingTitle(false);
-      toast.success("Title updated");
+      toast.success(t("titleUpdated"));
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to update title";
-      toast.error("Failed to save title", { description: message });
+      toast.error(t("failedToSaveTitle"), { description: message });
     } finally {
       setSavingTitle(false);
     }
-  }, [editingTitle, manual?.title, manualId, cancelEditingTitle]);
+  }, [editingTitle, manual?.title, manualId, cancelEditingTitle, t]);
 
   const handleTitleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -617,10 +669,10 @@ export default function ManualEditorPage() {
       if (newContent !== currentContentRef.current) {
         recordChange(newContent, `Update caption: "${newCaption}"`);
         setActiveImage((prev) => prev ? { ...prev, caption: newCaption, markdownRef: newMarkdownRef } : null);
-        toast.success("Caption updated");
+        toast.success(t("captionUpdated"));
       }
     },
-    [activeImage, recordChange]
+    [activeImage, recordChange, t]
   );
 
   // Handle image replacement (from video or upload)
@@ -648,7 +700,7 @@ export default function ManualEditorPage() {
           setImageCacheBuster(newCacheBuster);
           setActiveImage((prev) => prev ? { ...prev, url: `${activeImage.url.split('?')[0]}?t=${newCacheBuster}` } : null);
           setHasImageChanges(true);
-          toast.success("Image replaced");
+          toast.success(t("imageReplaced"));
         } else if (source === "video" && data.timestamp !== undefined) {
           // Replace with frame from video (supports both primary and additional videos)
           const videoId = data.videoId || "primary";
@@ -666,14 +718,14 @@ export default function ManualEditorPage() {
           setImageCacheBuster(newCacheBuster);
           setActiveImage((prev) => prev ? { ...prev, url: `${activeImage.url.split('?')[0]}?t=${newCacheBuster}` } : null);
           setHasImageChanges(true);
-          toast.success("Image replaced from video frame");
+          toast.success(t("imageReplacedFromFrame"));
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : "Failed to replace image";
-        toast.error("Replace failed", { description: message });
+        toast.error(t("replaceFailed"), { description: message });
       }
     },
-    [activeImage, manualId]
+    [activeImage, manualId, t]
   );
 
   // Handle image deletion
@@ -690,7 +742,7 @@ export default function ManualEditorPage() {
 
     if (newContent !== currentContentRef.current) {
       recordChange(newContent, `Delete image: ${activeImage.name}`);
-      toast.success("Image deleted");
+      toast.success(t("imageDeleted"));
     }
 
     // Close lightbox
@@ -699,18 +751,18 @@ export default function ManualEditorPage() {
 
     // TODO: Also delete the file from the server
     // fetch(`/api/manuals/${manualId}/screenshots/${activeImage.name}`, { method: "DELETE" });
-  }, [activeImage, recordChange]);
+  }, [activeImage, recordChange, t]);
 
   // Handle opening video drawer for frame selection
   const handleOpenVideoDrawer = useCallback(() => {
     if (!manual?.source_video?.exists) {
-      toast.error("Source video not available");
+      toast.error(t("sourceVideoNotAvailable"));
       return;
     }
     setSelectedFrameTimestamp(activeImage?.timestamp || 0);
     // Keep lightbox open, video drawer will appear on top
     setVideoDrawerOpen(true);
-  }, [manual?.source_video, activeImage?.timestamp]);
+  }, [manual?.source_video, activeImage?.timestamp, t]);
 
   // Handle frame selection in video drawer
   const handleFrameSelect = useCallback((timestamp: number) => {
@@ -763,7 +815,7 @@ export default function ManualEditorPage() {
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">Loading manual...</p>
+          <p className="text-muted-foreground">{t("loadingManual")}</p>
         </div>
       </div>
     );
@@ -774,9 +826,9 @@ export default function ManualEditorPage() {
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">Manual not found</p>
+          <p className="text-muted-foreground">{t("manualNotFound")}</p>
           <Link href="/dashboard/manuals">
-            <Button className="mt-4">Back to Manuals</Button>
+            <Button className="mt-4">{t("backToManuals")}</Button>
           </Link>
         </div>
       </div>
@@ -790,7 +842,7 @@ export default function ManualEditorPage() {
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="sm" onClick={handleBack}>
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            {tCommon("back")}
           </Button>
 
           <div className="h-4 w-px bg-border" />
@@ -856,7 +908,7 @@ export default function ManualEditorPage() {
             </Badge>
           )}
 
-          {availableLanguages.length > 1 && (
+          {availableLanguages.length > 1 ? (
             <Select value={language} onValueChange={handleLanguageChange}>
               <SelectTrigger className="w-[100px] h-8">
                 <SelectValue />
@@ -869,11 +921,15 @@ export default function ManualEditorPage() {
                 ))}
               </SelectContent>
             </Select>
-          )}
+          ) : availableLanguages.length === 1 ? (
+            <Badge variant="outline" className="text-xs">
+              {availableLanguages[0].toUpperCase()}
+            </Badge>
+          ) : null}
 
           {hasUnsavedChanges && (
             <Badge variant="secondary" className="text-xs">
-              Unsaved changes
+              {t("unsavedChanges")}
             </Badge>
           )}
         </div>
@@ -883,21 +939,21 @@ export default function ManualEditorPage() {
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
                 <Download className="mr-2 h-4 w-4" />
-                Export
+                {tCommon("export")}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => handleExport("pdf")}>
                 <FileDown className="mr-2 h-4 w-4" />
-                Export as PDF
+                {t("exportAsPdf")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleExport("word")}>
                 <FileDown className="mr-2 h-4 w-4" />
-                Export as Word
+                {t("exportAsWord")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleExport("html")}>
                 <FileDown className="mr-2 h-4 w-4" />
-                Export as HTML
+                {t("exportAsHtml")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -920,11 +976,11 @@ export default function ManualEditorPage() {
                   <TabsList>
                     <TabsTrigger value="preview" className="gap-2">
                       <FileText className="h-4 w-4" />
-                      Preview
+                      {t("preview")}
                     </TabsTrigger>
                     <TabsTrigger value="markdown" className="gap-2">
                       <Code className="h-4 w-4" />
-                      Markdown
+                      {t("markdown")}
                     </TabsTrigger>
                   </TabsList>
 
@@ -940,7 +996,7 @@ export default function ManualEditorPage() {
 
                 {hasSelection && activeTab === "preview" && (
                   <Badge variant="outline" className="text-xs">
-                    Text selected - ask copilot for help
+                    {t("textSelected")}
                   </Badge>
                 )}
               </div>
@@ -1078,18 +1134,17 @@ export default function ManualEditorPage() {
       <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogTitle>{t("unsavedChanges")}</AlertDialogTitle>
             <AlertDialogDescription>
-              You have unsaved changes. Are you sure you want to leave?
-              Your changes will be lost.
+              {t("unsavedChangesDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setPendingNavigation(null)}>
-              Cancel
+              {tCommon("cancel")}
             </AlertDialogCancel>
             <AlertDialogAction onClick={proceedWithNavigation}>
-              Leave without saving
+              {t("leaveWithoutSaving")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

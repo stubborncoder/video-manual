@@ -441,30 +441,33 @@ export function useEditorCopilot({
    * Accept a pending change
    */
   const acceptChange = useCallback((changeId: string) => {
-    // Find the change first - only process if still pending
-    const change = pendingChanges.find((c) => c.id === changeId && c.status === "pending");
+    // Use functional update to get latest state and avoid stale closure issues
+    // This is critical for mass approval where multiple changes are processed quickly
+    setPendingChanges((prev) => {
+      // Find the change in the current state
+      const change = prev.find((c) => c.id === changeId && c.status === "pending");
 
-    if (!change) {
-      console.log("[acceptChange] Change not found or already processed:", changeId);
-      return;
-    }
+      if (!change) {
+        console.log("[acceptChange] Change not found or already processed:", changeId);
+        return prev;
+      }
 
-    // Apply the change to the document
-    onChangeAccepted?.(change);
+      // Apply the change to the document
+      onChangeAccepted?.(change);
 
-    // Update status to accepted
-    setPendingChanges((prev) =>
-      prev.map((c) =>
+      // Send WebSocket notification
+      if (wsRef.current?.readyState === WebSocket.OPEN) {
+        wsRef.current.send(
+          JSON.stringify({ type: "accept_change", change_id: changeId })
+        );
+      }
+
+      // Update status to accepted
+      return prev.map((c) =>
         c.id === changeId ? { ...c, status: "accepted" as const } : c
-      )
-    );
-
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      wsRef.current.send(
-        JSON.stringify({ type: "accept_change", change_id: changeId })
       );
-    }
-  }, [pendingChanges, onChangeAccepted]);
+    });
+  }, [onChangeAccepted]);
 
   /**
    * Reject a pending change

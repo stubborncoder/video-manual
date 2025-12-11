@@ -171,6 +171,12 @@ class EditorCopilotSession:
                 if is_first:
                     is_streaming = True
                     accumulated_response = token
+                    # Send first token
+                    await self.send_event(
+                        "chat_response",
+                        content=token,
+                        done=False,
+                    )
                 elif is_last:
                     # Send final complete response
                     await self.send_event(
@@ -180,10 +186,10 @@ class EditorCopilotSession:
                     )
                 else:
                     accumulated_response += token
-                    # Send streaming chunk
+                    # Send streaming chunk (just the token delta, not accumulated)
                     await self.send_event(
                         "chat_response",
-                        content=accumulated_response,
+                        content=token,
                         done=False,
                     )
 

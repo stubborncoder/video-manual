@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useTranslations } from "next-intl";
 import { Bot, Send, StopCircle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,6 +54,7 @@ export function CopilotPanel({
   isConnected,
   isPaused = false,
 }: CopilotPanelProps) {
+  const t = useTranslations("copilotPanel");
   const [inputValue, setInputValue] = useState("");
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -114,12 +116,12 @@ export function CopilotPanel({
         <div className="border-b px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Bot className="h-4 w-4" />
-            <span className="font-medium">Manual Editor</span>
+            <span className="font-medium">{t("title")}</span>
             <span
               className={`w-2 h-2 rounded-full ${
                 isConnected ? "bg-green-500" : "bg-red-500"
               }`}
-              title={isConnected ? "Connected" : "Disconnected"}
+              title={isConnected ? t("connected") : t("disconnected")}
             />
           </div>
           {hasMessages && onClearChat && (
@@ -134,7 +136,7 @@ export function CopilotPanel({
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Clear chat</TooltipContent>
+              <TooltipContent>{t("clearChat")}</TooltipContent>
             </Tooltip>
           )}
         </div>
@@ -151,10 +153,9 @@ export function CopilotPanel({
             <div className="h-full flex items-center justify-center p-6">
               <div className="text-center text-muted-foreground">
                 <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p className="font-medium mb-2">Manual Editor</p>
+                <p className="font-medium mb-2">{t("emptyStateTitle")}</p>
                 <p className="text-sm max-w-[250px]">
-                  Select text in the document and ask me to help improve it, or
-                  just ask a question about your manual.
+                  {t("emptyStateDesc")}
                 </p>
               </div>
             </div>
@@ -182,12 +183,12 @@ export function CopilotPanel({
               onKeyDown={handleKeyDown}
               placeholder={
                 isPaused
-                  ? "Switch to Preview mode to use the assistant..."
+                  ? t("placeholderPaused")
                   : imageContext
-                  ? "Ask about this image..."
+                  ? t("placeholderImage")
                   : selection
-                  ? "What would you like to do with this selection?"
-                  : "Ask the AI to help edit your manual..."
+                  ? t("placeholderSelection")
+                  : t("placeholderDefault")
               }
               className="resize-none min-h-[60px]"
               rows={2}
@@ -206,7 +207,7 @@ export function CopilotPanel({
                       <StopCircle className="h-5 w-5" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Stop generation</TooltipContent>
+                  <TooltipContent>{t("stopGeneration")}</TooltipContent>
                 </Tooltip>
               ) : (
                 <Tooltip>
@@ -219,7 +220,7 @@ export function CopilotPanel({
                       <Send className="h-5 w-5" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent>Send (Enter)</TooltipContent>
+                  <TooltipContent>{t("sendMessage")}</TooltipContent>
                 </Tooltip>
               )}
             </div>
@@ -228,14 +229,14 @@ export function CopilotPanel({
           {/* Connection status */}
           {!isConnected && (
             <p className="text-xs text-destructive text-center">
-              Disconnected from server. Reconnecting...
+              {t("disconnectedMessage")}
             </p>
           )}
 
           {/* Paused status (markdown mode) */}
           {isPaused && isConnected && (
             <p className="text-xs text-amber-600 dark:text-amber-400 text-center">
-              Assistant paused while editing markdown. Switch to Preview to continue.
+              {t("pausedMessage")}
             </p>
           )}
         </div>

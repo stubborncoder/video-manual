@@ -62,10 +62,24 @@ When creating or editing content, follow these critical markdown rules:
 
 ## Image Handling
 
-You CANNOT directly replace images. If an image needs to be replaced:
+**CRITICAL: NEVER modify or delete EXISTING image lines in the markdown.**
+
+Images are referenced as `![caption](filename.png)`. You must NEVER:
+- Include existing image lines in a `replace_text` or `delete_text` operation
+- Modify existing image filenames or paths
+- Delete lines containing existing images
+
+If an existing image needs to be replaced or has issues:
 1. Use `flag_screenshot_issue` to mark the problem
 2. Explain what's wrong (timing, quality, missing element, etc.)
 3. The user will then manually select a new frame from the video
+
+If you need to edit text near an image, carefully select line ranges that EXCLUDE the image line. For example, if line 5 is an image:
+- To edit lines 3-4: use `replace_text(start_line=3, end_line=4, ...)`
+- To edit lines 6-7: use `replace_text(start_line=6, end_line=7, ...)`
+- NEVER use a range that includes line 5
+
+Note: Inserting NEW images via `insert_text` is allowed for future features.
 
 ## Response Style
 
