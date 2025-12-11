@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { X, Play, Pause, Check, SkipBack, SkipForward } from "lucide-react";
+import { X, Play, Pause, Check, SkipBack, SkipForward, Video, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -23,13 +23,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { FrameStrip, type FrameCandidate } from "./FrameStrip";
+import { manuals, type ManualVideosResponse, type AdditionalVideoInfo, type PrimaryVideoInfo } from "@/lib/api";
+
+interface VideoOption {
+  id: string;
+  label: string;
+  url: string;
+  duration: number;
+}
 
 interface VideoDrawerProps {
   /** Whether the drawer is open */
   open: boolean;
   /** Callback to close the drawer */
   onOpenChange: (open: boolean) => void;
-  /** Video URL to play */
+  /** Video URL to play (primary video) */
   videoUrl: string;
   /** Current timestamp to start at */
   currentTimestamp: number;
@@ -38,7 +46,13 @@ interface VideoDrawerProps {
   /** Callback when a frame is selected */
   onFrameSelect: (timestamp: number) => void;
   /** Callback when user confirms frame selection */
-  onConfirmFrame: (timestamp: number) => void;
+  onConfirmFrame: (timestamp: number, videoId?: string) => void;
+  /** Callback to open add video dialog */
+  onAddVideo?: () => void;
+  /** Currently selected video ID (persisted by parent) */
+  selectedVideoId?: string;
+  /** Callback when video selection changes */
+  onVideoChange?: (videoId: string) => void;
 }
 
 const PLAYBACK_SPEEDS = [
@@ -63,6 +77,9 @@ export function VideoDrawer({
   manualId,
   onFrameSelect,
   onConfirmFrame,
+  onAddVideo,
+  selectedVideoId: externalSelectedVideoId,
+  onVideoChange,
 }: VideoDrawerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -73,11 +90,62 @@ export function VideoDrawer({
   const [playbackSpeed, setPlaybackSpeed] = useState("0.5");
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
+  // Video selection state - use external state if provided, otherwise internal
+  const [availableVideos, setAvailableVideos] = useState<VideoOption[]>([]);
+  const [internalSelectedVideoId, setInternalSelectedVideoId] = useState<string>("primary");
+  const selectedVideoId = externalSelectedVideoId ?? internalSelectedVideoId;
+  const [activeVideoUrl, setActiveVideoUrl] = useState(videoUrl);
+  const [loadingVideos, setLoadingVideos] = useState(false);
+
   // Track if initial seek has been done and the initial timestamp for frame loading
   const initialSeekDoneRef = useRef(false);
   const initialTimestampRef = useRef(currentTimestamp);
 
-  // Reset state when drawer opens
+  // Load available videos when drawer opens
+  const loadAvailableVideos = useCallback(async () => {
+    setLoadingVideos(true);
+    try {
+      const response = await manuals.listVideos(manualId);
+      const videos: VideoOption[] = [];
+
+      // Add primary video
+      if (response.primary.exists) {
+        videos.push({
+          id: "primary",
+          label: response.primary.label || "Original Video",
+          url: videoUrl,
+          duration: response.primary.duration_seconds || 0,
+        });
+      }
+
+      // Add additional videos
+      response.additional.forEach((v) => {
+        if (v.exists) {
+          videos.push({
+            id: v.id,
+            label: v.label || v.filename,
+            url: manuals.getVideoStreamUrl(manualId, v.id),
+            duration: v.duration_seconds || 0,
+          });
+        }
+      });
+
+      setAvailableVideos(videos);
+    } catch (error) {
+      console.error("Failed to load videos:", error);
+      // Fallback to just primary video
+      setAvailableVideos([{
+        id: "primary",
+        label: "Original Video",
+        url: videoUrl,
+        duration: 0,
+      }]);
+    } finally {
+      setLoadingVideos(false);
+    }
+  }, [manualId, videoUrl]);
+
+  // Reset state when drawer opens (but preserve video selection)
   useEffect(() => {
     if (open) {
       initialSeekDoneRef.current = false;
@@ -85,15 +153,49 @@ export function VideoDrawer({
       setCurrentTime(currentTimestamp);
       setIsPlaying(false);
       setPlaybackSpeed("0.5");
+      // Don't reset video selection - it persists across opens
+      loadAvailableVideos();
     }
-  }, [open, currentTimestamp]);
+  }, [open, currentTimestamp, loadAvailableVideos]);
 
-  // Load frames around the initial timestamp (only when drawer opens)
-  const loadFrames = useCallback(async (timestamp: number) => {
+  // Update activeVideoUrl when availableVideos load or selectedVideoId changes
+  useEffect(() => {
+    if (availableVideos.length > 0) {
+      const video = availableVideos.find((v) => v.id === selectedVideoId);
+      if (video) {
+        setActiveVideoUrl(video.url);
+      } else {
+        // Fallback to primary if selected video no longer exists
+        setActiveVideoUrl(videoUrl);
+        setInternalSelectedVideoId("primary");
+        onVideoChange?.("primary");
+      }
+    }
+  }, [availableVideos, selectedVideoId, videoUrl, onVideoChange]);
+
+  // Handle video selection change
+  const handleVideoChange = useCallback((videoId: string) => {
+    const video = availableVideos.find((v) => v.id === videoId);
+    if (video) {
+      // Update internal state
+      setInternalSelectedVideoId(videoId);
+      // Notify parent if callback provided (for persistence)
+      onVideoChange?.(videoId);
+      setActiveVideoUrl(video.url);
+      setFrames([]); // Clear frames, will reload for new video
+      initialSeekDoneRef.current = false;
+      // Reload frames for the new video
+      loadFrames(currentTime, videoId);
+    }
+  }, [availableVideos, currentTime, onVideoChange]);
+
+  // Load frames around a timestamp (with video_id support)
+  const loadFrames = useCallback(async (timestamp: number, videoId?: string) => {
+    const vid = videoId || selectedVideoId;
     setLoadingFrames(true);
     try {
       const response = await fetch(
-        `/api/manuals/${manualId}/frames?timestamp=${timestamp}&window=10&count=15`
+        `/api/manuals/${manualId}/frames?timestamp=${timestamp}&window=10&count=15&video_id=${vid}`
       );
       if (response.ok) {
         const data = await response.json();
@@ -106,14 +208,14 @@ export function VideoDrawer({
     } finally {
       setLoadingFrames(false);
     }
-  }, [manualId]);
+  }, [manualId, selectedVideoId]);
 
   // Load frames only when drawer opens (not when clicking thumbnails)
   useEffect(() => {
     if (open && manualId) {
-      loadFrames(initialTimestampRef.current);
+      loadFrames(initialTimestampRef.current, selectedVideoId);
     }
-  }, [open, manualId, loadFrames]);
+  }, [open, manualId]); // Don't include loadFrames or selectedVideoId to avoid reload loops
 
   // Clear state when drawer closes
   useEffect(() => {
@@ -121,6 +223,7 @@ export function VideoDrawer({
       setFrames([]);
       setIsPlaying(false);
       setShowConfirmDialog(false);
+      setAvailableVideos([]);
     }
   }, [open]);
 
@@ -200,9 +303,9 @@ export function VideoDrawer({
   // Handle confirming the frame replacement
   const handleConfirmReplace = useCallback(() => {
     setShowConfirmDialog(false);
-    onConfirmFrame(currentTime);
+    onConfirmFrame(currentTime, selectedVideoId);
     onOpenChange(false);
-  }, [currentTime, onConfirmFrame, onOpenChange]);
+  }, [currentTime, selectedVideoId, onConfirmFrame, onOpenChange]);
 
   // Skip forward/backward
   const skipTime = useCallback((seconds: number) => {
@@ -254,31 +357,33 @@ export function VideoDrawer({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/95 flex flex-col z-[60]">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-black/50 shrink-0">
-          <div className="flex items-center gap-4">
-            <span className="text-white font-medium text-lg">
+      <div className="fixed inset-0 bg-gradient-to-b from-zinc-950 via-zinc-950 to-zinc-900 flex flex-col z-[60]">
+        {/* Minimal Header - just title, timestamp, and close */}
+        <div className="flex items-center justify-between px-6 py-3 shrink-0 border-b border-white/5">
+          <div className="flex items-center gap-6">
+            <h2 className="text-white font-semibold text-lg tracking-tight">
               Select Frame
-            </span>
-            <span className="text-white/60 text-sm">
-              Current: {formatTime(currentTime)} / {formatTime(duration)}
-            </span>
+            </h2>
+            <div className="flex items-center gap-2 text-white/50 text-sm font-mono">
+              <span className="text-emerald-400">{formatTime(currentTime)}</span>
+              <span>/</span>
+              <span>{formatTime(duration)}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button
               size="default"
               onClick={handleUseFrame}
-              className="gap-2 bg-green-600 hover:bg-green-500 text-white font-medium shadow-lg"
+              className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-lg shadow-emerald-900/30 transition-all hover:shadow-emerald-900/50 cursor-pointer"
             >
-              <Check className="h-5 w-5" />
+              <Check className="h-4 w-4" />
               Use This Frame
             </Button>
             <Button
               variant="ghost"
-              size="default"
+              size="icon"
               onClick={() => onOpenChange(false)}
-              className="text-white hover:bg-white/20"
+              className="text-white/60 hover:text-white hover:bg-white/10 cursor-pointer"
             >
               <X className="h-5 w-5" />
             </Button>
@@ -286,12 +391,12 @@ export function VideoDrawer({
         </div>
 
         {/* Video Player - Main area */}
-        <div className="flex-1 flex flex-col items-center justify-center p-4 min-h-0">
+        <div className="flex-1 flex flex-col items-center justify-center p-6 min-h-0">
           <div className="relative max-w-full max-h-full flex items-center justify-center">
             <video
               ref={videoRef}
-              src={videoUrl}
-              className="max-w-full max-h-[calc(100vh-280px)] object-contain rounded-lg"
+              src={activeVideoUrl}
+              className="max-w-full max-h-[calc(100vh-280px)] object-contain rounded-xl shadow-2xl shadow-black/50 cursor-pointer"
               onLoadedMetadata={handleLoadedMetadata}
               onTimeUpdate={handleTimeUpdate}
               onPlay={() => setIsPlaying(true)}
@@ -299,59 +404,53 @@ export function VideoDrawer({
               onClick={togglePlay}
               playsInline
             />
-
-            {/* Play/Pause overlay on click */}
-            {!isPlaying && (
-              <div
-                className="absolute inset-0 flex items-center justify-center cursor-pointer"
-                onClick={togglePlay}
-              >
-                <div className="bg-black/40 rounded-full p-6">
-                  <Play className="h-16 w-16 text-white" />
-                </div>
-              </div>
-            )}
           </div>
+        </div>
 
-          {/* Video Controls */}
-          <div className="w-full max-w-4xl mt-4 px-4">
-            <div className="flex items-center gap-4">
+        {/* Bottom Panel - Video Controls, Source, and Frames */}
+        <div className="shrink-0 bg-zinc-900/80 backdrop-blur-sm border-t border-white/5">
+          {/* Controls Bar - Video controls + Source selector */}
+          <div className="flex items-center justify-between px-6 py-3 border-b border-white/5">
+            {/* Left: Playback Controls */}
+            <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
                 onClick={() => skipTime(-5)}
-                className="text-white hover:bg-white/20"
+                className="text-white/70 hover:text-white hover:bg-white/10 cursor-pointer h-9 w-9"
                 title="Back 5 seconds"
               >
-                <SkipBack className="h-5 w-5" />
+                <SkipBack className="h-4 w-4" />
               </Button>
 
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
                 onClick={togglePlay}
-                className="text-white hover:bg-white/20"
+                className="text-white hover:bg-white/10 cursor-pointer h-10 w-10"
               >
                 {isPlaying ? (
-                  <Pause className="h-6 w-6" />
+                  <Pause className="h-5 w-5" />
                 ) : (
-                  <Play className="h-6 w-6" />
+                  <Play className="h-5 w-5" />
                 )}
               </Button>
 
               <Button
                 variant="ghost"
-                size="sm"
+                size="icon"
                 onClick={() => skipTime(5)}
-                className="text-white hover:bg-white/20"
+                className="text-white/70 hover:text-white hover:bg-white/10 cursor-pointer h-9 w-9"
                 title="Forward 5 seconds"
               >
-                <SkipForward className="h-5 w-5" />
+                <SkipForward className="h-4 w-4" />
               </Button>
 
-              {/* Playback Speed Selector */}
+              <div className="w-px h-6 bg-white/10 mx-2" />
+
+              {/* Playback Speed */}
               <Select value={playbackSpeed} onValueChange={handleSpeedChange}>
-                <SelectTrigger className="w-[80px] h-8 bg-white/20 border-white/30 text-white hover:bg-white/30 cursor-pointer [&_svg]:text-white [&_svg]:opacity-100">
+                <SelectTrigger className="w-[90px] h-8 bg-zinc-800 border-zinc-700 text-white/80 hover:bg-zinc-700 cursor-pointer text-sm [&_svg]:text-white/60">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="z-[100]">
@@ -363,38 +462,69 @@ export function VideoDrawer({
                 </SelectContent>
               </Select>
 
-              <Slider
-                value={[currentTime]}
-                min={0}
-                max={duration || 100}
-                step={0.1}
-                onValueChange={handleSeek}
-                className="flex-1"
-              />
-
-              <span className="text-white/80 text-sm font-mono w-24 text-right">
-                {formatTime(currentTime)}
-              </span>
+              {/* Timeline Slider */}
+              <div className="flex items-center gap-3 ml-4">
+                <Slider
+                  value={[currentTime]}
+                  min={0}
+                  max={duration || 100}
+                  step={0.1}
+                  onValueChange={handleSeek}
+                  className="w-[200px]"
+                />
+                <span className="text-white/60 text-xs font-mono w-16">
+                  {formatTime(currentTime)}
+                </span>
+              </div>
             </div>
 
-            <p className="text-center text-white/50 text-xs mt-2">
-              Play video or click thumbnails below • Space to play/pause • Arrow keys to skip • Enter to confirm
-            </p>
-          </div>
-        </div>
+            {/* Right: Video Source Selector */}
+            <div className="flex items-center gap-3">
+              <span className="text-white/40 text-xs uppercase tracking-wider font-medium">
+                Source
+              </span>
 
-        {/* Frame Strip - Bottom */}
-        <div className="shrink-0 bg-black/50 border-t border-white/10 p-4">
-          <div className="text-sm font-medium mb-2 text-white/60">
-            {loadingFrames ? "Loading frames..." : "Click a thumbnail to jump to that frame"}
+              <Select value={selectedVideoId} onValueChange={handleVideoChange}>
+                <SelectTrigger className="min-w-[180px] max-w-[320px] h-9 bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700 cursor-pointer [&_svg]:text-white/60">
+                  <div className="flex items-center gap-2 truncate">
+                    <Video className="h-4 w-4 text-white/60 shrink-0" />
+                    <span className="truncate"><SelectValue /></span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="z-[100]">
+                  {availableVideos.map((video) => (
+                    <SelectItem key={video.id} value={video.id}>
+                      {video.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Add Video Button */}
+              {onAddVideo && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onAddVideo}
+                  className="h-9 border-dashed border-zinc-600 text-white/70 hover:text-white hover:bg-zinc-800 hover:border-zinc-500 cursor-pointer gap-2 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Video
+                </Button>
+              )}
+            </div>
           </div>
-          <div className="h-[130px]">
-            <FrameStrip
-              frames={frames}
-              selectedTimestamp={currentTime}
-              onSelect={handleFrameClick}
-              loading={loadingFrames}
-            />
+
+          {/* Frame Thumbnails */}
+          <div className="px-6 py-4">
+            <div className="h-[120px]">
+              <FrameStrip
+                frames={frames}
+                selectedTimestamp={currentTime}
+                onSelect={handleFrameClick}
+                loading={loadingFrames}
+              />
+            </div>
           </div>
         </div>
       </div>

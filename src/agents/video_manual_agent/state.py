@@ -29,6 +29,7 @@ class VideoManualState(TypedDict):
     video_metadata: Optional[Dict[str, Any]]  # FPS, duration, resolution, etc.
     video_analysis: Optional[str]  # Gemini's analysis of video content
     model_used: Optional[str]  # Which Gemini model was used
+    source_languages: Optional[Dict[str, Any]]  # Detected languages: {audio, ui_text, confidence}
 
     # Video optimization (for efficient Gemini upload)
     optimized_video_path: Optional[str]  # Path to compressed video for analysis

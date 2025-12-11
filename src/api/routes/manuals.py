@@ -13,7 +13,17 @@ from fastapi import APIRouter, HTTPException, File, UploadFile, Query
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field, field_validator
 
-from ..schemas import ManualSummary, ManualDetail, ManualListResponse, SourceVideoInfo, LanguageEvaluation, CloneManualRequest
+from ..schemas import (
+    ManualSummary,
+    ManualDetail,
+    ManualListResponse,
+    SourceVideoInfo,
+    LanguageEvaluation,
+    CloneManualRequest,
+    AdditionalVideoInfo,
+    ManualVideosResponse,
+    AdditionalVideoUploadResponse,
+)
 from ..dependencies import CurrentUser, UserStorageDep, ProjectStorageDep, TrashStorageDep
 from ...storage.version_storage import VersionStorage
 from ...storage.screenshot_store import ScreenshotStore
@@ -48,6 +58,7 @@ class ManualTitleUpdate(BaseModel):
 class ManualEvaluationRequest(BaseModel):
     """Request to evaluate a manual."""
     language: str = "en"
+    user_language: Optional[str] = None  # User's UI language preference
 
     @field_validator('language')
     @classmethod
@@ -57,6 +68,18 @@ class ManualEvaluationRequest(BaseModel):
         Accepts both language names ("English") and codes ("en").
         Returns the ISO 639-1 code.
         """
+        return normalize_language_to_code(v)
+
+    @field_validator('user_language')
+    @classmethod
+    def validate_user_language(cls, v: Optional[str]) -> Optional[str]:
+        """Validate and normalize user language to ISO code.
+
+        Accepts both language names ("English") and codes ("en").
+        Returns the ISO 639-1 code, or None if not provided.
+        """
+        if v is None:
+            return None
         return normalize_language_to_code(v)
 
 router = APIRouter(prefix="/manuals", tags=["manuals"])
@@ -197,10 +220,11 @@ async def get_manual(
 
     screenshots = storage.list_screenshots(manual_id)
 
-    # Get source video info, title, and document_format from metadata
+    # Get source video info, title, document_format, and source_languages from metadata
     source_video = None
     title = manual_id  # Default fallback
     document_format = None
+    source_languages = None
     metadata = storage.get_manual_metadata(manual_id)
     if metadata:
         video_path = metadata.get("video_path", "")
@@ -213,6 +237,7 @@ async def get_manual(
             )
         title = _get_manual_title(metadata, manual_id)
         document_format = metadata.get("document_format")
+        source_languages = metadata.get("source_languages")
 
     return ManualDetail(
         id=manual_id,
@@ -222,6 +247,7 @@ async def get_manual(
         screenshots=[str(s) for s in screenshots],
         source_video=source_video,
         document_format=document_format,
+        source_languages=source_languages,
     )
 
 
@@ -538,36 +564,33 @@ async def extract_frames(
     timestamp: float = Query(..., description="Center timestamp in seconds"),
     window: float = Query(5.0, description="Window size in seconds (before/after)"),
     count: int = Query(10, description="Number of frames to extract"),
+    video_id: str = Query("primary", description="Video ID to extract frames from ('primary' or additional video ID)"),
 ):
     """Extract frames from source video around a timestamp.
 
     Returns URLs to temporary frame images that can be used for screenshot replacement.
+    Supports both primary video and additional videos uploaded for screenshot replacement.
     """
     from ...agents.video_manual_agent.tools.video_tools import extract_screenshot_at_timestamp
+    from ...agents.video_manual_agent.utils.metadata import get_video_path_by_id
 
-    # Get manual metadata to find source video
-    metadata = storage.get_manual_metadata(manual_id)
-    if not metadata:
+    manual_dir = storage.get_manual_path(manual_id)
+    if not manual_dir.exists():
         raise HTTPException(status_code=404, detail="Manual not found")
 
-    # Get source video path from metadata (stored as full path)
-    video_path_str = metadata.get("video_path", "")
-    if not video_path_str:
-        raise HTTPException(status_code=400, detail="No source video associated with this manual")
+    # Get video path by ID (handles both primary and additional videos)
+    video_path = get_video_path_by_id(manual_dir, video_id)
+    if video_path is None:
+        if video_id == "primary":
+            raise HTTPException(status_code=400, detail="No source video associated with this manual")
+        else:
+            raise HTTPException(status_code=404, detail=f"Video not found: {video_id}")
 
-    # Prefer optimized video for better codec compatibility (e.g., AV1 WebM won't work with OpenCV)
-    manual_dir = storage.get_manual_path(manual_id)
-    optimized_video = manual_dir / "video_optimized.mp4"
-    if optimized_video.exists():
-        video_path = optimized_video
-    else:
-        video_name = Path(video_path_str).name
-        video_path = storage.videos_dir / video_name
-        if not video_path.exists():
-            raise HTTPException(status_code=404, detail="Source video not found")
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail="Video file not found on disk")
 
-    # Create temp directory for frames
-    frames_dir = Path(tempfile.gettempdir()) / "manual_frames" / manual_id
+    # Create temp directory for frames (include video_id to cache separately)
+    frames_dir = Path(tempfile.gettempdir()) / "manual_frames" / manual_id / video_id
     frames_dir.mkdir(parents=True, exist_ok=True)
 
     # Clean old frames (older than 1 hour)
@@ -600,25 +623,31 @@ async def extract_frames(
 
             frames.append({
                 "timestamp": round(frame_timestamp, 2),
-                "url": f"/api/manuals/{manual_id}/frames/{frame_filename}",
+                "url": f"/api/manuals/{manual_id}/frames/{video_id}/{frame_filename}",
             })
         except Exception as e:
             # Skip frames that fail to extract
             print(f"Failed to extract frame at {frame_timestamp}s: {e}")
             continue
 
-    return {"frames": frames, "video_duration": metadata.get("video_duration", 0)}
+    # Get video duration from metadata
+    from ...agents.video_manual_agent.utils.metadata import load_metadata
+    metadata = load_metadata(manual_dir)
+    video_duration = metadata.get("video_metadata", {}).get("duration_seconds", 0) if metadata else 0
+
+    return {"frames": frames, "video_duration": video_duration}
 
 
-@router.get("/{manual_id}/frames/{filename}")
+@router.get("/{manual_id}/frames/{video_id}/{filename}")
 async def get_frame(
     manual_id: str,
+    video_id: str,
     filename: str,
     user_id: CurrentUser,
 ):
     """Get a temporary frame image."""
     # Validate path to prevent path traversal attacks
-    frames_dir = Path(tempfile.gettempdir()) / "manual_frames" / manual_id
+    frames_dir = Path(tempfile.gettempdir()) / "manual_frames" / manual_id / video_id
     frame_path = frames_dir / filename
     frame_path = frame_path.resolve()
     frames_dir = frames_dir.resolve()
@@ -639,38 +668,38 @@ async def replace_screenshot_from_frame(
     user_id: CurrentUser,
     storage: UserStorageDep,
     timestamp: float = Query(..., description="Timestamp of frame to use"),
+    video_id: str = Query("primary", description="Video ID to extract frame from ('primary' or additional video ID)"),
 ):
-    """Replace a screenshot with a frame extracted from the source video."""
-    from ...agents.video_manual_agent.tools.video_tools import extract_screenshot_at_timestamp
+    """Replace a screenshot with a frame extracted from a video.
 
-    # Get manual metadata to find source video
-    metadata = storage.get_manual_metadata(manual_id)
-    if not metadata:
+    Supports both primary video and additional videos uploaded for screenshot replacement.
+    """
+    from ...agents.video_manual_agent.tools.video_tools import extract_screenshot_at_timestamp
+    from ...agents.video_manual_agent.utils.metadata import get_video_path_by_id
+
+    manual_dir = storage.get_manual_path(manual_id)
+    if not manual_dir.exists():
         raise HTTPException(status_code=404, detail="Manual not found")
 
-    # Get source video path from metadata (stored as full path)
-    video_path_str = metadata.get("video_path", "")
-    if not video_path_str:
-        raise HTTPException(status_code=400, detail="No source video associated with this manual")
+    # Get video path by ID (handles both primary and additional videos)
+    video_path = get_video_path_by_id(manual_dir, video_id)
+    if video_path is None:
+        if video_id == "primary":
+            raise HTTPException(status_code=400, detail="No source video associated with this manual")
+        else:
+            raise HTTPException(status_code=404, detail=f"Video not found: {video_id}")
 
-    # Prefer optimized video for better codec compatibility (e.g., AV1 WebM won't work with OpenCV)
-    manual_dir = storage.get_manual_path(manual_id)
-    optimized_video = manual_dir / "video_optimized.mp4"
-    if optimized_video.exists():
-        video_path = optimized_video
-    else:
-        video_name = Path(video_path_str).name
-        video_path = storage.videos_dir / video_name
-        if not video_path.exists():
-            raise HTTPException(status_code=404, detail="Source video not found")
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail="Video file not found on disk")
 
     screenshot_path = storage.manuals_dir / manual_id / "screenshots" / filename
 
     try:
         # Create version snapshot before replacing (includes screenshots)
         version_storage = VersionStorage(user_id, manual_id)
+        video_label = "primary video" if video_id == "primary" else f"video '{video_id}'"
         new_version = version_storage.auto_patch_before_overwrite(
-            notes=f"Before replacing screenshot from video frame: {filename} at {timestamp:.2f}s"
+            notes=f"Before replacing screenshot from {video_label}: {filename} at {timestamp:.2f}s"
         )
 
         # Extract the frame at high resolution and save to screenshot path
@@ -684,11 +713,250 @@ async def replace_screenshot_from_frame(
             "success": True,
             "filename": filename,
             "timestamp": timestamp,
+            "video_id": video_id,
             "url": f"/api/manuals/{manual_id}/screenshots/{filename}",
             "version": new_version or version_storage.get_current_version(),
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to extract frame: {str(e)}")
+
+
+# ==================== Additional Video Sources ====================
+
+
+@router.get("/{manual_id}/videos")
+async def list_manual_videos(
+    manual_id: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+) -> ManualVideosResponse:
+    """List all videos (primary + additional) for a manual."""
+    from ...agents.video_manual_agent.utils.metadata import (
+        load_metadata,
+        get_additional_videos,
+    )
+
+    manual_dir = storage.get_manual_path(manual_id)
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    metadata = load_metadata(manual_dir)
+    if not metadata:
+        raise HTTPException(status_code=404, detail="Manual metadata not found")
+
+    # Build primary video info
+    video_path_str = metadata.get("video_path", "")
+    video_metadata = metadata.get("video_metadata", {})
+
+    # Check if primary video exists
+    optimized_video = manual_dir / "video_optimized.mp4"
+    primary_exists = optimized_video.exists()
+    if not primary_exists and video_path_str:
+        video_name = Path(video_path_str).name
+        primary_exists = (storage.videos_dir / video_name).exists()
+
+    primary_info = {
+        "id": "primary",
+        "filename": "video_optimized.mp4" if optimized_video.exists() else Path(video_path_str).name if video_path_str else "",
+        "label": "Original Video",
+        "duration_seconds": video_metadata.get("duration_seconds", 0),
+        "exists": primary_exists,
+    }
+
+    # Get additional videos
+    additional_videos_raw = get_additional_videos(manual_dir)
+    additional_videos = []
+    for video in additional_videos_raw:
+        video_path = manual_dir / "videos" / video["filename"]
+        additional_videos.append(AdditionalVideoInfo(
+            id=video["id"],
+            filename=video["filename"],
+            label=video["label"],
+            language=video.get("language"),
+            duration_seconds=video.get("duration_seconds", 0),
+            size_bytes=video.get("size_bytes", 0),
+            added_at=video.get("added_at"),
+            exists=video_path.exists(),
+        ))
+
+    return ManualVideosResponse(primary=primary_info, additional=additional_videos)
+
+
+@router.post("/{manual_id}/videos")
+async def upload_additional_video(
+    manual_id: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+    file: UploadFile = File(...),
+    label: str = Query("", description="User-friendly label for this video"),
+    language: Optional[str] = Query(None, description="ISO language code for UI language (e.g., 'en', 'es')"),
+) -> AdditionalVideoUploadResponse:
+    """Upload an additional video as a frame source for screenshot replacement.
+
+    The video will be compressed to save storage space while maintaining
+    sufficient quality for frame extraction.
+    """
+    import uuid
+    from ...agents.video_manual_agent.tools.video_tools import get_video_metadata
+    from ...agents.video_manual_agent.tools.video_preprocessor import (
+        needs_optimization,
+        preprocess_video_for_analysis,
+    )
+    from ...agents.video_manual_agent.utils.metadata import add_additional_video
+
+    manual_dir = storage.get_manual_path(manual_id)
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    # Validate file type
+    allowed_extensions = {".mp4", ".webm", ".mov", ".avi", ".mkv", ".m4v"}
+    file_ext = Path(file.filename).suffix.lower() if file.filename else ""
+    if file_ext not in allowed_extensions:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid file type. Allowed: {', '.join(allowed_extensions)}"
+        )
+
+    # Generate unique ID and filename
+    video_id = f"video_{uuid.uuid4().hex[:8]}"
+    # Use language code as filename if provided, otherwise use ID
+    base_filename = language if language else video_id
+    output_filename = f"{base_filename}.mp4"
+
+    # Create videos directory
+    videos_dir = storage.get_manual_videos_dir(manual_id)
+
+    # Check for duplicate filename
+    counter = 1
+    while (videos_dir / output_filename).exists():
+        output_filename = f"{base_filename}_{counter}.mp4"
+        counter += 1
+
+    # Save uploaded file to temp location
+    temp_path = Path(tempfile.gettempdir()) / f"upload_{video_id}{file_ext}"
+    try:
+        with open(temp_path, "wb") as f:
+            content = await file.read()
+            f.write(content)
+
+        # Get video metadata
+        try:
+            video_meta = get_video_metadata(str(temp_path))
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid video file: {str(e)}")
+
+        duration_seconds = video_meta.get("duration_seconds", 0)
+
+        # Compress the video (always compress to save storage)
+        final_path = videos_dir / output_filename
+        if needs_optimization(video_meta):
+            # Use compression
+            result = preprocess_video_for_analysis(
+                video_path=str(temp_path),
+                output_dir=str(videos_dir),
+                video_metadata=video_meta,
+            )
+            # Rename optimized file to our desired filename
+            optimized_path = Path(result["optimized_path"])
+            if optimized_path != final_path:
+                shutil.move(str(optimized_path), str(final_path))
+            size_bytes = final_path.stat().st_size
+        else:
+            # Video is already small enough, just copy
+            shutil.copy(str(temp_path), str(final_path))
+            size_bytes = final_path.stat().st_size
+
+        # Add to metadata
+        video_label = label if label else (f"{language.upper()} UI" if language else "Additional Video")
+        add_additional_video(
+            manual_dir=manual_dir,
+            video_id=video_id,
+            filename=output_filename,
+            label=video_label,
+            language=language,
+            duration_seconds=duration_seconds,
+            size_bytes=size_bytes,
+        )
+
+        return AdditionalVideoUploadResponse(
+            id=video_id,
+            filename=output_filename,
+            label=video_label,
+            language=language,
+            duration_seconds=duration_seconds,
+            size_bytes=size_bytes,
+        )
+
+    finally:
+        # Clean up temp file
+        if temp_path.exists():
+            temp_path.unlink()
+
+
+@router.delete("/{manual_id}/videos/{video_id}")
+async def delete_additional_video(
+    manual_id: str,
+    video_id: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+) -> dict:
+    """Delete an additional video.
+
+    Cannot delete the primary video - only additional videos can be removed.
+    """
+    from ...agents.video_manual_agent.utils.metadata import (
+        get_additional_video_by_id,
+        remove_additional_video,
+    )
+
+    if video_id == "primary":
+        raise HTTPException(status_code=400, detail="Cannot delete primary video")
+
+    manual_dir = storage.get_manual_path(manual_id)
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    # Get video info before removing
+    video_info = get_additional_video_by_id(manual_dir, video_id)
+    if not video_info:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    # Delete file from disk
+    video_path = manual_dir / "videos" / video_info["filename"]
+    if video_path.exists():
+        video_path.unlink()
+
+    # Remove from metadata
+    removed = remove_additional_video(manual_dir, video_id)
+    if not removed:
+        raise HTTPException(status_code=404, detail="Video not found in metadata")
+
+    return {"status": "deleted", "video_id": video_id}
+
+
+@router.get("/{manual_id}/videos/{video_id}/stream")
+async def stream_additional_video(
+    manual_id: str,
+    video_id: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+):
+    """Stream a video (primary or additional) for playback in the editor."""
+    from ...agents.video_manual_agent.utils.metadata import get_video_path_by_id
+
+    manual_dir = storage.get_manual_path(manual_id)
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    video_path = get_video_path_by_id(manual_dir, video_id)
+    if video_path is None or not video_path.exists():
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    return FileResponse(
+        video_path,
+        media_type="video/mp4",
+        filename=video_path.name,
+    )
 
 
 @router.delete("/{manual_id}")
@@ -1456,6 +1724,43 @@ async def evaluate_manual(
     }
     format_name = format_names.get(document_format, "Step-by-step Manual")
 
+    # Check for language mismatch between video UI and manual language
+    source_languages = metadata.get("source_languages")
+    has_language_mismatch = False
+    language_mismatch_info = None
+
+    if source_languages:
+        video_ui_language = source_languages.get("ui_text")
+        manual_language = evaluation_request.language
+
+        if video_ui_language and video_ui_language != manual_language:
+            has_language_mismatch = True
+            video_ui_language_name = SUPPORTED_LANGUAGES.get(video_ui_language, video_ui_language)
+            manual_language_name = SUPPORTED_LANGUAGES.get(manual_language, manual_language)
+            language_mismatch_info = {
+                "video_ui_language": video_ui_language,
+                "video_ui_language_name": video_ui_language_name,
+                "manual_language": manual_language,
+                "manual_language_name": manual_language_name,
+            }
+
+    # Add language consistency category when there's a mismatch
+    language_consistency_category = ""
+    if has_language_mismatch:
+        language_consistency_category = f'''  "screenshot_language_mismatch": {{
+    "score": <number {score_range}>,
+    "explanation": "<IMPORTANT: The manual text is correctly written in {language_mismatch_info['manual_language_name']} (the target language), but the SCREENSHOTS show UI in {language_mismatch_info['video_ui_language_name']}. This is a localization issue with the screenshots, NOT with the manual text. Evaluate how much this screenshot/text language mismatch affects usability: Do the {language_mismatch_info['video_ui_language_name']} button names and labels in screenshots match what the {language_mismatch_info['manual_language_name']} text describes? Can users follow along despite seeing {language_mismatch_info['video_ui_language_name']} UI while reading {language_mismatch_info['manual_language_name']} instructions? Score 1-3: severe confusion, user cannot follow; 4-6: noticeable friction but manageable; 7-10: text clearly guides despite different screenshot language. RECOMMENDATION: Screenshots should be replaced with {language_mismatch_info['manual_language_name']} UI versions to match the manual's target language.>"
+  }},
+'''
+
+    # Determine the language for the evaluation response
+    # Use user_language if provided, otherwise fall back to manual language, then English
+    evaluation_language_code = evaluation_request.user_language or evaluation_request.language
+    evaluation_language_name = SUPPORTED_LANGUAGES.get(evaluation_language_code, "English")
+
+    # Language instruction for the LLM
+    language_instruction = f"\n\n**CRITICAL: Provide your entire evaluation response in {evaluation_language_name}.** All text in your response (summary, strengths, areas for improvement, explanations, recommendations) must be written in {evaluation_language_name}."
+
     evaluation_prompt = f"""You are an expert technical documentation evaluator. Please evaluate the following **{format_name}**.
 {context_section}
 
@@ -1469,6 +1774,7 @@ async def evaluate_manual(
 Evaluate this {format_name.lower()} comprehensively. This is a video-generated document with screenshots, so assess both written and visual content quality.
 
 **Important:** Evaluate against the standards for a {format_name.lower()}, not a generic document.
+{language_instruction}
 
 Provide your evaluation in the following JSON format:
 
@@ -1485,7 +1791,7 @@ Provide your evaluation in the following JSON format:
     "<another area>",
     ...
   ],
-{context_categories}{format_categories}{core_categories}
+{context_categories}{format_categories}{language_consistency_category}{core_categories}
   "recommendations": [
     "<specific actionable recommendation to improve the document>",
     "<another recommendation>",
@@ -1567,12 +1873,13 @@ Provide your evaluation as valid JSON only, with no additional text before or af
         # Validate nested scores for all evaluation categories
         # Include both context-dependent and context-independent categories
         score_categories = [
-            "objective_alignment",       # Only when has_context
-            "audience_appropriateness",  # Only when has_context
-            "general_usability",         # Only when no context
-            "clarity_and_completeness",  # Always
-            "technical_accuracy",        # Always
-            "structure_and_flow",        # Always
+            "objective_alignment",           # Only when has_context
+            "audience_appropriateness",      # Only when has_context
+            "general_usability",             # Only when no context
+            "screenshot_language_mismatch",  # Only when language mismatch detected
+            "clarity_and_completeness",      # Always
+            "technical_accuracy",            # Always
+            "structure_and_flow",            # Always
         ]
         for key in score_categories:
             if key in evaluation_data and isinstance(evaluation_data[key], dict):
@@ -1589,6 +1896,24 @@ Provide your evaluation as valid JSON only, with no additional text before or af
             "min": EVALUATION_SCORE_MIN,
             "max": EVALUATION_SCORE_MAX,
         }
+
+        # Add language mismatch metadata (reuse values computed earlier for the prompt)
+        if has_language_mismatch and language_mismatch_info:
+            evaluation_data["language_mismatch"] = {
+                "detected": True,
+                "video_ui_language": language_mismatch_info["video_ui_language"],
+                "video_ui_language_name": language_mismatch_info["video_ui_language_name"],
+                "manual_language": language_mismatch_info["manual_language"],
+                "manual_language_name": language_mismatch_info["manual_language_name"],
+                "warning": f"Screenshots show {language_mismatch_info['video_ui_language_name']} UI but manual is in {language_mismatch_info['manual_language_name']}. Consider replacing screenshots with {language_mismatch_info['manual_language_name']} UI versions using edit mode, or providing a localized video source.",
+            }
+        elif source_languages:
+            evaluation_data["language_mismatch"] = {
+                "detected": False,
+            }
+        else:
+            # No source language info available
+            evaluation_data["language_mismatch"] = None
 
         # Save evaluation to storage (per-version, use asyncio.to_thread for blocking I/O)
         version_storage = VersionStorage(user_id, manual_id)

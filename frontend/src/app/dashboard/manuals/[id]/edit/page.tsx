@@ -68,6 +68,7 @@ import { LineNumberedTextarea } from "@/components/editor/LineNumberedTextarea";
 import { SemanticTagHighlighter } from "@/components/editor/SemanticTagHighlighter";
 import { ImageLightbox } from "@/components/editor/ImageLightbox";
 import { VideoDrawer } from "@/components/editor/VideoDrawer";
+import { AddVideoDialog } from "@/components/editor/AddVideoDialog";
 import { ImageContextMenu } from "@/components/editor/ImageContextMenu";
 import type { ImageContext } from "@/components/editor/ImageContextChip";
 
@@ -111,7 +112,9 @@ export default function ManualEditorPage() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [activeImage, setActiveImage] = useState<ActiveImageState | null>(null);
   const [videoDrawerOpen, setVideoDrawerOpen] = useState(false);
+  const [addVideoDialogOpen, setAddVideoDialogOpen] = useState(false);
   const [selectedFrameTimestamp, setSelectedFrameTimestamp] = useState(0);
+  const [selectedVideoId, setSelectedVideoId] = useState<string>("primary");
 
   // Direct action state (for context menu shortcuts)
   const [directAction, setDirectAction] = useState<"annotate" | "caption" | null>(null);
@@ -622,7 +625,7 @@ export default function ManualEditorPage() {
 
   // Handle image replacement (from video or upload)
   const handleImageReplace = useCallback(
-    async (source: "video" | "upload", data: { timestamp?: number; file?: File }) => {
+    async (source: "video" | "upload", data: { timestamp?: number; file?: File; videoId?: string }) => {
       if (!activeImage) return;
 
       try {
@@ -647,9 +650,10 @@ export default function ManualEditorPage() {
           setHasImageChanges(true);
           toast.success("Image replaced");
         } else if (source === "video" && data.timestamp !== undefined) {
-          // Replace with frame from video
+          // Replace with frame from video (supports both primary and additional videos)
+          const videoId = data.videoId || "primary";
           const response = await fetch(
-            `/api/manuals/${manualId}/screenshots/${activeImage.name}/from-frame?timestamp=${data.timestamp}`,
+            `/api/manuals/${manualId}/screenshots/${activeImage.name}/from-frame?timestamp=${data.timestamp}&video_id=${videoId}`,
             { method: "POST" }
           );
 
@@ -715,17 +719,30 @@ export default function ManualEditorPage() {
 
   // Handle confirming frame selection from video drawer
   const handleConfirmFrame = useCallback(
-    async (timestamp: number) => {
+    async (timestamp: number, videoId?: string) => {
       if (!activeImage) return;
 
-      // Use the video frame replacement
-      await handleImageReplace("video", { timestamp });
+      // Use the video frame replacement (with optional videoId for additional videos)
+      await handleImageReplace("video", { timestamp, videoId });
 
       // Close the video drawer
       setVideoDrawerOpen(false);
     },
     [activeImage, handleImageReplace]
   );
+
+  // Handle opening add video dialog (closes video drawer first)
+  const handleOpenAddVideoDialog = useCallback(() => {
+    setVideoDrawerOpen(false);
+    setAddVideoDialogOpen(true);
+  }, []);
+
+  // Handle video upload success - reopen video drawer to show the new video
+  const handleVideoUploadSuccess = useCallback(() => {
+    toast.success("Video uploaded successfully");
+    // Reopen the video drawer so user can select the new video
+    setVideoDrawerOpen(true);
+  }, []);
 
   // Calculate total lines for overlay positioning
   const totalLines = useMemo(() => {
@@ -1117,8 +1134,19 @@ export default function ManualEditorPage() {
           manualId={manualId}
           onFrameSelect={handleFrameSelect}
           onConfirmFrame={handleConfirmFrame}
+          onAddVideo={handleOpenAddVideoDialog}
+          selectedVideoId={selectedVideoId}
+          onVideoChange={setSelectedVideoId}
         />
       )}
+
+      {/* Add Video Dialog */}
+      <AddVideoDialog
+        open={addVideoDialogOpen}
+        onOpenChange={setAddVideoDialogOpen}
+        manualId={manualId}
+        onSuccess={handleVideoUploadSuccess}
+      />
 
       {/* Hidden file input for direct uploads from context menu */}
       <input

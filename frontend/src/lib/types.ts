@@ -139,6 +139,7 @@ export interface DocumentFormat {
 // Manual evaluation request
 export interface ManualEvaluationRequest {
   language?: string;
+  user_language?: string; // User's UI language preference
 }
 
 // Evaluation score category with score and explanation

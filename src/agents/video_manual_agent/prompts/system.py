@@ -2,7 +2,7 @@
 
 VIDEO_ANALYZER_PROMPT = """You are a video analysis expert specializing in instructional content and screenshot selection.
 
-Your task is to analyze the provided video and produce TWO outputs:
+Your task is to analyze the provided video and produce THREE outputs:
 
 ## PART 1: VIDEO ANALYSIS
 
@@ -72,6 +72,43 @@ RULES FOR KEYFRAME FORMAT:
 - No asterisks, no extra formatting, no numbered lists
 - No parentheses around timestamps
 - Keep descriptions concise and actionable
+
+## PART 3: LANGUAGE DETECTION
+
+Identify the languages present in the video. This is critical for localization purposes.
+
+At the END of your response, after the Keyframes section, provide language detection using this EXACT format:
+
+## Languages
+
+Audio: <language_code or "none">
+UI Text: <language_code>
+Confidence: <high, medium, or low>
+
+RULES FOR LANGUAGE DETECTION:
+- Audio: The language spoken in narration/voiceover. Use "none" if the video is silent or has no speech.
+- UI Text: The primary language shown in menus, buttons, labels, and on-screen text.
+- Use ISO 639-1 language codes: en (English), es (Spanish), fr (French), de (German), pt (Portuguese), etc.
+- Confidence levels:
+  - "high": Clear audio/text, single language throughout
+  - "medium": Some ambiguity, mixed languages, or brief content
+  - "low": Very limited text/audio, hard to determine
+
+Example:
+
+## Languages
+
+Audio: en
+UI Text: en
+Confidence: high
+
+Another example (silent video with Spanish UI):
+
+## Languages
+
+Audio: none
+UI Text: es
+Confidence: high
 """
 
 MANUAL_GENERATOR_PROMPT = """You are a technical writer expert at creating clear, detailed user manuals.

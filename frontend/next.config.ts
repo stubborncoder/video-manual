@@ -12,12 +12,14 @@ const nextConfig: NextConfig = {
       ],
     };
   },
-  // Increase body size limit for server actions and proxied requests
+  // Increase body size limit for server actions
   experimental: {
     serverActions: {
       bodySizeLimit: "500mb",
     },
   },
+  // Note: Video uploads bypass the Next.js proxy and go directly to the backend
+  // to avoid the 10MB body size limit for proxied requests (see api.ts uploadVideo)
 };
 
 export default nextConfig;

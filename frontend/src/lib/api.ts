@@ -207,6 +207,40 @@ export interface ManualDetail {
   document_format?: string;
 }
 
+// Additional video sources for screenshot replacement
+export interface AdditionalVideoInfo {
+  id: string;
+  filename: string;
+  label: string;
+  language?: string;
+  duration_seconds: number;
+  size_bytes: number;
+  added_at?: string;
+  exists: boolean;
+}
+
+export interface PrimaryVideoInfo {
+  id: string;  // Always "primary"
+  filename: string;
+  label: string;
+  duration_seconds: number;
+  exists: boolean;
+}
+
+export interface ManualVideosResponse {
+  primary: PrimaryVideoInfo;
+  additional: AdditionalVideoInfo[];
+}
+
+export interface AdditionalVideoUploadResponse {
+  id: string;
+  filename: string;
+  label: string;
+  language?: string;
+  duration_seconds: number;
+  size_bytes: number;
+}
+
 export interface VersionInfo {
   version: string;
   created_at: string;
@@ -368,10 +402,10 @@ export const manuals = {
       }>;
     }>(`/api/manuals/${manualId}/exports`),
 
-  evaluate: (manualId: string, language = "en") =>
+  evaluate: (manualId: string, language = "en", userLanguage?: string) =>
     request<ManualEvaluation>(`/api/manuals/${manualId}/evaluate`, {
       method: "POST",
-      body: JSON.stringify({ language }),
+      body: JSON.stringify({ language, user_language: userLanguage }),
     }),
 
   // Stored evaluations
@@ -407,6 +441,73 @@ export const manuals = {
         reformat_content: reformatContent,
       }),
     }),
+
+  // Additional video sources for screenshot replacement
+  listVideos: (manualId: string) =>
+    request<ManualVideosResponse>(`/api/manuals/${manualId}/videos`),
+
+  uploadVideo: async (
+    manualId: string,
+    file: File,
+    label?: string,
+    language?: string,
+    onProgress?: (progress: UploadProgress) => void
+  ): Promise<AdditionalVideoUploadResponse> => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    // Build query params
+    const params = new URLSearchParams();
+    if (label) params.append("label", label);
+    if (language) params.append("language", language);
+    const queryString = params.toString();
+
+    // Upload directly to backend to bypass Next.js 10MB proxy limit
+    // In production, this should be configured via environment variable
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    const url = `${backendUrl}/api/manuals/${manualId}/videos${queryString ? `?${queryString}` : ""}`;
+
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", url);
+      xhr.withCredentials = true;
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          onProgress({
+            loaded: event.loaded,
+            total: event.total,
+            percent: Math.round((event.loaded / event.total) * 100),
+          });
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(JSON.parse(xhr.responseText));
+        } else {
+          try {
+            const error = JSON.parse(xhr.responseText);
+            reject(new Error(error.detail || `Upload failed: ${xhr.status}`));
+          } catch {
+            reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`));
+          }
+        }
+      };
+
+      xhr.onerror = () => reject(new Error("Network error during upload"));
+      xhr.send(formData);
+    });
+  },
+
+  deleteVideo: (manualId: string, videoId: string) =>
+    request<{ status: string; video_id: string }>(
+      `/api/manuals/${manualId}/videos/${videoId}`,
+      { method: "DELETE" }
+    ),
+
+  getVideoStreamUrl: (manualId: string, videoId: string) =>
+    `/api/manuals/${manualId}/videos/${videoId}/stream`,
 };
 
 // Manual project assignment

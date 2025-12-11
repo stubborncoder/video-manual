@@ -36,7 +36,65 @@ from ..utils.metadata import (
     has_optimized_video,
     update_analysis,
     update_optimized,
+    update_source_languages,
+    get_source_languages,
 )
+
+import re
+
+
+def _parse_source_languages(response_text: str) -> Optional[Dict[str, Any]]:
+    """Parse language detection from the Gemini response.
+
+    Looks for the ## Languages section with:
+    - Audio: <language_code or "none">
+    - UI Text: <language_code>
+    - Confidence: <high, medium, or low>
+
+    Args:
+        response_text: The full response from Gemini
+
+    Returns:
+        Dictionary with audio, ui_text, and confidence keys, or None if not found
+    """
+    # Find the Languages section
+    languages_match = re.search(
+        r'##\s*Languages\s*\n(.*?)(?=##|\Z)',
+        response_text,
+        re.IGNORECASE | re.DOTALL
+    )
+
+    if not languages_match:
+        return None
+
+    languages_section = languages_match.group(1)
+
+    # Parse individual fields
+    audio_match = re.search(r'Audio:\s*(\S+)', languages_section, re.IGNORECASE)
+    ui_text_match = re.search(r'UI\s*Text:\s*(\S+)', languages_section, re.IGNORECASE)
+    confidence_match = re.search(r'Confidence:\s*(\S+)', languages_section, re.IGNORECASE)
+
+    if not ui_text_match:
+        # UI Text is required
+        return None
+
+    audio = audio_match.group(1).lower() if audio_match else None
+    ui_text = ui_text_match.group(1).lower()
+    confidence = confidence_match.group(1).lower() if confidence_match else "medium"
+
+    # Normalize "none" for audio
+    if audio == "none":
+        audio = None
+
+    # Validate confidence
+    if confidence not in ("high", "medium", "low"):
+        confidence = "medium"
+
+    return {
+        "audio": audio,
+        "ui_text": ui_text,
+        "confidence": confidence,
+    }
 
 
 def _create_inline_message(
@@ -114,6 +172,7 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
     if manual_dir and has_analysis(manual_dir):
         cached_analysis = get_cached_analysis(manual_dir)
         cached_metadata = get_cached_video_metadata(manual_dir)
+        cached_source_languages = get_source_languages(manual_dir)
 
         print("Using cached video analysis")
 
@@ -131,6 +190,7 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
             "gemini_file_uri": None,
             "status": "analyzing_complete",
             "using_cached": True,
+            "source_languages": cached_source_languages,
         }
 
     # Get video metadata
@@ -296,9 +356,18 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
             "gemini_file_uri": gemini_file_uri,
         }
 
+    # Parse and save source languages
+    source_languages = _parse_source_languages(response.content)
+    if source_languages:
+        print(f"Detected languages - Audio: {source_languages.get('audio', 'none')}, UI: {source_languages['ui_text']}, Confidence: {source_languages['confidence']}")
+    else:
+        print("Warning: Could not parse language detection from response")
+
     # Cache analysis in metadata
     if manual_dir:
         update_analysis(manual_dir, response.content, DEFAULT_GEMINI_MODEL, metadata)
+        if source_languages:
+            update_source_languages(manual_dir, source_languages)
 
     # Return partial state update
     return {
@@ -309,4 +378,5 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
         "gemini_file_uri": gemini_file_uri,
         "status": "analyzing_complete",
         "using_cached": False,
+        "source_languages": source_languages,
     }

@@ -34,7 +34,13 @@ export function useKeyboardShortcuts({
         target.tagName === "TEXTAREA" ||
         target.isContentEditable;
 
+      // Skip if event.key is undefined (some special keys)
+      if (!event.key) return;
+
       for (const shortcut of shortcuts) {
+        // Skip shortcuts with undefined key
+        if (!shortcut.key) continue;
+
         const ctrlPressed = event.ctrlKey || event.metaKey;
         const shiftPressed = event.shiftKey;
         const altPressed = event.altKey;

@@ -50,6 +50,34 @@ class SourceVideoInfo(BaseModel):
     exists: bool = True
 
 
+class AdditionalVideoInfo(BaseModel):
+    """Information about an additional video source for screenshot replacement."""
+    id: str
+    filename: str
+    label: str
+    language: Optional[str] = None  # ISO 639-1 code
+    duration_seconds: float = 0
+    size_bytes: int = 0
+    added_at: Optional[str] = None
+    exists: bool = True  # False if file was deleted from disk
+
+
+class ManualVideosResponse(BaseModel):
+    """Response for listing all videos for a manual."""
+    primary: dict  # Primary video info (id, filename, label, duration, exists)
+    additional: list[AdditionalVideoInfo] = []
+
+
+class AdditionalVideoUploadResponse(BaseModel):
+    """Response after uploading an additional video."""
+    id: str
+    filename: str
+    label: str
+    language: Optional[str] = None
+    duration_seconds: float = 0
+    size_bytes: int = 0
+
+
 class LanguageEvaluation(BaseModel):
     """Evaluation status for a language."""
     score: Optional[int] = None  # None if not evaluated
@@ -70,6 +98,13 @@ class ManualSummary(BaseModel):
     document_format: Optional[str] = None  # Document format type (step-manual, quick-guide, etc.)
 
 
+class SourceLanguages(BaseModel):
+    """Detected languages from the source video."""
+    audio: Optional[str] = None  # ISO 639-1 code or None if silent
+    ui_text: str  # ISO 639-1 code for on-screen text
+    confidence: str = "medium"  # high, medium, low
+
+
 class ManualDetail(BaseModel):
     id: str
     title: str = ""  # Display title
@@ -78,6 +113,7 @@ class ManualDetail(BaseModel):
     screenshots: list[str] = []
     source_video: Optional[SourceVideoInfo] = None
     document_format: Optional[str] = None  # e.g., "step-manual", "quick-guide"
+    source_languages: Optional[SourceLanguages] = None  # Detected video/audio languages
 
 
 class ManualListResponse(BaseModel):
