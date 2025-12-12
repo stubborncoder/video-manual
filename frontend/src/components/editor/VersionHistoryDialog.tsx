@@ -186,6 +186,9 @@ export function VersionHistoryDialog({
             <DialogTitle className="flex items-center gap-2">
               <History className="h-5 w-5" />
               {t("title")}
+              <Badge variant="outline" className="ml-2 font-normal">
+                {language.toUpperCase()}
+              </Badge>
             </DialogTitle>
           </DialogHeader>
 

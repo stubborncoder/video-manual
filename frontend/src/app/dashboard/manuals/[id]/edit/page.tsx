@@ -235,6 +235,7 @@ export default function ManualEditorPage() {
           break;
 
         case "text_insert":
+        case "image_placeholder":
           if (change.afterLine !== undefined && change.newContent !== undefined) {
             // Insert after line (1-indexed, 0 means at beginning)
             const insertIndex = change.afterLine;
@@ -245,7 +246,7 @@ export default function ManualEditorPage() {
               ...lines.slice(insertIndex),
             ];
           } else {
-            console.error("text_insert missing required fields", change);
+            console.error(`${change.type} missing required fields`, change);
             appliedChangesRef.current.delete(change.id); // Allow retry
             return;
           }
@@ -1180,6 +1181,15 @@ export default function ManualEditorPage() {
                   {/* Render full markdown content */}
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
+                    urlTransform={(url) => {
+                      // Allow placeholder: URLs for image placeholders
+                      if (url.startsWith("placeholder:")) {
+                        return url;
+                      }
+                      // For all other URLs, use default behavior (allows http, https, mailto, etc.)
+                      // Return undefined to use default transform, or the URL to allow it
+                      return url;
+                    }}
                     components={{
                       img: ({ src, alt }) => {
                         const srcStr = typeof src === "string" ? src : "";
@@ -1204,6 +1214,17 @@ export default function ManualEditorPage() {
                               onSelectFrame={() =>
                                 handlePlaceholderSelectFrame(description, suggestedTimestamp, markdownLine)
                               }
+                              onDelete={() => {
+                                // Remove the placeholder line from content
+                                const lines = currentContentRef.current.split("\n");
+                                const newLines = lines.filter(line => line.trim() !== markdownLine.trim());
+                                const newContent = newLines.join("\n");
+                                if (newContent !== currentContentRef.current) {
+                                  recordChange(newContent, "Remove placeholder");
+                                  currentContentRef.current = newContent;
+                                  toast.success("Placeholder removed");
+                                }
+                              }}
                             />
                           );
                         }

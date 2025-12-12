@@ -740,7 +740,8 @@
     "title": "Screenshot Needed",
     "selectFrame": "Select Frame from Video",
     "suggestedTime": "Suggested: {time}",
-    "noVideoAvailable": "No source video available to select frame"
+    "noVideoAvailable": "No source video available to select frame",
+    "delete": "Remove"
   },
   "videoDrawer": {
     "selectFrame": "Select Frame",

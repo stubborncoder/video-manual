@@ -199,9 +199,10 @@ def insert_image_placeholder(
     # Format timestamp for the placeholder URL (0 if not provided)
     timestamp = suggested_timestamp if suggested_timestamp is not None else 0
 
-    # Create the placeholder markdown
+    # Create the placeholder markdown with blank lines for proper parsing
     # Format: ![IMAGE_NEEDED: description](placeholder:timestamp)
-    placeholder_content = f"![IMAGE_NEEDED: {description}](placeholder:{timestamp})"
+    # Blank lines ensure it's parsed as a standalone image, not inline text
+    placeholder_content = f"\n![IMAGE_NEEDED: {description}](placeholder:{timestamp})\n"
 
     return {
         "change_id": change_id,

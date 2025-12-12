@@ -1,6 +1,6 @@
 "use client";
 
-import { ImagePlus, Video, Clock } from "lucide-react";
+import { ImagePlus, Video, Clock, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTranslations } from "next-intl";
 
@@ -15,17 +15,23 @@ interface ImagePlaceholderProps {
   hasVideo?: boolean;
   /** Callback when user clicks to select a frame */
   onSelectFrame?: () => void;
+  /** Callback when user clicks to delete the placeholder */
+  onDelete?: () => void;
 }
 
 /**
  * Renders a placeholder for an image that needs to be selected from video.
  * Used when AI suggests adding a new screenshot at a specific location.
+ *
+ * Note: Uses <span> elements with block display instead of <div> to avoid
+ * hydration errors when ReactMarkdown renders this inside a <p> tag.
  */
 export function ImagePlaceholder({
   description,
   suggestedTimestamp,
   hasVideo = true,
   onSelectFrame,
+  onDelete,
 }: ImagePlaceholderProps) {
   const t = useTranslations("imagePlaceholder");
 
@@ -36,43 +42,56 @@ export function ImagePlaceholder({
   };
 
   return (
-    <div className="my-6 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5 p-6 text-center">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+    <span className="block my-6 border-2 border-dashed border-primary/30 rounded-lg bg-primary/5 p-6 text-center">
+      <span className="flex flex-col items-center gap-4">
+        <span className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
           <ImagePlus className="h-8 w-8 text-primary/60" />
-        </div>
+        </span>
 
-        <div className="space-y-2">
-          <h4 className="font-medium text-foreground">{t("title")}</h4>
-          <p className="text-sm text-muted-foreground max-w-md">
+        <span className="block space-y-2">
+          <strong className="block font-medium text-foreground">{t("title")}</strong>
+          <span className="block text-sm text-muted-foreground max-w-md">
             {description}
-          </p>
-        </div>
+          </span>
+        </span>
 
         {suggestedTimestamp !== undefined && suggestedTimestamp > 0 && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-background/50 px-3 py-1.5 rounded-full">
+          <span className="flex items-center gap-2 text-xs text-muted-foreground bg-background/50 px-3 py-1.5 rounded-full">
             <Clock className="h-3 w-3" />
             <span>{t("suggestedTime", { time: formatTimestamp(suggestedTimestamp) })}</span>
-          </div>
+          </span>
         )}
 
-        {hasVideo ? (
-          <Button
-            variant="default"
-            size="sm"
-            onClick={onSelectFrame}
-            className="gap-2"
-          >
-            <Video className="h-4 w-4" />
-            {t("selectFrame")}
-          </Button>
-        ) : (
-          <p className="text-xs text-muted-foreground italic">
-            {t("noVideoAvailable")}
-          </p>
-        )}
-      </div>
-    </div>
+        <span className="flex items-center gap-2">
+          {hasVideo ? (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={onSelectFrame}
+              className="gap-2"
+            >
+              <Video className="h-4 w-4" />
+              {t("selectFrame")}
+            </Button>
+          ) : (
+            <span className="block text-xs text-muted-foreground italic">
+              {t("noVideoAvailable")}
+            </span>
+          )}
+          {onDelete && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onDelete}
+              className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <Trash2 className="h-4 w-4" />
+              {t("delete")}
+            </Button>
+          )}
+        </span>
+      </span>
+    </span>
   );
 }
 

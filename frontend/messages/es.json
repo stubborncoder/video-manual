@@ -740,7 +740,8 @@
     "title": "Captura Necesaria",
     "selectFrame": "Seleccionar Fotograma del Video",
     "suggestedTime": "Sugerido: {time}",
-    "noVideoAvailable": "No hay video fuente disponible para seleccionar fotograma"
+    "noVideoAvailable": "No hay video fuente disponible para seleccionar fotograma",
+    "delete": "Eliminar"
   },
   "videoDrawer": {
     "selectFrame": "Seleccionar Fotograma",

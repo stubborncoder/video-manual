@@ -20,7 +20,7 @@ export interface ChatMessageData {
   /** For tool result messages */
   toolResult?: {
     changeId: string;
-    changeType: "text_replace" | "text_insert" | "text_delete" | "caption_update";
+    changeType: "text_replace" | "text_insert" | "text_delete" | "caption_update" | "image_placeholder";
     startLine?: number;
     endLine?: number;
     afterLine?: number;

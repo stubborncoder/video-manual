@@ -150,6 +150,33 @@ class JobStorage:
             return cursor.rowcount
 
     @staticmethod
+    def cleanup_stale_processing_jobs(minutes: int = 20) -> int:
+        """
+        Mark jobs that have been processing for too long as errors.
+
+        This handles cases where WebSocket disconnects and jobs get stuck.
+
+        Args:
+            minutes: Jobs processing longer than this are considered stale (default 20 minutes)
+
+        Returns the number of cleaned up jobs.
+        """
+        cutoff = (datetime.now() - timedelta(minutes=minutes)).isoformat()
+
+        with get_connection() as conn:
+            cursor = conn.execute(
+                """
+                UPDATE jobs
+                SET status = 'error',
+                    error = 'Job timed out after being stuck in processing',
+                    completed_at = ?
+                WHERE started_at < ? AND status IN ('pending', 'processing')
+                """,
+                (datetime.now().isoformat(), cutoff),
+            )
+            return cursor.rowcount
+
+    @staticmethod
     def mark_complete(job_id: str, manual_id: str) -> bool:
         """Mark a job as complete with the resulting manual ID."""
         return JobStorage.update_job(
