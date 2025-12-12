@@ -28,7 +28,15 @@ async def list_jobs(
 
 @router.get("/active")
 async def list_active_jobs(user_id: CurrentUser) -> JobListResponse:
-    """List all active (pending/processing) jobs for the current user."""
+    """List all active (pending/processing) jobs for the current user.
+
+    Also cleans up stale jobs that have been processing for over 20 minutes.
+    """
+    # Clean up any stale jobs first (stuck processing > 20 minutes)
+    cleaned = JobStorage.cleanup_stale_processing_jobs(minutes=20)
+    if cleaned > 0:
+        print(f"[Jobs] Cleaned up {cleaned} stale processing job(s)")
+
     jobs = JobStorage.get_active_jobs(user_id)
     return JobListResponse(jobs=[JobInfo(**job) for job in jobs])
 

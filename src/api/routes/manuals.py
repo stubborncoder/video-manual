@@ -458,6 +458,116 @@ async def clone_manual(
         raise HTTPException(status_code=500, detail=f"Clone failed: {str(e)}")
 
 
+@router.post("/{manual_id}/screenshots/extract")
+async def extract_new_screenshot(
+    manual_id: str,
+    user_id: CurrentUser,
+    storage: UserStorageDep,
+    timestamp: float = Query(..., description="Timestamp of frame to extract"),
+    video_id: str = Query("primary", description="Video ID to extract frame from"),
+):
+    """Extract a new screenshot from video and save it with a unique filename.
+
+    Used when inserting new images into the manual (e.g., from AI-suggested placeholders).
+    Returns the new filename for use in markdown.
+
+    NOTE: This route MUST be defined before /{manual_id}/screenshots/{filename}
+    to avoid "extract" being matched as a filename.
+    """
+    from ...agents.video_manual_agent.tools.video_tools import extract_screenshot_at_timestamp
+    from ...agents.video_manual_agent.utils.metadata import get_video_path_by_id
+
+    manual_dir = storage.get_manual_path(manual_id)
+    if not manual_dir.exists():
+        raise HTTPException(status_code=404, detail="Manual not found")
+
+    # Get video path by ID
+    video_path = get_video_path_by_id(manual_dir, video_id)
+    if video_path is None:
+        if video_id == "primary":
+            raise HTTPException(status_code=400, detail="No source video associated with this manual")
+        else:
+            raise HTTPException(status_code=404, detail=f"Video not found: {video_id}")
+
+    if not video_path.exists():
+        raise HTTPException(status_code=404, detail="Video file not found on disk")
+
+    screenshots_dir = storage.manuals_dir / manual_id / "screenshots"
+    screenshots_dir.mkdir(exist_ok=True)
+
+    # Find existing screenshot numbers to determine next number
+    existing_files = list(screenshots_dir.glob("figure_*.png"))
+    existing_numbers = []
+    for f in existing_files:
+        import re
+        match = re.match(r"figure_(\d+)", f.stem)
+        if match:
+            existing_numbers.append(int(match.group(1)))
+
+    next_num = max(existing_numbers, default=0) + 1
+
+    # Generate filename with timestamp marker
+    timestamp_marker = int(timestamp)
+    new_filename = f"figure_{next_num:02d}_t{timestamp_marker}s.png"
+    screenshot_path = screenshots_dir / new_filename
+
+    # Validate timestamp is non-negative
+    if timestamp < 0:
+        raise HTTPException(status_code=400, detail="Timestamp cannot be negative")
+
+    # Get video duration to validate timestamp is in bounds
+    try:
+        from ...agents.video_manual_agent.tools.video_tools import get_video_metadata
+        metadata = get_video_metadata(str(video_path))
+        video_duration = metadata.get("duration_seconds", 0)
+        if video_duration > 0 and timestamp > video_duration:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Timestamp {timestamp:.2f}s exceeds video duration ({video_duration:.2f}s)"
+            )
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Video file not found or corrupted")
+    except Exception:
+        # If we can't get metadata, proceed anyway - extraction will fail if video is bad
+        pass
+
+    try:
+        # Create version snapshot before adding new screenshot
+        version_storage = VersionStorage(user_id, manual_id)
+        video_label = "primary video" if video_id == "primary" else f"video '{video_id}'"
+        new_version = version_storage.auto_patch_before_overwrite(
+            notes=f"Adding new screenshot from {video_label}: {new_filename} at {timestamp:.2f}s"
+        )
+
+        # Extract the frame
+        extract_screenshot_at_timestamp(
+            video_path=str(video_path),
+            timestamp_seconds=timestamp,
+            output_path=str(screenshot_path),
+        )
+
+        return {
+            "success": True,
+            "filename": new_filename,
+            "timestamp": timestamp,
+            "video_id": video_id,
+            "url": f"/api/manuals/{manual_id}/screenshots/{new_filename}",
+            "version": new_version or version_storage.get_current_version(),
+        }
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=f"Video file not found: {str(e)}")
+    except ValueError as e:
+        # Frame extraction failed (timestamp out of bounds, corrupted video)
+        raise HTTPException(status_code=400, detail=f"Failed to extract frame: {str(e)}")
+    except OSError as e:
+        # Disk space or file system errors
+        if "No space left" in str(e) or "ENOSPC" in str(e):
+            raise HTTPException(status_code=507, detail="Insufficient disk space to save screenshot")
+        raise HTTPException(status_code=500, detail=f"File system error: {str(e)}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to extract frame: {str(e)}")
+
+
 @router.get("/{manual_id}/screenshots/{filename}")
 async def get_screenshot(
     manual_id: str,

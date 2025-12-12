@@ -731,8 +731,17 @@
     "imageReplacedFromFrame": "Imagen reemplazada desde fotograma de video",
     "replaceFailed": "Error al reemplazar",
     "imageDeleted": "Imagen eliminada",
+    "imageInserted": "Imagen insertada",
+    "insertFailed": "Error al insertar imagen",
     "sourceVideoNotAvailable": "Video fuente no disponible",
     "loadFailed": "Error al cargar"
+  },
+  "imagePlaceholder": {
+    "title": "Captura Necesaria",
+    "selectFrame": "Seleccionar Fotograma del Video",
+    "suggestedTime": "Sugerido: {time}",
+    "noVideoAvailable": "No hay video fuente disponible para seleccionar fotograma",
+    "delete": "Eliminar"
   },
   "videoDrawer": {
     "selectFrame": "Seleccionar Fotograma",
@@ -754,6 +763,9 @@
     "editCaption": "Editar Leyenda",
     "askAI": "Preguntar a IA",
     "delete": "Eliminar"
+  },
+  "previewContextMenu": {
+    "insertScreenshot": "Insertar Captura"
   },
   "versionHistory": {
     "title": "Historial de Versiones",

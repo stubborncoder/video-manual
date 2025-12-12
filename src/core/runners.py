@@ -799,6 +799,7 @@ Please analyze this image to help answer the user's question.""")
                             "insert_text",
                             "delete_text",
                             "update_image_caption",
+                            "insert_image_placeholder",
                         ):
                             try:
                                 if isinstance(content, str):
@@ -846,6 +847,7 @@ Please analyze this image to help answer the user's question.""")
                                         "insert_text",
                                         "delete_text",
                                         "update_image_caption",
+                                        "insert_image_placeholder",
                                     ):
                                         try:
                                             if isinstance(content, str):

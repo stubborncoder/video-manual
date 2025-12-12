@@ -71,6 +71,8 @@ import { ImageLightbox } from "@/components/editor/ImageLightbox";
 import { VideoDrawer } from "@/components/editor/VideoDrawer";
 import { AddVideoDialog } from "@/components/editor/AddVideoDialog";
 import { ImageContextMenu } from "@/components/editor/ImageContextMenu";
+import { ImagePlaceholder } from "@/components/editor/ImagePlaceholder";
+import { PreviewContextMenu } from "@/components/editor/PreviewContextMenu";
 import type { ImageContext } from "@/components/editor/ImageContextChip";
 
 // Active image state for lightbox
@@ -122,6 +124,17 @@ export default function ManualEditorPage() {
   // Direct action state (for context menu shortcuts)
   const [directAction, setDirectAction] = useState<"annotate" | "caption" | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Image placeholder state (for selecting frame to replace placeholder)
+  const [activePlaceholder, setActivePlaceholder] = useState<{
+    description: string;
+    suggestedTimestamp: number;
+    markdownLine: string;
+  } | null>(null);
+
+  // Direct screenshot insertion state (for context menu "Insert Screenshot")
+  const [isDirectInsertMode, setIsDirectInsertMode] = useState(false);
+  const [directInsertLine, setDirectInsertLine] = useState<number | null>(null);
 
   // Image context for AI chat (similar to text selection)
   const [imageContext, setImageContext] = useState<ImageContext | null>(null);
@@ -222,6 +235,7 @@ export default function ManualEditorPage() {
           break;
 
         case "text_insert":
+        case "image_placeholder":
           if (change.afterLine !== undefined && change.newContent !== undefined) {
             // Insert after line (1-indexed, 0 means at beginning)
             const insertIndex = change.afterLine;
@@ -232,7 +246,7 @@ export default function ManualEditorPage() {
               ...lines.slice(insertIndex),
             ];
           } else {
-            console.error("text_insert missing required fields", change);
+            console.error(`${change.type} missing required fields`, change);
             appliedChangesRef.current.delete(change.id); // Allow retry
             return;
           }
@@ -796,6 +810,136 @@ export default function ManualEditorPage() {
     setVideoDrawerOpen(true);
   }, []);
 
+  // Handle clicking "Select Frame" on a placeholder
+  const handlePlaceholderSelectFrame = useCallback(
+    (description: string, suggestedTimestamp: number, markdownLine: string) => {
+      if (!manual?.source_video?.exists) {
+        toast.error(t("sourceVideoNotAvailable"));
+        return;
+      }
+      setActivePlaceholder({ description, suggestedTimestamp, markdownLine });
+      setSelectedFrameTimestamp(suggestedTimestamp);
+      setVideoDrawerOpen(true);
+    },
+    [manual?.source_video?.exists, t]
+  );
+
+  // Handle confirming frame selection for a placeholder
+  const handlePlaceholderFrameConfirm = useCallback(
+    async (timestamp: number, videoId?: string) => {
+      if (!activePlaceholder) return;
+
+      try {
+        // Extract frame from video and save as new screenshot
+        const vid = videoId || "primary";
+        const response = await fetch(
+          `/api/manuals/${manualId}/screenshots/extract?timestamp=${timestamp}&video_id=${vid}`,
+          { method: "POST" }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to extract frame");
+        }
+
+        const result = await response.json();
+        const newImageFilename = result.filename; // e.g., "figure_05_t45s.png"
+
+        // Replace the placeholder line with the actual image markdown
+        const newImageMarkdown = `![${activePlaceholder.description}](${newImageFilename})`;
+        const newContent = currentContentRef.current.replace(
+          activePlaceholder.markdownLine,
+          newImageMarkdown
+        );
+
+        if (newContent !== currentContentRef.current) {
+          recordChange(newContent, `Add screenshot: ${activePlaceholder.description}`);
+          currentContentRef.current = newContent;
+          toast.success(t("imageInserted"));
+        }
+
+        // Close video drawer and clear placeholder state
+        setVideoDrawerOpen(false);
+        setActivePlaceholder(null);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to insert image";
+        toast.error(t("insertFailed"), { description: message });
+      }
+    },
+    [activePlaceholder, manualId, recordChange, t]
+  );
+
+  // Handle direct screenshot insertion from context menu
+  const handleDirectInsertScreenshot = useCallback(
+    (afterLine: number | null) => {
+      if (!manual?.source_video?.exists) {
+        toast.error(t("sourceVideoNotAvailable"));
+        return;
+      }
+      // Store the insertion line (or null for end of document)
+      setIsDirectInsertMode(true);
+      setDirectInsertLine(afterLine);
+      setSelectedFrameTimestamp(0); // Start at beginning
+      setVideoDrawerOpen(true);
+    },
+    [manual?.source_video?.exists, t]
+  );
+
+  // Handle confirming frame selection for direct insertion
+  const handleDirectInsertFrameConfirm = useCallback(
+    async (timestamp: number, videoId?: string) => {
+      try {
+        // Extract frame from video and save as new screenshot
+        const vid = videoId || "primary";
+        const response = await fetch(
+          `/api/manuals/${manualId}/screenshots/extract?timestamp=${timestamp}&video_id=${vid}`,
+          { method: "POST" }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to extract frame");
+        }
+
+        const result = await response.json();
+        const newImageFilename = result.filename;
+
+        // Create image markdown
+        const newImageMarkdown = `![Screenshot](${newImageFilename})`;
+
+        // Insert at the specified line or at end
+        const lines = currentContentRef.current.split("\n");
+        let newLines: string[];
+
+        if (directInsertLine !== null && directInsertLine > 0 && directInsertLine <= lines.length) {
+          // Insert after the specified line
+          newLines = [
+            ...lines.slice(0, directInsertLine),
+            "",
+            newImageMarkdown,
+            "",
+            ...lines.slice(directInsertLine),
+          ];
+        } else {
+          // Insert at end
+          newLines = [...lines, "", newImageMarkdown];
+        }
+
+        const newContent = newLines.join("\n");
+        recordChange(newContent, "Insert screenshot");
+        currentContentRef.current = newContent;
+        toast.success(t("imageInserted"));
+
+        // Close video drawer and clear state
+        setVideoDrawerOpen(false);
+        setIsDirectInsertMode(false);
+        setDirectInsertLine(null);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to insert image";
+        toast.error(t("insertFailed"), { description: message });
+      }
+    },
+    [directInsertLine, manualId, recordChange, t]
+  );
+
   // Calculate total lines for overlay positioning
   const totalLines = useMemo(() => {
     return currentContent.split("\n").length;
@@ -1005,23 +1149,29 @@ export default function ManualEditorPage() {
                 value="preview"
                 className="flex-1 m-0 p-0 min-h-0 overflow-hidden"
               >
-                <div
-                  ref={previewContainerRef}
-                  className="h-full overflow-y-auto p-6 relative"
+                <PreviewContextMenu
+                  hasVideo={!!manual?.source_video?.exists}
+                  onInsertScreenshot={handleDirectInsertScreenshot}
+                  contentRef={previewRef}
+                  markdownContent={currentContent}
                 >
-                  {/* Pending changes overlay */}
-                  <PendingChangesOverlay
-                    changes={pendingChanges}
-                    containerRef={previewContainerRef}
-                    totalLines={totalLines}
-                    onAccept={acceptChange}
-                    onReject={rejectChange}
-                  />
-
                   <div
-                    ref={previewRef}
-                    className="prose prose-base dark:prose-invert max-w-none relative"
+                    ref={previewContainerRef}
+                    className="h-full overflow-y-auto p-6 relative"
                   >
+                    {/* Pending changes overlay */}
+                    <PendingChangesOverlay
+                      changes={pendingChanges}
+                      containerRef={previewContainerRef}
+                      totalLines={totalLines}
+                      onAccept={acceptChange}
+                      onReject={rejectChange}
+                    />
+
+                    <div
+                      ref={previewRef}
+                      className="prose prose-base dark:prose-invert max-w-none relative"
+                    >
                   {/* Selection highlight overlay - renders pre-calculated highlight rects */}
                   <SelectionHighlightOverlay
                     selection={selection}
@@ -1031,9 +1181,55 @@ export default function ManualEditorPage() {
                   {/* Render full markdown content */}
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
+                    urlTransform={(url) => {
+                      // Allow placeholder: URLs for image placeholders
+                      if (url.startsWith("placeholder:")) {
+                        return url;
+                      }
+                      // For all other URLs, use default behavior (allows http, https, mailto, etc.)
+                      // Return undefined to use default transform, or the URL to allow it
+                      return url;
+                    }}
                     components={{
                       img: ({ src, alt }) => {
                         const srcStr = typeof src === "string" ? src : "";
+
+                        // Check if this is a placeholder image
+                        if (srcStr.startsWith("placeholder:")) {
+                          // Parse placeholder: ![IMAGE_NEEDED: description](placeholder:timestamp)
+                          const timestampStr = srcStr.replace("placeholder:", "");
+                          const suggestedTimestamp = parseFloat(timestampStr) || 0;
+
+                          // Extract description from alt text (remove "IMAGE_NEEDED: " prefix)
+                          const description = alt?.replace(/^IMAGE_NEEDED:\s*/i, "") || "Screenshot needed";
+
+                          // Build the full markdown line for replacement
+                          const markdownLine = `![${alt || ""}](${srcStr})`;
+
+                          return (
+                            <ImagePlaceholder
+                              description={description}
+                              suggestedTimestamp={suggestedTimestamp}
+                              hasVideo={!!manual?.source_video?.exists}
+                              onSelectFrame={() =>
+                                handlePlaceholderSelectFrame(description, suggestedTimestamp, markdownLine)
+                              }
+                              onDelete={() => {
+                                // Remove the placeholder line from content
+                                const lines = currentContentRef.current.split("\n");
+                                const newLines = lines.filter(line => line.trim() !== markdownLine.trim());
+                                const newContent = newLines.join("\n");
+                                if (newContent !== currentContentRef.current) {
+                                  recordChange(newContent, "Remove placeholder");
+                                  currentContentRef.current = newContent;
+                                  toast.success("Placeholder removed");
+                                }
+                              }}
+                            />
+                          );
+                        }
+
+                        // Regular image
                         const filename = srcStr.split("/").pop() || srcStr;
                         const apiUrl = `/api/manuals/${manualId}/screenshots/${filename}?t=${imageCacheBuster}`;
                         return (
@@ -1069,9 +1265,10 @@ export default function ManualEditorPage() {
                     }}
                   >
                     {processedContent}
-                  </ReactMarkdown>
+                    </ReactMarkdown>
+                    </div>
                   </div>
-                </div>
+                </PreviewContextMenu>
               </TabsContent>
 
               <TabsContent
@@ -1183,12 +1380,26 @@ export default function ManualEditorPage() {
       {manual?.source_video?.exists && (
         <VideoDrawer
           open={videoDrawerOpen}
-          onOpenChange={setVideoDrawerOpen}
+          onOpenChange={(open) => {
+            setVideoDrawerOpen(open);
+            // Clear state if drawer is closed without selecting
+            if (!open) {
+              setActivePlaceholder(null);
+              setIsDirectInsertMode(false);
+              setDirectInsertLine(null);
+            }
+          }}
           videoUrl={`/api/videos/${manual.source_video.name}/stream`}
           currentTimestamp={selectedFrameTimestamp}
           manualId={manualId}
           onFrameSelect={handleFrameSelect}
-          onConfirmFrame={handleConfirmFrame}
+          onConfirmFrame={
+            activePlaceholder
+              ? handlePlaceholderFrameConfirm
+              : isDirectInsertMode
+                ? handleDirectInsertFrameConfirm
+                : handleConfirmFrame
+          }
           onAddVideo={handleOpenAddVideoDialog}
           selectedVideoId={selectedVideoId}
           onVideoChange={setSelectedVideoId}

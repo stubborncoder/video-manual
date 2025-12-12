@@ -13,7 +13,7 @@ import {
 
 interface ToolResultData {
   changeId: string;
-  changeType: "text_replace" | "text_insert" | "text_delete" | "caption_update";
+  changeType: "text_replace" | "text_insert" | "text_delete" | "caption_update" | "image_placeholder";
   startLine?: number;
   endLine?: number;
   afterLine?: number;
@@ -43,6 +43,8 @@ function getChangeLabel(changeType: string): string {
       return "Deleted";
     case "caption_update":
       return "Updated Caption";
+    case "image_placeholder":
+      return "Image Placeholder";
     default:
       return "Changed";
   }
@@ -60,6 +62,8 @@ function getChangeIcon(changeType: string) {
     case "text_delete":
       return Trash2;
     case "caption_update":
+      return ImageIcon;
+    case "image_placeholder":
       return ImageIcon;
     default:
       return Check;
@@ -96,6 +100,11 @@ function getChangeSummary(result: ToolResultData): string {
       return "text";
     case "caption_update":
       return "image caption";
+    case "image_placeholder":
+      if (afterLine !== undefined) {
+        return `after line ${afterLine}`;
+      }
+      return "image placeholder";
     default:
       return "content";
   }

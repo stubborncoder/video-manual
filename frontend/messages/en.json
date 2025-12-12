@@ -731,8 +731,17 @@
     "imageReplacedFromFrame": "Image replaced from video frame",
     "replaceFailed": "Replace failed",
     "imageDeleted": "Image deleted",
+    "imageInserted": "Image inserted",
+    "insertFailed": "Failed to insert image",
     "sourceVideoNotAvailable": "Source video not available",
     "loadFailed": "Load failed"
+  },
+  "imagePlaceholder": {
+    "title": "Screenshot Needed",
+    "selectFrame": "Select Frame from Video",
+    "suggestedTime": "Suggested: {time}",
+    "noVideoAvailable": "No source video available to select frame",
+    "delete": "Remove"
   },
   "videoDrawer": {
     "selectFrame": "Select Frame",
@@ -754,6 +763,9 @@
     "editCaption": "Edit Caption",
     "askAI": "Ask AI",
     "delete": "Delete"
+  },
+  "previewContextMenu": {
+    "insertScreenshot": "Insert Screenshot"
   },
   "versionHistory": {
     "title": "Version History",

@@ -90,7 +90,7 @@ type WSMessage =
 // Pending change for the document
 export interface PendingDocumentChange {
   id: string;
-  type: "text_replace" | "text_insert" | "text_delete" | "caption_update";
+  type: "text_replace" | "text_insert" | "text_delete" | "caption_update" | "image_placeholder";
   startLine?: number;
   endLine?: number;
   afterLine?: number;

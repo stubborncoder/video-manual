@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 export interface PendingChangeData {
   id: string;
-  type: "text_replace" | "text_insert" | "text_delete" | "caption_update";
+  type: "text_replace" | "text_insert" | "text_delete" | "caption_update" | "image_placeholder";
   startLine?: number;
   endLine?: number;
   afterLine?: number;

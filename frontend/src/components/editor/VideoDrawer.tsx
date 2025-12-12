@@ -312,11 +312,13 @@ export function VideoDrawer({
   }, [isPlaying]);
 
   // Handle confirming the frame replacement
+  // Note: We don't call onOpenChange(false) here because the handlers
+  // (handlePlaceholderFrameConfirm, handleDirectInsertFrameConfirm, handleConfirmFrame)
+  // are responsible for closing the drawer after their async operations complete.
   const handleConfirmReplace = useCallback(() => {
     setShowConfirmDialog(false);
     onConfirmFrame(currentTime, selectedVideoId);
-    onOpenChange(false);
-  }, [currentTime, selectedVideoId, onConfirmFrame, onOpenChange]);
+  }, [currentTime, selectedVideoId, onConfirmFrame]);
 
   // Handle deleting the current video
   const handleDeleteVideo = useCallback(async () => {
