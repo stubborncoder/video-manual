@@ -511,6 +511,26 @@ async def extract_new_screenshot(
     new_filename = f"figure_{next_num:02d}_t{timestamp_marker}s.png"
     screenshot_path = screenshots_dir / new_filename
 
+    # Validate timestamp is non-negative
+    if timestamp < 0:
+        raise HTTPException(status_code=400, detail="Timestamp cannot be negative")
+
+    # Get video duration to validate timestamp is in bounds
+    try:
+        from ...agents.video_manual_agent.tools.video_tools import get_video_metadata
+        metadata = get_video_metadata(str(video_path))
+        video_duration = metadata.get("duration_seconds", 0)
+        if video_duration > 0 and timestamp > video_duration:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Timestamp {timestamp:.2f}s exceeds video duration ({video_duration:.2f}s)"
+            )
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="Video file not found or corrupted")
+    except Exception:
+        # If we can't get metadata, proceed anyway - extraction will fail if video is bad
+        pass
+
     try:
         # Create version snapshot before adding new screenshot
         version_storage = VersionStorage(user_id, manual_id)
@@ -534,6 +554,16 @@ async def extract_new_screenshot(
             "url": f"/api/manuals/{manual_id}/screenshots/{new_filename}",
             "version": new_version or version_storage.get_current_version(),
         }
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=f"Video file not found: {str(e)}")
+    except ValueError as e:
+        # Frame extraction failed (timestamp out of bounds, corrupted video)
+        raise HTTPException(status_code=400, detail=f"Failed to extract frame: {str(e)}")
+    except OSError as e:
+        # Disk space or file system errors
+        if "No space left" in str(e) or "ENOSPC" in str(e):
+            raise HTTPException(status_code=507, detail="Insufficient disk space to save screenshot")
+        raise HTTPException(status_code=500, detail=f"File system error: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to extract frame: {str(e)}")
 
