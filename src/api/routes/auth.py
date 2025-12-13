@@ -63,6 +63,8 @@ async def get_me(
     Supports both JWT tokens and legacy session cookies.
     """
     user_id = None
+    email = None
+    display_name = None
 
     # Try JWT authentication first (Supabase)
     if authorization and authorization.startswith("Bearer ") and SUPABASE_JWT_SECRET:
@@ -75,6 +77,10 @@ async def get_me(
                 audience="authenticated",
             )
             user_id = payload.get("sub")
+            email = payload.get("email")
+            # Get display name from user_metadata (Google OAuth provides this)
+            user_metadata = payload.get("user_metadata", {})
+            display_name = user_metadata.get("full_name") or user_metadata.get("name")
         except jwt.InvalidTokenError:
             pass
 
@@ -88,7 +94,17 @@ async def get_me(
     # Ensure user folders and record exist
     storage = UserStorage(user_id)
     storage.ensure_user_folders()
-    UserManagement.ensure_user_exists(user_id)
+    UserManagement.ensure_user_exists(user_id, display_name)
+
+    # Update email and display_name if we have them from JWT
+    if email or display_name:
+        update_fields = {}
+        if email:
+            update_fields["email"] = email
+        if display_name:
+            update_fields["display_name"] = display_name
+        if update_fields:
+            UserManagement.update_user(user_id, **update_fields)
 
     # Get user role from database
     user = UserManagement.get_user(user_id)
