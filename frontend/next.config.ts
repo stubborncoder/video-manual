@@ -1,13 +1,18 @@
 import type { NextConfig } from "next";
 
+// API URL from environment variable (for Docker/production)
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
 const nextConfig: NextConfig = {
+  // Enable standalone output for Docker deployment
+  output: "standalone",
   async rewrites() {
     return {
       // Run after filesystem routes - API routes will take precedence
       afterFiles: [
         {
           source: "/api/:path*",
-          destination: "http://localhost:8000/api/:path*",
+          destination: `${apiUrl}/api/:path*`,
         },
       ],
     };

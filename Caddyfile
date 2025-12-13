@@ -1,0 +1,44 @@
+# vDocs Caddy Configuration
+# Domain: vdocs.ai
+
+vdocs.ai {
+    # Frontend (Next.js)
+    reverse_proxy localhost:3000
+
+    # API routes to backend
+    handle /api/* {
+        reverse_proxy localhost:8000
+    }
+
+    # WebSocket support for real-time features
+    handle /api/ws/* {
+        reverse_proxy localhost:8000
+    }
+
+    # Automatic HTTPS with Let's Encrypt
+    # Caddy automatically obtains and renews certificates
+
+    # Security headers
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy strict-origin-when-cross-origin
+        # Remove server header
+        -Server
+    }
+
+    # Gzip compression
+    encode gzip
+
+    # Logging
+    log {
+        output file /var/log/caddy/vdocs.log
+        format json
+    }
+}
+
+# Redirect www to non-www
+www.vdocs.ai {
+    redir https://vdocs.ai{uri} permanent
+}

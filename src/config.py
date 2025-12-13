@@ -1,15 +1,35 @@
 """Global configuration for the vDocs platform."""
 
+import os
 from pathlib import Path
 
 # Project root
 PROJECT_ROOT = Path(__file__).parent.parent
 
-# Data directories
-DATA_DIR = PROJECT_ROOT / "data"
+# Data directories - configurable via environment variables for production
+DATA_DIR = Path(os.getenv("VDOCS_DATA_DIR", str(PROJECT_ROOT / "data")))
 USERS_DIR = DATA_DIR / "users"
 CHECKPOINTS_DIR = DATA_DIR / "checkpoints"
 TEMPLATES_DIR = DATA_DIR / "templates"  # Global Word templates
+
+# Database configuration
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{PROJECT_ROOT / 'src' / 'db' / 'vdocs.db'}")
+
+# Supabase configuration (for production auth)
+SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET", "")
+
+# CORS configuration
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001").split(",")
+
+# API Keys (already loaded from .env by python-dotenv in most cases)
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+
+# Feature flags
+USE_SUPABASE_AUTH = bool(SUPABASE_URL and SUPABASE_JWT_SECRET)
 
 
 def get_checkpoint_db_path(agent_name: str) -> Path:
