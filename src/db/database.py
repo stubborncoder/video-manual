@@ -5,8 +5,15 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Generator
 
-# Database file location
-DATABASE_PATH = Path(__file__).parent / "vdocs.db"
+from ..config import DATABASE_URL
+
+# Database file location - use DATABASE_URL from config, fallback to local
+if DATABASE_URL and DATABASE_URL.startswith("sqlite:///"):
+    # Extract path from sqlite:/// URL (handle both 3 and 4 slashes)
+    db_path = DATABASE_URL.replace("sqlite:///", "")
+    DATABASE_PATH = Path(db_path)
+else:
+    DATABASE_PATH = Path(__file__).parent / "vdocs.db"
 
 
 def init_db() -> None:
