@@ -38,6 +38,8 @@ dependencies = [
     "uvicorn[standard]>=0.32.0",
     "python-multipart>=0.0.12",
     "pydantic>=2.10.0",
+    # Authentication
+    "PyJWT>=2.8.0",
     # Assistant UI streaming
     "assistant-stream[langgraph]>=0.0.31",
     "aiosqlite>=0.21.0",

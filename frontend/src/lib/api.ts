@@ -3,17 +3,21 @@
  * Uses Next.js rewrites to proxy /api/* to the backend
  */
 
+import { getAccessToken } from "./supabase";
+
 const API_BASE = "";
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, string>;
+  /** Skip adding Authorization header (useful for auth endpoints) */
+  skipAuth?: boolean;
 }
 
 export async function request<T>(
   endpoint: string,
   options: RequestOptions = {}
 ): Promise<T> {
-  const { params, ...fetchOptions } = options;
+  const { params, skipAuth, ...fetchOptions } = options;
 
   let url = `${API_BASE}${endpoint}`;
   if (params) {
@@ -21,13 +25,23 @@ export async function request<T>(
     url += `?${searchParams.toString()}`;
   }
 
+  // Get Supabase access token if available (and not skipping auth)
+  let authHeader: Record<string, string> = {};
+  if (!skipAuth) {
+    const token = await getAccessToken();
+    if (token) {
+      authHeader = { Authorization: `Bearer ${token}` };
+    }
+  }
+
   let response: Response;
   try {
     response = await fetch(url, {
       ...fetchOptions,
-      credentials: "include",
+      credentials: "include", // Still include cookies for legacy auth
       headers: {
         "Content-Type": "application/json",
+        ...authHeader,
         ...fetchOptions.headers,
       },
     });

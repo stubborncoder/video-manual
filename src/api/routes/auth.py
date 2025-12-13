@@ -1,17 +1,23 @@
 """Authentication routes."""
 
-from fastapi import APIRouter, Cookie, Response
+from fastapi import APIRouter, Cookie, Response, Header
+import jwt
 
 from ..schemas import LoginRequest, UserSession
 from ...storage.user_storage import UserStorage
 from ...db.user_management import UserManagement
+from ...config import SUPABASE_JWT_SECRET
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
 @router.post("/login")
 async def login(request: LoginRequest, response: Response) -> UserSession:
-    """Login with user ID (creates user folder if needed)."""
+    """Login with user ID (creates user folder if needed).
+
+    This is the legacy login endpoint for cookie-based auth.
+    For Supabase auth, use the Supabase client directly.
+    """
     user_id = request.user_id
 
     # Ensure user folders exist
@@ -50,13 +56,42 @@ async def logout(response: Response) -> dict:
 @router.get("/me")
 async def get_me(
     session_user_id: str | None = Cookie(default=None),
+    authorization: str | None = Header(default=None),
 ) -> dict:
-    """Get current user info including role."""
-    if not session_user_id:
+    """Get current user info including role.
+
+    Supports both JWT tokens and legacy session cookies.
+    """
+    user_id = None
+
+    # Try JWT authentication first (Supabase)
+    if authorization and authorization.startswith("Bearer ") and SUPABASE_JWT_SECRET:
+        token = authorization.split(" ")[1]
+        try:
+            payload = jwt.decode(
+                token,
+                SUPABASE_JWT_SECRET,
+                algorithms=["HS256"],
+                audience="authenticated",
+            )
+            user_id = payload.get("sub")
+        except jwt.InvalidTokenError:
+            pass
+
+    # Fall back to cookie auth
+    if not user_id and session_user_id:
+        user_id = session_user_id
+
+    if not user_id:
         return {"authenticated": False}
 
+    # Ensure user folders and record exist
+    storage = UserStorage(user_id)
+    storage.ensure_user_folders()
+    UserManagement.ensure_user_exists(user_id)
+
     # Get user role from database
-    user = UserManagement.get_user(session_user_id)
+    user = UserManagement.get_user(user_id)
     role = user.get("role", "user") if user else "user"
 
-    return {"authenticated": True, "user_id": session_user_id, "role": role}
+    return {"authenticated": True, "user_id": user_id, "role": role}
