@@ -13,11 +13,30 @@ import {
   Globe,
   Sun,
   Moon,
-  FileVideo,
   Mail,
   Lock,
   User,
 } from "lucide-react";
+
+// Custom vDocs icon component
+const VDocsIcon = ({ className }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" fill="none"/>
+    <polyline points="14 2 14 8 20 8" fill="none"/>
+    <path d="M6 12l2 2-2 2" strokeWidth="1" fill="none" opacity="0.3"/>
+    <path d="M9 11.5l3 2.5-3 2.5" strokeWidth="1.5" fill="none" opacity="0.6"/>
+    <path d="M13 11l4 3-4 3" strokeWidth="2" fill="none"/>
+  </svg>
+);
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -175,10 +194,13 @@ export default function LandingPage() {
         <div className="mx-auto max-w-[1400px] px-6">
           <div className="flex h-[72px] items-center justify-between">
             <div className="flex items-center gap-2">
-              <FileVideo className="h-12 w-12 text-primary" strokeWidth={2.5} />
+              <VDocsIcon className="h-12 w-12 text-primary" />
               <span className="font-display text-3xl tracking-tight">
                 v<span className="text-primary">D</span>ocs
               </span>
+              <Badge variant="secondary" className="ml-1 text-xs font-medium">
+                Alpha
+              </Badge>
             </div>
 
             <div className="flex items-center gap-8">
