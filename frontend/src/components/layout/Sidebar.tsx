@@ -15,7 +15,6 @@ import {
   PanelLeft,
   Sun,
   Moon,
-  FileVideo,
   Shield,
   LayoutTemplate,
 } from "lucide-react";
@@ -29,6 +28,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { LanguageToggle } from "@/components/ui/LanguageToggle";
+import { VDocsIcon } from "@/components/ui/VDocsIcon";
+import { Badge } from "@/components/ui/badge";
 import { auth } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "./SidebarContext";
@@ -86,17 +87,20 @@ export function Sidebar() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="relative w-full h-12 flex items-center justify-center">
-                  <FileVideo className="h-11 w-11 text-primary" strokeWidth={1.5} aria-label="vDocs logo" />
+                  <VDocsIcon className="h-11 w-11 text-primary" aria-label="vDocs logo" />
                 </div>
               </TooltipTrigger>
-              <TooltipContent side="right">vDocs</TooltipContent>
+              <TooltipContent side="right">vDocs (Alpha)</TooltipContent>
             </Tooltip>
           ) : (
             <div className="flex items-center gap-3">
               <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
-                <FileVideo className="h-11 w-11 text-primary" strokeWidth={1.5} aria-label="vDocs logo" />
+                <VDocsIcon className="h-11 w-11 text-primary" aria-label="vDocs logo" />
               </div>
-              <h1 className="text-xl font-bold">v<span className="text-primary">D</span>ocs</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold">v<span className="text-primary">D</span>ocs</h1>
+                <Badge variant="secondary" className="text-xs font-normal px-1.5 py-0">alpha</Badge>
+              </div>
             </div>
           )}
         </div>

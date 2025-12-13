@@ -11,7 +11,6 @@ import {
   PanelLeft,
   Sun,
   Moon,
-  FileVideo,
   Shield,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -24,6 +23,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { VDocsIcon } from "@/components/ui/VDocsIcon";
+import { Badge } from "@/components/ui/badge";
 import { useAdminSidebar } from "./AdminSidebarContext";
 
 const navItems = [
@@ -60,21 +61,24 @@ export function AdminSidebar() {
               <TooltipTrigger asChild>
                 <div className="relative w-full h-12 flex items-center justify-center">
                   <div className="relative">
-                    <FileVideo className="h-11 w-11 text-primary" strokeWidth={1.5} aria-label="vDocs Admin" />
+                    <VDocsIcon className="h-11 w-11 text-primary" aria-label="vDocs Admin" />
                     <Shield className="h-4 w-4 text-primary absolute -bottom-1 -right-1" />
                   </div>
                 </div>
               </TooltipTrigger>
-              <TooltipContent side="right">vDocs Admin</TooltipContent>
+              <TooltipContent side="right">vDocs Admin (Alpha)</TooltipContent>
             </Tooltip>
           ) : (
             <div className="flex items-center gap-3">
               <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
-                <FileVideo className="h-11 w-11 text-primary" strokeWidth={1.5} aria-label="vDocs Admin" />
+                <VDocsIcon className="h-11 w-11 text-primary" aria-label="vDocs Admin" />
                 <Shield className="h-4 w-4 text-primary absolute bottom-0 right-0" />
               </div>
               <div>
-                <h1 className="text-xl font-bold">v<span className="text-primary">D</span>ocs</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-bold">v<span className="text-primary">D</span>ocs</h1>
+                  <Badge variant="secondary" className="text-xs font-normal px-1.5 py-0">alpha</Badge>
+                </div>
                 <p className="text-xs text-muted-foreground">Admin</p>
               </div>
             </div>

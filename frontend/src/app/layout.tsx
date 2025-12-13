@@ -21,6 +21,11 @@ const dmSerifDisplay = DM_Serif_Display({
 export const metadata: Metadata = {
   title: "vDocs - AI-powered documentation from video",
   description: "AI-powered documentation from video",
+  icons: {
+    icon: "/vdocs-icon-branded.svg",
+    shortcut: "/vdocs-icon-branded.svg",
+    apple: "/vdocs-logo.png",
+  },
 };
 
 export default function RootLayout({
