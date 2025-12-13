@@ -33,7 +33,7 @@ RUN pip install uv
 WORKDIR /app
 
 # Copy dependency files first for better caching
-COPY pyproject.toml uv.lock* ./
+COPY pyproject.toml uv.lock* README.md ./
 
 # Install dependencies
 RUN uv sync --frozen --no-dev 2>/dev/null || uv sync --no-dev
