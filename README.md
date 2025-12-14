@@ -174,6 +174,52 @@ npm install
 npm run dev
 ```
 
+### Supabase Setup (Authentication)
+
+1. **Create a Supabase project** at [supabase.com](https://supabase.com)
+
+2. **Get your credentials** from Settings → API:
+   - Project URL → `SUPABASE_URL`
+   - `anon` public key → `SUPABASE_ANON_KEY`
+   - `service_role` secret key → `SUPABASE_SERVICE_ROLE_KEY`
+
+3. **Get JWT secret** from Settings → API → JWT Settings:
+   - JWT Secret → `SUPABASE_JWT_SECRET`
+
+4. **Get database URL** from Settings → Database → Connection string:
+   - URI → `DATABASE_URL`
+
+5. **Configure authentication providers** (optional):
+   - Go to Authentication → Providers
+   - Enable Email/Password
+   - Enable Google OAuth (if needed)
+
+6. **Add to your `.env` file**:
+```bash
+# Supabase
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+SUPABASE_JWT_SECRET=your-jwt-secret
+DATABASE_URL=postgresql://postgres:password@db.your-project.supabase.co:5432/postgres
+
+# Frontend (same values with NEXT_PUBLIC_ prefix)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+7. **Test authentication locally**:
+```bash
+# Start backend
+uv run vdocs-api
+
+# Start frontend (new terminal)
+cd frontend && npm run dev
+
+# Open http://localhost:3000 and test login/signup
+```
+
 ## Usage
 
 ### Running the Application
