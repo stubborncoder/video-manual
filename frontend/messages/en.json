@@ -561,6 +561,11 @@
       "terms": "Terms",
       "copyright": "All rights reserved."
     },
+    "mobileWarning": {
+      "title": "Desktop Required",
+      "description": "vDocs is optimized for desktop browsers. Please visit us on a desktop computer for the best experience.",
+      "understood": "Got it"
+    },
     "heroAnimation": {
       "completedSteps": {
         "upload": "Upload",

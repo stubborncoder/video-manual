@@ -561,6 +561,11 @@
       "terms": "Términos",
       "copyright": "Todos los derechos reservados."
     },
+    "mobileWarning": {
+      "title": "Se requiere escritorio",
+      "description": "vDocs está optimizado para navegadores de escritorio. Por favor visítanos desde un ordenador de escritorio para la mejor experiencia.",
+      "understood": "Entendido"
+    },
     "heroAnimation": {
       "completedSteps": {
         "upload": "Subir",
