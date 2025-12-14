@@ -11,14 +11,10 @@ import {
   Trash2,
   LogOut,
   Home,
-  PanelLeftClose,
-  PanelLeft,
-  Sun,
-  Moon,
   Shield,
   LayoutTemplate,
+  ChevronsUpDown,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -27,7 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { LanguageToggle } from "@/components/ui/LanguageToggle";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VDocsIcon } from "@/components/ui/VDocsIcon";
 import { Badge } from "@/components/ui/badge";
 import { auth } from "@/lib/api";
@@ -47,10 +43,10 @@ const navItemsConfig = [
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { collapsed, toggleCollapsed } = useSidebar();
-  const { theme, setTheme } = useTheme();
+  const { collapsed } = useSidebar();
   const [isAdmin, setIsAdmin] = useState(false);
   const t = useTranslations("sidebar");
+  const { user } = useAuthStore();
 
   // Check if user is admin
   useEffect(() => {
@@ -183,74 +179,6 @@ export function Sidebar() {
             )
           )}
 
-          {/* Toggle sidebar */}
-          {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-center px-2 hover:text-primary"
-                  onClick={toggleCollapsed}
-                >
-                  <PanelLeft className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">{t("expand")}</TooltipContent>
-            </Tooltip>
-          ) : (
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-muted-foreground hover:text-primary"
-              onClick={toggleCollapsed}
-            >
-              <PanelLeftClose className="mr-2 h-4 w-4" />
-              {t("collapse")}
-            </Button>
-          )}
-
-          {/* Language toggle */}
-          {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <LanguageToggle collapsed />
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="right">{t("language")}</TooltipContent>
-            </Tooltip>
-          ) : (
-            <LanguageToggle />
-          )}
-
-          {/* Theme toggle */}
-          {collapsed ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  className="w-full justify-center px-2 hover:text-primary"
-                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                >
-                  <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                  <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">
-                {theme === "dark" ? t("lightMode") : t("darkMode")}
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-muted-foreground hover:text-primary"
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            >
-              <Sun className="mr-2 h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              {theme === "dark" ? t("lightMode") : t("darkMode")}
-            </Button>
-          )}
-
           {/* Logout */}
           {collapsed ? (
             <Tooltip>
@@ -274,6 +202,68 @@ export function Sidebar() {
               <LogOut className="mr-2 h-4 w-4" />
               {t("logout")}
             </Button>
+          )}
+
+          {/* User avatar and info - at the very bottom */}
+          {user && (
+            <>
+              <Separator className="my-2" />
+              {collapsed ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link href="/dashboard/profile" className="flex justify-center p-2">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage
+                          src={user.user_metadata?.avatar_url || user.user_metadata?.picture}
+                          alt={user.user_metadata?.full_name || user.email || ""}
+                        />
+                        <AvatarFallback className="text-xs">
+                          {(user.user_metadata?.full_name || user.email || "U")
+                            .split(" ")
+                            .map((n: string) => n[0])
+                            .join("")
+                            .toUpperCase()
+                            .slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <div>
+                      <p className="font-medium">{user.user_metadata?.full_name || user.email?.split("@")[0]}</p>
+                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Link
+                  href="/dashboard/profile"
+                  className="flex items-center gap-3 p-2 rounded-md hover:bg-accent transition-colors"
+                >
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage
+                      src={user.user_metadata?.avatar_url || user.user_metadata?.picture}
+                      alt={user.user_metadata?.full_name || user.email || ""}
+                    />
+                    <AvatarFallback>
+                      {(user.user_metadata?.full_name || user.email || "U")
+                        .split(" ")
+                        .map((n: string) => n[0])
+                        .join("")
+                        .toUpperCase()
+                        .slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">
+                      {user.user_metadata?.full_name || user.email?.split("@")[0]}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  </div>
+                  <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
+                </Link>
+              )}
+            </>
           )}
         </div>
       </div>
