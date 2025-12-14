@@ -474,7 +474,8 @@
       "features": "Características",
       "howItWorks": "Cómo Funciona",
       "signIn": "Iniciar Sesión",
-      "getStarted": "Comenzar"
+      "getStarted": "Comenzar",
+      "goToDashboard": "Ir al Panel"
     },
     "hero": {
       "badge": "Documentación con IA",

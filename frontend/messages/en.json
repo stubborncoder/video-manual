@@ -474,7 +474,8 @@
       "features": "Features",
       "howItWorks": "How it Works",
       "signIn": "Sign In",
-      "getStarted": "Get Started"
+      "getStarted": "Get Started",
+      "goToDashboard": "Go to Dashboard"
     },
     "hero": {
       "badge": "AI-Powered Documentation",

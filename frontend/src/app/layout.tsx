@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, DM_Serif_Display } from "next/font/google";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { I18nProvider } from "@/components/providers/I18nProvider";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -39,10 +40,12 @@ export default function RootLayout({
         className={`${dmSans.variable} ${dmSerifDisplay.variable} antialiased min-h-screen bg-background`}
       >
         <I18nProvider>
-          <ThemeProvider>
-            {children}
-            <Toaster richColors position="top-right" />
-          </ThemeProvider>
+          <AuthProvider>
+            <ThemeProvider>
+              {children}
+              <Toaster richColors position="top-right" />
+            </ThemeProvider>
+          </AuthProvider>
         </I18nProvider>
       </body>
     </html>

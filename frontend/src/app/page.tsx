@@ -65,6 +65,7 @@ export default function LandingPage() {
   const { theme, setTheme } = useTheme();
 
   const { signInWithEmail, signUpWithEmail, signInWithGoogle, signInLegacy } = useAuthStore();
+  const authenticated = useAuthStore((state) => !!(state.user || state.legacyUserId));
   const supabaseEnabled = isSupabaseConfigured();
   const { locale, setLocale } = useLocale();
   const isMobile = useIsMobile();
@@ -223,17 +224,25 @@ export default function LandingPage() {
               </button>
 
               <div className="flex items-center gap-1.5 sm:gap-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleLoginAttempt}
-                  className="hidden sm:flex"
-                >
-                  {t("nav.signIn")}
-                </Button>
-                <Button size="sm" onClick={handleLoginAttempt} className="text-xs sm:text-sm px-2 sm:px-4">
-                  {t("nav.getStarted")}
-                </Button>
+                {authenticated ? (
+                  <Button size="sm" onClick={() => router.push("/dashboard")} className="text-xs sm:text-sm px-2 sm:px-4">
+                    {t("nav.goToDashboard")}
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleLoginAttempt}
+                      className="hidden sm:flex"
+                    >
+                      {t("nav.signIn")}
+                    </Button>
+                    <Button size="sm" onClick={handleLoginAttempt} className="text-xs sm:text-sm px-2 sm:px-4">
+                      {t("nav.getStarted")}
+                    </Button>
+                  </>
+                )}
                 <Button
                   variant="outline"
                   size="icon"
@@ -275,9 +284,15 @@ export default function LandingPage() {
                 {t("hero.description")}
               </p>
               <div className="hidden sm:flex flex-col gap-3 sm:flex-row">
-                <Button size="default" onClick={handleLoginAttempt}>
-                  {t("hero.cta")}
-                </Button>
+                {authenticated ? (
+                  <Button size="default" onClick={() => router.push("/dashboard")}>
+                    {t("nav.goToDashboard")}
+                  </Button>
+                ) : (
+                  <Button size="default" onClick={handleLoginAttempt}>
+                    {t("hero.cta")}
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="default"
@@ -584,9 +599,15 @@ export default function LandingPage() {
 
           {/* Mobile-only CTA buttons below hero */}
           <div className="flex sm:hidden flex-col gap-3 mt-6">
-            <Button size="default" onClick={handleLoginAttempt} className="w-full">
-              {t("hero.cta")}
-            </Button>
+            {authenticated ? (
+              <Button size="default" onClick={() => router.push("/dashboard")} className="w-full">
+                {t("nav.goToDashboard")}
+              </Button>
+            ) : (
+              <Button size="default" onClick={handleLoginAttempt} className="w-full">
+                {t("hero.cta")}
+              </Button>
+            )}
             <Button
               variant="outline"
               size="default"
@@ -721,14 +742,25 @@ export default function LandingPage() {
                 {t("cta.description")}
               </p>
               <div className="flex flex-col justify-center gap-4 sm:flex-row">
-                <Button
-                  size="lg"
-                  variant="secondary"
-                  className="bg-white text-primary hover:bg-white/90"
-                  onClick={handleLoginAttempt}
-                >
-                  {t("cta.button")}
-                </Button>
+                {authenticated ? (
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    className="bg-white text-primary hover:bg-white/90"
+                    onClick={() => router.push("/dashboard")}
+                  >
+                    {t("nav.goToDashboard")}
+                  </Button>
+                ) : (
+                  <Button
+                    size="lg"
+                    variant="secondary"
+                    className="bg-white text-primary hover:bg-white/90"
+                    onClick={handleLoginAttempt}
+                  >
+                    {t("cta.button")}
+                  </Button>
+                )}
                 <Button
                   size="lg"
                   variant="ghost"
