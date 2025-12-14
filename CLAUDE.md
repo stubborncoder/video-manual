@@ -18,3 +18,6 @@ AI-powered documentation from video. Generates step-by-step visual documentation
 - `src/agents/video_manual_agent/` - LangGraph agent with nodes for video analysis
 - `src/storage/` - User storage handling
 - `src/cli/` - Command-line interface
+
+## Development
+- To see images use always WSL path in first place

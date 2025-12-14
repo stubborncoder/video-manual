@@ -123,10 +123,13 @@ export interface VideoManualInfo {
 export const videos = {
   list: () => request<{ videos: VideoInfo[] }>("/api/videos"),
 
-  upload: (
+  upload: async (
     file: File,
     onProgress?: (progress: UploadProgress) => void
   ): Promise<VideoInfo> => {
+    // Get auth token before starting upload
+    const token = await getAccessToken();
+
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       const formData = new FormData();
@@ -165,6 +168,10 @@ export const videos = {
 
       xhr.open("POST", "/api/videos/upload");
       xhr.withCredentials = true;
+      // Add Authorization header for Supabase auth
+      if (token) {
+        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      }
       xhr.send(formData);
     });
   },
