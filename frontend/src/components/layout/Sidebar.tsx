@@ -31,6 +31,7 @@ import { LanguageToggle } from "@/components/ui/LanguageToggle";
 import { VDocsIcon } from "@/components/ui/VDocsIcon";
 import { Badge } from "@/components/ui/badge";
 import { auth } from "@/lib/api";
+import { useAuthStore } from "@/stores/authStore";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "./SidebarContext";
 
@@ -64,9 +65,11 @@ export function Sidebar() {
     checkAdmin();
   }, []);
 
+  const signOut = useAuthStore((state) => state.signOut);
+
   const handleLogout = async () => {
     try {
-      await auth.logout();
+      await signOut();
       router.push("/");
     } catch (e) {
       console.error("Logout failed:", e);
@@ -86,14 +89,14 @@ export function Sidebar() {
           {collapsed ? (
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="relative w-full h-12 flex items-center justify-center">
+                <Link href="/" className="relative w-full h-12 flex items-center justify-center hover:opacity-80 transition-opacity">
                   <VDocsIcon className="h-11 w-11 text-primary" aria-label="vDocs logo" />
-                </div>
+                </Link>
               </TooltipTrigger>
               <TooltipContent side="right">vDocs (Alpha)</TooltipContent>
             </Tooltip>
           ) : (
-            <div className="flex items-center gap-3">
+            <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
               <div className="relative w-12 h-12 flex items-center justify-center shrink-0">
                 <VDocsIcon className="h-11 w-11 text-primary" aria-label="vDocs logo" />
               </div>
@@ -101,7 +104,7 @@ export function Sidebar() {
                 <h1 className="text-xl font-bold">v<span className="text-primary">D</span>ocs</h1>
                 <Badge variant="secondary" className="text-xs font-normal px-1.5 py-0">alpha</Badge>
               </div>
-            </div>
+            </Link>
           )}
         </div>
 
