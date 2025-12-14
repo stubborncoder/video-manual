@@ -16,6 +16,7 @@ export function getInitials(name: string | undefined | null, fallback = "U"): st
 
   return name
     .split(" ")
+    .filter((n) => n.length > 0)
     .map((n) => n[0])
     .join("")
     .toUpperCase()
