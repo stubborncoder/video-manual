@@ -172,51 +172,52 @@ export default function LandingPage() {
     <div className="min-h-screen bg-background">
       {/* Navigation */}
       <nav className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-md">
-        <div className="mx-auto max-w-[1400px] px-6">
-          <div className="flex h-[72px] items-center justify-between">
-            <div className="flex items-center gap-2">
-              <VDocsIcon className="h-12 w-12 text-primary" />
-              <span className="font-display text-3xl tracking-tight">
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6">
+          <div className="flex h-16 sm:h-[72px] items-center justify-between">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <VDocsIcon className="h-8 w-8 sm:h-12 sm:w-12 text-primary" />
+              <span className="font-display text-xl sm:text-3xl tracking-tight">
                 v<span className="text-primary">D</span>ocs
               </span>
-              <Badge variant="secondary" className="ml-1 text-xs font-medium">
+              <Badge variant="secondary" className="ml-0.5 sm:ml-1 text-[10px] sm:text-xs font-medium">
                 Alpha
               </Badge>
             </div>
 
-            <div className="flex items-center gap-8">
+            <div className="flex items-center gap-2 sm:gap-8">
               <button
                 onClick={() => scrollToSection("features")}
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="hidden md:block text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 {t("nav.features")}
               </button>
               <button
                 onClick={() => scrollToSection("how-it-works")}
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                className="hidden md:block text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 {t("nav.howItWorks")}
               </button>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 sm:gap-3">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => setLoginOpen(true)}
+                  className="hidden sm:flex"
                 >
                   {t("nav.signIn")}
                 </Button>
-                <Button size="sm" onClick={() => setLoginOpen(true)}>
+                <Button size="sm" onClick={() => setLoginOpen(true)} className="text-xs sm:text-sm px-2 sm:px-4">
                   {t("nav.getStarted")}
                 </Button>
                 <Button
                   variant="outline"
                   size="icon"
-                  className="h-9 w-9"
+                  className="h-8 w-8 sm:h-9 sm:w-9"
                   onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
                 >
-                  <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-                  <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+                  <Sun className="h-3.5 w-3.5 sm:h-4 sm:w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+                  <Moon className="absolute h-3.5 w-3.5 sm:h-4 sm:w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
                   <span className="sr-only">Toggle theme</span>
                 </Button>
               </div>
@@ -227,8 +228,8 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="py-4 lg:py-6">
-        <div className="mx-auto max-w-[1400px] px-6">
-          <div className="grid grid-cols-1 items-center gap-8 lg:gap-12 lg:grid-cols-[1.2fr_1fr]">
+        <div className="mx-auto max-w-[1400px] px-4 sm:px-6">
+          <div className="grid grid-cols-1 items-center gap-6 sm:gap-8 lg:gap-12 lg:grid-cols-[1.2fr_1fr]">
             <div>
               <span className="mb-3 inline-block rounded bg-primary px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-primary-foreground">
                 {t("hero.badge")}
@@ -255,7 +256,7 @@ export default function LandingPage() {
             </div>
 
             {/* Hero Visual - Animated Flow Diagram */}
-            <div className="hero-flow relative aspect-[5/4] lg:aspect-[4/4] overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 shadow-2xl">
+            <div className="hero-flow relative aspect-[4/3] sm:aspect-[5/4] lg:aspect-[4/4] overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/70 shadow-2xl">
               {/* Dark overlay for dark mode */}
               <div className="absolute inset-0 bg-black/40 hidden dark:block" />
               {/* Pattern background */}
@@ -267,262 +268,262 @@ export default function LandingPage() {
               />
 
               {/* Completed phases bar (top) */}
-              <div className="completed-phases absolute top-3 left-3 right-3 flex items-center justify-center gap-1.5 flex-wrap">
-                <div className="completed-step completed-step-1 flex items-center gap-1 rounded-full bg-white/25 backdrop-blur px-2 py-1 text-white text-[10px] font-medium">
-                  <Video className="h-2.5 w-2.5" />
-                  <span>{t("heroAnimation.completedSteps.upload")}</span>
-                  <svg className="h-2.5 w-2.5 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="completed-phases absolute top-2 sm:top-3 left-2 sm:left-3 right-2 sm:right-3 flex items-center justify-center gap-1 sm:gap-1.5 flex-wrap">
+                <div className="completed-step completed-step-1 flex items-center gap-0.5 sm:gap-1 rounded-full bg-white/25 backdrop-blur px-1.5 sm:px-2 py-0.5 sm:py-1 text-white text-[9px] sm:text-[10px] font-medium">
+                  <Video className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+                  <span className="hidden xs:inline">{t("heroAnimation.completedSteps.upload")}</span>
+                  <svg className="h-2 w-2 sm:h-2.5 sm:w-2.5 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <div className="completed-step completed-step-2 flex items-center gap-1 rounded-full bg-white/25 backdrop-blur px-2 py-1 text-white text-[10px] font-medium">
-                  <div className="h-2.5 w-2.5 rounded-full bg-green-400 flex items-center justify-center">
+                <div className="completed-step completed-step-2 flex items-center gap-0.5 sm:gap-1 rounded-full bg-white/25 backdrop-blur px-1.5 sm:px-2 py-0.5 sm:py-1 text-white text-[9px] sm:text-[10px] font-medium">
+                  <div className="h-2 w-2 sm:h-2.5 sm:w-2.5 rounded-full bg-green-400 flex items-center justify-center">
                     <svg className="h-1.5 w-1.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <span>{t("heroAnimation.completedSteps.ai")}</span>
+                  <span className="hidden xs:inline">{t("heroAnimation.completedSteps.ai")}</span>
                 </div>
-                <div className="completed-step completed-step-3 flex items-center gap-1 rounded-full bg-white/25 backdrop-blur px-2 py-1 text-white text-[10px] font-medium">
-                  <FileText className="h-2.5 w-2.5" />
-                  <span>{t("heroAnimation.completedSteps.generate")}</span>
-                  <svg className="h-2.5 w-2.5 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="completed-step completed-step-3 flex items-center gap-0.5 sm:gap-1 rounded-full bg-white/25 backdrop-blur px-1.5 sm:px-2 py-0.5 sm:py-1 text-white text-[9px] sm:text-[10px] font-medium">
+                  <FileText className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+                  <span className="hidden xs:inline">{t("heroAnimation.completedSteps.generate")}</span>
+                  <svg className="h-2 w-2 sm:h-2.5 sm:w-2.5 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <div className="completed-step completed-step-4 flex items-center gap-1 rounded-full bg-white/25 backdrop-blur px-2 py-1 text-white text-[10px] font-medium">
-                  <Edit3 className="h-2.5 w-2.5" />
-                  <span>{t("heroAnimation.completedSteps.edit")}</span>
-                  <svg className="h-2.5 w-2.5 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="completed-step completed-step-4 flex items-center gap-0.5 sm:gap-1 rounded-full bg-white/25 backdrop-blur px-1.5 sm:px-2 py-0.5 sm:py-1 text-white text-[9px] sm:text-[10px] font-medium">
+                  <Edit3 className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+                  <span className="hidden xs:inline">{t("heroAnimation.completedSteps.edit")}</span>
+                  <svg className="h-2 w-2 sm:h-2.5 sm:w-2.5 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <div className="completed-step completed-step-5 flex items-center gap-1 rounded-full bg-white/25 backdrop-blur px-2 py-1 text-white text-[10px] font-medium">
-                  <FolderKanban className="h-2.5 w-2.5" />
-                  <span>{t("heroAnimation.completedSteps.compile")}</span>
-                  <svg className="h-2.5 w-2.5 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="completed-step completed-step-5 flex items-center gap-0.5 sm:gap-1 rounded-full bg-white/25 backdrop-blur px-1.5 sm:px-2 py-0.5 sm:py-1 text-white text-[9px] sm:text-[10px] font-medium">
+                  <FolderKanban className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+                  <span className="hidden xs:inline">{t("heroAnimation.completedSteps.compile")}</span>
+                  <svg className="h-2 w-2 sm:h-2.5 sm:w-2.5 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <div className="completed-step completed-step-6 flex items-center gap-1 rounded-full bg-white/25 backdrop-blur px-2 py-1 text-white text-[10px] font-medium">
-                  <Download className="h-2.5 w-2.5" />
-                  <span>{t("heroAnimation.completedSteps.export")}</span>
-                  <svg className="h-2.5 w-2.5 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div className="completed-step completed-step-6 flex items-center gap-0.5 sm:gap-1 rounded-full bg-white/25 backdrop-blur px-1.5 sm:px-2 py-0.5 sm:py-1 text-white text-[9px] sm:text-[10px] font-medium">
+                  <Download className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+                  <span className="hidden xs:inline">{t("heroAnimation.completedSteps.export")}</span>
+                  <svg className="h-2 w-2 sm:h-2.5 sm:w-2.5 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
               </div>
 
               {/* Active phase container (center) */}
-              <div className="absolute inset-0 flex items-center justify-center p-6">
+              <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-6">
 
                 {/* Phase 1: Upload → AI Analysis → Generate */}
-                <div className="phase phase-1 absolute inset-6 pb-8 flex flex-col items-center justify-center">
-                  <div className="flow-step flow-upload flex items-center gap-3 rounded-xl bg-white/20 backdrop-blur-md border border-white/30 px-5 py-4 text-white mb-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/25">
-                      <Video className="h-6 w-6" />
+                <div className="phase phase-1 absolute inset-3 sm:inset-6 pb-4 sm:pb-8 flex flex-col items-center justify-center">
+                  <div className="flow-step flow-upload flex items-center gap-2 sm:gap-3 rounded-lg sm:rounded-xl bg-white/20 backdrop-blur-md border border-white/30 px-3 py-2 sm:px-5 sm:py-4 text-white mb-2 sm:mb-4">
+                    <div className="flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded-lg bg-white/25">
+                      <Video className="h-4 w-4 sm:h-6 sm:w-6" />
                     </div>
-                    <div>
-                      <div className="font-semibold">{t("heroAnimation.phase1.uploadVideo")}</div>
-                      <div className="text-white/70 text-sm">{t("heroAnimation.phase1.uploadFormats")}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-xs sm:text-base truncate">{t("heroAnimation.phase1.uploadVideo")}</div>
+                      <div className="text-white/70 text-[10px] sm:text-sm truncate">{t("heroAnimation.phase1.uploadFormats")}</div>
                     </div>
-                    <svg className="check-icon h-6 w-6 text-green-300 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="check-icon h-4 w-4 sm:h-6 sm:w-6 text-green-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
 
-                  <div className="flow-connector w-0.5 h-6 bg-white/50 mb-4" />
+                  <div className="flow-connector w-0.5 h-3 sm:h-6 bg-white/50 mb-2 sm:mb-4" />
 
-                  <div className="flow-step flow-ai flex items-center gap-3 rounded-xl bg-white/20 backdrop-blur-md border border-white/30 px-5 py-4 text-white mb-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/25 relative">
-                      <div className="ai-spinner h-6 w-6 rounded-full border-2 border-white/80 border-t-transparent" />
-                      <svg className="ai-complete-icon absolute h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="flow-step flow-ai flex items-center gap-2 sm:gap-3 rounded-lg sm:rounded-xl bg-white/20 backdrop-blur-md border border-white/30 px-3 py-2 sm:px-5 sm:py-4 text-white mb-2 sm:mb-4">
+                    <div className="flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded-lg bg-white/25 relative">
+                      <div className="ai-spinner h-4 w-4 sm:h-6 sm:w-6 rounded-full border-2 border-white/80 border-t-transparent" />
+                      <svg className="ai-complete-icon absolute h-4 w-4 sm:h-6 sm:w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                       </svg>
                     </div>
-                    <div>
-                      <div className="font-semibold">{t("heroAnimation.phase1.aiAnalysis")}</div>
-                      <div className="text-white/70 text-sm">{t("heroAnimation.phase1.processingFrames")}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-xs sm:text-base truncate">{t("heroAnimation.phase1.aiAnalysis")}</div>
+                      <div className="text-white/70 text-[10px] sm:text-sm truncate">{t("heroAnimation.phase1.processingFrames")}</div>
                     </div>
-                    <svg className="check-icon h-6 w-6 text-green-300 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="check-icon h-4 w-4 sm:h-6 sm:w-6 text-green-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
 
-                  <div className="flow-connector w-0.5 h-6 bg-white/50 mb-4" />
+                  <div className="flow-connector w-0.5 h-3 sm:h-6 bg-white/50 mb-2 sm:mb-4" />
 
-                  <div className="flow-step flow-generate flex items-center gap-3 rounded-xl bg-white/20 backdrop-blur-md border border-white/30 px-5 py-4 text-white">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-white/25">
-                      <FileText className="h-6 w-6" />
+                  <div className="flow-step flow-generate flex items-center gap-2 sm:gap-3 rounded-lg sm:rounded-xl bg-white/20 backdrop-blur-md border border-white/30 px-3 py-2 sm:px-5 sm:py-4 text-white">
+                    <div className="flex h-8 w-8 sm:h-12 sm:w-12 items-center justify-center rounded-lg bg-white/25">
+                      <FileText className="h-4 w-4 sm:h-6 sm:w-6" />
                     </div>
-                    <div>
-                      <div className="font-semibold">{t("heroAnimation.phase1.generateManual")}</div>
-                      <div className="text-white/70 text-sm">{t("heroAnimation.phase1.creatingDocs")}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-xs sm:text-base truncate">{t("heroAnimation.phase1.generateManual")}</div>
+                      <div className="text-white/70 text-[10px] sm:text-sm truncate">{t("heroAnimation.phase1.creatingDocs")}</div>
                     </div>
-                    <svg className="check-icon h-6 w-6 text-green-300 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="check-icon h-4 w-4 sm:h-6 sm:w-6 text-green-300 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
                 </div>
 
                 {/* Phase 2: Edit & Refine */}
-                <div className="phase phase-2 absolute inset-4 top-12 flex flex-col justify-center">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Edit3 className="h-6 w-6 text-white" />
-                    <span className="text-white text-lg font-semibold">{t("heroAnimation.phase2.title")}</span>
+                <div className="phase phase-2 absolute inset-2 sm:inset-4 top-8 sm:top-12 flex flex-col justify-center">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-4">
+                    <Edit3 className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+                    <span className="text-white text-sm sm:text-lg font-semibold">{t("heroAnimation.phase2.title")}</span>
                   </div>
-                  <div className="flex flex-col gap-3">
-                    <div className="feature-item rounded-xl bg-white/15 backdrop-blur border border-white/20 px-4 py-3">
-                      <div className="flex items-center gap-3 mb-1">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/30">
-                          <svg className="h-4 w-4 text-cyan-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="flex flex-col gap-1.5 sm:gap-3">
+                    <div className="feature-item rounded-lg sm:rounded-xl bg-white/15 backdrop-blur border border-white/20 px-2 py-1.5 sm:px-4 sm:py-3">
+                      <div className="flex items-center gap-1.5 sm:gap-3 mb-0.5 sm:mb-1">
+                        <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-cyan-500/30">
+                          <svg className="h-3 w-3 sm:h-4 sm:w-4 text-cyan-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
                         </div>
-                        <div className="text-white font-medium">{t("heroAnimation.phase2.frameReplace")}</div>
+                        <div className="text-white font-medium text-xs sm:text-base">{t("heroAnimation.phase2.frameReplace")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase2.frameReplaceDesc")}</div>
+                      <div className="text-white/70 text-[10px] sm:text-xs leading-relaxed pl-7 sm:pl-11 hidden sm:block">{t("heroAnimation.phase2.frameReplaceDesc")}</div>
                     </div>
-                    <div className="feature-item rounded-xl bg-white/15 backdrop-blur border border-white/20 px-4 py-3">
-                      <div className="flex items-center gap-3 mb-1">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-500/30">
-                          <svg className="h-4 w-4 text-yellow-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="feature-item rounded-lg sm:rounded-xl bg-white/15 backdrop-blur border border-white/20 px-2 py-1.5 sm:px-4 sm:py-3">
+                      <div className="flex items-center gap-1.5 sm:gap-3 mb-0.5 sm:mb-1">
+                        <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-yellow-500/30">
+                          <svg className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                           </svg>
                         </div>
-                        <div className="text-white font-medium">{t("heroAnimation.phase2.visualAnnotations")}</div>
+                        <div className="text-white font-medium text-xs sm:text-base">{t("heroAnimation.phase2.visualAnnotations")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase2.visualAnnotationsDesc")}</div>
+                      <div className="text-white/70 text-[10px] sm:text-xs leading-relaxed pl-7 sm:pl-11 hidden sm:block">{t("heroAnimation.phase2.visualAnnotationsDesc")}</div>
                     </div>
-                    <div className="feature-item rounded-xl bg-white/15 backdrop-blur border border-white/20 px-4 py-3">
-                      <div className="flex items-center gap-3 mb-1">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/30">
-                          <svg className="h-4 w-4 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="feature-item rounded-lg sm:rounded-xl bg-white/15 backdrop-blur border border-white/20 px-2 py-1.5 sm:px-4 sm:py-3">
+                      <div className="flex items-center gap-1.5 sm:gap-3 mb-0.5 sm:mb-1">
+                        <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-green-500/30">
+                          <svg className="h-3 w-3 sm:h-4 sm:w-4 text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         </div>
-                        <div className="text-white font-medium">{t("heroAnimation.phase2.richTextEditor")}</div>
+                        <div className="text-white font-medium text-xs sm:text-base">{t("heroAnimation.phase2.richTextEditor")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase2.richTextEditorDesc")}</div>
+                      <div className="text-white/70 text-[10px] sm:text-xs leading-relaxed pl-7 sm:pl-11 hidden sm:block">{t("heroAnimation.phase2.richTextEditorDesc")}</div>
                     </div>
-                    <div className="feature-item rounded-xl bg-white/15 backdrop-blur border border-white/20 px-4 py-3">
-                      <div className="flex items-center gap-3 mb-1">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/30">
-                          <svg className="h-4 w-4 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="feature-item rounded-lg sm:rounded-xl bg-white/15 backdrop-blur border border-white/20 px-2 py-1.5 sm:px-4 sm:py-3">
+                      <div className="flex items-center gap-1.5 sm:gap-3 mb-0.5 sm:mb-1">
+                        <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-blue-500/30">
+                          <svg className="h-3 w-3 sm:h-4 sm:w-4 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                           </svg>
                         </div>
-                        <div className="text-white font-medium">{t("heroAnimation.phase2.aiCopilot")}</div>
+                        <div className="text-white font-medium text-xs sm:text-base">{t("heroAnimation.phase2.aiCopilot")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase2.aiCopilotDesc")}</div>
+                      <div className="text-white/70 text-[10px] sm:text-xs leading-relaxed pl-7 sm:pl-11 hidden sm:block">{t("heroAnimation.phase2.aiCopilotDesc")}</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Phase 3: Compilation */}
-                <div className="phase phase-3 absolute inset-4 top-12 flex flex-col justify-center">
-                  <div className="flex items-center gap-2 mb-4">
-                    <FolderKanban className="h-6 w-6 text-white" />
-                    <span className="text-white text-lg font-semibold">{t("heroAnimation.phase3.title")}</span>
+                <div className="phase phase-3 absolute inset-2 sm:inset-4 top-8 sm:top-12 flex flex-col justify-center">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-4">
+                    <FolderKanban className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+                    <span className="text-white text-sm sm:text-lg font-semibold">{t("heroAnimation.phase3.title")}</span>
                   </div>
-                  <div className="flex flex-col gap-3">
-                    <div className="compile-item rounded-xl bg-white/15 backdrop-blur border border-white/20 px-4 py-3">
-                      <div className="flex items-center gap-3 mb-1">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/30">
-                          <svg className="h-4 w-4 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="flex flex-col gap-1.5 sm:gap-3">
+                    <div className="compile-item rounded-lg sm:rounded-xl bg-white/15 backdrop-blur border border-white/20 px-2 py-1.5 sm:px-4 sm:py-3">
+                      <div className="flex items-center gap-1.5 sm:gap-3 mb-0.5 sm:mb-1">
+                        <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-indigo-500/30">
+                          <svg className="h-3 w-3 sm:h-4 sm:w-4 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                           </svg>
                         </div>
-                        <div className="text-white font-medium">{t("heroAnimation.phase3.projectWorkspace")}</div>
+                        <div className="text-white font-medium text-xs sm:text-base">{t("heroAnimation.phase3.projectWorkspace")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase3.projectWorkspaceDesc")}</div>
+                      <div className="text-white/70 text-[10px] sm:text-xs leading-relaxed pl-7 sm:pl-11 hidden sm:block">{t("heroAnimation.phase3.projectWorkspaceDesc")}</div>
                     </div>
-                    <div className="compile-item rounded-xl bg-white/15 backdrop-blur border border-white/20 px-4 py-3">
-                      <div className="flex items-center gap-3 mb-1">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-pink-500/30">
-                          <svg className="h-4 w-4 text-pink-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="compile-item rounded-lg sm:rounded-xl bg-white/15 backdrop-blur border border-white/20 px-2 py-1.5 sm:px-4 sm:py-3">
+                      <div className="flex items-center gap-1.5 sm:gap-3 mb-0.5 sm:mb-1">
+                        <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-pink-500/30">
+                          <svg className="h-3 w-3 sm:h-4 sm:w-4 text-pink-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
                           </svg>
                         </div>
-                        <div className="text-white font-medium">{t("heroAnimation.phase3.customStructure")}</div>
+                        <div className="text-white font-medium text-xs sm:text-base">{t("heroAnimation.phase3.customStructure")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase3.customStructureDesc")}</div>
+                      <div className="text-white/70 text-[10px] sm:text-xs leading-relaxed pl-7 sm:pl-11 hidden sm:block">{t("heroAnimation.phase3.customStructureDesc")}</div>
                     </div>
-                    <div className="compile-item rounded-xl bg-white/15 backdrop-blur border border-white/20 px-4 py-3">
-                      <div className="flex items-center gap-3 mb-1">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-500/30">
-                          <svg className="h-4 w-4 text-teal-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="compile-item rounded-lg sm:rounded-xl bg-white/15 backdrop-blur border border-white/20 px-2 py-1.5 sm:px-4 sm:py-3">
+                      <div className="flex items-center gap-1.5 sm:gap-3 mb-0.5 sm:mb-1">
+                        <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-teal-500/30">
+                          <svg className="h-3 w-3 sm:h-4 sm:w-4 text-teal-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         </div>
-                        <div className="text-white font-medium">{t("heroAnimation.phase3.autoToc")}</div>
+                        <div className="text-white font-medium text-xs sm:text-base">{t("heroAnimation.phase3.autoToc")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase3.autoTocDesc")}</div>
+                      <div className="text-white/70 text-[10px] sm:text-xs leading-relaxed pl-7 sm:pl-11 hidden sm:block">{t("heroAnimation.phase3.autoTocDesc")}</div>
                     </div>
-                    <div className="compile-item rounded-xl bg-white/15 backdrop-blur border border-white/20 px-4 py-3">
-                      <div className="flex items-center gap-3 mb-1">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500/30">
-                          <svg className="h-4 w-4 text-orange-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="compile-item rounded-lg sm:rounded-xl bg-white/15 backdrop-blur border border-white/20 px-2 py-1.5 sm:px-4 sm:py-3">
+                      <div className="flex items-center gap-1.5 sm:gap-3 mb-0.5 sm:mb-1">
+                        <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-orange-500/30">
+                          <svg className="h-3 w-3 sm:h-4 sm:w-4 text-orange-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                           </svg>
                         </div>
-                        <div className="text-white font-medium">{t("heroAnimation.phase3.multilingualExport")}</div>
+                        <div className="text-white font-medium text-xs sm:text-base">{t("heroAnimation.phase3.multilingualExport")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase3.multilingualExportDesc")}</div>
+                      <div className="text-white/70 text-[10px] sm:text-xs leading-relaxed pl-7 sm:pl-11 hidden sm:block">{t("heroAnimation.phase3.multilingualExportDesc")}</div>
                     </div>
                   </div>
                 </div>
 
                 {/* Phase 4: Export */}
-                <div className="phase phase-4 absolute inset-4 top-12 flex flex-col justify-center">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Download className="h-6 w-6 text-white" />
-                    <span className="text-white text-lg font-semibold">{t("heroAnimation.phase4.title")}</span>
+                <div className="phase phase-4 absolute inset-2 sm:inset-4 top-8 sm:top-12 flex flex-col justify-center">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-2 sm:mb-4">
+                    <Download className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+                    <span className="text-white text-sm sm:text-lg font-semibold">{t("heroAnimation.phase4.title")}</span>
                   </div>
-                  <div className="flex flex-col gap-3">
-                    <div className="export-item rounded-xl bg-red-500/20 backdrop-blur border border-red-400/30 px-4 py-3">
-                      <div className="flex items-center gap-3 mb-1">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-500/30">
-                          <svg className="h-4 w-4 text-red-300" fill="currentColor" viewBox="0 0 24 24">
+                  <div className="flex flex-col gap-1.5 sm:gap-3">
+                    <div className="export-item rounded-lg sm:rounded-xl bg-red-500/20 backdrop-blur border border-red-400/30 px-2 py-1.5 sm:px-4 sm:py-3">
+                      <div className="flex items-center gap-1.5 sm:gap-3 mb-0.5 sm:mb-1">
+                        <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-red-500/30">
+                          <svg className="h-3 w-3 sm:h-4 sm:w-4 text-red-300" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM6 20V4h7v5h5v11H6z"/>
                           </svg>
                         </div>
-                        <div className="text-white font-medium">{t("heroAnimation.phase4.pdfExport")}</div>
+                        <div className="text-white font-medium text-xs sm:text-base">{t("heroAnimation.phase4.pdfExport")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase4.pdfExportDesc")}</div>
+                      <div className="text-white/70 text-[10px] sm:text-xs leading-relaxed pl-7 sm:pl-11 hidden sm:block">{t("heroAnimation.phase4.pdfExportDesc")}</div>
                     </div>
-                    <div className="export-item rounded-xl bg-blue-500/20 backdrop-blur border border-blue-400/30 px-4 py-3">
-                      <div className="flex items-center gap-3 mb-1">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/30">
-                          <svg className="h-4 w-4 text-blue-300" fill="currentColor" viewBox="0 0 24 24">
+                    <div className="export-item rounded-lg sm:rounded-xl bg-blue-500/20 backdrop-blur border border-blue-400/30 px-2 py-1.5 sm:px-4 sm:py-3">
+                      <div className="flex items-center gap-1.5 sm:gap-3 mb-0.5 sm:mb-1">
+                        <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-blue-500/30">
+                          <svg className="h-3 w-3 sm:h-4 sm:w-4 text-blue-300" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 2v16h12V4H6zm2 3h8v2H8V7zm0 4h8v2H8v-2zm0 4h5v2H8v-2z"/>
                           </svg>
                         </div>
-                        <div className="text-white font-medium">{t("heroAnimation.phase4.wordDocument")}</div>
+                        <div className="text-white font-medium text-xs sm:text-base">{t("heroAnimation.phase4.wordDocument")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase4.wordDocumentDesc")}</div>
+                      <div className="text-white/70 text-[10px] sm:text-xs leading-relaxed pl-7 sm:pl-11 hidden sm:block">{t("heroAnimation.phase4.wordDocumentDesc")}</div>
                     </div>
-                    <div className="export-item rounded-xl bg-gray-500/20 backdrop-blur border border-gray-400/30 px-4 py-3">
-                      <div className="flex items-center gap-3 mb-1">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-500/30">
-                          <svg className="h-4 w-4 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
+                    <div className="export-item rounded-lg sm:rounded-xl bg-gray-500/20 backdrop-blur border border-gray-400/30 px-2 py-1.5 sm:px-4 sm:py-3">
+                      <div className="flex items-center gap-1.5 sm:gap-3 mb-0.5 sm:mb-1">
+                        <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-gray-500/30">
+                          <svg className="h-3 w-3 sm:h-4 sm:w-4 text-gray-300" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M20.56 18H3.44C2.65 18 2 17.37 2 16.59V7.41C2 6.63 2.65 6 3.44 6H20.56C21.35 6 22 6.63 22 7.41V16.59C22 17.37 21.35 18 20.56 18zM5 15V9H6.5L8.25 11.5L10 9H11.5V15H10V11.5L8.25 14L6.5 11.5V15H5zM13.5 9H17.5V10.5H15V11.5H17.5V15H13.5V13.5H16V12.5H13.5V9Z"/>
                           </svg>
                         </div>
-                        <div className="text-white font-medium">{t("heroAnimation.phase4.markdown")}</div>
+                        <div className="text-white font-medium text-xs sm:text-base">{t("heroAnimation.phase4.markdown")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase4.markdownDesc")}</div>
+                      <div className="text-white/70 text-[10px] sm:text-xs leading-relaxed pl-7 sm:pl-11 hidden sm:block">{t("heroAnimation.phase4.markdownDesc")}</div>
                     </div>
-                    <div className="export-item rounded-xl bg-purple-500/20 backdrop-blur border border-purple-400/30 px-4 py-3">
-                      <div className="flex items-center gap-3 mb-1">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-purple-500/30">
-                          <svg className="h-4 w-4 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="export-item rounded-lg sm:rounded-xl bg-purple-500/20 backdrop-blur border border-purple-400/30 px-2 py-1.5 sm:px-4 sm:py-3">
+                      <div className="flex items-center gap-1.5 sm:gap-3 mb-0.5 sm:mb-1">
+                        <div className="flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-purple-500/30">
+                          <svg className="h-3 w-3 sm:h-4 sm:w-4 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                           </svg>
                         </div>
-                        <div className="text-white font-medium">{t("heroAnimation.phase4.semanticChunks")}</div>
+                        <div className="text-white font-medium text-xs sm:text-base">{t("heroAnimation.phase4.semanticChunks")}</div>
                       </div>
-                      <div className="text-white/70 text-xs leading-relaxed pl-11">{t("heroAnimation.phase4.semanticChunksDesc")}</div>
+                      <div className="text-white/70 text-[10px] sm:text-xs leading-relaxed pl-7 sm:pl-11 hidden sm:block">{t("heroAnimation.phase4.semanticChunksDesc")}</div>
                     </div>
                   </div>
                 </div>
@@ -531,7 +532,7 @@ export default function LandingPage() {
 
               {/* Rerun button */}
               <button
-                className="rerun-btn absolute bottom-3 right-3 flex items-center justify-center rounded-full bg-white/20 backdrop-blur border border-white/30 w-8 h-8 text-white hover:bg-white/30 transition-colors"
+                className="rerun-btn absolute bottom-2 sm:bottom-3 right-2 sm:right-3 flex items-center justify-center rounded-full bg-white/20 backdrop-blur border border-white/30 w-7 h-7 sm:w-8 sm:h-8 text-white hover:bg-white/30 transition-colors"
                 onClick={(e) => {
                   const heroFlow = e.currentTarget.closest('.hero-flow');
                   if (heroFlow) {
@@ -541,7 +542,7 @@ export default function LandingPage() {
                   }
                 }}
               >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
               </button>
