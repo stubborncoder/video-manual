@@ -18,15 +18,23 @@ vDocs provides:
 - **LangGraph** for AI workflow orchestration
 - **Google Gemini 2.5 Pro** for video understanding
 - **Anthropic Claude** for manual generation
+- **Supabase** for authentication and PostgreSQL database
 - **SQLite** for job persistence
 - **FFmpeg** for video processing
 
 ### Frontend
-- **Next.js 15** with App Router
+- **Next.js 16** with App Router
 - **React 19** with TypeScript
 - **Tailwind CSS** + **shadcn/ui** components
+- **Supabase Auth** for user authentication
 - **Zustand** for state management
 - **WebSocket** for real-time updates
+
+### Infrastructure
+- **Hostinger VPS** for production hosting
+- **Docker Compose** for containerized deployment
+- **Caddy** as reverse proxy with automatic HTTPS
+- **GitHub Actions** for CI/CD
 
 ## Architecture
 
@@ -135,6 +143,7 @@ vDocs/
 - FFmpeg (for video processing)
 - Google Gemini API key
 - Anthropic API key
+- Supabase project (for authentication)
 
 ### Backend Setup
 
@@ -163,6 +172,52 @@ npm install
 
 # Start development server
 npm run dev
+```
+
+### Supabase Setup (Authentication)
+
+1. **Create a Supabase project** at [supabase.com](https://supabase.com)
+
+2. **Get your credentials** from Settings → API:
+   - Project URL → `SUPABASE_URL`
+   - `anon` public key → `SUPABASE_ANON_KEY`
+   - `service_role` secret key → `SUPABASE_SERVICE_ROLE_KEY`
+
+3. **Get JWT secret** from Settings → API → JWT Settings:
+   - JWT Secret → `SUPABASE_JWT_SECRET`
+
+4. **Get database URL** from Settings → Database → Connection string:
+   - URI → `DATABASE_URL`
+
+5. **Configure authentication providers** (optional):
+   - Go to Authentication → Providers
+   - Enable Email/Password
+   - Enable Google OAuth (if needed)
+
+6. **Add to your `.env` file**:
+```bash
+# Supabase
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+SUPABASE_JWT_SECRET=your-jwt-secret
+DATABASE_URL=postgresql://postgres:password@db.your-project.supabase.co:5432/postgres
+
+# Frontend (same values with NEXT_PUBLIC_ prefix)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+7. **Test authentication locally**:
+```bash
+# Start backend
+uv run vdocs-api
+
+# Start frontend (new terminal)
+cd frontend && npm run dev
+
+# Open http://localhost:3000 and test login/signup
 ```
 
 ## Usage
@@ -244,13 +299,25 @@ print(f"Manual saved to: {result['manual_path']}")
 ### Environment Variables
 
 ```bash
-# Required
+# Required - AI Services
 GOOGLE_API_KEY=           # Gemini API key
 ANTHROPIC_API_KEY=        # Claude API key
 
+# Required - Supabase Authentication
+SUPABASE_URL=             # Your Supabase project URL
+SUPABASE_ANON_KEY=        # Supabase anonymous/public key
+SUPABASE_SERVICE_ROLE_KEY= # Supabase service role key (backend only)
+SUPABASE_JWT_SECRET=      # JWT secret for token verification
+DATABASE_URL=             # PostgreSQL connection string
+
+# Frontend (Next.js public vars)
+NEXT_PUBLIC_API_URL=      # Backend API URL (e.g., http://localhost:8000)
+NEXT_PUBLIC_SUPABASE_URL= # Same as SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY= # Same as SUPABASE_ANON_KEY
+
 # Optional
 VDOCS_DATA_DIR=          # Data directory (default: ./data)
-VDOCS_LOG_LEVEL=         # Logging level (default: INFO)
+CORS_ORIGINS=            # Allowed CORS origins (comma-separated)
 ```
 
 ### Agent Configuration
@@ -308,6 +375,51 @@ data/users/{user_id}/
 - Image replacement from video frames
 - Undo/redo with keyboard shortcuts
 - Auto-save
+
+### Authentication & Users
+- Email/password authentication via Supabase
+- Google OAuth integration
+- Role-based access control (user/admin)
+- Admin dashboard for user management
+- Invite-only registration (alpha phase)
+
+## Production Deployment
+
+vDocs is deployed on a **Hostinger VPS** at [https://vdocs.ai](https://vdocs.ai)
+
+### Infrastructure
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Hostinger VPS                         │
+│  ┌─────────────────────────────────────────────────┐   │
+│  │                    Caddy                         │   │
+│  │         (Reverse Proxy + Auto HTTPS)            │   │
+│  │                vdocs.ai:443                      │   │
+│  └──────────────────┬──────────────────────────────┘   │
+│                     │                                   │
+│         ┌───────────┴───────────┐                      │
+│         ▼                       ▼                      │
+│  ┌─────────────┐         ┌─────────────┐              │
+│  │  Frontend   │         │  Backend    │              │
+│  │  (Next.js)  │         │  (FastAPI)  │              │
+│  │  :3000      │         │  :8000      │              │
+│  └─────────────┘         └─────────────┘              │
+│                                 │                      │
+│                                 ▼                      │
+│                          ┌─────────────┐              │
+│                          │  Supabase   │              │
+│                          │  (Auth/DB)  │              │
+│                          └─────────────┘              │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Deployment Process
+Deployment is automated via GitHub Actions:
+1. Push/merge to `main` branch
+2. CI runs linting and build checks
+3. On success, CD deploys to VPS via SSH
+4. Docker images are rebuilt and containers restarted
+5. Health checks verify the deployment
 
 ## Development
 
