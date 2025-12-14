@@ -506,10 +506,19 @@ class ProjectCompilerRunner:
 class ManualEditorRunner:
     """Runner for manual editor agent that yields progress events for chat."""
 
-    def __init__(self, user_id: str, manual_id: str, language: str = "en"):
+    def __init__(
+        self,
+        user_id: str,
+        manual_id: str,
+        language: str = "en",
+        target_audience: Optional[str] = None,
+        target_objective: Optional[str] = None,
+    ):
         self.user_id = user_id
         self.manual_id = manual_id
         self.language = language
+        self.target_audience = target_audience
+        self.target_objective = target_objective
         self._agent = None
         self._config = None
 
@@ -592,6 +601,35 @@ class ManualEditorRunner:
 
         # Build context message
         context_parts = []
+
+        # Add manual context (audience, objective, response language)
+        manual_context_parts = []
+        if self.target_audience:
+            manual_context_parts.append(f"**Target Audience**: {self.target_audience}")
+        if self.target_objective:
+            manual_context_parts.append(f"**Target Objective**: {self.target_objective}")
+
+        # Map language code to full name for better LLM understanding
+        language_names = {
+            "en": "English",
+            "es": "Spanish",
+            "fr": "French",
+            "de": "German",
+            "pt": "Portuguese",
+            "it": "Italian",
+            "zh": "Chinese",
+            "ja": "Japanese",
+            "ko": "Korean",
+        }
+        response_language = language_names.get(self.language, self.language)
+        manual_context_parts.append(f"**Response Language**: You MUST respond in {response_language}")
+
+        if manual_context_parts:
+            context_parts.append(f"""## Manual Context
+
+{chr(10).join(manual_context_parts)}
+
+Keep the target audience and objective in mind when making suggestions or edits to the manual.""")
 
         # Add document content with line numbers for reference
         # IMPORTANT: Make it clear this is the CURRENT document state - ignore any previous versions

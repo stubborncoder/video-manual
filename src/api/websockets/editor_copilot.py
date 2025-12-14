@@ -36,8 +36,20 @@ class EditorCopilotSession:
         self.is_generating = False
         self.should_cancel = False
 
-        # Create the editor runner
-        self.runner = ManualEditorRunner(user_id, manual_id, language)
+        # Load manual metadata for context
+        metadata = self.storage.get_manual_metadata(manual_id) or {}
+        self.target_audience = metadata.get("target_audience")
+        self.target_objective = metadata.get("target_objective")
+        self.manual_title = metadata.get("title", "")
+
+        # Create the editor runner with context
+        self.runner = ManualEditorRunner(
+            user_id=user_id,
+            manual_id=manual_id,
+            language=language,
+            target_audience=self.target_audience,
+            target_objective=self.target_objective,
+        )
         self.runner_initialized = False
 
         # Message history for context
