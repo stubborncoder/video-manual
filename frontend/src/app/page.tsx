@@ -36,6 +36,7 @@ import { useAuthStore } from "@/stores/authStore";
 import { isSupabaseConfigured } from "@/lib/supabase";
 import { useLocale } from "@/components/providers/I18nProvider";
 import { Locale } from "@/lib/i18n";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 
 // Feature icons mapping
 const featureIcons = {
@@ -66,21 +67,13 @@ export default function LandingPage() {
   const { signInWithEmail, signUpWithEmail, signInWithGoogle, signInLegacy } = useAuthStore();
   const supabaseEnabled = isSupabaseConfigured();
   const { locale, setLocale } = useLocale();
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useIsMobile();
   const [mobileWarningOpen, setMobileWarningOpen] = useState(false);
 
   const toggleLocale = () => {
     const newLocale: Locale = locale === "en" ? "es" : "en";
     setLocale(newLocale);
   };
-
-  // Detect mobile screen size
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
 
   // Handle login attempt - block on mobile
   const handleLoginAttempt = () => {
