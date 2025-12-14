@@ -334,6 +334,15 @@ We use GitHub Flow with the following branch conventions:
 - Docker images rebuilt
 - Health checks verified
 
+#### GitHub Secrets Setup
+
+For auto-deploy to work, add these secrets in GitHub → Settings → Secrets → Actions:
+
+| Secret | Value |
+|--------|-------|
+| `VPS_HOST` | Your VPS IP address |
+| `VPS_SSH_KEY` | SSH private key (full content including BEGIN/END lines) |
+
 ### Running Tests
 
 ```bash
