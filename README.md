@@ -311,6 +311,29 @@ data/users/{user_id}/
 
 ## Development
 
+### Git Workflow
+
+We use GitHub Flow with the following branch conventions:
+
+- `main` / `master` - Production-ready code (auto-deploys)
+- `feature/*` - New functionality
+- `fix/*` - Bug fixes
+- `hotfix/*` - Urgent production fixes
+
+**All changes go through Pull Requests.**
+
+### CI/CD Pipeline
+
+**On every Pull Request:**
+- **Frontend**: ESLint + Next.js build verification
+- **Backend**: Ruff linting
+- **Claude Code Review**: AI-powered code review
+
+**On merge to main:**
+- Automatic deployment to production VPS
+- Docker images rebuilt
+- Health checks verified
+
 ### Running Tests
 
 ```bash
@@ -321,6 +344,17 @@ uv run pytest
 cd frontend && npm test
 ```
 
+### Linting
+
+```bash
+# Backend (Python)
+uv run ruff check .        # Find issues
+uv run ruff check . --fix  # Auto-fix issues
+
+# Frontend (TypeScript)
+cd frontend && npm run lint
+```
+
 ### Building for Production
 
 ```bash
@@ -329,6 +363,17 @@ cd frontend && npm run build
 
 # The backend runs directly with uvicorn
 uv run vdocs-api --host 0.0.0.0 --port 8000
+```
+
+### Docker Deployment
+
+```bash
+# Build and run with Docker Compose
+docker compose build
+docker compose up -d
+
+# Check logs
+docker compose logs -f
 ```
 
 ## License

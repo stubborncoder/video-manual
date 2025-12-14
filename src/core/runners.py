@@ -752,7 +752,7 @@ Please analyze this image to help answer the user's question.""")
                     # Only process streaming chunks, not final messages
                     # AIMessageChunk = streaming (delta), AIMessage = final (full, would duplicate)
                     if "chunk" not in msg_type and "ai" in msg_type:
-                        logger.debug(f"[EDITOR RUNNER] Skipping final AIMessage (already streamed)")
+                        logger.debug("[EDITOR RUNNER] Skipping final AIMessage (already streamed)")
                         continue
 
                     if "ai" in msg_type:

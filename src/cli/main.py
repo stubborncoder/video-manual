@@ -1210,7 +1210,7 @@ def project_compile(
         console.print("\n[yellow]Compilation cancelled by user[/yellow]")
         raise typer.Exit(0)
     except ImportError as e:
-        console.print(f"[red]Error: Missing dependency. Run 'uv sync' to install.[/red]")
+        console.print("[red]Error: Missing dependency. Run 'uv sync' to install.[/red]")
         console.print(f"[dim]{e}[/dim]")
         raise typer.Exit(1)
     except Exception as e:

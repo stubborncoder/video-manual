@@ -1,0 +1,22 @@
+# Ruff configuration for vDocs backend
+# https://docs.astral.sh/ruff/configuration/
+
+line-length = 100
+
+[lint]
+# Rules to enable - minimal for alpha phase
+select = [
+    "E",      # pycodestyle errors
+    "F",      # pyflakes (unused imports, undefined vars, etc.)
+]
+
+# Rules to ignore (relaxed for alpha phase)
+ignore = [
+    "E501",   # line too long
+    "E402",   # module level import not at top of file
+    "F401",   # unused import (too many false positives)
+    "F841",   # local variable assigned but never used
+]
+
+[format]
+quote-style = "double"

@@ -394,7 +394,7 @@ def main():
         if doc_format:
             create_template_metadata(template_path, doc_format)
 
-    print(f"\n✅ All templates created successfully!")
+    print("\n✅ All templates created successfully!")
 
 
 if __name__ == "__main__":

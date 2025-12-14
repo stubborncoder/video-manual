@@ -136,7 +136,7 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
         manual_optimized = manual_dir / "video_optimized.mp4"
         if manual_optimized.exists():
             screenshot_source_video = str(manual_optimized)
-            print(f"Using cached optimized video for screenshots")
+            print("Using cached optimized video for screenshots")
 
     if screenshots_exist:
         print(f"Using existing screenshots: {len(list(screenshots_dir.glob('*.png')))} found")

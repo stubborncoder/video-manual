@@ -180,7 +180,7 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
         optimized_path = manual_dir / "video_optimized.mp4"
         optimized_video_path = str(optimized_path) if optimized_path.exists() else None
         if optimized_video_path:
-            print(f"Using existing optimized video: video_optimized.mp4")
+            print("Using existing optimized video: video_optimized.mp4")
 
         return {
             "video_metadata": cached_metadata,
@@ -220,7 +220,7 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
         if manual_dir and has_optimized_video(manual_dir):
             optimized_video_path = str(manual_dir / "video_optimized.mp4")
             analysis_video_path = optimized_video_path
-            print(f"Using existing optimized video: video_optimized.mp4")
+            print("Using existing optimized video: video_optimized.mp4")
         else:
             print(
                 f"Video optimization needed: {format_size(metadata['size_bytes'])} "
@@ -234,7 +234,7 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
             else:
                 # Fallback to temp directory next to original video
                 output_dir = os.path.join(os.path.dirname(video_path), ".optimized")
-                print(f"Warning: No manual_id, using fallback path")
+                print("Warning: No manual_id, using fallback path")
 
             try:
                 optimization_result = preprocess_video_for_analysis(
@@ -284,7 +284,7 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
             gemini_file_uri = upload_result["uri"]
             mime_type = upload_result["mime_type"]
 
-            print(f"Video uploaded successfully")
+            print("Video uploaded successfully")
 
             # Create message with file URI
             message = _create_file_uri_message(gemini_file_uri, mime_type)

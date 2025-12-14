@@ -161,7 +161,7 @@ async def websocket_compile_project(
 
                     # If HITL required, break to wait for decision
                     if event.event_type == EventType.HITL_REQUIRED:
-                        logger.info(f"[WS] HITL required, waiting for decision")
+                        logger.info("[WS] HITL required, waiting for decision")
                         break
 
                     # If complete or error, we're done

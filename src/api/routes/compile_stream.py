@@ -132,7 +132,7 @@ async def compile_project_stream(
                         "type": "ai",
                         "content": rejection_msg,
                     })
-                    logger.info(f"[Compile] User rejected compilation, returning early")
+                    logger.info("[Compile] User rejected compilation, returning early")
                     return  # Exit without running the agent
 
         # If no explicit message, send the initial compilation request
