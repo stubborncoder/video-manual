@@ -55,16 +55,19 @@ async def logout(response: Response) -> dict:
 
 @router.get("/me")
 async def get_me(
+    response: Response,
     session_user_id: str | None = Cookie(default=None),
     authorization: str | None = Header(default=None),
 ) -> dict:
     """Get current user info including role.
 
     Supports both JWT tokens and legacy session cookies.
+    Also syncs session cookie for JWT auth to support media streaming.
     """
     user_id = None
     email = None
     display_name = None
+    from_jwt = False
 
     # Try JWT authentication first (Supabase)
     if authorization and authorization.startswith("Bearer ") and SUPABASE_JWT_SECRET:
@@ -78,6 +81,7 @@ async def get_me(
             )
             user_id = payload.get("sub")
             email = payload.get("email")
+            from_jwt = True
             # Get display name from user_metadata (Google OAuth provides this)
             user_metadata = payload.get("user_metadata", {})
             display_name = user_metadata.get("full_name") or user_metadata.get("name")
@@ -105,6 +109,17 @@ async def get_me(
             update_fields["display_name"] = display_name
         if update_fields:
             UserManagement.update_user(user_id, **update_fields)
+
+    # Sync session cookie if authenticated via JWT but cookie is missing/different
+    # This allows <video> and <img> tags to work (they can't send Authorization headers)
+    if from_jwt and session_user_id != user_id:
+        response.set_cookie(
+            key="session_user_id",
+            value=user_id,
+            httponly=True,
+            samesite="lax",
+            max_age=60 * 60 * 24 * 7,  # 7 days
+        )
 
     # Get user role from database
     user = UserManagement.get_user(user_id)
