@@ -49,6 +49,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Upload, Trash2, Video, Loader2, Eye, Wand2, FileText, FolderKanban, AlertTriangle, ArrowUpRight, Check, ChevronsUpDown } from "lucide-react";
+import { SidebarToggle } from "@/components/layout/SidebarToggle";
 import { videos, projects, type VideoInfo, type UploadProgress, type ProjectSummary, type VideoManualInfo } from "@/lib/api";
 import { useVideoProcessing } from "@/hooks/useWebSocket";
 import { MAX_TARGET_AUDIENCE_LENGTH, MAX_TARGET_OBJECTIVE_LENGTH } from "@/lib/constants";
@@ -301,11 +302,14 @@ export default function VideosPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{t("title")}</h1>
-          <p className="text-muted-foreground">
-            {t("description")}
-          </p>
+        <div className="flex gap-3">
+          <SidebarToggle className="mt-1.5 shrink-0" />
+          <div>
+            <h1 className="text-3xl font-bold">{t("title")}</h1>
+            <p className="text-muted-foreground">
+              {t("description")}
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">

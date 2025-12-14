@@ -42,6 +42,7 @@
     "manuals": "Manuals",
     "projects": "Projects",
     "templates": "Templates",
+    "profile": "Profile",
     "trash": "Trash",
     "admin": "Admin",
     "collapse": "Collapse",
@@ -51,6 +52,20 @@
     "toggleTheme": "Toggle {mode} mode",
     "logout": "Logout",
     "language": "Language"
+  },
+  "profile": {
+    "title": "Profile",
+    "description": "Manage your account settings and preferences",
+    "accountInfo": "Account Information",
+    "accountInfoDesc": "Your account details",
+    "displayName": "Display Name",
+    "email": "Email",
+    "preferences": "Preferences",
+    "preferencesDesc": "Customize your experience",
+    "theme": "Theme",
+    "lightMode": "Light",
+    "darkMode": "Dark",
+    "colorPalette": "Color Palette"
   },
   "dashboard": {
     "title": "Dashboard",

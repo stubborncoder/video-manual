@@ -30,6 +30,7 @@ import {
   Sparkles,
   Eye,
 } from "lucide-react";
+import { SidebarToggle } from "@/components/layout/SidebarToggle";
 import { cn } from "@/lib/utils";
 import { TemplatePreviewDialog } from "@/components/dialogs/TemplatePreviewDialog";
 
@@ -132,11 +133,14 @@ export default function TemplatesPage() {
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-start justify-between">
-        <div>
-          <h1 className="font-display text-3xl tracking-tight">{t("title")}</h1>
-          <p className="text-muted-foreground mt-1">
-            {t("description")}
-          </p>
+        <div className="flex gap-3">
+          <SidebarToggle className="mt-1.5 shrink-0" />
+          <div>
+            <h1 className="font-display text-3xl tracking-tight">{t("title")}</h1>
+            <p className="text-muted-foreground mt-1">
+              {t("description")}
+            </p>
+          </div>
         </div>
         <Button onClick={() => fileInputRef.current?.click()} className="gap-2">
           <Plus className="h-4 w-4" />

@@ -42,6 +42,7 @@
     "manuals": "Manuales",
     "projects": "Proyectos",
     "templates": "Plantillas",
+    "profile": "Perfil",
     "trash": "Papelera",
     "admin": "Admin",
     "collapse": "Contraer",
@@ -51,6 +52,20 @@
     "toggleTheme": "Cambiar a modo {mode}",
     "logout": "Cerrar sesión",
     "language": "Idioma"
+  },
+  "profile": {
+    "title": "Perfil",
+    "description": "Administra tu cuenta y preferencias",
+    "accountInfo": "Información de Cuenta",
+    "accountInfoDesc": "Detalles de tu cuenta",
+    "displayName": "Nombre",
+    "email": "Correo electrónico",
+    "preferences": "Preferencias",
+    "preferencesDesc": "Personaliza tu experiencia",
+    "theme": "Tema",
+    "lightMode": "Claro",
+    "darkMode": "Oscuro",
+    "colorPalette": "Paleta de Colores"
   },
   "dashboard": {
     "title": "Panel",
