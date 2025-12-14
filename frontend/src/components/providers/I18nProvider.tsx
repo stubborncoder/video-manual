@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { NextIntlClientProvider } from "next-intl";
-import { Locale, defaultLocale, getStoredLocale, setStoredLocale } from "@/lib/i18n";
+import { Locale, defaultLocale, getEffectiveLocale, setStoredLocale } from "@/lib/i18n";
 
 interface I18nContextType {
   locale: Locale;
@@ -25,8 +25,8 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const stored = getStoredLocale();
-    setLocaleState(stored);
+    const effectiveLocale = getEffectiveLocale();
+    setLocaleState(effectiveLocale);
     setMounted(true);
   }, []);
 

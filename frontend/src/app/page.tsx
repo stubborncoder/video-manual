@@ -34,6 +34,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { auth } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 import { isSupabaseConfigured } from "@/lib/supabase";
+import { useLocale } from "@/components/providers/I18nProvider";
+import { Locale } from "@/lib/i18n";
 
 // Feature icons mapping
 const featureIcons = {
@@ -63,6 +65,31 @@ export default function LandingPage() {
 
   const { signInWithEmail, signUpWithEmail, signInWithGoogle, signInLegacy } = useAuthStore();
   const supabaseEnabled = isSupabaseConfigured();
+  const { locale, setLocale } = useLocale();
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileWarningOpen, setMobileWarningOpen] = useState(false);
+
+  const toggleLocale = () => {
+    const newLocale: Locale = locale === "en" ? "es" : "en";
+    setLocale(newLocale);
+  };
+
+  // Detect mobile screen size
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  // Handle login attempt - block on mobile
+  const handleLoginAttempt = () => {
+    if (isMobile) {
+      setMobileWarningOpen(true);
+    } else {
+      setLoginOpen(true);
+    }
+  };
 
   // Handle email/password sign in
   const handleEmailSignIn = async (e: React.FormEvent) => {
@@ -202,13 +229,22 @@ export default function LandingPage() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setLoginOpen(true)}
+                  onClick={handleLoginAttempt}
                   className="hidden sm:flex"
                 >
                   {t("nav.signIn")}
                 </Button>
-                <Button size="sm" onClick={() => setLoginOpen(true)} className="text-xs sm:text-sm px-2 sm:px-4">
+                <Button size="sm" onClick={handleLoginAttempt} className="text-xs sm:text-sm px-2 sm:px-4">
                   {t("nav.getStarted")}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 sm:h-9 sm:w-9 text-xs font-semibold"
+                  onClick={toggleLocale}
+                  title={locale === "en" ? "Cambiar a Español" : "Switch to English"}
+                >
+                  {locale === "en" ? "EN" : "ES"}
                 </Button>
                 <Button
                   variant="outline"
@@ -241,8 +277,8 @@ export default function LandingPage() {
               <p className="mb-5 max-w-[540px] text-base leading-relaxed text-muted-foreground lg:text-lg">
                 {t("hero.description")}
               </p>
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <Button size="default" onClick={() => setLoginOpen(true)}>
+              <div className="hidden sm:flex flex-col gap-3 sm:flex-row">
+                <Button size="default" onClick={handleLoginAttempt}>
                   {t("hero.cta")}
                 </Button>
                 <Button
@@ -548,6 +584,21 @@ export default function LandingPage() {
               </button>
             </div>
           </div>
+
+          {/* Mobile-only CTA buttons below hero */}
+          <div className="flex sm:hidden flex-col gap-3 mt-6">
+            <Button size="default" onClick={handleLoginAttempt} className="w-full">
+              {t("hero.cta")}
+            </Button>
+            <Button
+              variant="outline"
+              size="default"
+              onClick={() => scrollToSection("how-it-works")}
+              className="w-full"
+            >
+              {t("hero.ctaSecondary")}
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -677,7 +728,7 @@ export default function LandingPage() {
                   size="lg"
                   variant="secondary"
                   className="bg-white text-primary hover:bg-white/90"
-                  onClick={() => setLoginOpen(true)}
+                  onClick={handleLoginAttempt}
                 >
                   {t("cta.button")}
                 </Button>
@@ -1063,6 +1114,25 @@ export default function LandingPage() {
               </DialogFooter>
             </form>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Mobile Warning Dialog */}
+      <Dialog open={mobileWarningOpen} onOpenChange={setMobileWarningOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">
+              {t("mobileWarning.title")}
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              {t("mobileWarning.description")}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setMobileWarningOpen(false)} className="w-full">
+              {t("mobileWarning.understood")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
