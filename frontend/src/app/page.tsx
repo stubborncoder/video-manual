@@ -69,35 +69,23 @@ export default function LandingPage() {
   const { locale, setLocale } = useLocale();
   const isMobile = useIsMobile();
   const [mobileWarningOpen, setMobileWarningOpen] = useState(false);
-  const [mobileWarningDismissed, setMobileWarningDismissed] = useState(false);
-
-  // Check if mobile warning was already dismissed this session
-  useEffect(() => {
-    const dismissed = sessionStorage.getItem("mobileWarningDismissed");
-    if (dismissed === "true") {
-      setMobileWarningDismissed(true);
-    }
-  }, []);
 
   const toggleLocale = () => {
     const newLocale: Locale = locale === "en" ? "es" : "en";
     setLocale(newLocale);
   };
 
-  // Handle login attempt - block on mobile (show warning once per session)
+  // Handle login attempt - block on mobile (show warning every time)
   const handleLoginAttempt = () => {
-    if (isMobile && !mobileWarningDismissed) {
+    if (isMobile) {
       setMobileWarningOpen(true);
-    } else if (!isMobile) {
+    } else {
       setLoginOpen(true);
     }
-    // If mobile and already dismissed, do nothing (button is effectively disabled)
   };
 
   const handleMobileWarningDismiss = () => {
     setMobileWarningOpen(false);
-    setMobileWarningDismissed(true);
-    sessionStorage.setItem("mobileWarningDismissed", "true");
   };
 
   // Handle email/password sign in
@@ -1127,7 +1115,7 @@ export default function LandingPage() {
       </Dialog>
 
       {/* Mobile Warning Dialog */}
-      <Dialog open={mobileWarningOpen} onOpenChange={handleMobileWarningDismiss}>
+      <Dialog open={mobileWarningOpen} onOpenChange={setMobileWarningOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="font-display text-xl">
