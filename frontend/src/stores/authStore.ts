@@ -91,8 +91,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           }
         });
 
-        // Get initial session
-        const { data: { session } } = await supabase.auth.getSession();
+        // Get initial session with timeout to prevent hanging
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise<{ data: { session: null } }>((resolve) => {
+          setTimeout(() => resolve({ data: { session: null } }), 5000);
+        });
+        const { data: { session } } = await Promise.race([sessionPromise, timeoutPromise]);
+
         set({
           session,
           user: session?.user ?? null,
