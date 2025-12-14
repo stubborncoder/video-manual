@@ -63,6 +63,8 @@
     "preferences": "Preferences",
     "preferencesDesc": "Customize your experience",
     "theme": "Theme",
+    "lightMode": "Light",
+    "darkMode": "Dark",
     "colorPalette": "Color Palette"
   },
   "dashboard": {

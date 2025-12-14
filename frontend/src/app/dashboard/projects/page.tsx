@@ -89,6 +89,7 @@ import {
   Check,
   ChevronsUpDown,
 } from "lucide-react";
+import { SidebarToggle } from "@/components/layout/SidebarToggle";
 import {
   projects,
   manuals,
@@ -615,11 +616,14 @@ export default function ProjectsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{t("title")}</h1>
-          <p className="text-muted-foreground">
-            {t("description")}
-          </p>
+        <div className="flex gap-3">
+          <SidebarToggle className="mt-1.5 shrink-0" />
+          <div>
+            <h1 className="text-3xl font-bold">{t("title")}</h1>
+            <p className="text-muted-foreground">
+              {t("description")}
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">

@@ -17,6 +17,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Trash2, RotateCcw, Video, FileText, FolderKanban, Clock } from "lucide-react";
+import { SidebarToggle } from "@/components/layout/SidebarToggle";
 import { trash, type TrashItem, type TrashStats } from "@/lib/api";
 
 function formatDate(dateStr: string): string {
@@ -123,11 +124,14 @@ export default function TrashPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{t("title")}</h1>
-          <p className="text-muted-foreground">
-            {t("description")}
-          </p>
+        <div className="flex gap-3">
+          <SidebarToggle className="mt-1.5 shrink-0" />
+          <div>
+            <h1 className="text-3xl font-bold">{t("title")}</h1>
+            <p className="text-muted-foreground">
+              {t("description")}
+            </p>
+          </div>
         </div>
 
         {stats && stats.total > 0 && (

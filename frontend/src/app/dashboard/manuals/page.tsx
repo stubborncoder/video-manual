@@ -67,6 +67,7 @@ import {
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown, ClipboardCheck, Users, Target, History, Clock, MoreHorizontal, HelpCircle, Expand, Copy } from "lucide-react";
+import { SidebarToggle } from "@/components/layout/SidebarToggle";
 import { manuals, manualProject, projects, type ManualSummary, type ManualDetail, type ProjectSummary, type ManualEvaluation } from "@/lib/api";
 import { ExportDialog, type ExportOptions } from "@/components/dialogs/ExportDialog";
 import { CloneManualDialog } from "@/components/dialogs/CloneManualDialog";
@@ -728,11 +729,14 @@ function ManualsPageContent() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{t("title")}</h1>
-          <p className="text-muted-foreground">
-            {t("description")}
-          </p>
+        <div className="flex gap-3">
+          <SidebarToggle className="mt-1.5 shrink-0" />
+          <div>
+            <h1 className="text-3xl font-bold">{t("title")}</h1>
+            <p className="text-muted-foreground">
+              {t("description")}
+            </p>
+          </div>
         </div>
 
         {/* Filters */}

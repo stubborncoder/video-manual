@@ -1,31 +1,34 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
-import { User, Mail, Palette, Sun, Moon, Globe } from "lucide-react";
+import { User, Mail, Palette, Sun, Moon, Globe, ChevronDown } from "lucide-react";
+import { SidebarToggle } from "@/components/layout/SidebarToggle";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAuthStore } from "@/stores/authStore";
 import { useLocale } from "@/components/providers/I18nProvider";
 import { usePalette, Palette as PaletteType } from "@/components/providers/ThemeProvider";
 import { locales, localeNames, Locale } from "@/lib/i18n";
+import { getInitials } from "@/lib/utils";
 
-const palettes: { value: PaletteType; label: string; color: string }[] = [
-  { value: "electric-blue", label: "Electric Blue", color: "#2563eb" },
-  { value: "coral", label: "Coral", color: "#f97316" },
-  { value: "mint", label: "Mint", color: "#10b981" },
-  { value: "marigold", label: "Marigold", color: "#eab308" },
-  { value: "grape", label: "Grape", color: "#8b5cf6" },
+const palettes: { value: PaletteType; label: string; colorClass: string }[] = [
+  { value: "electric-blue", label: "Electric Blue", colorClass: "bg-blue-600" },
+  { value: "coral", label: "Coral", colorClass: "bg-orange-500" },
+  { value: "mint", label: "Mint", colorClass: "bg-emerald-500" },
+  { value: "marigold", label: "Marigold", colorClass: "bg-yellow-500" },
+  { value: "grape", label: "Grape", colorClass: "bg-violet-500" },
 ];
 
 export default function ProfilePage() {
@@ -35,26 +38,31 @@ export default function ProfilePage() {
   const { locale, setLocale } = useLocale();
   const { theme, setTheme } = useTheme();
   const { palette, setPalette } = usePalette();
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch with theme
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Get user info from Supabase user object
   const email = user?.email || "";
   const displayName = user?.user_metadata?.full_name || user?.user_metadata?.name || email.split("@")[0] || "";
   const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || "";
+  const initials = getInitials(displayName);
 
-  // Get initials for avatar fallback
-  const initials = displayName
-    .split(" ")
-    .map((n: string) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2) || "U";
+  // Get current palette info
+  const currentPalette = palettes.find(p => p.value === palette) || palettes[0];
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold">{t("title")}</h1>
-        <p className="text-muted-foreground">{t("description")}</p>
+      <div className="flex gap-3">
+        <SidebarToggle className="mt-1.5 shrink-0" />
+        <div>
+          <h1 className="text-3xl font-bold">{t("title")}</h1>
+          <p className="text-muted-foreground">{t("description")}</p>
+        </div>
       </div>
 
       {/* Profile Header Card */}
@@ -118,63 +126,90 @@ export default function ProfilePage() {
             </CardTitle>
             <CardDescription>{t("preferencesDesc")}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             {/* Language */}
-            <div className="space-y-2">
+            <div className="flex items-center justify-between">
               <Label className="flex items-center gap-2">
                 <Globe className="h-4 w-4" />
                 {tSidebar("language")}
               </Label>
-              <Select value={locale} onValueChange={(value) => setLocale(value as Locale)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {locales.map((loc) => (
-                    <SelectItem key={loc} value={loc}>
-                      {localeNames[loc]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-[140px] justify-between">
+                    {localeNames[locale]}
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-[140px]">
+                  <DropdownMenuRadioGroup value={locale} onValueChange={(value) => setLocale(value as Locale)}>
+                    {locales.map((loc) => (
+                      <DropdownMenuRadioItem key={loc} value={loc}>
+                        {localeNames[loc]}
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {/* Theme */}
             <div className="flex items-center justify-between">
               <Label className="flex items-center gap-2">
-                {theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                {tSidebar("darkMode")}
+                {mounted && theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                {t("theme")}
               </Label>
-              <Switch
-                checked={theme === "dark"}
-                onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
-              />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-[140px] justify-between">
+                    <span className="flex items-center gap-2">
+                      {mounted && theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                      {mounted ? (theme === "dark" ? t("darkMode") : t("lightMode")) : t("lightMode")}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-[140px]">
+                  <DropdownMenuRadioGroup value={mounted ? theme || "light" : "light"} onValueChange={setTheme}>
+                    <DropdownMenuRadioItem value="light">
+                      <Sun className="h-4 w-4 mr-2" />
+                      {t("lightMode")}
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="dark">
+                      <Moon className="h-4 w-4 mr-2" />
+                      {t("darkMode")}
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {/* Color Palette */}
-            <div className="space-y-2">
+            <div className="flex items-center justify-between">
               <Label className="flex items-center gap-2">
                 <Palette className="h-4 w-4" />
                 {t("colorPalette")}
               </Label>
-              <Select value={palette} onValueChange={(value) => setPalette(value as PaletteType)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {palettes.map((p) => (
-                    <SelectItem key={p.value} value={p.value}>
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="h-4 w-4 rounded-full"
-                          style={{ backgroundColor: p.color }}
-                        />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="w-[160px] justify-between">
+                    <span className="flex items-center gap-2">
+                      <div className={`h-4 w-4 rounded-full ${currentPalette.colorClass}`} />
+                      {currentPalette.label}
+                    </span>
+                    <ChevronDown className="h-4 w-4 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-[160px]">
+                  <DropdownMenuRadioGroup value={palette} onValueChange={(value) => setPalette(value as PaletteType)}>
+                    {palettes.map((p) => (
+                      <DropdownMenuRadioItem key={p.value} value={p.value}>
+                        <div className={`h-4 w-4 rounded-full mr-2 ${p.colorClass}`} />
                         {p.label}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                      </DropdownMenuRadioItem>
+                    ))}
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </CardContent>
         </Card>

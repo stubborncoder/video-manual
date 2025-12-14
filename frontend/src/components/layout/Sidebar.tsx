@@ -13,7 +13,6 @@ import {
   Home,
   Shield,
   LayoutTemplate,
-  ChevronsUpDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -28,7 +27,7 @@ import { VDocsIcon } from "@/components/ui/VDocsIcon";
 import { Badge } from "@/components/ui/badge";
 import { auth } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
-import { cn } from "@/lib/utils";
+import { cn, getInitials } from "@/lib/utils";
 import { useSidebar } from "./SidebarContext";
 
 const navItemsConfig = [
@@ -46,7 +45,7 @@ export function Sidebar() {
   const { collapsed } = useSidebar();
   const [isAdmin, setIsAdmin] = useState(false);
   const t = useTranslations("sidebar");
-  const { user } = useAuthStore();
+  const { user, signOut } = useAuthStore();
 
   // Check if user is admin
   useEffect(() => {
@@ -60,8 +59,6 @@ export function Sidebar() {
     };
     checkAdmin();
   }, []);
-
-  const signOut = useAuthStore((state) => state.signOut);
 
   const handleLogout = async () => {
     try {
@@ -218,12 +215,7 @@ export function Sidebar() {
                           alt={user.user_metadata?.full_name || user.email || ""}
                         />
                         <AvatarFallback className="text-xs">
-                          {(user.user_metadata?.full_name || user.email || "U")
-                            .split(" ")
-                            .map((n: string) => n[0])
-                            .join("")
-                            .toUpperCase()
-                            .slice(0, 2)}
+                          {getInitials(user.user_metadata?.full_name || user.email)}
                         </AvatarFallback>
                       </Avatar>
                     </Link>
@@ -246,21 +238,15 @@ export function Sidebar() {
                       alt={user.user_metadata?.full_name || user.email || ""}
                     />
                     <AvatarFallback>
-                      {(user.user_metadata?.full_name || user.email || "U")
-                        .split(" ")
-                        .map((n: string) => n[0])
-                        .join("")
-                        .toUpperCase()
-                        .slice(0, 2)}
+                      {getInitials(user.user_metadata?.full_name || user.email)}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">
                       {user.user_metadata?.full_name || user.email?.split("@")[0]}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
                   </div>
-                  <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
                 </Link>
               )}
             </>

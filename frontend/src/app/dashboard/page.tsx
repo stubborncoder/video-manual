@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Video, FileText, FolderKanban, Plus } from "lucide-react";
 import { videos, manuals, projects } from "@/lib/api";
+import { SidebarToggle } from "@/components/layout/SidebarToggle";
 
 export default function DashboardPage() {
   const t = useTranslations("dashboard");
@@ -50,11 +51,14 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">{t("title")}</h1>
-        <p className="text-muted-foreground">
-          {t("welcome")}
-        </p>
+      <div className="flex gap-3">
+        <SidebarToggle className="mt-1.5 shrink-0" />
+        <div>
+          <h1 className="text-3xl font-bold">{t("title")}</h1>
+          <p className="text-muted-foreground">
+            {t("welcome")}
+          </p>
+        </div>
       </div>
 
       {/* Stat Cards */}

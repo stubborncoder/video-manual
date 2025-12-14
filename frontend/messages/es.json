@@ -63,6 +63,8 @@
     "preferences": "Preferencias",
     "preferencesDesc": "Personaliza tu experiencia",
     "theme": "Tema",
+    "lightMode": "Claro",
+    "darkMode": "Oscuro",
     "colorPalette": "Paleta de Colores"
   },
   "dashboard": {

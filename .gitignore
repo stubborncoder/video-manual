@@ -64,3 +64,4 @@ htmlcov/
 .DS_Store
 Thumbs.db
 worktrees/
+.mcp.json
