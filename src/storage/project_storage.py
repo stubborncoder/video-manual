@@ -97,6 +97,7 @@ class ProjectStorage:
             "created_at": now,
             "updated_at": now,
             "default_language": default_language,
+            "sections": [],  # New: Sections that contain chapters
             "chapters": [],
             "tags": [],
             "template_id": None,
@@ -268,6 +269,7 @@ class ProjectStorage:
             "created_at": now,
             "updated_at": now,
             "default_language": "en",
+            "sections": [],  # New: Sections that contain chapters
             "chapters": [],  # Chapters are created automatically when manuals are added
             "tags": [],
             "template_id": None,
@@ -438,6 +440,188 @@ class ProjectStorage:
             raise ValueError(f"Project not found: {project_id}")
 
         return sorted(project.get("chapters", []), key=lambda c: c.get("order", 0))
+
+    # ==================== Section Management ====================
+
+    def add_section(
+        self,
+        project_id: str,
+        title: str,
+        description: str = "",
+    ) -> str:
+        """Add a section to a project.
+
+        Args:
+            project_id: Project identifier
+            title: Section title
+            description: Section description
+
+        Returns:
+            Section ID
+        """
+        project = self.get_project(project_id)
+        if not project:
+            raise ValueError(f"Project not found: {project_id}")
+
+        sections = project.get("sections", [])
+
+        # Generate section ID
+        section_num = len(sections) + 1
+        section_id = f"sec-{section_num:02d}"
+
+        # Ensure unique ID
+        existing_ids = {sec["id"] for sec in sections}
+        while section_id in existing_ids:
+            section_num += 1
+            section_id = f"sec-{section_num:02d}"
+
+        section = {
+            "id": section_id,
+            "title": title,
+            "description": description,
+            "order": len(sections) + 1,
+            "chapters": [],  # Chapter IDs that belong to this section
+        }
+
+        sections.append(section)
+        self.update_project(project_id, {"sections": sections})
+
+        return section_id
+
+    def update_section(
+        self,
+        project_id: str,
+        section_id: str,
+        updates: Dict[str, Any],
+    ) -> None:
+        """Update a section.
+
+        Args:
+            project_id: Project identifier
+            section_id: Section identifier
+            updates: Fields to update (title, description)
+        """
+        project = self.get_project(project_id)
+        if not project:
+            raise ValueError(f"Project not found: {project_id}")
+
+        sections = project.get("sections", [])
+        for section in sections:
+            if section["id"] == section_id:
+                # Don't allow changing id or chapters through this method
+                updates.pop("id", None)
+                updates.pop("chapters", None)
+                section.update(updates)
+                self.update_project(project_id, {"sections": sections})
+                return
+
+        raise ValueError(f"Section not found: {section_id}")
+
+    def delete_section(self, project_id: str, section_id: str) -> None:
+        """Delete a section (chapters remain in project, just unassigned from section).
+
+        Args:
+            project_id: Project identifier
+            section_id: Section identifier
+        """
+        project = self.get_project(project_id)
+        if not project:
+            raise ValueError(f"Project not found: {project_id}")
+
+        sections = project.get("sections", [])
+        new_sections = []
+
+        for section in sections:
+            if section["id"] != section_id:
+                new_sections.append(section)
+
+        # Re-order remaining sections
+        for i, section in enumerate(new_sections):
+            section["order"] = i + 1
+
+        self.update_project(project_id, {"sections": new_sections})
+
+    def reorder_sections(self, project_id: str, section_order: List[str]) -> None:
+        """Reorder sections in a project.
+
+        Args:
+            project_id: Project identifier
+            section_order: List of section IDs in desired order
+        """
+        project = self.get_project(project_id)
+        if not project:
+            raise ValueError(f"Project not found: {project_id}")
+
+        sections = project.get("sections", [])
+        section_map = {sec["id"]: sec for sec in sections}
+
+        # Validate all IDs exist
+        for sec_id in section_order:
+            if sec_id not in section_map:
+                raise ValueError(f"Section not found: {sec_id}")
+
+        # Reorder
+        new_sections = []
+        for i, sec_id in enumerate(section_order):
+            section = section_map[sec_id]
+            section["order"] = i + 1
+            new_sections.append(section)
+
+        self.update_project(project_id, {"sections": new_sections})
+
+    def move_chapter_to_section(
+        self,
+        project_id: str,
+        chapter_id: str,
+        target_section_id: Optional[str],
+    ) -> None:
+        """Move a chapter to a different section (or remove from section if target_section_id is None).
+
+        Args:
+            project_id: Project identifier
+            chapter_id: Chapter identifier
+            target_section_id: Target section identifier (None to remove from all sections)
+        """
+        project = self.get_project(project_id)
+        if not project:
+            raise ValueError(f"Project not found: {project_id}")
+
+        sections = project.get("sections", [])
+
+        # Remove from current section
+        for section in sections:
+            if chapter_id in section.get("chapters", []):
+                section["chapters"].remove(chapter_id)
+
+        # Add to target section if specified
+        if target_section_id:
+            target_found = False
+            for section in sections:
+                if section["id"] == target_section_id:
+                    if chapter_id not in section["chapters"]:
+                        section["chapters"].append(chapter_id)
+                    target_found = True
+                    break
+
+            if not target_found:
+                raise ValueError(f"Section not found: {target_section_id}")
+
+        self.update_project(project_id, {"sections": sections})
+
+    def list_sections(self, project_id: str) -> List[Dict[str, Any]]:
+        """List all sections in a project.
+
+        Args:
+            project_id: Project identifier
+
+        Returns:
+            List of section dicts
+        """
+        project = self.get_project(project_id)
+        if not project:
+            raise ValueError(f"Project not found: {project_id}")
+
+        return sorted(project.get("sections", []), key=lambda s: s.get("order", 0))
 
     # ==================== Manual Organization ====================
 

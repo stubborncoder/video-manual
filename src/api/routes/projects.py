@@ -16,6 +16,8 @@ from ..schemas import (
     ProjectVideoInfo,
     ExportRequest,
     ExportResponse,
+    SectionCreate,
+    SectionInfo,
 )
 from ..dependencies import CurrentUser, ProjectStorageDep, TrashStorageDep, UserStorageDep
 
@@ -28,6 +30,12 @@ class ProjectUpdate(BaseModel):
 
 class ChapterUpdate(BaseModel):
     """Request to update chapter details."""
+    title: Optional[str] = None
+    description: Optional[str] = None
+
+
+class SectionUpdate(BaseModel):
+    """Request to update section details."""
     title: Optional[str] = None
     description: Optional[str] = None
 
@@ -149,12 +157,24 @@ async def get_project(
                     }
                 video_map[video_path]["manual_count"] += 1
 
+    sections = storage.list_sections(project_id)
+
     return ProjectDetail(
         id=project_id,
         name=project["name"],
         description=project.get("description", ""),
         created_at=project.get("created_at", ""),
         is_default=storage.is_default_project(project_id),
+        sections=[
+            SectionInfo(
+                id=sec["id"],
+                title=sec["title"],
+                description=sec.get("description", ""),
+                order=sec.get("order", 0),
+                chapters=sec.get("chapters", []),
+            )
+            for sec in sections
+        ],
         chapters=[
             ChapterInfo(
                 id=ch["id"],
@@ -357,6 +377,126 @@ async def reorder_manuals_in_chapter(
     try:
         storage.reorder_manuals_in_chapter(project_id, chapter_id, request.order)
         return {"status": "reordered", "chapter_id": chapter_id, "new_order": request.order}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# ==================== Sections ====================
+
+
+@router.post("/{project_id}/sections")
+async def add_section(
+    project_id: str,
+    request: SectionCreate,
+    user_id: CurrentUser,
+    storage: ProjectStorageDep,
+) -> SectionInfo:
+    """Add a section to a project."""
+    try:
+        section_id = storage.add_section(project_id, request.title, request.description)
+        sections = storage.list_sections(project_id)
+        section = next((sec for sec in sections if sec["id"] == section_id), None)
+
+        return SectionInfo(
+            id=section_id,
+            title=request.title,
+            description=request.description,
+            order=section.get("order", 0) if section else 0,
+            chapters=section.get("chapters", []) if section else [],
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put("/{project_id}/sections/{section_id}")
+async def update_section(
+    project_id: str,
+    section_id: str,
+    request: SectionUpdate,
+    user_id: CurrentUser,
+    storage: ProjectStorageDep,
+) -> SectionInfo:
+    """Update a section's title and/or description."""
+    updates = {}
+    if request.title is not None:
+        updates["title"] = request.title
+    if request.description is not None:
+        updates["description"] = request.description
+
+    try:
+        storage.update_section(project_id, section_id, updates)
+        sections = storage.list_sections(project_id)
+        section = next((sec for sec in sections if sec["id"] == section_id), None)
+
+        return SectionInfo(
+            id=section_id,
+            title=section["title"] if section else request.title or "",
+            description=section.get("description", "") if section else request.description or "",
+            order=section.get("order", 0) if section else 0,
+            chapters=section.get("chapters", []) if section else [],
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete("/{project_id}/sections/{section_id}")
+async def delete_section(
+    project_id: str,
+    section_id: str,
+    user_id: CurrentUser,
+    storage: ProjectStorageDep,
+) -> dict:
+    """Delete a section from a project."""
+    try:
+        storage.delete_section(project_id, section_id)
+        return {"status": "deleted", "section_id": section_id}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put("/{project_id}/sections/reorder")
+async def reorder_sections(
+    project_id: str,
+    request: ReorderRequest,
+    user_id: CurrentUser,
+    storage: ProjectStorageDep,
+) -> dict:
+    """Reorder sections in a project."""
+    try:
+        storage.reorder_sections(project_id, request.order)
+        return {"status": "reordered", "project_id": project_id, "new_order": request.order}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put("/{project_id}/sections/{section_id}/chapters/{chapter_id}")
+async def move_chapter_to_section(
+    project_id: str,
+    section_id: str,
+    chapter_id: str,
+    user_id: CurrentUser,
+    storage: ProjectStorageDep,
+) -> dict:
+    """Move a chapter to a section."""
+    try:
+        storage.move_chapter_to_section(project_id, chapter_id, section_id)
+        return {"status": "moved", "chapter_id": chapter_id, "section_id": section_id}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete("/{project_id}/sections/{section_id}/chapters/{chapter_id}")
+async def remove_chapter_from_section(
+    project_id: str,
+    section_id: str,
+    chapter_id: str,
+    user_id: CurrentUser,
+    storage: ProjectStorageDep,
+) -> dict:
+    """Remove a chapter from a section (chapter remains in project)."""
+    try:
+        storage.move_chapter_to_section(project_id, chapter_id, None)
+        return {"status": "removed", "chapter_id": chapter_id, "section_id": section_id}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 

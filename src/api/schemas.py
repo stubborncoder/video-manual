@@ -157,6 +157,19 @@ class ChapterInfo(BaseModel):
     order: int
 
 
+class SectionCreate(BaseModel):
+    title: str = Field(..., min_length=1)
+    description: str = ""
+
+
+class SectionInfo(BaseModel):
+    id: str
+    title: str
+    description: str
+    order: int
+    chapters: list[str] = []  # List of chapter IDs in this section
+
+
 class ProjectManualInfo(BaseModel):
     manual_id: str
     chapter_id: Optional[str] = None
@@ -185,6 +198,7 @@ class ProjectDetail(BaseModel):
     description: str
     created_at: str
     is_default: bool = False
+    sections: list[SectionInfo] = []
     chapters: list[ChapterInfo]
     manuals: list[ProjectManualInfo]
     videos: list[ProjectVideoInfo] = []
