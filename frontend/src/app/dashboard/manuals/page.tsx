@@ -1138,9 +1138,12 @@ function ManualsPageContent() {
                         <Wand2 className="mr-2 h-4 w-4" />
                         {t("addLanguage")}
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => openCloneDialog(manual)}>
+                      <DropdownMenuItem disabled className="opacity-60">
                         <Copy className="mr-2 h-4 w-4" />
                         {t("cloneToFormat")}
+                        <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 h-4 border-amber-300 text-amber-600 bg-amber-50">
+                          Soon
+                        </Badge>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openEvaluateDialog(manual)}>
                         <ClipboardCheck className="mr-2 h-4 w-4" />
