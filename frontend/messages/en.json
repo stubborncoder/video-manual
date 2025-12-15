@@ -206,6 +206,8 @@
     "screenshots": "screenshots",
     "deleted": "deleted",
     "exporting": "Exporting...",
+    "processingInProgress": "Processing in Progress",
+    "pleaseWait": "Please wait while the manual is being generated",
     "generate": "Generate",
     "addLanguage": "Add Language",
     "cloneToFormat": "Clone to Format...",
