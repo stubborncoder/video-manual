@@ -218,6 +218,20 @@ export default function AdminDashboardPage() {
                   <Tooltip
                     formatter={(value: number) => [`$${value.toFixed(4)}`, "Cost"]}
                     labelFormatter={(label) => `Date: ${label}`}
+                    contentStyle={{
+                      backgroundColor: 'var(--color-card)',
+                      borderColor: 'var(--color-border)',
+                      borderRadius: '6px',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                    }}
+                    labelStyle={{
+                      color: 'var(--color-foreground)',
+                      fontWeight: 500,
+                    }}
+                    itemStyle={{
+                      color: 'var(--color-foreground)',
+                    }}
+                    cursor={{ stroke: 'rgba(150, 150, 150, 0.4)', strokeWidth: 1 }}
                   />
                   <Area
                     type="monotone"
@@ -253,6 +267,20 @@ export default function AdminDashboardPage() {
                   <Tooltip
                     formatter={(value: number) => [value, "Requests"]}
                     labelFormatter={(label) => `Date: ${label}`}
+                    contentStyle={{
+                      backgroundColor: 'var(--color-card)',
+                      borderColor: 'var(--color-border)',
+                      borderRadius: '6px',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                    }}
+                    labelStyle={{
+                      color: 'var(--color-foreground)',
+                      fontWeight: 500,
+                    }}
+                    itemStyle={{
+                      color: 'var(--color-foreground)',
+                    }}
+                    cursor={{ fill: 'rgba(150, 150, 150, 0.15)' }}
                   />
                   <Bar dataKey="requests" fill="hsl(var(--primary))" />
                 </BarChart>
