@@ -5,6 +5,7 @@ from typing import Optional
 from dotenv import load_dotenv
 from deepagents import create_deep_agent
 from langgraph.checkpoint.memory import MemorySaver
+from langchain.chat_models import init_chat_model
 from langchain.agents.middleware import ModelFallbackMiddleware
 
 from .tools import EDITOR_TOOLS
@@ -31,6 +32,11 @@ def get_editor_agent(
     # Get default model from config if not provided
     if model is None:
         model = DEFAULT_EDITOR_MODEL
+
+    # Convert string model identifier to BaseChatModel
+    # (required for deepagents 0.3.0+ which accesses model.profile)
+    if isinstance(model, str):
+        model = init_chat_model(model)
 
     # Use MemorySaver for session-based checkpointing
     checkpointer = MemorySaver()
