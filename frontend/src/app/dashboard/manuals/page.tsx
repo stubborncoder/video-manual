@@ -80,6 +80,7 @@ import { SUPPORTED_LANGUAGES, getScoreColorByRaw, getScoreColorByPercentage, get
 // Extended manual info with additional data
 interface ManualWithProject extends ManualSummary {
   project_name?: string;
+  project_is_default?: boolean;
   tags?: string[];
 }
 
@@ -96,6 +97,12 @@ function ManualsPageContent() {
   // Helper to get translated name for default project
   const getProjectDisplayName = (project: { name: string; is_default?: boolean }) => {
     return project.is_default ? tp("defaultProjectName") : project.name;
+  };
+
+  // Helper to get display name for manual's project
+  const getManualProjectDisplayName = (manual: ManualWithProject) => {
+    if (!manual.project_name) return undefined;
+    return manual.project_is_default ? tp("defaultProjectName") : manual.project_name;
   };
   const searchParams = useSearchParams();
 
@@ -239,16 +246,20 @@ function ManualsPageContent() {
       const res = await manuals.list();
       const projectsRes = await projects.list();
 
-      // Create a map for project names
-      const projectMap = new Map<string, string>();
-      projectsRes.projects.forEach((p) => projectMap.set(p.id, p.name));
+      // Create a map for project info (name + is_default)
+      const projectMap = new Map<string, { name: string; is_default: boolean }>();
+      projectsRes.projects.forEach((p) => projectMap.set(p.id, { name: p.name, is_default: p.is_default ?? false }));
 
       // Backend now returns source_video and project_id directly
-      const manualsWithProjects: ManualWithProject[] = res.manuals.map((m) => ({
-        ...m,
-        project_name: m.project_id ? projectMap.get(m.project_id) : undefined,
-        tags: [],
-      }));
+      const manualsWithProjects: ManualWithProject[] = res.manuals.map((m) => {
+        const projectInfo = m.project_id ? projectMap.get(m.project_id) : undefined;
+        return {
+          ...m,
+          project_name: projectInfo?.name,
+          project_is_default: projectInfo?.is_default,
+          tags: [],
+        };
+      });
 
       // Fetch tags for each manual
       for (const manual of manualsWithProjects) {
@@ -972,7 +983,7 @@ function ManualsPageContent() {
                       className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors min-w-0"
                     >
                       <FolderKanban className="h-3.5 w-3.5 shrink-0 text-primary" />
-                      <span className="truncate min-w-0">{manual.project_name}</span>
+                      <span className="truncate min-w-0">{getManualProjectDisplayName(manual)}</span>
                       <ArrowUpRight className="h-3 w-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </Link>
                   )}
@@ -1179,12 +1190,15 @@ function ManualsPageContent() {
                     {manualList.find((m) => m.id === selectedManual.id)?.source_video?.name}
                   </span>
                 )}
-                {manualList.find((m) => m.id === selectedManual.id)?.project_name && (
-                  <span className="flex items-center gap-1.5 bg-muted px-2.5 py-1 rounded-md">
-                    <FolderKanban className="h-4 w-4" />
-                    {manualList.find((m) => m.id === selectedManual.id)?.project_name}
-                  </span>
-                )}
+                {(() => {
+                  const m = manualList.find((m) => m.id === selectedManual.id);
+                  return m?.project_name && (
+                    <span className="flex items-center gap-1.5 bg-muted px-2.5 py-1 rounded-md">
+                      <FolderKanban className="h-4 w-4" />
+                      {getManualProjectDisplayName(m)}
+                    </span>
+                  );
+                })()}
                 <span className="flex items-center gap-1.5 bg-muted px-2.5 py-1 rounded-md">
                   <ImageIcon className="h-4 w-4" />
                   {selectedManual.screenshots.length} screenshots
@@ -1227,7 +1241,7 @@ function ManualsPageContent() {
                   {loadingViewEval ? (
                     <div className="flex items-center gap-3 px-4 py-3 rounded-lg border bg-muted/30">
                       <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">Loading...</span>
+                      <span className="text-sm text-muted-foreground">{tc("loading")}</span>
                     </div>
                   ) : viewingEvaluation ? (
                     <button
@@ -1239,10 +1253,10 @@ function ManualsPageContent() {
                         }
                       }}
                       className="group flex flex-col items-center px-5 py-3 rounded-lg border bg-muted/30 cursor-pointer transition-all duration-200 hover:border-primary/50 hover:bg-muted/50 active:scale-[0.98]"
-                      title="Click to view full evaluation details"
+                      title={t("clickToViewDetails")}
                     >
                       {/* Card Header */}
-                      <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-1">Eval Score</span>
+                      <span className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-1">{t("evalScore")}</span>
                       {/* Score Display */}
                       <div className="flex items-baseline gap-0.5">
                         <span className={`text-3xl font-bold ${getScoreColorByRaw(viewingEvaluation.overall_score).text}`}>
@@ -1446,7 +1460,7 @@ function ManualsPageContent() {
             {manualToAssign?.project_id && (
               <div className="pt-2 border-t">
                 <p className="text-sm text-muted-foreground mb-2">
-                  Currently in: <strong>{manualToAssign.project_name}</strong>
+                  {t("currentlyIn")} <strong>{getManualProjectDisplayName(manualToAssign)}</strong>
                 </p>
                 <Button
                   variant="outline"
@@ -1569,7 +1583,7 @@ function ManualsPageContent() {
                   {manualToGenerate?.project_name && (
                     <span className="flex items-center gap-1.5">
                       <FolderKanban className="h-4 w-4" />
-                      {manualToGenerate.project_name}
+                      {getManualProjectDisplayName(manualToGenerate)}
                     </span>
                   )}
                 </div>
@@ -1597,9 +1611,9 @@ function ManualsPageContent() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Project</Label>
+                  <Label>{t("project")}</Label>
                   <Input
-                    value={manualToGenerate?.project_name || "Default Project"}
+                    value={manualToGenerate ? getManualProjectDisplayName(manualToGenerate) || tp("defaultProjectName") : tp("defaultProjectName")}
                     disabled
                     className="bg-muted"
                   />
@@ -1645,7 +1659,7 @@ function ManualsPageContent() {
           <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <ClipboardCheck className="h-5 w-5" />
-              Manual Evaluation
+              {t("manualEvaluation")}
             </DialogTitle>
           </DialogHeader>
 
@@ -1680,7 +1694,7 @@ function ManualsPageContent() {
                     <SelectContent>
                       {availableVersions.map((v) => (
                         <SelectItem key={v.version} value={v.version}>
-                          v{v.version} {v.is_current && "(current)"}
+                          v{v.version} {v.is_current && t("current")}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -1697,7 +1711,7 @@ function ManualsPageContent() {
                     <PopoverTrigger asChild>
                       <div className="flex items-center gap-2 cursor-pointer hover:text-foreground transition-colors">
                         <Users className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <span className="text-muted-foreground">Audience:</span>
+                        <span className="text-muted-foreground">{t("audience")}:</span>
                         <span className="line-clamp-1">{manualToEvaluate.target_audience}</span>
                         <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       </div>
@@ -1706,7 +1720,7 @@ function ManualsPageContent() {
                       <div className="p-3 border-b">
                         <p className="font-medium text-sm flex items-center gap-2">
                           <Users className="h-4 w-4" />
-                          Target Audience
+                          {t("targetAudience")}
                         </p>
                       </div>
                       <div className="max-h-48 overflow-y-auto p-3">
@@ -1720,7 +1734,7 @@ function ManualsPageContent() {
                     <PopoverTrigger asChild>
                       <div className="flex items-center gap-2 cursor-pointer hover:text-foreground transition-colors">
                         <Target className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <span className="text-muted-foreground">Objective:</span>
+                        <span className="text-muted-foreground">{t("objective")}:</span>
                         <span className="line-clamp-1">{manualToEvaluate.target_objective}</span>
                         <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                       </div>
@@ -1729,7 +1743,7 @@ function ManualsPageContent() {
                       <div className="p-3 border-b">
                         <p className="font-medium text-sm flex items-center gap-2">
                           <Target className="h-4 w-4" />
-                          Target Objective
+                          {t("targetObjective")}
                         </p>
                       </div>
                       <div className="max-h-48 overflow-y-auto p-3">
@@ -1755,7 +1769,7 @@ function ManualsPageContent() {
                   <div className="flex items-center justify-between text-xs text-muted-foreground bg-muted/30 px-3 py-2 rounded-lg">
                     <span className="flex items-center gap-2">
                       <History className="h-3.5 w-3.5" />
-                      Version {(evaluationResult as ManualEvaluation & { version?: string }).version}
+                      {t("version")} {(evaluationResult as ManualEvaluation & { version?: string }).version}
                     </span>
                     <span className="flex items-center gap-2">
                       <Clock className="h-3.5 w-3.5" />
@@ -1777,18 +1791,18 @@ function ManualsPageContent() {
                     <span className="text-2xl text-muted-foreground font-normal">/{evaluationResult.score_range?.max || 10}</span>
                   </p>
                   <div className="flex items-center justify-center gap-2">
-                    <p className="text-sm text-muted-foreground">Overall Score</p>
+                    <p className="text-sm text-muted-foreground">{t("overallScore")}</p>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent side="bottom" className="max-w-xs text-left">
-                        <p className="font-semibold mb-1">Scoring Guide</p>
+                        <p className="font-semibold mb-1">{t("scoringGuide")}</p>
                         <ul className="space-y-0.5 text-xs">
-                          <li><span className="text-green-500">8-10:</span> Excellent - Professional quality</li>
-                          <li><span className="text-yellow-500">6-7:</span> Good - Minor improvements possible</li>
-                          <li><span className="text-orange-500">4-5:</span> Fair - Needs improvement</li>
-                          <li><span className="text-red-500">1-3:</span> Poor - Major revisions needed</li>
+                          <li><span className="text-green-500">8-10:</span> {t("scoreExcellent")}</li>
+                          <li><span className="text-yellow-500">6-7:</span> {t("scoreGood")}</li>
+                          <li><span className="text-orange-500">4-5:</span> {t("scoreFair")}</li>
+                          <li><span className="text-red-500">1-3:</span> {t("scorePoor")}</li>
                         </ul>
                       </TooltipContent>
                     </Tooltip>
@@ -1806,20 +1820,20 @@ function ManualsPageContent() {
                 {/* Score Breakdown - Visual Progress Bars */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Score Breakdown</h3>
+                    <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">{t("scoreBreakdown")}</h3>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent side="right" className="max-w-sm text-left">
-                        <p className="font-semibold mb-2">Evaluation Categories</p>
+                        <p className="font-semibold mb-2">{t("evaluationCategories")}</p>
                         <ul className="space-y-1.5 text-xs">
-                          <li><span className="font-medium">Objective Alignment:</span> How well the manual helps achieve its stated goal</li>
-                          <li><span className="font-medium">Audience Appropriateness:</span> Language and depth match the target audience</li>
-                          <li><span className="font-medium">General Usability:</span> Ease of use for general readers (when no target set)</li>
-                          <li><span className="font-medium">Clarity & Completeness:</span> Instructions are clear with no missing steps</li>
-                          <li><span className="font-medium">Technical Accuracy:</span> UI elements and actions correctly described</li>
-                          <li><span className="font-medium">Structure & Flow:</span> Well-organized with logical progression</li>
+                          <li><span className="font-medium">{t("objectiveAlignment")}:</span> {t("objectiveAlignmentDesc")}</li>
+                          <li><span className="font-medium">{t("audienceAppropriateness")}:</span> {t("audienceAppropriatenessDesc")}</li>
+                          <li><span className="font-medium">{t("generalUsability")}:</span> {t("generalUsabilityDesc")}</li>
+                          <li><span className="font-medium">{t("clarityCompleteness")}:</span> {t("clarityCompletenessDesc")}</li>
+                          <li><span className="font-medium">{t("technicalAccuracy")}:</span> {t("technicalAccuracyDesc")}</li>
+                          <li><span className="font-medium">{t("structureFlow")}:</span> {t("structureFlowDesc")}</li>
                         </ul>
                       </TooltipContent>
                     </Tooltip>
@@ -1828,13 +1842,13 @@ function ManualsPageContent() {
                   {/* Score Item Component - includes context-dependent and always-present categories */}
                   {[
                     // Context-dependent categories (only one set will be present)
-                    { key: 'objective_alignment', label: 'Objective Alignment', data: evaluationResult.objective_alignment },
-                    { key: 'audience_appropriateness', label: 'Audience Appropriateness', data: evaluationResult.audience_appropriateness },
-                    { key: 'general_usability', label: 'General Usability', data: evaluationResult.general_usability },
+                    { key: 'objective_alignment', label: t("objectiveAlignment"), data: evaluationResult.objective_alignment },
+                    { key: 'audience_appropriateness', label: t("audienceAppropriateness"), data: evaluationResult.audience_appropriateness },
+                    { key: 'general_usability', label: t("generalUsability"), data: evaluationResult.general_usability },
                     // Always-present categories
-                    { key: 'clarity_and_completeness', label: 'Clarity & Completeness', data: evaluationResult.clarity_and_completeness },
-                    { key: 'technical_accuracy', label: 'Technical Accuracy', data: evaluationResult.technical_accuracy },
-                    { key: 'structure_and_flow', label: 'Structure & Flow', data: evaluationResult.structure_and_flow },
+                    { key: 'clarity_and_completeness', label: t("clarityCompleteness"), data: evaluationResult.clarity_and_completeness },
+                    { key: 'technical_accuracy', label: t("technicalAccuracy"), data: evaluationResult.technical_accuracy },
+                    { key: 'structure_and_flow', label: t("structureFlow"), data: evaluationResult.structure_and_flow },
                   ].filter((item): item is { key: string; label: string; data: { score: number; explanation: string } } => !!item.data).map(({ key, label, data }) => {
                     const score = data.score;
                     const maxScore = evaluationResult.score_range?.max || 10;
@@ -1865,7 +1879,7 @@ function ManualsPageContent() {
                   <div className="space-y-3">
                     <h3 className="text-sm font-semibold uppercase tracking-wide text-green-600 dark:text-green-400 flex items-center gap-2">
                       <Check className="h-4 w-4" />
-                      Strengths
+                      {t("strengths")}
                     </h3>
                     <ul className="space-y-2">
                       {evaluationResult.strengths.map((strength, idx) => (
@@ -1883,7 +1897,7 @@ function ManualsPageContent() {
                   <div className="space-y-3">
                     <h3 className="text-sm font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400 flex items-center gap-2">
                       <AlertCircle className="h-4 w-4" />
-                      Areas for Improvement
+                      {t("areasForImprovement")}
                     </h3>
                     <ul className="space-y-2">
                       {evaluationResult.areas_for_improvement.map((improvement, idx) => (
@@ -1901,7 +1915,7 @@ function ManualsPageContent() {
                   <div className="space-y-3">
                     <h3 className="text-sm font-semibold uppercase tracking-wide text-blue-600 dark:text-blue-400 flex items-center gap-2">
                       <Target className="h-4 w-4" />
-                      Recommendations
+                      {t("recommendations")}
                     </h3>
                     <ul className="space-y-2">
                       {evaluationResult.recommendations.map((rec, idx) => (
@@ -1919,23 +1933,23 @@ function ManualsPageContent() {
               <div className="text-center py-12">
                 <ClipboardCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground mb-6">
-                  Evaluate this manual against its target audience and objective using AI analysis.
+                  {t("evaluateDesc")}
                 </p>
                 <Button onClick={handleEvaluate} disabled={evaluating || loadingStoredEval} size="lg">
                   {evaluating ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Analyzing Manual...
+                      {t("analyzingManual")}
                     </>
                   ) : loadingStoredEval ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Loading...
+                      {tc("loading")}
                     </>
                   ) : (
                     <>
                       <ClipboardCheck className="mr-2 h-4 w-4" />
-                      Start New Evaluation
+                      {t("startNewEvaluation")}
                     </>
                   )}
                 </Button>
@@ -1947,7 +1961,7 @@ function ManualsPageContent() {
             <div className="w-[280px] shrink-0 border-l pl-4 overflow-y-auto">
               <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2 mb-4 sticky top-0 bg-background py-2">
                 <History className="h-4 w-4" />
-                Evaluation History
+                {t("evaluationHistory")}
               </h3>
               {storedEvaluations.length > 0 ? (
                 <div className="space-y-2">
@@ -1989,7 +2003,7 @@ function ManualsPageContent() {
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground text-center py-8">
-                  No previous evaluations
+                  {t("noPreviousEvaluations")}
                 </p>
               )}
             </div>
@@ -1997,19 +2011,19 @@ function ManualsPageContent() {
 
           <DialogFooter className="shrink-0 border-t pt-4 mt-4">
             <Button variant="outline" onClick={() => setEvaluateDialogOpen(false)}>
-              {evaluationResult ? "Close" : "Cancel"}
+              {evaluationResult ? tc("close") : tc("cancel")}
             </Button>
             {evaluationResult && (
               <Button onClick={handleEvaluate} disabled={evaluating} variant="secondary">
                 {evaluating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Re-evaluating...
+                    {t("reEvaluating")}
                   </>
                 ) : (
                   <>
                     <ClipboardCheck className="mr-2 h-4 w-4" />
-                    Re-evaluate
+                    {t("reEvaluate")}
                   </>
                 )}
               </Button>
