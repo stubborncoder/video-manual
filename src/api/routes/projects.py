@@ -579,10 +579,14 @@ async def export_project(
                 include_chapter_covers=request.include_chapter_covers,
                 embed_images=request.embed_images,
             )
+        elif format_lower == "chunks":
+            from ...export.chunks_exporter import create_project_chunks_exporter
+            exporter = create_project_chunks_exporter(user_id, project_id)
+            output_path = exporter.export(language=request.language)
         else:
             raise HTTPException(
                 status_code=400,
-                detail=f"Unknown format '{request.format}'. Use: pdf, word, html",
+                detail=f"Unknown format '{request.format}'. Use: pdf, word, html, chunks",
             )
 
         return ExportResponse(output_path=str(output_path), format=format_lower)

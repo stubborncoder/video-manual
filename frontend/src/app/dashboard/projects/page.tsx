@@ -551,7 +551,7 @@ export default function ProjectsPage() {
     }
   }
 
-  async function handleQuickExport(projectId: string, format: "pdf" | "html") {
+  async function handleQuickExport(projectId: string, format: "pdf" | "html" | "chunks") {
     setExporting(format);
     try {
       const result = await projects.export(projectId, format);
@@ -898,7 +898,8 @@ export default function ProjectsPage() {
                 <div className="flex gap-2 mt-4">
                   <Button
                     onClick={() => handleCompile(selectedProject.id, selectedProject.name)}
-                    disabled={selectedProject.manuals.length === 0}
+                    disabled={selectedProject.manuals.length < 2}
+                    title={selectedProject.manuals.length < 2 ? t("compilationRequires2Manuals") : undefined}
                   >
                     <Wand2 className="h-4 w-4 mr-2" />
                     {t("compile")}
@@ -926,6 +927,9 @@ export default function ProjectsPage() {
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleQuickExport(selectedProject.id, "html")} disabled={exporting !== null}>
                         {t("html")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleQuickExport(selectedProject.id, "chunks")} disabled={exporting !== null}>
+                        {t("semanticChunks")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -960,8 +964,8 @@ export default function ProjectsPage() {
 
               {/* Tabs Section */}
               <Tabs defaultValue="chapters" className="flex-1 flex flex-col overflow-hidden">
-                <div className="px-6 pt-4 border-b">
-                  <TabsList>
+                <div className="px-6 pt-4">
+                  <TabsList className="w-full justify-start">
                     <TabsTrigger value="chapters">
                       <BookOpen className="h-4 w-4 mr-2" />
                       {t("chaptersTab")} ({selectedProject.chapters.length})
@@ -1295,6 +1299,18 @@ export default function ProjectsPage() {
                             <FileDown className="h-4 w-4 mr-2" />
                           )}
                           {exporting === "html" ? "Exporting..." : "Export HTML"}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleQuickExport(selectedProject.id, "chunks")}
+                          disabled={selectedProject.manuals.length === 0 || exporting !== null}
+                        >
+                          {exporting === "chunks" ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <FileDown className="h-4 w-4 mr-2" />
+                          )}
+                          {exporting === "chunks" ? "Exporting..." : t("semanticChunks")}
                         </Button>
                       </div>
                     </div>

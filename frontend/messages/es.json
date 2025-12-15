@@ -339,6 +339,8 @@
     "pdfDocument": "Documento PDF",
     "wordDocument": "Documento Word...",
     "html": "HTML",
+    "semanticChunks": "Chunks Semánticos (RAG)",
+    "compilationRequires2Manuals": "La compilación requiere al menos 2 manuales. Usa exportar para un solo manual.",
     "deleteProjectAndManuals": "Eliminar Proyecto y Manuales",
     "saving": "Guardando...",
     "saveChanges": "Guardar Cambios",

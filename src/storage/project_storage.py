@@ -12,7 +12,6 @@ from ..config import USERS_DIR
 
 # Default project constants
 DEFAULT_PROJECT_ID = "__default__"
-DEFAULT_CHAPTER_ID = "__uncategorized__"
 
 
 def slugify(text: str) -> str:
@@ -125,7 +124,35 @@ class ProjectStorage:
             return None
 
         with open(project_file, "r", encoding="utf-8") as f:
-            return json.load(f)
+            project = json.load(f)
+
+        # Migrate legacy "Uncategorized" chapters
+        chapters = project.get("chapters", [])
+        modified = False
+        cleaned_chapters = []
+
+        for ch in chapters:
+            if ch.get("title") == "Uncategorized":
+                manuals = ch.get("manuals", [])
+                if not manuals:
+                    # Remove empty "Uncategorized" chapters
+                    modified = True
+                    continue
+                elif len(manuals) == 1:
+                    # Rename chapter to match the single manual's title
+                    manual_id = manuals[0]
+                    metadata = self._get_manual_metadata(manual_id)
+                    if metadata:
+                        title = metadata.get("title") or manual_id.replace("-", " ").title()
+                        ch["title"] = title
+                        modified = True
+            cleaned_chapters.append(ch)
+
+        if modified:
+            project["chapters"] = cleaned_chapters
+            self._save_project(project_id, project)
+
+        return project
 
     def update_project(self, project_id: str, updates: Dict[str, Any]) -> None:
         """Update project data.
@@ -216,7 +243,7 @@ class ProjectStorage:
         - Has a fixed ID of "__default__"
         - Cannot be deleted
         - Is marked with is_default=True
-        - Has a default "Uncategorized" chapter
+        - Chapters are created automatically when manuals are added
 
         Returns:
             The default project data
@@ -241,15 +268,7 @@ class ProjectStorage:
             "created_at": now,
             "updated_at": now,
             "default_language": "en",
-            "chapters": [
-                {
-                    "id": DEFAULT_CHAPTER_ID,
-                    "title": "Uncategorized",
-                    "description": "Manuals not assigned to a specific chapter",
-                    "order": 0,
-                    "manuals": [],
-                }
-            ],
+            "chapters": [],  # Chapters are created automatically when manuals are added
             "tags": [],
             "template_id": None,
             "export_settings": {
@@ -433,7 +452,7 @@ class ProjectStorage:
         Args:
             project_id: Project identifier
             manual_id: Manual identifier
-            chapter_id: Optional chapter to add to (creates "Uncategorized" if None)
+            chapter_id: Optional chapter to add to (creates chapter from manual title if None)
         """
         project = self.get_project(project_id)
         if not project:
@@ -446,19 +465,22 @@ class ProjectStorage:
 
         chapters = project.get("chapters", [])
 
-        # If no chapter specified, use or create "Uncategorized"
+        # If no chapter specified, create a chapter named after the manual
         if chapter_id is None:
-            uncategorized = next(
-                (ch for ch in chapters if ch["id"] == "uncategorized"),
-                None
-            )
-            if not uncategorized:
-                chapter_id = self.add_chapter(project_id, "Uncategorized")
-                # Refresh project data
-                project = self.get_project(project_id)
-                chapters = project.get("chapters", [])
-            else:
-                chapter_id = "uncategorized"
+            # Get manual title from metadata
+            from .user_storage import UserStorage
+            user_storage = UserStorage(self.user_id)
+            metadata = user_storage.get_manual_metadata(manual_id)
+            manual_title = metadata.get("title") if metadata else None
+
+            # Use manual title or ID as chapter name
+            chapter_title = manual_title or manual_id.replace("-", " ").title()
+
+            # Create a new chapter for this manual
+            chapter_id = self.add_chapter(project_id, chapter_title)
+            # Refresh project data
+            project = self.get_project(project_id)
+            chapters = project.get("chapters", [])
 
         # Find chapter and add manual
         chapter_found = False
@@ -489,10 +511,19 @@ class ProjectStorage:
             raise ValueError(f"Project not found: {project_id}")
 
         chapters = project.get("chapters", [])
+        chapter_to_cleanup = None
+
         for chapter in chapters:
             if manual_id in chapter["manuals"]:
                 chapter["manuals"].remove(manual_id)
+                # Mark empty chapters for cleanup (since each manual creates its own chapter)
+                if not chapter["manuals"]:
+                    chapter_to_cleanup = chapter["id"]
                 break
+
+        # Remove empty chapters
+        if chapter_to_cleanup:
+            chapters = [ch for ch in chapters if ch["id"] != chapter_to_cleanup]
 
         self.update_project(project_id, {"chapters": chapters})
 

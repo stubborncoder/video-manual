@@ -767,7 +767,7 @@ def project_add_manual(
     chapter: Optional[str] = typer.Option(
         None,
         "--chapter", "-c",
-        help="Chapter ID to add to (creates 'Uncategorized' if not specified)",
+        help="Chapter ID to add to (creates chapter from manual title if not specified)",
     ),
     user: str = typer.Option(
         "default",
