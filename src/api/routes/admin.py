@@ -16,6 +16,8 @@ from ...core.models import (
     MODELS_BY_TASK,
     get_model,
     get_models_for_task,
+    validate_api_key_for_model,
+    get_api_key_status,
 )
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -275,6 +277,7 @@ async def update_model_settings(
     Requires admin role.
 
     Only provided fields will be updated.
+    Validates that the required API key is configured for each model.
     """
     settings_to_update = {}
 
@@ -290,6 +293,19 @@ async def update_model_settings(
     if not settings_to_update:
         raise HTTPException(status_code=400, detail="No settings provided")
 
+    # Validate API keys for all selected models
+    api_key_errors = []
+    for task, model_id in settings_to_update.items():
+        is_valid, error = validate_api_key_for_model(model_id)
+        if not is_valid:
+            api_key_errors.append(f"{task}: {error}")
+
+    if api_key_errors:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Missing API keys: {'; '.join(api_key_errors)}"
+        )
+
     results = AdminSettings.set_all_model_settings(settings_to_update, admin_user)
 
     # Check for failures
@@ -301,3 +317,14 @@ async def update_model_settings(
         )
 
     return {"success": True, "updated": list(settings_to_update.keys())}
+
+
+@router.get("/settings/api-keys")
+async def get_api_keys_status(admin_user: AdminUser) -> dict:
+    """Get the status of configured API keys.
+
+    Requires admin role.
+
+    Returns which providers have their API keys configured.
+    """
+    return get_api_key_status()

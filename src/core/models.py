@@ -283,3 +283,46 @@ def get_langchain_model_string(model_id: str) -> str:
 
     prefix = provider_prefix.get(model.provider, "")
     return f"{prefix}:{model_id}" if prefix else model_id
+
+
+def validate_api_key_for_model(model_id: str) -> tuple[bool, Optional[str]]:
+    """Check if the required API key is configured for a model.
+
+    Args:
+        model_id: The model identifier
+
+    Returns:
+        Tuple of (is_valid, error_message)
+        - (True, None) if API key is configured
+        - (False, error_message) if API key is missing
+    """
+    import os
+
+    model = get_model(model_id)
+    if not model:
+        return False, f"Unknown model: {model_id}"
+
+    if model.provider == ModelProvider.ANTHROPIC:
+        api_key = os.getenv("ANTHROPIC_API_KEY")
+        if not api_key:
+            return False, "ANTHROPIC_API_KEY environment variable is not set"
+    elif model.provider == ModelProvider.GOOGLE:
+        api_key = os.getenv("GOOGLE_API_KEY")
+        if not api_key:
+            return False, "GOOGLE_API_KEY environment variable is not set"
+
+    return True, None
+
+
+def get_api_key_status() -> dict[str, bool]:
+    """Get the status of all required API keys.
+
+    Returns:
+        Dict mapping provider name to whether the API key is configured
+    """
+    import os
+
+    return {
+        "anthropic": bool(os.getenv("ANTHROPIC_API_KEY")),
+        "google": bool(os.getenv("GOOGLE_API_KEY")),
+    }

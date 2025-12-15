@@ -57,6 +57,11 @@ class AdminSettings:
             key: Setting key
             value: Setting value
             updated_by: User ID who made the change
+
+        Note:
+            Uses SQLite's ON CONFLICT (upsert) which is atomic for single-instance
+            deployments. For multi-instance deployments, consider implementing
+            optimistic locking with a version column to prevent lost updates.
         """
         with get_connection() as conn:
             conn.execute(
