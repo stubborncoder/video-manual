@@ -9,6 +9,7 @@ import { SheetSidebarProvider } from "@/components/ui/sheet";
 import { JobToastsContainer } from "@/components/jobs/JobProgressToast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuthStore } from "@/stores/authStore";
+import { GuideProvider } from "@/components/guide/GuideProvider";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { collapsed } = useSidebar();
@@ -16,14 +17,16 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   return (
     <SheetSidebarProvider collapsed={collapsed}>
       <TooltipProvider delayDuration={0}>
-        <div className="flex h-screen">
-          <Sidebar />
-          <main className="flex-1 overflow-auto p-6">
-            {children}
-          </main>
-        </div>
+        <GuideProvider>
+          <div className="flex h-screen">
+            <Sidebar />
+            <main className="flex-1 overflow-auto p-6">
+              {children}
+            </main>
+          </div>
+          <JobToastsContainer />
+        </GuideProvider>
       </TooltipProvider>
-      <JobToastsContainer />
     </SheetSidebarProvider>
   );
 }
