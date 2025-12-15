@@ -50,6 +50,11 @@ async def list_projects(
     summaries = []
     for project in projects:
         manuals = storage.get_project_manuals(project["id"])
+        # Only count chapters that have manuals
+        chapters_with_manuals = sum(
+            1 for ch in project.get("chapters", [])
+            if ch.get("manuals", [])
+        )
         summaries.append({
             "id": project["id"],
             "name": project["name"],
@@ -57,7 +62,7 @@ async def list_projects(
             "created_at": project.get("created_at", ""),
             "is_default": project.get("is_default", False),
             "manual_count": len(manuals),
-            "chapter_count": len(project.get("chapters", [])),
+            "chapter_count": chapters_with_manuals,
         })
 
     # Sort with default project first
@@ -74,6 +79,11 @@ async def get_default_project(
     """Get the user's default project."""
     project = storage.ensure_default_project()
     manuals = storage.get_project_manuals(project["id"])
+    # Only count chapters that have manuals
+    chapters_with_manuals = sum(
+        1 for ch in project.get("chapters", [])
+        if ch.get("manuals", [])
+    )
 
     return {
         "id": project["id"],
@@ -82,7 +92,7 @@ async def get_default_project(
         "created_at": project.get("created_at", ""),
         "is_default": True,
         "manual_count": len(manuals),
-        "chapter_count": len(project.get("chapters", [])),
+        "chapter_count": chapters_with_manuals,
     }
 
 

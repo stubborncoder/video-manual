@@ -104,6 +104,14 @@ async def websocket_compile_project(
                             "data": {"error_message": "Cannot compile empty project. Add manuals first.", "recoverable": False}
                         })
                         continue
+
+                    if len(manuals) < 2:
+                        await websocket.send_json({
+                            "event_type": "error",
+                            "timestamp": 0,
+                            "data": {"error_message": "Compilation requires at least 2 manuals. For a single manual, use the export feature instead.", "recoverable": False}
+                        })
+                        continue
                 except Exception as e:
                     await websocket.send_json({
                         "event_type": "error",

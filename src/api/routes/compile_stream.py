@@ -80,6 +80,9 @@ async def compile_project_stream(
     if not manuals:
         return {"error": "Cannot compile empty project. Add manuals first."}, 400
 
+    if len(manuals) < 2:
+        return {"error": "Compilation requires at least 2 manuals. For a single manual, use the export feature instead."}, 400
+
     async def run_callback(controller: RunController):
         """Callback that runs the LangGraph agent and streams state updates."""
         from ...agents.project_compiler_agent import get_compiler_agent
