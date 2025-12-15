@@ -135,7 +135,6 @@ export function useVideoProcessing() {
         default:
           break;
       }
-      console.log("[WS] State update:", event.event_type, "->", newState.status, newState.currentNode);
       return newState;
     });
   }, [addJob, updateJob]);
@@ -169,7 +168,6 @@ export function useVideoProcessing() {
 
         ws.onmessage = (msg) => {
           const event = JSON.parse(msg.data) as StreamEvent;
-          console.log("[WS] Event:", event.event_type, event.data);
           processEvent(event);
 
           // Resolve early when job is created (non-blocking mode)
@@ -195,17 +193,8 @@ export function useVideoProcessing() {
           }
         };
 
-        ws.onclose = (event) => {
+        ws.onclose = () => {
           wsRef.current = null;
-          // If connection closed unexpectedly during processing, update job status
-          setState((prev) => {
-            if (prev.status === "processing") {
-              console.error("[WS Video] Connection closed unexpectedly during processing", event.code, event.reason);
-              // Job continues on backend - user can track via REST API
-              return prev;
-            }
-            return prev;
-          });
         };
       });
     },
@@ -335,7 +324,6 @@ export function useProjectCompiler() {
 
         ws.onmessage = (msg) => {
           const event = JSON.parse(msg.data) as StreamEvent;
-          console.log("[WS] Event:", event.event_type, event.data);
           processEvent(event);
 
           if (event.event_type === "complete") {

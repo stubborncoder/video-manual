@@ -105,8 +105,8 @@ export function useUndoRedo(manualId: string, initialContent: string) {
           }
         }
       }
-    } catch (e) {
-      console.error("Failed to load undo state from localStorage:", e);
+    } catch {
+      // Failed to load undo state from localStorage
     }
 
     setIsInitialized(true);
@@ -125,8 +125,8 @@ export function useUndoRedo(manualId: string, initialContent: string) {
         savedAt: new Date().toISOString(),
       };
       localStorage.setItem(storageKey, JSON.stringify(state));
-    } catch (e) {
-      console.error("Failed to save undo state to localStorage:", e);
+    } catch {
+      // Failed to save undo state to localStorage
     }
   }, [undoStack, redoStack, lastSavedContent, manualId, storageKey, isInitialized]);
 

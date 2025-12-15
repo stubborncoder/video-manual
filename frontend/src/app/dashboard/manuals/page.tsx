@@ -261,8 +261,8 @@ function ManualsPageContent() {
       }
 
       setManualList(manualsWithProjects);
-    } catch (e) {
-      console.error("Failed to load manuals:", e);
+    } catch {
+      // Failed to load manuals
     } finally {
       setLoading(false);
     }
@@ -272,8 +272,8 @@ function ManualsPageContent() {
     try {
       const res = await projects.list();
       setProjectList(res.projects);
-    } catch (e) {
-      console.error("Failed to load projects:", e);
+    } catch {
+      // Failed to load projects
     }
   }
 
@@ -633,8 +633,8 @@ function ManualsPageContent() {
         const stored = await manuals.getEvaluation(manual.id, latestEval.version, defaultLanguage);
         setEvaluationResult(stored);
       }
-    } catch (e) {
-      console.log("Error loading evaluation data:", e);
+    } catch {
+      // Failed to load evaluation data
     } finally {
       setLoadingStoredEval(false);
     }

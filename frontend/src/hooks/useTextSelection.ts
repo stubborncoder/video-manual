@@ -125,8 +125,7 @@ export function useTextSelection({
         }
 
         return rects;
-      } catch (e) {
-        console.error("[useTextSelection] Failed to calculate rects:", e);
+      } catch {
         return [];
       }
     },

@@ -154,13 +154,11 @@ export function useEditorCopilot({
 
     ws.onopen = () => {
       setIsConnected(true);
-      console.log("[EditorCopilot] Connected");
     };
 
     ws.onclose = () => {
       setIsConnected(false);
       setIsGenerating(false);
-      console.log("[EditorCopilot] Disconnected");
 
       // Auto-reconnect after 3 seconds
       reconnectTimeoutRef.current = setTimeout(() => {
@@ -168,16 +166,16 @@ export function useEditorCopilot({
       }, 3000);
     };
 
-    ws.onerror = (error) => {
-      console.error("[EditorCopilot] WebSocket error - likely connection refused. Is backend running on port 8000?");
+    ws.onerror = () => {
+      // Connection error - will trigger onclose for reconnect
     };
 
     ws.onmessage = (event) => {
       try {
         const data: WSMessage = JSON.parse(event.data);
         handleWSMessage(data);
-      } catch (e) {
-        console.error("[EditorCopilot] Failed to parse message:", e);
+      } catch {
+        // Invalid message format - ignore
       }
     };
 
@@ -375,7 +373,6 @@ export function useEditorCopilot({
   const sendMessage = useCallback(
     (content: string, selection: TextSelection | null, imageContext?: { url: string; name: string }) => {
       if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) {
-        console.error("[EditorCopilot] WebSocket not connected");
         return;
       }
 
@@ -448,7 +445,6 @@ export function useEditorCopilot({
       const change = prev.find((c) => c.id === changeId && c.status === "pending");
 
       if (!change) {
-        console.log("[acceptChange] Change not found or already processed:", changeId);
         return prev;
       }
 

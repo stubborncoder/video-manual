@@ -184,7 +184,6 @@ export default function ManualEditorPage() {
     (change: PendingDocumentChange) => {
       // Prevent double-application (can happen with rapid state updates)
       if (appliedChangesRef.current.has(change.id)) {
-        console.log("[handleApplyChange] Change already applied:", change.id);
         return;
       }
       appliedChangesRef.current.add(change.id);
@@ -203,7 +202,6 @@ export default function ManualEditorPage() {
           // Check if any line in the range is an existing image
           for (let i = change.startLine - 1; i < change.endLine && i < lines.length; i++) {
             if (isImageLine(lines[i])) {
-              console.error("[handleApplyChange] Rejected: change affects existing image line", i + 1);
               toast.error("Cannot modify existing images", {
                 description: `Line ${i + 1} contains an image. Use the image tools to modify images.`,
               });
@@ -228,8 +226,7 @@ export default function ManualEditorPage() {
             const newContentLines = change.newContent.split("\n");
             newLines = [...before, ...newContentLines, ...after];
           } else {
-            console.error("text_replace missing required fields", change);
-            appliedChangesRef.current.delete(change.id); // Allow retry
+            appliedChangesRef.current.delete(change.id);
             return;
           }
           break;
@@ -246,8 +243,7 @@ export default function ManualEditorPage() {
               ...lines.slice(insertIndex),
             ];
           } else {
-            console.error(`${change.type} missing required fields`, change);
-            appliedChangesRef.current.delete(change.id); // Allow retry
+            appliedChangesRef.current.delete(change.id);
             return;
           }
           break;
@@ -259,8 +255,7 @@ export default function ManualEditorPage() {
             const after = lines.slice(change.endLine);
             newLines = [...before, ...after];
           } else {
-            console.error("text_delete missing required fields", change);
-            appliedChangesRef.current.delete(change.id); // Allow retry
+            appliedChangesRef.current.delete(change.id);
             return;
           }
           break;
@@ -271,8 +266,7 @@ export default function ManualEditorPage() {
           return;
 
         default:
-          console.error("Unknown change type", change.type);
-          appliedChangesRef.current.delete(change.id); // Allow retry
+          appliedChangesRef.current.delete(change.id);
           return;
       }
 
@@ -552,7 +546,6 @@ export default function ManualEditorPage() {
       // Extract timestamp from filename (e.g., "figure_01_t8s.png" -> 8)
       const timestampMatch = imageName.match(/_t(\d+)s\./);
       const timestamp = timestampMatch ? parseInt(timestampMatch[1], 10) : undefined;
-      console.log("[ImageClick] name:", imageName, "timestampMatch:", timestampMatch, "timestamp:", timestamp, "action:", action);
 
       setActiveImage({
         url: imageUrl,
@@ -615,8 +608,7 @@ export default function ManualEditorPage() {
         setImageCacheBuster(newCacheBuster);
         setHasImageChanges(true);
         toast.success("Image replaced");
-      } catch (error) {
-        console.error("Failed to upload image:", error);
+      } catch {
         toast.error("Failed to upload image");
       }
 
