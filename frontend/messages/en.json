@@ -390,7 +390,19 @@
     "moveToTrashWithProject": "Move them to trash with the project",
     "content": "Content",
     "screenshots": "Screenshots",
-    "step": "Step"
+    "step": "Step",
+    "manual": "manual",
+    "moveToChapter": "Move to Chapter",
+    "manualMovedToChapter": "Manual moved to chapter",
+    "manualMoveFailed": "Failed to move manual",
+    "targetChapter": "Target Chapter",
+    "selectChapter": "Select a chapter...",
+    "currentChapter": "Current chapter",
+    "moveManual": "Move Manual",
+    "noManualsInChapter": "No manuals in this chapter",
+    "addManualsFromManualsTab": "Add manuals from the Manuals tab or use the move option",
+    "deleteEmptyChapter": "Delete this empty chapter",
+    "removeFromProject": "Remove from Project"
   },
   "templates": {
     "title": "Templates",

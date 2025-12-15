@@ -390,7 +390,19 @@
     "moveToTrashWithProject": "Moverlos a la papelera con el proyecto",
     "content": "Contenido",
     "screenshots": "Capturas",
-    "step": "Paso"
+    "step": "Paso",
+    "manual": "manual",
+    "moveToChapter": "Mover a Capítulo",
+    "manualMovedToChapter": "Manual movido al capítulo",
+    "manualMoveFailed": "Error al mover manual",
+    "targetChapter": "Capítulo Destino",
+    "selectChapter": "Selecciona un capítulo...",
+    "currentChapter": "Capítulo actual",
+    "moveManual": "Mover Manual",
+    "noManualsInChapter": "No hay manuales en este capítulo",
+    "addManualsFromManualsTab": "Agrega manuales desde la pestaña Manuales o usa la opción mover",
+    "deleteEmptyChapter": "Eliminar este capítulo vacío",
+    "removeFromProject": "Quitar del Proyecto"
   },
   "templates": {
     "title": "Plantillas",

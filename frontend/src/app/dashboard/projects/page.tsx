@@ -77,6 +77,7 @@ import {
   BookOpen,
   GripVertical,
   ChevronDown,
+  ChevronRight,
   FileText,
   Loader2,
   Star,
@@ -88,6 +89,8 @@ import {
   History,
   Check,
   ChevronsUpDown,
+  MoreVertical,
+  MoveHorizontal,
 } from "lucide-react";
 import { SidebarToggle } from "@/components/layout/SidebarToggle";
 import {
@@ -195,6 +198,10 @@ export default function ProjectsPage() {
   const [editChapterId, setEditChapterId] = useState<string | null>(null);
   const [editChapterTitle, setEditChapterTitle] = useState("");
   const [editChapterDesc, setEditChapterDesc] = useState("");
+  const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
+  const [moveManualDialogOpen, setMoveManualDialogOpen] = useState(false);
+  const [manualToMove, setManualToMove] = useState<{ manualId: string; currentChapterId: string | null } | null>(null);
+  const [targetChapterId, setTargetChapterId] = useState<string>("");
 
   const [compileProjectId, setCompileProjectId] = useState<string | null>(null);
   const [compileProjectName, setCompileProjectName] = useState<string>("");
@@ -477,6 +484,43 @@ export default function ProjectsPage() {
         description: e instanceof Error ? e.message : tc("error"),
       });
     }
+  }
+
+  function openMoveManualDialog(manualId: string, currentChapterId: string | null) {
+    setManualToMove({ manualId, currentChapterId });
+    setTargetChapterId("");
+    setMoveManualDialogOpen(true);
+  }
+
+  async function handleMoveManual() {
+    if (!selectedProject || !manualToMove || !targetChapterId) return;
+
+    try {
+      await projects.moveManualToChapter(selectedProject.id, manualToMove.manualId, targetChapterId);
+      toast.success(t("manualMovedToChapter"));
+      setMoveManualDialogOpen(false);
+      setManualToMove(null);
+      // Refresh project detail
+      const detail = await projects.get(selectedProject.id);
+      setSelectedProject(detail);
+    } catch (e) {
+      console.error("Failed to move manual:", e);
+      toast.error(t("manualMoveFailed"), {
+        description: e instanceof Error ? e.message : tc("error"),
+      });
+    }
+  }
+
+  function toggleChapter(chapterId: string) {
+    setExpandedChapters((prev) => {
+      const next = new Set(prev);
+      if (next.has(chapterId)) {
+        next.delete(chapterId);
+      } else {
+        next.add(chapterId);
+      }
+      return next;
+    });
   }
 
   async function handleRemoveManualFromProject(manualId: string) {
@@ -1016,15 +1060,16 @@ export default function ProjectsPage() {
                             (m) => m.chapter_id === ch.id
                           );
                           const isEditing = editChapterId === ch.id;
+                          const isExpanded = expandedChapters.has(ch.id);
 
                           return (
-                            <Card key={ch.id} className="overflow-hidden">
-                              <CardContent className="p-4">
+                            <Card key={ch.id} className="overflow-hidden border-l-4 border-l-primary/30">
+                              <CardContent className="p-0">
                                 {isEditing ? (
-                                  <div className="space-y-3">
+                                  <div className="p-4 space-y-3">
                                     <div>
                                       <div className="flex items-center justify-between mb-1">
-                                        <span className="text-sm font-medium">Title</span>
+                                        <span className="text-sm font-medium">{t("chapterTitle")}</span>
                                         <span className="text-xs text-muted-foreground">
                                           {editChapterTitle.length}/{VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH}
                                         </span>
@@ -1032,13 +1077,13 @@ export default function ProjectsPage() {
                                       <Input
                                         value={editChapterTitle}
                                         onChange={(e) => setEditChapterTitle(e.target.value)}
-                                        placeholder="Chapter title"
+                                        placeholder={t("chapterTitle")}
                                         maxLength={VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH}
                                       />
                                     </div>
                                     <div>
                                       <div className="flex items-center justify-between mb-1">
-                                        <span className="text-sm font-medium">Description</span>
+                                        <span className="text-sm font-medium">{tc("description")}</span>
                                         <span className="text-xs text-muted-foreground">
                                           {editChapterDesc.length}/{VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH}
                                         </span>
@@ -1046,45 +1091,54 @@ export default function ProjectsPage() {
                                       <Input
                                         value={editChapterDesc}
                                         onChange={(e) => setEditChapterDesc(e.target.value)}
-                                        placeholder="Description (optional)"
+                                        placeholder={t("chapterDescription")}
                                         maxLength={VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH}
                                       />
                                     </div>
                                     <div className="flex gap-2">
                                       <Button size="sm" onClick={handleEditChapter}>
-                                        Save
+                                        {tc("save")}
                                       </Button>
                                       <Button
                                         size="sm"
                                         variant="ghost"
                                         onClick={() => setEditChapterId(null)}
                                       >
-                                        Cancel
+                                        {tc("cancel")}
                                       </Button>
                                     </div>
                                   </div>
                                 ) : (
                                   <>
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex items-center gap-3">
-                                        <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
-                                        <div>
-                                          <p className="font-semibold text-lg">{ch.title}</p>
+                                    {/* Chapter Header */}
+                                    <div
+                                      className="flex items-center justify-between p-4 hover:bg-muted/50 cursor-pointer transition-colors"
+                                      onClick={() => toggleChapter(ch.id)}
+                                    >
+                                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                                        {isExpanded ? (
+                                          <ChevronDown className="h-5 w-5 text-muted-foreground shrink-0" />
+                                        ) : (
+                                          <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
+                                        )}
+                                        <BookOpen className="h-5 w-5 text-primary shrink-0" />
+                                        <div className="min-w-0 flex-1">
+                                          <p className="font-semibold text-lg truncate">{ch.title}</p>
                                           {ch.description && (
-                                            <p className="text-sm text-muted-foreground">
+                                            <p className="text-sm text-muted-foreground line-clamp-1">
                                               {ch.description}
                                             </p>
                                           )}
                                         </div>
                                       </div>
-                                      <div className="flex items-center gap-2">
-                                        <Badge variant="secondary">
-                                          {chapterManuals.length} manuals
+                                      <div className="flex items-center gap-2 ml-3" onClick={(e) => e.stopPropagation()}>
+                                        <Badge variant="secondary" className="shrink-0">
+                                          {chapterManuals.length} {chapterManuals.length === 1 ? t("manual") : t("manuals")}
                                         </Badge>
                                         <Button
                                           size="icon"
                                           variant="ghost"
-                                          className="h-8 w-8"
+                                          className="h-8 w-8 shrink-0"
                                           onClick={() => {
                                             setEditChapterId(ch.id);
                                             setEditChapterTitle(ch.title);
@@ -1093,27 +1147,81 @@ export default function ProjectsPage() {
                                         >
                                           <Edit2 className="h-4 w-4" />
                                         </Button>
-                                        <Button
-                                          size="icon"
-                                          variant="ghost"
-                                          className="h-8 w-8 text-destructive"
-                                          onClick={() => handleDeleteChapter(ch.id)}
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
+                                        {chapterManuals.length === 0 && (
+                                          <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8 text-destructive shrink-0"
+                                            onClick={() => handleDeleteChapter(ch.id)}
+                                            title={t("deleteEmptyChapter")}
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        )}
                                       </div>
                                     </div>
-                                    {chapterManuals.length > 0 && (
-                                      <div className="mt-3 ml-8 space-y-1 border-l-2 pl-4">
-                                        {chapterManuals.map((m) => (
-                                          <div
-                                            key={m.manual_id}
-                                            className="flex items-center gap-2 text-sm text-muted-foreground py-1"
-                                          >
-                                            <FileText className="h-3 w-3" />
-                                            <span className="truncate">{m.manual_id}</span>
-                                          </div>
-                                        ))}
+
+                                    {/* Expanded Chapter Content - Manuals */}
+                                    {isExpanded && chapterManuals.length > 0 && (
+                                      <div className="border-t bg-muted/20">
+                                        <div className="p-4 space-y-2">
+                                          {chapterManuals.map((m) => (
+                                            <div
+                                              key={m.manual_id}
+                                              className="flex items-center justify-between p-3 bg-background rounded-lg border hover:border-primary/50 transition-colors group"
+                                            >
+                                              <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                <FileText className="h-4 w-4 text-primary shrink-0" />
+                                                <span className="text-sm font-medium truncate">{m.manual_id}</span>
+                                              </div>
+                                              <div className="flex items-center gap-1 ml-2">
+                                                <Button
+                                                  size="sm"
+                                                  variant="ghost"
+                                                  className="h-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                  onClick={() => handleViewManual(m.manual_id)}
+                                                >
+                                                  <Eye className="h-3.5 w-3.5 mr-1" />
+                                                  {t("view")}
+                                                </Button>
+                                                <DropdownMenu>
+                                                  <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                      size="icon"
+                                                      variant="ghost"
+                                                      className="h-8 w-8 shrink-0"
+                                                    >
+                                                      <MoreVertical className="h-4 w-4" />
+                                                    </Button>
+                                                  </DropdownMenuTrigger>
+                                                  <DropdownMenuContent align="end">
+                                                    <DropdownMenuItem onClick={() => openMoveManualDialog(m.manual_id, ch.id)}>
+                                                      <MoveHorizontal className="h-4 w-4 mr-2" />
+                                                      {t("moveToChapter")}
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem
+                                                      onClick={() => handleRemoveManualFromProject(m.manual_id)}
+                                                      className="text-destructive"
+                                                    >
+                                                      <X className="h-4 w-4 mr-2" />
+                                                      {t("removeFromProject")}
+                                                    </DropdownMenuItem>
+                                                  </DropdownMenuContent>
+                                                </DropdownMenu>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
+                                    {/* Empty Chapter State */}
+                                    {isExpanded && chapterManuals.length === 0 && (
+                                      <div className="border-t bg-muted/10 p-8 text-center">
+                                        <FileText className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
+                                        <p className="text-sm text-muted-foreground">{t("noManualsInChapter")}</p>
+                                        <p className="text-xs text-muted-foreground mt-1">{t("addManualsFromManualsTab")}</p>
                                       </div>
                                     )}
                                   </>
@@ -1141,7 +1249,7 @@ export default function ProjectsPage() {
                           (ch) => ch.id === m.chapter_id
                         );
                         return (
-                          <Card key={m.manual_id} className="overflow-hidden">
+                          <Card key={m.manual_id} className="overflow-hidden group hover:border-primary/50 transition-colors">
                             <CardContent className="p-4">
                               <div className="flex items-start gap-3 min-w-0">
                                 <FileText className="h-5 w-5 text-primary shrink-0 mt-0.5" />
@@ -1167,15 +1275,28 @@ export default function ProjectsPage() {
                                   ) : (
                                     <Eye className="h-4 w-4 mr-2" />
                                   )}
-                                  View
+                                  {t("view")}
                                 </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleRemoveManualFromProject(m.manual_id)}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button size="sm" variant="outline">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => openMoveManualDialog(m.manual_id, m.chapter_id)}>
+                                      <MoveHorizontal className="h-4 w-4 mr-2" />
+                                      {t("moveToChapter")}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => handleRemoveManualFromProject(m.manual_id)}
+                                      className="text-destructive"
+                                    >
+                                      <X className="h-4 w-4 mr-2" />
+                                      {t("removeFromProject")}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </div>
                             </CardContent>
                           </Card>
@@ -1331,12 +1452,12 @@ export default function ProjectsPage() {
       <Dialog open={addChapterDialogOpen} onOpenChange={setAddChapterDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Chapter</DialogTitle>
+            <DialogTitle>{t("addChapter")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Title</Label>
+                <Label>{t("chapterTitle")}</Label>
                 <span className="text-xs text-muted-foreground">
                   {newChapterTitle.length}/{VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH}
                 </span>
@@ -1344,13 +1465,13 @@ export default function ProjectsPage() {
               <Input
                 value={newChapterTitle}
                 onChange={(e) => setNewChapterTitle(e.target.value)}
-                placeholder="Chapter title"
+                placeholder={t("chapterTitle")}
                 maxLength={VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH}
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Description</Label>
+                <Label>{tc("description")}</Label>
                 <span className="text-xs text-muted-foreground">
                   {newChapterDesc.length}/{VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH}
                 </span>
@@ -1358,17 +1479,71 @@ export default function ProjectsPage() {
               <Input
                 value={newChapterDesc}
                 onChange={(e) => setNewChapterDesc(e.target.value)}
-                placeholder="Optional description"
+                placeholder={t("chapterDescription")}
                 maxLength={VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddChapterDialogOpen(false)}>
-              Cancel
+              {tc("cancel")}
             </Button>
             <Button onClick={handleAddChapter} disabled={!newChapterTitle.trim()}>
-              Add Chapter
+              {t("addChapter")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move Manual to Chapter Dialog */}
+      <Dialog open={moveManualDialogOpen} onOpenChange={setMoveManualDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("moveToChapter")}</DialogTitle>
+          </DialogHeader>
+          {manualToMove && selectedProject && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>{t("manual")}</Label>
+                <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">{manualToMove.manualId}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t("targetChapter")}</Label>
+                <select
+                  className="w-full p-2 border rounded-md bg-background"
+                  value={targetChapterId}
+                  onChange={(e) => setTargetChapterId(e.target.value)}
+                >
+                  <option value="" disabled>{t("selectChapter")}</option>
+                  {selectedProject.chapters
+                    .filter((ch) => ch.id !== manualToMove.currentChapterId)
+                    .sort((a, b) => a.order - b.order)
+                    .map((ch) => (
+                      <option key={ch.id} value={ch.id}>
+                        {ch.title}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {manualToMove.currentChapterId && (
+                <p className="text-sm text-muted-foreground">
+                  {t("currentChapter")}: {selectedProject.chapters.find((ch) => ch.id === manualToMove.currentChapterId)?.title}
+                </p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMoveManualDialogOpen(false)}>
+              {tc("cancel")}
+            </Button>
+            <Button onClick={handleMoveManual} disabled={!targetChapterId}>
+              <MoveHorizontal className="h-4 w-4 mr-2" />
+              {t("moveManual")}
             </Button>
           </DialogFooter>
         </DialogContent>
