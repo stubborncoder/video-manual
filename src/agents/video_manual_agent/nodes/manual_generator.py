@@ -286,8 +286,17 @@ Write in {language_name}. Use the semantic tags as instructed. Reference screens
         }
 
     # Ensure manual_content is a string (sometimes LangChain returns a list)
+    # Anthropic/Claude returns content blocks like [{'type': 'text', 'text': '...'}]
     if isinstance(manual_content, list):
-        manual_content = '\n'.join(str(item) for item in manual_content)
+        texts = []
+        for item in manual_content:
+            if isinstance(item, dict) and 'text' in item:
+                texts.append(item['text'])
+            elif hasattr(item, 'text'):
+                texts.append(item.text)
+            else:
+                texts.append(str(item))
+        manual_content = '\n'.join(texts)
 
     # Auto-version before overwriting existing content
     version_storage = VersionStorage(user_id, manual_id)
