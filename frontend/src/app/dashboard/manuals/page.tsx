@@ -1654,8 +1654,22 @@ function ManualsPageContent() {
       </AlertDialog>
 
       {/* Evaluate Manual Dialog */}
-      <Dialog open={evaluateDialogOpen} onOpenChange={setEvaluateDialogOpen}>
-        <DialogContent className="max-w-[1100px] max-h-[90vh] flex flex-col">
+      <Dialog open={evaluateDialogOpen} onOpenChange={(open) => {
+        // Prevent closing while evaluation is in progress
+        if (!open && evaluating) return;
+        setEvaluateDialogOpen(open);
+      }}>
+        <DialogContent
+          className="max-w-[1100px] max-h-[90vh] flex flex-col"
+          onInteractOutside={(e) => {
+            // Prevent closing by clicking outside while evaluating
+            if (evaluating) e.preventDefault();
+          }}
+          onEscapeKeyDown={(e) => {
+            // Prevent closing by escape key while evaluating
+            if (evaluating) e.preventDefault();
+          }}
+        >
           <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <ClipboardCheck className="h-5 w-5" />
@@ -2010,7 +2024,7 @@ function ManualsPageContent() {
           </div>
 
           <DialogFooter className="shrink-0 border-t pt-4 mt-4">
-            <Button variant="outline" onClick={() => setEvaluateDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setEvaluateDialogOpen(false)} disabled={evaluating}>
               {evaluationResult ? tc("close") : tc("cancel")}
             </Button>
             {evaluationResult && (

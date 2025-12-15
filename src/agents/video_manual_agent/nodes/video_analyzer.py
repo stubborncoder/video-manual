@@ -16,9 +16,11 @@ from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage
 
-from ..config import DEFAULT_GEMINI_MODEL, INLINE_SIZE_THRESHOLD, LLM_VIDEO_TIMEOUT
+from ..config import INLINE_SIZE_THRESHOLD, LLM_VIDEO_TIMEOUT
 from ..prompts.system import VIDEO_ANALYZER_PROMPT
 from ..tools.video_tools import get_video_metadata
+from ....core.models import TaskType, get_model, ModelProvider
+from ....db.admin_settings import AdminSettings
 from ..tools.video_preprocessor import (
     needs_optimization,
     preprocess_video_for_analysis,
@@ -161,6 +163,19 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
     user_id = state.get("user_id", "default")
     manual_id = state.get("manual_id")
 
+    # Get the configured model for video analysis
+    model_id = AdminSettings.get_model_for_task(TaskType.VIDEO_ANALYSIS)
+    model_info = get_model(model_id)
+
+    # Validate that video analysis uses a Gemini model (Claude cannot process video)
+    if model_info and model_info.provider != ModelProvider.GOOGLE:
+        raise ValueError(
+            f"Video analysis requires a Gemini model. '{model_id}' is not supported. "
+            "Only Google Gemini models can process video content."
+        )
+
+    print(f"Using model for video analysis: {model_id}")
+
     # Get manual directory for caching
     manual_dir: Optional[Path] = None
     if manual_id:
@@ -185,7 +200,7 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
         return {
             "video_metadata": cached_metadata,
             "video_analysis": cached_analysis,
-            "model_used": DEFAULT_GEMINI_MODEL,
+            "model_used": model_id,
             "optimized_video_path": optimized_video_path,
             "gemini_file_uri": None,
             "status": "analyzing_complete",
@@ -318,7 +333,7 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
 
     # Create LLM with timeout and invoke
     llm = ChatGoogleGenerativeAI(
-        model=DEFAULT_GEMINI_MODEL,
+        model=model_id,
         google_api_key=api_key,
         timeout=LLM_VIDEO_TIMEOUT,
     )
@@ -333,13 +348,28 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
             usage = response.usage_metadata if hasattr(response, 'usage_metadata') else {}
             if usage:
                 job_id = state.get("job_id")
+
+                # Extract cache tokens based on provider format
+                # Gemini uses: cached_content_token_count
+                # Claude uses: input_token_details.cache_read, input_token_details.cache_creation
+                cached_tokens = usage.get("cached_content_token_count", 0)  # Gemini
+                cache_read_tokens = 0
+                cache_creation_tokens = 0
+
+                input_details = usage.get("input_token_details", {})
+                if input_details:
+                    cache_read_tokens = input_details.get("cache_read", 0)
+                    cache_creation_tokens = input_details.get("cache_creation", 0)
+
                 UsageTracking.log_request(
                     user_id=user_id,
                     operation="video_analysis",
-                    model=DEFAULT_GEMINI_MODEL,
+                    model=model_id,
                     input_tokens=usage.get("input_tokens", 0),
                     output_tokens=usage.get("output_tokens", 0),
-                    cached_tokens=usage.get("cached_content_token_count", 0),
+                    cached_tokens=cached_tokens,
+                    cache_read_tokens=cache_read_tokens,
+                    cache_creation_tokens=cache_creation_tokens,
                     manual_id=manual_id,
                     job_id=job_id,
                 )
@@ -365,7 +395,7 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
 
     # Cache analysis in metadata
     if manual_dir:
-        update_analysis(manual_dir, response.content, DEFAULT_GEMINI_MODEL, metadata)
+        update_analysis(manual_dir, response.content, model_id, metadata)
         if source_languages:
             update_source_languages(manual_dir, source_languages)
 
@@ -373,7 +403,7 @@ def analyze_video_node(state: VideoManualState) -> Dict[str, Any]:
     return {
         "video_metadata": metadata,
         "video_analysis": response.content,
-        "model_used": DEFAULT_GEMINI_MODEL,
+        "model_used": model_id,
         "optimized_video_path": optimized_video_path,
         "gemini_file_uri": gemini_file_uri,
         "status": "analyzing_complete",

@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Users,
   BarChart3,
+  Settings,
   ArrowLeft,
   PanelLeftClose,
   PanelLeft,
@@ -31,6 +32,7 @@ const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/usage", label: "Usage & Costs", icon: BarChart3 },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export function AdminSidebar() {

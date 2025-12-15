@@ -68,6 +68,32 @@ export interface ManualUsage {
   last_request: string;
 }
 
+// Model settings types
+export interface ModelInfo {
+  id: string;
+  name: string;
+  provider: "google" | "anthropic";
+  input_cost_per_million: number;
+  output_cost_per_million: number;
+  supports_video: boolean;
+  supports_vision: boolean;
+  description?: string;
+}
+
+export interface ModelsResponse {
+  video_analysis: ModelInfo[];
+  manual_generation: ModelInfo[];
+  manual_evaluation: ModelInfo[];
+  manual_editing: ModelInfo[];
+}
+
+export interface ModelSettings {
+  video_analysis: string;
+  manual_generation: string;
+  manual_evaluation: string;
+  manual_editing: string;
+}
+
 export const adminApi = {
   /**
    * List all users
@@ -137,6 +163,32 @@ export const adminApi = {
       {
         method: "POST",
         body: JSON.stringify({ role }),
+      }
+    ),
+
+  // ==================== Model Settings ====================
+
+  /**
+   * Get available models for each task type
+   */
+  getAvailableModels: () =>
+    request<ModelsResponse>("/api/admin/models"),
+
+  /**
+   * Get current model settings
+   */
+  getModelSettings: () =>
+    request<ModelSettings>("/api/admin/settings/models"),
+
+  /**
+   * Update model settings
+   */
+  updateModelSettings: (settings: Partial<ModelSettings>) =>
+    request<{ status: string; updated: Record<string, boolean> }>(
+      "/api/admin/settings/models",
+      {
+        method: "PUT",
+        body: JSON.stringify(settings),
       }
     ),
 };

@@ -7,22 +7,64 @@ from .database import get_connection
 
 
 # Model pricing (USD per 1M tokens) - as of Dec 2025
+# Sources:
+# - Anthropic: https://costgoat.com/pricing/claude-api
+# - Google: https://ai.google.dev/gemini-api/docs/pricing
 MODEL_PRICING = {
+    # ==================== Google Gemini models ====================
+    # Gemini 3 Pro Preview - $2.00/$12.00 (≤200K tokens)
+    "gemini-3-pro-preview": {
+        "input": 2.00,
+        "output": 12.00,
+        "cached_input": 0.20,  # ~10% of input price
+    },
+    # Gemini 2.5 Pro - $1.25/$10.00 (≤200K tokens)
     "gemini-2.5-pro": {
         "input": 1.25,
         "output": 10.00,
-        "cached_input": 0.3125,  # 75% discount for cache hits
+        "cached_input": 0.125,  # 10% of input price
     },
+    # Gemini 2.5 Flash - $0.30/$2.50
+    "gemini-2.5-flash": {
+        "input": 0.30,
+        "output": 2.50,
+        "cached_input": 0.03,  # 10% of input price
+    },
+    # Gemini 2.0 Flash - $0.10/$0.40
+    "gemini-2.0-flash": {
+        "input": 0.10,
+        "output": 0.40,
+        "cached_input": 0.025,
+    },
+    # Gemini 2.0 Flash Experimental - Free tier
     "gemini-2.0-flash-exp": {
-        "input": 0.00,  # Free tier
+        "input": 0.00,
         "output": 0.00,
         "cached_input": 0.00,
     },
-    "claude-sonnet-4-20250514": {
+
+    # ==================== Anthropic Claude models ====================
+    # Cache pricing: write = 1.25x input, read = 0.1x input
+    # Claude Opus 4.5 - $5.00/$25.00
+    "claude-opus-4-5": {
+        "input": 5.00,
+        "output": 25.00,
+        "cache_write": 6.25,   # 1.25x input
+        "cache_read": 0.50,    # 0.1x input
+    },
+    # Claude Sonnet 4.5 - $3.00/$15.00
+    "claude-sonnet-4-5": {
         "input": 3.00,
         "output": 15.00,
-        "cache_write": 3.75,  # 1.25x input price
-        "cache_read": 0.30,  # 0.1x input price
+        "cache_write": 3.75,   # 1.25x input
+        "cache_read": 0.30,    # 0.1x input
+    },
+    # Claude Haiku 4.5 - $1.00/$5.00
+    "claude-haiku-4-5": {
+        "input": 1.00,
+        "output": 5.00,
+        "cache_write": 1.25,   # 1.25x input
+        "cache_read": 0.10,    # 0.1x input
     },
 }
 
@@ -65,18 +107,18 @@ def calculate_cost(
     if "gemini" in model_lower:
         regular_input = input_tokens - cached_tokens
         cost = (
-            regular_input * pricing["input"] / 1_000_000
-            + cached_tokens * pricing["cached_input"] / 1_000_000
-            + output_tokens * pricing["output"] / 1_000_000
+            regular_input * pricing.get("input", 0) / 1_000_000
+            + cached_tokens * pricing.get("cached_input", 0) / 1_000_000
+            + output_tokens * pricing.get("output", 0) / 1_000_000
         )
     # For Claude: cache creation costs more, cache read costs less
     else:
         regular_input = input_tokens - cache_read_tokens
         cost = (
-            regular_input * pricing["input"] / 1_000_000
-            + cache_creation_tokens * pricing["cache_write"] / 1_000_000
-            + cache_read_tokens * pricing["cache_read"] / 1_000_000
-            + output_tokens * pricing["output"] / 1_000_000
+            regular_input * pricing.get("input", 0) / 1_000_000
+            + cache_creation_tokens * pricing.get("cache_write", 0) / 1_000_000
+            + cache_read_tokens * pricing.get("cache_read", 0) / 1_000_000
+            + output_tokens * pricing.get("output", 0) / 1_000_000
         )
 
     return cost

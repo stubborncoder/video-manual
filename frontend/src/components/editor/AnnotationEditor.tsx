@@ -261,6 +261,8 @@ export function AnnotationEditor({
           fontFamily: "Arial",
           hasControls: true,
           hasBorders: true,
+          selectable: true,
+          evented: true,  // Required for mouse event handling (selection, etc.)
           cornerColor: "#00ff00",
           cornerStrokeColor: "#000000",
           cornerSize: 12,
@@ -285,6 +287,7 @@ export function AnnotationEditor({
         hasControls: true,
         hasBorders: true,
         selectable: true,
+        evented: true,  // Required for mouse event handling (selection, etc.)
         cornerColor: "#00ff00",
         cornerStrokeColor: "#000000",
         cornerSize: 12,
@@ -610,11 +613,12 @@ export function AnnotationEditor({
       canvas.clear();
 
       // Calculate new scale for the cropped image
+      // Never scale UP (max scale = 1) to preserve image quality
       const containerWidth = Math.max(containerRef.current?.clientWidth || window.innerWidth * 0.8 - 32, window.innerWidth * 0.8);
       const containerHeight = Math.max((containerRef.current?.clientHeight || window.innerHeight * 0.6) - 150, window.innerHeight * 0.6);
       const newScaleX = containerWidth / htmlImg.width;
       const newScaleY = containerHeight / htmlImg.height;
-      const newScale = Math.min(newScaleX, newScaleY);
+      const newScale = Math.min(newScaleX, newScaleY, 1); // Cap at 1 to prevent upscaling
 
       // Update scale factor
       scaleFactorRef.current = newScale;

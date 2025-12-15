@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useTranslations } from "next-intl";
-import { Bot, Send, StopCircle, Trash2 } from "lucide-react";
+import { Bot, Send, StopCircle, Trash2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -148,6 +148,20 @@ export function CopilotPanel({
               {messages.map((message) => (
                 <ChatMessage key={message.id} message={message} />
               ))}
+              {/* Thinking indicator */}
+              {isGenerating && (
+                <div className="px-4 py-3">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Bot className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex items-center gap-2 py-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      <span className="text-sm text-muted-foreground">{t("thinking")}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="h-full flex items-center justify-center p-6">

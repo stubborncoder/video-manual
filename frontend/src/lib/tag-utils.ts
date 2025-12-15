@@ -77,6 +77,114 @@ export function stripSemanticTags(content: string): string {
 }
 
 /**
+ * Transform semantic tags for preview, converting tags to visible styled labels.
+ *
+ * This allows users to see semantic structure that matches what the AI agent references.
+ * Each tag type gets its own color-coded badge with a gradient line.
+ */
+export function transformSemanticTagsForPreview(content: string): string {
+  // Tag styling configuration
+  const tagStyles: Record<string, { color: string; label: string }> = {
+    step: { color: "#8b5cf6", label: "Step" },           // Purple
+    introduction: { color: "#0ea5e9", label: "Introduction" }, // Sky blue
+    conclusion: { color: "#10b981", label: "Conclusion" },     // Emerald
+    note: { color: "#f59e0b", label: "Note" },                 // Amber
+    keypoint: { color: "#ec4899", label: "Key Point" },        // Pink
+    tip: { color: "#14b8a6", label: "Tip" },                   // Teal
+    warning: { color: "#ef4444", label: "Warning" },           // Red
+    overview: { color: "#6366f1", label: "Overview" },         // Indigo
+    section: { color: "#8b5cf6", label: "Section" },           // Purple
+    definition: { color: "#0891b2", label: "Definition" },     // Cyan
+    finding: { color: "#7c3aed", label: "Finding" },           // Violet
+    summary: { color: "#059669", label: "Summary" },           // Green
+  };
+
+  // Store badges with unique IDs to preserve order
+  const badges: Map<string, string> = new Map();
+  let badgeId = 0;
+
+  const knownTags = Object.keys(tagStyles).join("|");
+  let stepCount = 0;
+
+  // Single pass: replace all opening tags in document order with unique placeholders
+  let result = content.replace(
+    new RegExp(`<(${knownTags})(\\s+[^>]*)?>`, "gi"),
+    (match, tagName, attrs) => {
+      const tagLower = tagName.toLowerCase();
+      const style = tagStyles[tagLower];
+      if (!style) return "";
+
+      let label = style.label;
+      let color = style.color;
+
+      // Handle step numbering
+      if (tagLower === "step") {
+        stepCount++;
+        const numberMatch = attrs?.match(/number=["'](\d+)["']/);
+        const stepNum = numberMatch ? numberMatch[1] : stepCount;
+        label = `Step ${stepNum}`;
+      }
+      // Handle other numbered tags
+      else if (attrs) {
+        const numberMatch = attrs.match(/number=["'](\d+)["']/);
+        if (numberMatch) {
+          label = `${style.label} ${numberMatch[1]}`;
+        }
+        // Handle note types
+        const typeMatch = attrs.match(/type=["'](\w+)["']/);
+        if (typeMatch && tagLower === "note") {
+          const noteType = typeMatch[1];
+          if (noteType === "warning") {
+            label = "Warning";
+            color = "#ef4444";
+          } else if (noteType === "tip") {
+            label = "Tip";
+            color = "#14b8a6";
+          } else if (noteType === "info") {
+            label = "Info";
+            color = "#3b82f6";
+          }
+        }
+        // Handle section titles
+        const titleMatch = attrs.match(/title=["']([^"']+)["']/);
+        if (titleMatch) {
+          label = titleMatch[1];
+        }
+      }
+
+      const badge = `<div style="display:flex;align-items:center;gap:12px;margin:20px 0 12px 0;"><span style="display:inline-block;background:${color};color:white;font-size:12px;font-weight:600;padding:4px 12px;border-radius:12px;white-space:nowrap;">${label}</span><div style="flex:1;height:1px;background:linear-gradient(to right,${color},transparent);"></div></div>`;
+
+      const placeholder = `___BADGE_${badgeId}___`;
+      badges.set(placeholder, badge);
+      badgeId++;
+
+      return `\n${placeholder}\n\n`;
+    }
+  );
+
+  // Remove closing tags for known semantic tags
+  result = result.replace(new RegExp(`</(${knownTags})>`, "gi"), "");
+
+  // Strip title tags without badge (title is usually the document heading)
+  result = result.replace(/<title(\s+[^>]*)?>/gi, "");
+  result = result.replace(/<\/title>/gi, "");
+
+  // Strip any remaining unknown semantic tags
+  result = result.replace(/<\w+(\s+[^>]*)?>/g, "");
+  result = result.replace(/<\/\w+>/g, "");
+
+  // Restore badges from placeholders
+  for (const [placeholder, badge] of badges) {
+    result = result.replace(placeholder, badge);
+  }
+
+  // Clean up extra blank lines
+  result = result.replace(/\n{3,}/g, "\n\n");
+
+  return result.trim();
+}
+
+/**
  * Parse content into a list of tagged blocks.
  *
  * Used for extracting structured content for processing.

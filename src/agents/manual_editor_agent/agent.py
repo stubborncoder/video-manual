@@ -1,5 +1,6 @@
 """Manual Editor Agent using deepagents."""
 
+import os
 from typing import Optional
 
 from dotenv import load_dotenv
@@ -10,7 +11,9 @@ from langchain.agents.middleware import ModelFallbackMiddleware
 
 from .tools import EDITOR_TOOLS
 from .prompts import EDITOR_SYSTEM_PROMPT
-from .config import DEFAULT_EDITOR_MODEL, FALLBACK_MODELS
+from .config import FALLBACK_MODELS
+from ...core.models import TaskType, get_langchain_model_string, get_model, ModelProvider
+from ...db.admin_settings import AdminSettings
 
 
 def get_editor_agent(
@@ -20,7 +23,7 @@ def get_editor_agent(
 
     Args:
         model: LLM model to use in format 'provider:model'.
-               If not provided, uses DEFAULT_EDITOR_MODEL from config.
+               If not provided, uses configured model from admin settings.
                Examples: 'anthropic:claude-sonnet-4-5-20250929', 'google:gemini-2.0-flash'
 
     Returns:
@@ -29,14 +32,25 @@ def get_editor_agent(
     # Load environment variables
     load_dotenv()
 
-    # Get default model from config if not provided
+    # Get configured model from admin settings if not provided
     if model is None:
-        model = DEFAULT_EDITOR_MODEL
+        # Get model ID from admin settings (e.g., 'claude-sonnet-4-5-20250929')
+        model_id = AdminSettings.get_model_for_task(TaskType.MANUAL_EDITING)
+        # Convert to LangChain format (e.g., 'anthropic:claude-sonnet-4-5-20250929')
+        model = get_langchain_model_string(model_id)
+        print(f"Using model for manual editing: {model}")
 
     # Convert string model identifier to BaseChatModel
     # (required for deepagents 0.3.0+ which accesses model.profile)
     if isinstance(model, str):
-        model = init_chat_model(model)
+        # Determine API key based on provider
+        model_id = AdminSettings.get_model_for_task(TaskType.MANUAL_EDITING)
+        model_info = get_model(model_id)
+        if model_info and model_info.provider == ModelProvider.ANTHROPIC:
+            api_key = os.getenv("ANTHROPIC_API_KEY")
+        else:
+            api_key = os.getenv("GOOGLE_API_KEY")
+        model = init_chat_model(model, api_key=api_key)
 
     # Use MemorySaver for session-based checkpointing
     checkpointer = MemorySaver()

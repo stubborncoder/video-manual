@@ -5,10 +5,15 @@ from typing import Dict, Any, List
 from pathlib import Path
 from dotenv import load_dotenv
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain.chat_models import init_chat_model
+from langchain_anthropic import ChatAnthropic
+from langchain_anthropic.middleware import AnthropicPromptCachingMiddleware
 
-from ..config import DEFAULT_GEMINI_MODEL, LLM_TEXT_TIMEOUT
+from ..config import LLM_TEXT_TIMEOUT
 from ..prompts.system import MANUAL_GENERATOR_PROMPT
 from ..prompts.document_formats import get_format_prompt, DEFAULT_FORMAT
+from ....core.models import TaskType, get_model, ModelProvider
+from ....db.admin_settings import AdminSettings
 from ..tools.video_tools import extract_screenshot_at_timestamp
 from ..state import VideoManualState
 from ..utils.language import get_language_code, get_language_name
@@ -173,11 +178,31 @@ def generate_manual_node(state: VideoManualState) -> Dict[str, Any]:
             except Exception as e:
                 print(f"Warning: Failed to extract screenshot at {timestamp}s: {e}")
 
-    llm = ChatGoogleGenerativeAI(
-        model=DEFAULT_GEMINI_MODEL,
-        google_api_key=api_key,
-        timeout=LLM_TEXT_TIMEOUT,
-    )
+    # Get the configured model for manual generation
+    model_id = AdminSettings.get_model_for_task(TaskType.MANUAL_GENERATION)
+    model_info = get_model(model_id)
+    print(f"Using model for manual generation: {model_id}")
+
+    # Check for appropriate API key based on provider
+    if model_info and model_info.provider == ModelProvider.ANTHROPIC:
+        anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+        if not anthropic_key:
+            raise ValueError("ANTHROPIC_API_KEY not configured for Claude models")
+        # Use ChatAnthropic with prompt caching middleware for cost savings
+        llm = ChatAnthropic(
+            model=model_id,
+            api_key=anthropic_key,
+            temperature=0.7,
+        ).with_config(
+            middleware=[AnthropicPromptCachingMiddleware(ttl="5m")]
+        )
+    else:
+        # Use ChatGoogleGenerativeAI for Gemini (supports timeout)
+        llm = ChatGoogleGenerativeAI(
+            model=model_id,
+            google_api_key=api_key,
+            timeout=LLM_TEXT_TIMEOUT,
+        )
 
     # Prepare screenshot references for the prompt
     screenshot_refs = _format_screenshot_references(screenshot_paths)
@@ -225,13 +250,28 @@ Write in {language_name}. Use the semantic tags as instructed. Reference screens
             usage = response.usage_metadata if hasattr(response, 'usage_metadata') else {}
             if usage:
                 job_id = state.get("job_id")
+
+                # Extract cache tokens based on provider format
+                # Gemini uses: cached_content_token_count
+                # Claude uses: input_token_details.cache_read, input_token_details.cache_creation
+                cached_tokens = usage.get("cached_content_token_count", 0)  # Gemini
+                cache_read_tokens = 0
+                cache_creation_tokens = 0
+
+                input_details = usage.get("input_token_details", {})
+                if input_details:
+                    cache_read_tokens = input_details.get("cache_read", 0)
+                    cache_creation_tokens = input_details.get("cache_creation", 0)
+
                 UsageTracking.log_request(
                     user_id=user_id,
                     operation="manual_generation",
-                    model=DEFAULT_GEMINI_MODEL,
+                    model=model_id,
                     input_tokens=usage.get("input_tokens", 0),
                     output_tokens=usage.get("output_tokens", 0),
-                    cached_tokens=usage.get("cached_content_token_count", 0),
+                    cached_tokens=cached_tokens,
+                    cache_read_tokens=cache_read_tokens,
+                    cache_creation_tokens=cache_creation_tokens,
                     manual_id=manual_id,
                     job_id=job_id,
                 )

@@ -779,6 +779,8 @@
     "exportAsHtml": "Exportar como HTML",
     "exportedAs": "Exportado como {format}",
     "exportFailed": "Error al exportar",
+    "showAssistant": "Mostrar Asistente IA",
+    "hideAssistant": "Ocultar Asistente IA",
     "preview": "Vista previa",
     "markdown": "Markdown",
     "textSelected": "Texto seleccionado - pide ayuda al copiloto",
@@ -863,7 +865,8 @@
     "stopGeneration": "Detener generación",
     "sendMessage": "Enviar (Enter)",
     "disconnectedMessage": "Desconectado del servidor. Reconectando...",
-    "pausedMessage": "Asistente pausado mientras editas markdown. Cambia a Vista previa para continuar."
+    "pausedMessage": "Asistente pausado mientras editas markdown. Cambia a Vista previa para continuar.",
+    "thinking": "Pensando..."
   },
   "editorStatusBar": {
     "undo": "Deshacer (Ctrl+Z)",

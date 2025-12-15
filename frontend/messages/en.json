@@ -779,6 +779,8 @@
     "exportAsHtml": "Export as HTML",
     "exportedAs": "Exported as {format}",
     "exportFailed": "Export failed",
+    "showAssistant": "Show AI Assistant",
+    "hideAssistant": "Hide AI Assistant",
     "preview": "Preview",
     "markdown": "Markdown",
     "textSelected": "Text selected - ask copilot for help",
@@ -863,7 +865,8 @@
     "stopGeneration": "Stop generation",
     "sendMessage": "Send (Enter)",
     "disconnectedMessage": "Disconnected from server. Reconnecting...",
-    "pausedMessage": "Assistant paused while editing markdown. Switch to Preview to continue."
+    "pausedMessage": "Assistant paused while editing markdown. Switch to Preview to continue.",
+    "thinking": "Thinking..."
   },
   "editorStatusBar": {
     "undo": "Undo (Ctrl+Z)",

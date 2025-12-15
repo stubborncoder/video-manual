@@ -2,12 +2,21 @@
 
 from typing import Annotated, Optional
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
 from ..dependencies import CurrentUser
 from ..middleware.admin import require_admin
 from ..schemas import UserInfo, UsageSummary, SetRoleRequest
 from ...db.user_management import UserManagement
 from ...db.usage_tracking import UsageTracking
+from ...db.admin_settings import AdminSettings
+from ...core.models import (
+    TaskType,
+    MODEL_REGISTRY,
+    MODELS_BY_TASK,
+    get_model,
+    get_models_for_task,
+)
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -184,3 +193,111 @@ async def set_user_role(
         raise HTTPException(status_code=500, detail="Failed to update role")
 
     return {"user_id": user_id, "role": request.role}
+
+
+# ============================================
+# MODEL SETTINGS ENDPOINTS
+# ============================================
+
+
+class ModelSettingsRequest(BaseModel):
+    """Request body for updating model settings."""
+    video_analysis: Optional[str] = None
+    manual_generation: Optional[str] = None
+    manual_evaluation: Optional[str] = None
+    manual_editing: Optional[str] = None
+
+
+class ModelInfo(BaseModel):
+    """Model information for API responses."""
+    id: str
+    name: str
+    provider: str
+    input_cost_per_million: float
+    output_cost_per_million: float
+    supports_video: bool
+    supports_vision: bool
+    description: Optional[str] = None
+
+
+class ModelsResponse(BaseModel):
+    """Response containing available models by task."""
+    video_analysis: list[ModelInfo]
+    manual_generation: list[ModelInfo]
+    manual_evaluation: list[ModelInfo]
+    manual_editing: list[ModelInfo]
+
+
+@router.get("/models")
+async def get_available_models(admin_user: AdminUser) -> ModelsResponse:
+    """Get available models for each task type.
+
+    Requires admin role.
+    """
+    def to_model_info(model) -> ModelInfo:
+        return ModelInfo(
+            id=model.id,
+            name=model.name,
+            provider=model.provider.value,
+            input_cost_per_million=model.input_cost_per_million,
+            output_cost_per_million=model.output_cost_per_million,
+            supports_video=model.supports_video,
+            supports_vision=model.supports_vision,
+            description=model.description,
+        )
+
+    return ModelsResponse(
+        video_analysis=[to_model_info(m) for m in get_models_for_task(TaskType.VIDEO_ANALYSIS)],
+        manual_generation=[to_model_info(m) for m in get_models_for_task(TaskType.MANUAL_GENERATION)],
+        manual_evaluation=[to_model_info(m) for m in get_models_for_task(TaskType.MANUAL_EVALUATION)],
+        manual_editing=[to_model_info(m) for m in get_models_for_task(TaskType.MANUAL_EDITING)],
+    )
+
+
+@router.get("/settings/models")
+async def get_model_settings(admin_user: AdminUser) -> dict:
+    """Get current model settings for all tasks.
+
+    Requires admin role.
+
+    Returns a simple dict mapping task names to model IDs.
+    """
+    return AdminSettings.get_all_model_settings()
+
+
+@router.put("/settings/models")
+async def update_model_settings(
+    request: ModelSettingsRequest,
+    admin_user: AdminUser,
+) -> dict:
+    """Update model settings for tasks.
+
+    Requires admin role.
+
+    Only provided fields will be updated.
+    """
+    settings_to_update = {}
+
+    if request.video_analysis:
+        settings_to_update["video_analysis"] = request.video_analysis
+    if request.manual_generation:
+        settings_to_update["manual_generation"] = request.manual_generation
+    if request.manual_evaluation:
+        settings_to_update["manual_evaluation"] = request.manual_evaluation
+    if request.manual_editing:
+        settings_to_update["manual_editing"] = request.manual_editing
+
+    if not settings_to_update:
+        raise HTTPException(status_code=400, detail="No settings provided")
+
+    results = AdminSettings.set_all_model_settings(settings_to_update, admin_user)
+
+    # Check for failures
+    failures = [k for k, v in results.items() if not v]
+    if failures:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid models for tasks: {', '.join(failures)}"
+        )
+
+    return {"success": True, "updated": list(settings_to_update.keys())}

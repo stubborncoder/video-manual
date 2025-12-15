@@ -9,7 +9,8 @@ from langchain.chat_models import init_chat_model
 
 from .tools import analyze_project, compile_manuals
 from .prompts import COMPILER_INSTRUCTIONS
-from .config import DEFAULT_DEEPAGENT_MODEL
+from ...core.models import TaskType, get_langchain_model_string
+from ...db.admin_settings import AdminSettings
 
 
 def get_compiler_agent(
@@ -19,7 +20,7 @@ def get_compiler_agent(
 
     Args:
         model: LLM model to use in format 'provider:model'.
-               If not provided, uses DEFAULT_DEEPAGENT_MODEL from agent config.
+               If not provided, uses configured model from admin settings.
                Examples: 'anthropic:claude-sonnet-4-5-20250929', 'google:gemini-2.0-flash'
 
     Returns:
@@ -28,9 +29,12 @@ def get_compiler_agent(
     # Load environment variables
     load_dotenv()
 
-    # Get default model from agent config if not provided
+    # Get configured model from admin settings if not provided
+    # Uses MANUAL_GENERATION setting since compiling is similar to generating content
     if model is None:
-        model = DEFAULT_DEEPAGENT_MODEL
+        model_id = AdminSettings.get_model_for_task(TaskType.MANUAL_GENERATION)
+        model = get_langchain_model_string(model_id)
+        print(f"Using model for project compilation: {model}")
 
     # Convert string model identifier to BaseChatModel
     # (required for deepagents 0.3.0+ which accesses model.profile)
