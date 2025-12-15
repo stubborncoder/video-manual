@@ -1,9 +1,14 @@
 """Main FastAPI application for vDocs."""
 
+import logging
+import traceback
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+logger = logging.getLogger(__name__)
 
 from .routes import auth_router, videos_router, manuals_router, projects_router, trash_router, compile_stream_router, jobs_router, admin_router, templates_router
 from .websockets import process_video_router, compile_project_router, editor_copilot_router
@@ -79,6 +84,16 @@ def create_app(
     async def health():
         """Health check endpoint."""
         return {"status": "healthy"}
+
+    @app.exception_handler(Exception)
+    async def global_exception_handler(request: Request, exc: Exception):
+        """Log all unhandled exceptions with full traceback."""
+        tb = traceback.format_exc()
+        logger.error(f"Unhandled exception on {request.method} {request.url}:\n{tb}")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": "Internal server error"}
+        )
 
     return app
 
