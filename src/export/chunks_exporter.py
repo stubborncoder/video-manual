@@ -294,3 +294,222 @@ def create_chunks_exporter(user_id: str, manual_id: str) -> ManualChunksExporter
         ManualChunksExporter instance
     """
     return ManualChunksExporter(user_id, manual_id)
+
+
+class ProjectChunksExporter:
+    """Export all project manuals as semantic chunks for RAG pipelines.
+
+    Creates a ZIP archive containing:
+    - project.json: Project metadata and structure
+    - manuals/: Folder with individual manual chunk data
+    - images/: Folder with all referenced screenshots
+    """
+
+    def __init__(self, user_id: str, project_id: str):
+        """Initialize the exporter.
+
+        Args:
+            user_id: User identifier
+            project_id: Project identifier
+        """
+        from ..storage.project_storage import ProjectStorage
+
+        self.user_id = user_id
+        self.project_id = project_id
+        self.user_storage = UserStorage(user_id)
+        self.project_storage = ProjectStorage(user_id)
+
+        # Verify project exists
+        project = self.project_storage.get_project(project_id)
+        if not project:
+            raise ValueError(f"Project not found: {project_id}")
+
+        self.project = project
+
+    def export(
+        self,
+        language: str = "en",
+        output_path: Optional[str] = None,
+    ) -> str:
+        """Export all project manuals as semantic chunks ZIP.
+
+        Args:
+            language: Language code for manual content
+            output_path: Optional output file path
+
+        Returns:
+            Path to the generated ZIP file
+        """
+        # Get all manuals in the project
+        project_manuals = self.project_storage.get_project_manuals(self.project_id)
+
+        if not project_manuals:
+            raise ValueError("Project has no manuals to export")
+
+        # Collect all manual chunks
+        all_manuals_data: List[Dict[str, Any]] = []
+        all_images: Dict[str, Path] = {}  # filename -> path
+
+        for manual_info in project_manuals:
+            manual_id = manual_info["id"]
+
+            try:
+                manual_data = self._export_manual_chunks(manual_id, language, all_images)
+                manual_data["section_id"] = manual_info.get("section_id")
+                manual_data["section_title"] = manual_info.get("section_title")
+                manual_data["chapter_id"] = manual_info.get("chapter_id")
+                manual_data["chapter_title"] = manual_info.get("chapter_title")
+                all_manuals_data.append(manual_data)
+            except ValueError as e:
+                # Skip manuals without content for this language
+                continue
+
+        if not all_manuals_data:
+            raise ValueError(f"No manuals have content for language: {language}")
+
+        # Build project export structure
+        export_data = {
+            "project": {
+                "id": self.project_id,
+                "name": self.project.get("name", self.project_id),
+                "description": self.project.get("description", ""),
+                "language": language,
+                "exported_at": datetime.now().isoformat(),
+                "manual_count": len(all_manuals_data),
+                "total_chunks": sum(m["chunk_count"] for m in all_manuals_data),
+            },
+            "sections": [
+                {
+                    "id": sec["id"],
+                    "title": sec["title"],
+                    "description": sec.get("description", ""),
+                    "order": sec.get("order", 0),
+                    "chapters": sec.get("chapters", []),
+                }
+                for sec in self.project.get("sections", [])
+            ],
+            "chapters": [
+                {
+                    "id": ch["id"],
+                    "title": ch["title"],
+                    "description": ch.get("description", ""),
+                    "order": ch.get("order", 0),
+                }
+                for ch in self.project.get("chapters", [])
+            ],
+            "manuals": all_manuals_data,
+        }
+
+        # Determine output path
+        if output_path is None:
+            output_path = self._get_output_path(language)
+
+        # Create ZIP archive
+        self._create_zip(export_data, output_path, all_images)
+
+        return output_path
+
+    def _export_manual_chunks(
+        self,
+        manual_id: str,
+        language: str,
+        all_images: Dict[str, Path],
+    ) -> Dict[str, Any]:
+        """Export a single manual's chunks.
+
+        Args:
+            manual_id: Manual identifier
+            language: Language code
+            all_images: Dict to accumulate image paths
+
+        Returns:
+            Manual chunk data
+        """
+        # Get manual content
+        content = self.user_storage.get_manual_content(manual_id, language)
+        if not content:
+            raise ValueError(f"Manual content not found: {manual_id}")
+
+        # Get metadata
+        metadata = self.user_storage.get_manual_metadata(manual_id) or {}
+
+        # Create a temporary exporter to parse chunks
+        exporter = ManualChunksExporter(self.user_id, manual_id)
+        chunks = exporter._parse_chunks(content)
+
+        # Collect images for this manual
+        screenshots_dir = self.user_storage.manuals_dir / manual_id / "screenshots"
+        for chunk in chunks:
+            for img_path in chunk.get("images", []):
+                filename = img_path.replace("images/", "")
+                full_path = screenshots_dir / filename
+                if full_path.exists():
+                    # Prefix with manual_id to avoid collisions
+                    prefixed_name = f"{manual_id}/{filename}"
+                    all_images[prefixed_name] = full_path
+                    # Update chunk reference
+                    chunk["images"] = [
+                        f"images/{manual_id}/{f.replace('images/', '')}"
+                        for f in chunk.get("images", [])
+                    ]
+
+        return {
+            "id": manual_id,
+            "title": metadata.get("title") or get_title(content) or manual_id,
+            "format": metadata.get("document_format", "step-manual"),
+            "target_audience": metadata.get("target_audience"),
+            "target_objective": metadata.get("target_objective"),
+            "chunk_count": len(chunks),
+            "chunks": chunks,
+        }
+
+    def _get_output_path(self, language: str) -> str:
+        """Generate output path for the export.
+
+        Args:
+            language: Language code
+
+        Returns:
+            Output file path
+        """
+        export_dir = self.project_storage.projects_dir / self.project_id / "exports"
+        export_dir.mkdir(parents=True, exist_ok=True)
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"{self.project_id}_{language}_{timestamp}_chunks.zip"
+        return str(export_dir / filename)
+
+    def _create_zip(
+        self,
+        export_data: Dict[str, Any],
+        output_path: str,
+        all_images: Dict[str, Path],
+    ) -> None:
+        """Create ZIP archive with project chunks and images.
+
+        Args:
+            export_data: The full export data structure
+            output_path: Path for the ZIP file
+            all_images: Dict mapping prefixed filenames to source paths
+        """
+        with zipfile.ZipFile(output_path, "w", zipfile.ZIP_DEFLATED) as zf:
+            # Write project.json
+            project_json = json.dumps(export_data, indent=2, ensure_ascii=False)
+            zf.writestr("project_chunks.json", project_json)
+
+            # Write all images
+            for prefixed_name, source_path in all_images.items():
+                zf.write(source_path, f"images/{prefixed_name}")
+
+
+def create_project_chunks_exporter(user_id: str, project_id: str) -> ProjectChunksExporter:
+    """Factory function to create project chunks exporter.
+
+    Args:
+        user_id: User identifier
+        project_id: Project identifier
+
+    Returns:
+        ProjectChunksExporter instance
+    """
+    return ProjectChunksExporter(user_id, project_id)

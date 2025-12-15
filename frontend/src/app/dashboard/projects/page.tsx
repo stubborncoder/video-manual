@@ -10,6 +10,8 @@ const VALIDATION_LIMITS = {
   PROJECT_DESC_MAX_LENGTH: 500,
   CHAPTER_TITLE_MAX_LENGTH: 200,
   CHAPTER_DESC_MAX_LENGTH: 1000,
+  SECTION_TITLE_MAX_LENGTH: 200,
+  SECTION_DESC_MAX_LENGTH: 1000,
 } as const;
 
 const INVALID_CHARS_PATTERN = /[<>]/;
@@ -77,6 +79,7 @@ import {
   BookOpen,
   GripVertical,
   ChevronDown,
+  ChevronRight,
   FileText,
   Loader2,
   Star,
@@ -88,6 +91,10 @@ import {
   History,
   Check,
   ChevronsUpDown,
+  MoreVertical,
+  MoveHorizontal,
+  Layers,
+  FolderTree,
 } from "lucide-react";
 import { SidebarToggle } from "@/components/layout/SidebarToggle";
 import {
@@ -195,6 +202,22 @@ export default function ProjectsPage() {
   const [editChapterId, setEditChapterId] = useState<string | null>(null);
   const [editChapterTitle, setEditChapterTitle] = useState("");
   const [editChapterDesc, setEditChapterDesc] = useState("");
+  const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
+  const [moveManualDialogOpen, setMoveManualDialogOpen] = useState(false);
+  const [manualToMove, setManualToMove] = useState<{ manualId: string; currentChapterId: string | null } | null>(null);
+  const [targetChapterId, setTargetChapterId] = useState<string>("");
+
+  // Section management state
+  const [addSectionDialogOpen, setAddSectionDialogOpen] = useState(false);
+  const [newSectionTitle, setNewSectionTitle] = useState("");
+  const [newSectionDesc, setNewSectionDesc] = useState("");
+  const [editSectionId, setEditSectionId] = useState<string | null>(null);
+  const [editSectionTitle, setEditSectionTitle] = useState("");
+  const [editSectionDesc, setEditSectionDesc] = useState("");
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [moveChapterToSectionDialogOpen, setMoveChapterToSectionDialogOpen] = useState(false);
+  const [chapterToMoveToSection, setChapterToMoveToSection] = useState<{ chapterId: string; currentSectionId: string | null } | null>(null);
+  const [targetSectionId, setTargetSectionId] = useState<string>("");
 
   const [compileProjectId, setCompileProjectId] = useState<string | null>(null);
   const [compileProjectName, setCompileProjectName] = useState<string>("");
@@ -479,6 +502,208 @@ export default function ProjectsPage() {
     }
   }
 
+  function openMoveManualDialog(manualId: string, currentChapterId: string | null) {
+    setManualToMove({ manualId, currentChapterId });
+    setTargetChapterId("");
+    setMoveManualDialogOpen(true);
+  }
+
+  async function handleMoveManual() {
+    if (!selectedProject || !manualToMove || !targetChapterId) return;
+
+    try {
+      await projects.moveManualToChapter(selectedProject.id, manualToMove.manualId, targetChapterId);
+      toast.success(t("manualMovedToChapter"));
+      setMoveManualDialogOpen(false);
+      setManualToMove(null);
+      // Refresh project detail
+      const detail = await projects.get(selectedProject.id);
+      setSelectedProject(detail);
+    } catch (e) {
+      console.error("Failed to move manual:", e);
+      toast.error(t("manualMoveFailed"), {
+        description: e instanceof Error ? e.message : tc("error"),
+      });
+    }
+  }
+
+  function toggleChapter(chapterId: string) {
+    setExpandedChapters((prev) => {
+      const next = new Set(prev);
+      if (next.has(chapterId)) {
+        next.delete(chapterId);
+      } else {
+        next.add(chapterId);
+      }
+      return next;
+    });
+  }
+
+  // Section handlers
+  async function handleAddSection() {
+    if (!selectedProject) return;
+
+    // Validate title
+    const titleValidation = validateInput(
+      newSectionTitle,
+      t("sectionTitle"),
+      VALIDATION_LIMITS.SECTION_TITLE_MAX_LENGTH
+    );
+    if (!titleValidation.isValid) {
+      toast.error(getValidationError(titleValidation, tc)!);
+      return;
+    }
+
+    // Validate description (optional field)
+    const descValidation = validateInput(
+      newSectionDesc,
+      t("sectionDescription"),
+      VALIDATION_LIMITS.SECTION_DESC_MAX_LENGTH,
+      false
+    );
+    if (!descValidation.isValid) {
+      toast.error(getValidationError(descValidation, tc)!);
+      return;
+    }
+
+    try {
+      await projects.addSection(selectedProject.id, newSectionTitle.trim(), newSectionDesc.trim());
+      toast.success(t("sectionAdded"));
+      setAddSectionDialogOpen(false);
+      setNewSectionTitle("");
+      setNewSectionDesc("");
+      // Refresh project detail
+      const detail = await projects.get(selectedProject.id);
+      setSelectedProject(detail);
+    } catch (e) {
+      console.error("Failed to add section:", e);
+      toast.error(t("sectionAddFailed"), {
+        description: e instanceof Error ? e.message : tc("error"),
+      });
+    }
+  }
+
+  async function handleEditSection() {
+    if (!selectedProject || !editSectionId) return;
+
+    // Validate title
+    const titleValidation = validateInput(
+      editSectionTitle,
+      t("sectionTitle"),
+      VALIDATION_LIMITS.SECTION_TITLE_MAX_LENGTH
+    );
+    if (!titleValidation.isValid) {
+      toast.error(getValidationError(titleValidation, tc)!);
+      return;
+    }
+
+    // Validate description (optional field)
+    const descValidation = validateInput(
+      editSectionDesc,
+      t("sectionDescription"),
+      VALIDATION_LIMITS.SECTION_DESC_MAX_LENGTH,
+      false
+    );
+    if (!descValidation.isValid) {
+      toast.error(getValidationError(descValidation, tc)!);
+      return;
+    }
+
+    try {
+      await projects.updateSection(selectedProject.id, editSectionId, editSectionTitle.trim(), editSectionDesc.trim());
+      toast.success(t("sectionUpdated"));
+      setEditSectionId(null);
+      // Refresh project detail
+      const detail = await projects.get(selectedProject.id);
+      setSelectedProject(detail);
+    } catch (e) {
+      console.error("Failed to update section:", e);
+      toast.error(t("sectionUpdateFailed"), {
+        description: e instanceof Error ? e.message : tc("error"),
+      });
+    }
+  }
+
+  async function handleDeleteSection(sectionId: string) {
+    if (!selectedProject) return;
+
+    try {
+      await projects.deleteSection(selectedProject.id, sectionId);
+      toast.success(t("sectionDeleted"));
+      // Refresh project detail
+      const detail = await projects.get(selectedProject.id);
+      setSelectedProject(detail);
+    } catch (e) {
+      console.error("Failed to delete section:", e);
+      toast.error(t("sectionDeleteFailed"), {
+        description: e instanceof Error ? e.message : tc("error"),
+      });
+    }
+  }
+
+  function toggleSection(sectionId: string) {
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(sectionId)) {
+        next.delete(sectionId);
+      } else {
+        next.add(sectionId);
+      }
+      return next;
+    });
+  }
+
+  function openMoveChapterToSectionDialog(chapterId: string, currentSectionId: string | null) {
+    setChapterToMoveToSection({ chapterId, currentSectionId });
+    setTargetSectionId("");
+    setMoveChapterToSectionDialogOpen(true);
+  }
+
+  async function handleMoveChapterToSection() {
+    if (!selectedProject || !chapterToMoveToSection || !targetSectionId) return;
+
+    try {
+      await projects.moveChapterToSection(selectedProject.id, targetSectionId, chapterToMoveToSection.chapterId);
+      toast.success(t("chapterMovedToSection"));
+      setMoveChapterToSectionDialogOpen(false);
+      setChapterToMoveToSection(null);
+      // Refresh project detail
+      const detail = await projects.get(selectedProject.id);
+      setSelectedProject(detail);
+    } catch (e) {
+      console.error("Failed to move chapter to section:", e);
+      toast.error(t("chapterMoveToSectionFailed"), {
+        description: e instanceof Error ? e.message : tc("error"),
+      });
+    }
+  }
+
+  async function handleRemoveChapterFromSection(sectionId: string, chapterId: string) {
+    if (!selectedProject) return;
+
+    try {
+      await projects.removeChapterFromSection(selectedProject.id, sectionId, chapterId);
+      toast.success(t("chapterRemovedFromSection"));
+      // Refresh project detail
+      const detail = await projects.get(selectedProject.id);
+      setSelectedProject(detail);
+    } catch (e) {
+      console.error("Failed to remove chapter from section:", e);
+      toast.error(t("chapterRemoveFromSectionFailed"), {
+        description: e instanceof Error ? e.message : tc("error"),
+      });
+    }
+  }
+
+  // Helper to get chapters not in any section
+  function getUngroupedChapters() {
+    if (!selectedProject) return [];
+    const sectionsChapterIds = new Set(
+      selectedProject.sections?.flatMap((s) => s.chapters) || []
+    );
+    return selectedProject.chapters.filter((ch) => !sectionsChapterIds.has(ch.id));
+  }
+
   async function handleRemoveManualFromProject(manualId: string) {
     if (!selectedProject) return;
 
@@ -551,7 +776,7 @@ export default function ProjectsPage() {
     }
   }
 
-  async function handleQuickExport(projectId: string, format: "pdf" | "html") {
+  async function handleQuickExport(projectId: string, format: "pdf" | "html" | "chunks") {
     setExporting(format);
     try {
       const result = await projects.export(projectId, format);
@@ -898,7 +1123,8 @@ export default function ProjectsPage() {
                 <div className="flex gap-2 mt-4">
                   <Button
                     onClick={() => handleCompile(selectedProject.id, selectedProject.name)}
-                    disabled={selectedProject.manuals.length === 0}
+                    disabled={selectedProject.manuals.length < 2}
+                    title={selectedProject.manuals.length < 2 ? t("compilationRequires2Manuals") : undefined}
                   >
                     <Wand2 className="h-4 w-4 mr-2" />
                     {t("compile")}
@@ -926,6 +1152,9 @@ export default function ProjectsPage() {
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => handleQuickExport(selectedProject.id, "html")} disabled={exporting !== null}>
                         {t("html")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleQuickExport(selectedProject.id, "chunks")} disabled={exporting !== null}>
+                        {t("semanticChunks")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -960,8 +1189,8 @@ export default function ProjectsPage() {
 
               {/* Tabs Section */}
               <Tabs defaultValue="chapters" className="flex-1 flex flex-col overflow-hidden">
-                <div className="px-6 pt-4 border-b">
-                  <TabsList>
+                <div className="px-6 pt-4">
+                  <TabsList className="w-full justify-start">
                     <TabsTrigger value="chapters">
                       <BookOpen className="h-4 w-4 mr-2" />
                       {t("chaptersTab")} ({selectedProject.chapters.length})
@@ -985,139 +1214,552 @@ export default function ProjectsPage() {
                   </TabsList>
                 </div>
 
-                {/* Chapters Tab */}
+                {/* Chapters Tab - Hierarchical View: Sections > Chapters > Manuals */}
                 <TabsContent value="chapters" className="flex-1 overflow-auto p-6 space-y-4">
+                  {/* Header with action buttons */}
                   <div className="flex justify-between items-center">
                     <p className="text-sm text-muted-foreground">
                       {t("organizeChaptersDesc")}
                     </p>
-                    <Button size="sm" onClick={() => setAddChapterDialogOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      {t("addChapter")}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" onClick={() => setAddSectionDialogOpen(true)}>
+                        <Layers className="h-4 w-4 mr-2" />
+                        {t("addSection")}
+                      </Button>
+                      <Button size="sm" onClick={() => setAddChapterDialogOpen(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        {t("addChapter")}
+                      </Button>
+                    </div>
                   </div>
 
-                  {selectedProject.chapters.length === 0 ? (
+                  {/* Empty state when no chapters and no sections */}
+                  {selectedProject.chapters.length === 0 && (!selectedProject.sections || selectedProject.sections.length === 0) ? (
                     <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
-                      <BookOpen className="mx-auto h-12 w-12 mb-4 opacity-50" />
+                      <FolderTree className="mx-auto h-12 w-12 mb-4 opacity-50" />
                       <p className="text-lg font-medium">{t("noChaptersYet")}</p>
                       <p className="text-sm mt-1">{t("addChaptersToOrganize")}</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
-                      {selectedProject.chapters
-                        .sort((a, b) => a.order - b.order)
-                        .map((ch) => {
-                          const chapterManuals = selectedProject.manuals.filter(
-                            (m) => m.chapter_id === ch.id
-                          );
-                          const isEditing = editChapterId === ch.id;
+                    <div className="space-y-4">
+                      {/* Sections with their chapters */}
+                      {selectedProject.sections && selectedProject.sections.length > 0 && (
+                        <div className="space-y-3">
+                          {selectedProject.sections
+                            .sort((a, b) => a.order - b.order)
+                            .map((section) => {
+                              const isSectionExpanded = expandedSections.has(section.id);
+                              const isSectionEditing = editSectionId === section.id;
+                              const sectionChapters = selectedProject.chapters.filter((ch) =>
+                                section.chapters.includes(ch.id)
+                              );
+                              const totalManualsInSection = sectionChapters.reduce((sum, ch) => {
+                                return sum + selectedProject.manuals.filter((m) => m.chapter_id === ch.id).length;
+                              }, 0);
 
-                          return (
-                            <Card key={ch.id} className="overflow-hidden">
-                              <CardContent className="p-4">
-                                {isEditing ? (
-                                  <div className="space-y-3">
-                                    <div>
-                                      <div className="flex items-center justify-between mb-1">
-                                        <span className="text-sm font-medium">Title</span>
-                                        <span className="text-xs text-muted-foreground">
-                                          {editChapterTitle.length}/{VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH}
-                                        </span>
-                                      </div>
-                                      <Input
-                                        value={editChapterTitle}
-                                        onChange={(e) => setEditChapterTitle(e.target.value)}
-                                        placeholder="Chapter title"
-                                        maxLength={VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH}
-                                      />
-                                    </div>
-                                    <div>
-                                      <div className="flex items-center justify-between mb-1">
-                                        <span className="text-sm font-medium">Description</span>
-                                        <span className="text-xs text-muted-foreground">
-                                          {editChapterDesc.length}/{VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH}
-                                        </span>
-                                      </div>
-                                      <Input
-                                        value={editChapterDesc}
-                                        onChange={(e) => setEditChapterDesc(e.target.value)}
-                                        placeholder="Description (optional)"
-                                        maxLength={VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH}
-                                      />
-                                    </div>
-                                    <div className="flex gap-2">
-                                      <Button size="sm" onClick={handleEditChapter}>
-                                        Save
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => setEditChapterId(null)}
-                                      >
-                                        Cancel
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <>
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex items-center gap-3">
-                                        <GripVertical className="h-5 w-5 text-muted-foreground cursor-grab" />
+                              return (
+                                <Card key={section.id} className="overflow-hidden border-l-4 border-l-violet-500/50">
+                                  <CardContent className="p-0">
+                                    {isSectionEditing ? (
+                                      /* Section Edit Mode */
+                                      <div className="p-4 space-y-3 bg-violet-50/50 dark:bg-violet-950/20">
                                         <div>
-                                          <p className="font-semibold text-lg">{ch.title}</p>
-                                          {ch.description && (
-                                            <p className="text-sm text-muted-foreground">
-                                              {ch.description}
-                                            </p>
-                                          )}
+                                          <div className="flex items-center justify-between mb-1">
+                                            <span className="text-sm font-medium">{t("sectionTitle")}</span>
+                                            <span className="text-xs text-muted-foreground">
+                                              {editSectionTitle.length}/{VALIDATION_LIMITS.SECTION_TITLE_MAX_LENGTH}
+                                            </span>
+                                          </div>
+                                          <Input
+                                            value={editSectionTitle}
+                                            onChange={(e) => setEditSectionTitle(e.target.value)}
+                                            placeholder={t("sectionTitle")}
+                                            maxLength={VALIDATION_LIMITS.SECTION_TITLE_MAX_LENGTH}
+                                          />
+                                        </div>
+                                        <div>
+                                          <div className="flex items-center justify-between mb-1">
+                                            <span className="text-sm font-medium">{tc("description")}</span>
+                                            <span className="text-xs text-muted-foreground">
+                                              {editSectionDesc.length}/{VALIDATION_LIMITS.SECTION_DESC_MAX_LENGTH}
+                                            </span>
+                                          </div>
+                                          <Input
+                                            value={editSectionDesc}
+                                            onChange={(e) => setEditSectionDesc(e.target.value)}
+                                            placeholder={t("sectionDescription")}
+                                            maxLength={VALIDATION_LIMITS.SECTION_DESC_MAX_LENGTH}
+                                          />
+                                        </div>
+                                        <div className="flex gap-2">
+                                          <Button size="sm" onClick={handleEditSection}>
+                                            {tc("save")}
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => setEditSectionId(null)}
+                                          >
+                                            {tc("cancel")}
+                                          </Button>
                                         </div>
                                       </div>
-                                      <div className="flex items-center gap-2">
-                                        <Badge variant="secondary">
-                                          {chapterManuals.length} manuals
-                                        </Badge>
-                                        <Button
-                                          size="icon"
-                                          variant="ghost"
-                                          className="h-8 w-8"
-                                          onClick={() => {
-                                            setEditChapterId(ch.id);
-                                            setEditChapterTitle(ch.title);
-                                            setEditChapterDesc(ch.description);
-                                          }}
+                                    ) : (
+                                      <>
+                                        {/* Section Header */}
+                                        <div
+                                          className="flex items-center justify-between p-4 hover:bg-violet-50/50 dark:hover:bg-violet-950/20 cursor-pointer transition-colors"
+                                          onClick={() => toggleSection(section.id)}
                                         >
-                                          <Edit2 className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                          size="icon"
-                                          variant="ghost"
-                                          className="h-8 w-8 text-destructive"
-                                          onClick={() => handleDeleteChapter(ch.id)}
-                                        >
-                                          <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                      </div>
-                                    </div>
-                                    {chapterManuals.length > 0 && (
-                                      <div className="mt-3 ml-8 space-y-1 border-l-2 pl-4">
-                                        {chapterManuals.map((m) => (
-                                          <div
-                                            key={m.manual_id}
-                                            className="flex items-center gap-2 text-sm text-muted-foreground py-1"
-                                          >
-                                            <FileText className="h-3 w-3" />
-                                            <span className="truncate">{m.manual_id}</span>
+                                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                                            {isSectionExpanded ? (
+                                              <ChevronDown className="h-5 w-5 text-violet-500 shrink-0" />
+                                            ) : (
+                                              <ChevronRight className="h-5 w-5 text-violet-500 shrink-0" />
+                                            )}
+                                            <Layers className="h-5 w-5 text-violet-500 shrink-0" />
+                                            <div className="min-w-0 flex-1">
+                                              <p className="font-semibold text-lg truncate">{section.title}</p>
+                                              {section.description && (
+                                                <p className="text-sm text-muted-foreground line-clamp-1">
+                                                  {section.description}
+                                                </p>
+                                              )}
+                                            </div>
                                           </div>
-                                        ))}
-                                      </div>
+                                          <div className="flex items-center gap-2 ml-3" onClick={(e) => e.stopPropagation()}>
+                                            <Badge variant="outline" className="shrink-0 border-violet-300 text-violet-600 dark:text-violet-400">
+                                              {sectionChapters.length} {sectionChapters.length === 1 ? t("chapter") : t("chapters")}
+                                            </Badge>
+                                            <Badge variant="secondary" className="shrink-0">
+                                              {totalManualsInSection} {totalManualsInSection === 1 ? t("manual") : t("manuals")}
+                                            </Badge>
+                                            <Button
+                                              size="icon"
+                                              variant="ghost"
+                                              className="h-8 w-8 shrink-0"
+                                              onClick={() => {
+                                                setEditSectionId(section.id);
+                                                setEditSectionTitle(section.title);
+                                                setEditSectionDesc(section.description);
+                                              }}
+                                            >
+                                              <Edit2 className="h-4 w-4" />
+                                            </Button>
+                                            {sectionChapters.length === 0 && (
+                                              <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                className="h-8 w-8 text-destructive shrink-0"
+                                                onClick={() => handleDeleteSection(section.id)}
+                                                title={t("deleteEmptySection")}
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </Button>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        {/* Expanded Section Content - Chapters */}
+                                        {isSectionExpanded && (
+                                          <div className="border-t bg-violet-50/30 dark:bg-violet-950/10">
+                                            {sectionChapters.length === 0 ? (
+                                              <div className="p-8 text-center">
+                                                <BookOpen className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
+                                                <p className="text-sm text-muted-foreground">{t("noChaptersInSection")}</p>
+                                              </div>
+                                            ) : (
+                                              <div className="p-4 space-y-3">
+                                                {sectionChapters
+                                                  .sort((a, b) => a.order - b.order)
+                                                  .map((ch) => {
+                                                    const chapterManuals = selectedProject.manuals.filter(
+                                                      (m) => m.chapter_id === ch.id
+                                                    );
+                                                    const isChapterEditing = editChapterId === ch.id;
+                                                    const isChapterExpanded = expandedChapters.has(ch.id);
+
+                                                    return (
+                                                      <Card key={ch.id} className="overflow-hidden border-l-4 border-l-primary/30">
+                                                        <CardContent className="p-0">
+                                                          {isChapterEditing ? (
+                                                            <div className="p-4 space-y-3">
+                                                              <div>
+                                                                <div className="flex items-center justify-between mb-1">
+                                                                  <span className="text-sm font-medium">{t("chapterTitle")}</span>
+                                                                  <span className="text-xs text-muted-foreground">
+                                                                    {editChapterTitle.length}/{VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH}
+                                                                  </span>
+                                                                </div>
+                                                                <Input
+                                                                  value={editChapterTitle}
+                                                                  onChange={(e) => setEditChapterTitle(e.target.value)}
+                                                                  placeholder={t("chapterTitle")}
+                                                                  maxLength={VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH}
+                                                                />
+                                                              </div>
+                                                              <div>
+                                                                <div className="flex items-center justify-between mb-1">
+                                                                  <span className="text-sm font-medium">{tc("description")}</span>
+                                                                  <span className="text-xs text-muted-foreground">
+                                                                    {editChapterDesc.length}/{VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH}
+                                                                  </span>
+                                                                </div>
+                                                                <Input
+                                                                  value={editChapterDesc}
+                                                                  onChange={(e) => setEditChapterDesc(e.target.value)}
+                                                                  placeholder={t("chapterDescription")}
+                                                                  maxLength={VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH}
+                                                                />
+                                                              </div>
+                                                              <div className="flex gap-2">
+                                                                <Button size="sm" onClick={handleEditChapter}>
+                                                                  {tc("save")}
+                                                                </Button>
+                                                                <Button
+                                                                  size="sm"
+                                                                  variant="ghost"
+                                                                  onClick={() => setEditChapterId(null)}
+                                                                >
+                                                                  {tc("cancel")}
+                                                                </Button>
+                                                              </div>
+                                                            </div>
+                                                          ) : (
+                                                            <>
+                                                              {/* Chapter Header */}
+                                                              <div
+                                                                className="flex items-center justify-between p-3 hover:bg-muted/50 cursor-pointer transition-colors"
+                                                                onClick={() => toggleChapter(ch.id)}
+                                                              >
+                                                                <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                                  {isChapterExpanded ? (
+                                                                    <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                                                                  ) : (
+                                                                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                                                                  )}
+                                                                  <BookOpen className="h-4 w-4 text-primary shrink-0" />
+                                                                  <div className="min-w-0 flex-1">
+                                                                    <p className="font-medium truncate">{ch.title}</p>
+                                                                    {ch.description && (
+                                                                      <p className="text-xs text-muted-foreground line-clamp-1">
+                                                                        {ch.description}
+                                                                      </p>
+                                                                    )}
+                                                                  </div>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 ml-3" onClick={(e) => e.stopPropagation()}>
+                                                                  <Badge variant="secondary" className="shrink-0 text-xs">
+                                                                    {chapterManuals.length} {chapterManuals.length === 1 ? t("manual") : t("manuals")}
+                                                                  </Badge>
+                                                                  <DropdownMenu>
+                                                                    <DropdownMenuTrigger asChild>
+                                                                      <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0">
+                                                                        <MoreVertical className="h-4 w-4" />
+                                                                      </Button>
+                                                                    </DropdownMenuTrigger>
+                                                                    <DropdownMenuContent align="end">
+                                                                      <DropdownMenuItem onClick={() => {
+                                                                        setEditChapterId(ch.id);
+                                                                        setEditChapterTitle(ch.title);
+                                                                        setEditChapterDesc(ch.description);
+                                                                      }}>
+                                                                        <Edit2 className="h-4 w-4 mr-2" />
+                                                                        {tc("edit")}
+                                                                      </DropdownMenuItem>
+                                                                      <DropdownMenuItem onClick={() => handleRemoveChapterFromSection(section.id, ch.id)}>
+                                                                        <X className="h-4 w-4 mr-2" />
+                                                                        {t("removeFromSection")}
+                                                                      </DropdownMenuItem>
+                                                                      {chapterManuals.length === 0 && (
+                                                                        <DropdownMenuItem
+                                                                          onClick={() => handleDeleteChapter(ch.id)}
+                                                                          className="text-destructive"
+                                                                        >
+                                                                          <Trash2 className="h-4 w-4 mr-2" />
+                                                                          {tc("delete")}
+                                                                        </DropdownMenuItem>
+                                                                      )}
+                                                                    </DropdownMenuContent>
+                                                                  </DropdownMenu>
+                                                                </div>
+                                                              </div>
+
+                                                              {/* Expanded Chapter Content - Manuals */}
+                                                              {isChapterExpanded && chapterManuals.length > 0 && (
+                                                                <div className="border-t bg-muted/20">
+                                                                  <div className="p-3 space-y-2">
+                                                                    {chapterManuals.map((m) => (
+                                                                      <div
+                                                                        key={m.manual_id}
+                                                                        className="flex items-center justify-between p-2 bg-background rounded-lg border hover:border-primary/50 transition-colors group"
+                                                                      >
+                                                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                                                          <FileText className="h-4 w-4 text-primary shrink-0" />
+                                                                          <span className="text-sm truncate">{m.manual_id}</span>
+                                                                        </div>
+                                                                        <div className="flex items-center gap-1 ml-2">
+                                                                          <Button
+                                                                            size="sm"
+                                                                            variant="ghost"
+                                                                            className="h-7 shrink-0 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                            onClick={() => handleViewManual(m.manual_id)}
+                                                                          >
+                                                                            <Eye className="h-3 w-3 mr-1" />
+                                                                            {t("view")}
+                                                                          </Button>
+                                                                          <DropdownMenu>
+                                                                            <DropdownMenuTrigger asChild>
+                                                                              <Button size="icon" variant="ghost" className="h-7 w-7 shrink-0">
+                                                                                <MoreVertical className="h-3.5 w-3.5" />
+                                                                              </Button>
+                                                                            </DropdownMenuTrigger>
+                                                                            <DropdownMenuContent align="end">
+                                                                              <DropdownMenuItem onClick={() => openMoveManualDialog(m.manual_id, ch.id)}>
+                                                                                <MoveHorizontal className="h-4 w-4 mr-2" />
+                                                                                {t("moveToChapter")}
+                                                                              </DropdownMenuItem>
+                                                                              <DropdownMenuItem
+                                                                                onClick={() => handleRemoveManualFromProject(m.manual_id)}
+                                                                                className="text-destructive"
+                                                                              >
+                                                                                <X className="h-4 w-4 mr-2" />
+                                                                                {t("removeFromProject")}
+                                                                              </DropdownMenuItem>
+                                                                            </DropdownMenuContent>
+                                                                          </DropdownMenu>
+                                                                        </div>
+                                                                      </div>
+                                                                    ))}
+                                                                  </div>
+                                                                </div>
+                                                              )}
+
+                                                              {/* Empty Chapter State */}
+                                                              {isChapterExpanded && chapterManuals.length === 0 && (
+                                                                <div className="border-t bg-muted/10 p-6 text-center">
+                                                                  <FileText className="h-6 w-6 text-muted-foreground/50 mx-auto mb-2" />
+                                                                  <p className="text-xs text-muted-foreground">{t("noManualsInChapter")}</p>
+                                                                </div>
+                                                              )}
+                                                            </>
+                                                          )}
+                                                        </CardContent>
+                                                      </Card>
+                                                    );
+                                                  })}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                      </>
                                     )}
-                                  </>
-                                )}
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
+                                  </CardContent>
+                                </Card>
+                              );
+                            })}
+                        </div>
+                      )}
+
+                      {/* Ungrouped Chapters (not in any section) */}
+                      {getUngroupedChapters().length > 0 && (
+                        <div className="space-y-3">
+                          {selectedProject.sections && selectedProject.sections.length > 0 && (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground pt-4">
+                              <BookOpen className="h-4 w-4" />
+                              <span className="font-medium">{t("ungroupedChapters")}</span>
+                            </div>
+                          )}
+                          {getUngroupedChapters()
+                            .sort((a, b) => a.order - b.order)
+                            .map((ch) => {
+                              const chapterManuals = selectedProject.manuals.filter(
+                                (m) => m.chapter_id === ch.id
+                              );
+                              const isEditing = editChapterId === ch.id;
+                              const isExpanded = expandedChapters.has(ch.id);
+
+                              return (
+                                <Card key={ch.id} className="overflow-hidden border-l-4 border-l-primary/30">
+                                  <CardContent className="p-0">
+                                    {isEditing ? (
+                                      <div className="p-4 space-y-3">
+                                        <div>
+                                          <div className="flex items-center justify-between mb-1">
+                                            <span className="text-sm font-medium">{t("chapterTitle")}</span>
+                                            <span className="text-xs text-muted-foreground">
+                                              {editChapterTitle.length}/{VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH}
+                                            </span>
+                                          </div>
+                                          <Input
+                                            value={editChapterTitle}
+                                            onChange={(e) => setEditChapterTitle(e.target.value)}
+                                            placeholder={t("chapterTitle")}
+                                            maxLength={VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH}
+                                          />
+                                        </div>
+                                        <div>
+                                          <div className="flex items-center justify-between mb-1">
+                                            <span className="text-sm font-medium">{tc("description")}</span>
+                                            <span className="text-xs text-muted-foreground">
+                                              {editChapterDesc.length}/{VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH}
+                                            </span>
+                                          </div>
+                                          <Input
+                                            value={editChapterDesc}
+                                            onChange={(e) => setEditChapterDesc(e.target.value)}
+                                            placeholder={t("chapterDescription")}
+                                            maxLength={VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH}
+                                          />
+                                        </div>
+                                        <div className="flex gap-2">
+                                          <Button size="sm" onClick={handleEditChapter}>
+                                            {tc("save")}
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            variant="ghost"
+                                            onClick={() => setEditChapterId(null)}
+                                          >
+                                            {tc("cancel")}
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <>
+                                        {/* Chapter Header */}
+                                        <div
+                                          className="flex items-center justify-between p-4 hover:bg-muted/50 cursor-pointer transition-colors"
+                                          onClick={() => toggleChapter(ch.id)}
+                                        >
+                                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                                            {isExpanded ? (
+                                              <ChevronDown className="h-5 w-5 text-muted-foreground shrink-0" />
+                                            ) : (
+                                              <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
+                                            )}
+                                            <BookOpen className="h-5 w-5 text-primary shrink-0" />
+                                            <div className="min-w-0 flex-1">
+                                              <p className="font-semibold text-lg truncate">{ch.title}</p>
+                                              {ch.description && (
+                                                <p className="text-sm text-muted-foreground line-clamp-1">
+                                                  {ch.description}
+                                                </p>
+                                              )}
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center gap-2 ml-3" onClick={(e) => e.stopPropagation()}>
+                                            <Badge variant="secondary" className="shrink-0">
+                                              {chapterManuals.length} {chapterManuals.length === 1 ? t("manual") : t("manuals")}
+                                            </Badge>
+                                            {selectedProject.sections && selectedProject.sections.length > 0 && (
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-8 shrink-0 text-xs"
+                                                onClick={() => openMoveChapterToSectionDialog(ch.id, null)}
+                                              >
+                                                <Layers className="h-3.5 w-3.5 mr-1" />
+                                                {t("moveToSection")}
+                                              </Button>
+                                            )}
+                                            <Button
+                                              size="icon"
+                                              variant="ghost"
+                                              className="h-8 w-8 shrink-0"
+                                              onClick={() => {
+                                                setEditChapterId(ch.id);
+                                                setEditChapterTitle(ch.title);
+                                                setEditChapterDesc(ch.description);
+                                              }}
+                                            >
+                                              <Edit2 className="h-4 w-4" />
+                                            </Button>
+                                            {chapterManuals.length === 0 && (
+                                              <Button
+                                                size="icon"
+                                                variant="ghost"
+                                                className="h-8 w-8 text-destructive shrink-0"
+                                                onClick={() => handleDeleteChapter(ch.id)}
+                                                title={t("deleteEmptyChapter")}
+                                              >
+                                                <Trash2 className="h-4 w-4" />
+                                              </Button>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        {/* Expanded Chapter Content - Manuals */}
+                                        {isExpanded && chapterManuals.length > 0 && (
+                                          <div className="border-t bg-muted/20">
+                                            <div className="p-4 space-y-2">
+                                              {chapterManuals.map((m) => (
+                                                <div
+                                                  key={m.manual_id}
+                                                  className="flex items-center justify-between p-3 bg-background rounded-lg border hover:border-primary/50 transition-colors group"
+                                                >
+                                                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                                                    <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    <FileText className="h-4 w-4 text-primary shrink-0" />
+                                                    <span className="text-sm font-medium truncate">{m.manual_id}</span>
+                                                  </div>
+                                                  <div className="flex items-center gap-1 ml-2">
+                                                    <Button
+                                                      size="sm"
+                                                      variant="ghost"
+                                                      className="h-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                      onClick={() => handleViewManual(m.manual_id)}
+                                                    >
+                                                      <Eye className="h-3.5 w-3.5 mr-1" />
+                                                      {t("view")}
+                                                    </Button>
+                                                    <DropdownMenu>
+                                                      <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                          size="icon"
+                                                          variant="ghost"
+                                                          className="h-8 w-8 shrink-0"
+                                                        >
+                                                          <MoreVertical className="h-4 w-4" />
+                                                        </Button>
+                                                      </DropdownMenuTrigger>
+                                                      <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem onClick={() => openMoveManualDialog(m.manual_id, ch.id)}>
+                                                          <MoveHorizontal className="h-4 w-4 mr-2" />
+                                                          {t("moveToChapter")}
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                          onClick={() => handleRemoveManualFromProject(m.manual_id)}
+                                                          className="text-destructive"
+                                                        >
+                                                          <X className="h-4 w-4 mr-2" />
+                                                          {t("removeFromProject")}
+                                                        </DropdownMenuItem>
+                                                      </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                  </div>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        {/* Empty Chapter State */}
+                                        {isExpanded && chapterManuals.length === 0 && (
+                                          <div className="border-t bg-muted/10 p-8 text-center">
+                                            <FileText className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
+                                            <p className="text-sm text-muted-foreground">{t("noManualsInChapter")}</p>
+                                            <p className="text-xs text-muted-foreground mt-1">{t("addManualsFromManualsTab")}</p>
+                                          </div>
+                                        )}
+                                      </>
+                                    )}
+                                  </CardContent>
+                                </Card>
+                              );
+                            })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </TabsContent>
@@ -1137,7 +1779,7 @@ export default function ProjectsPage() {
                           (ch) => ch.id === m.chapter_id
                         );
                         return (
-                          <Card key={m.manual_id} className="overflow-hidden">
+                          <Card key={m.manual_id} className="overflow-hidden group hover:border-primary/50 transition-colors">
                             <CardContent className="p-4">
                               <div className="flex items-start gap-3 min-w-0">
                                 <FileText className="h-5 w-5 text-primary shrink-0 mt-0.5" />
@@ -1163,15 +1805,28 @@ export default function ProjectsPage() {
                                   ) : (
                                     <Eye className="h-4 w-4 mr-2" />
                                   )}
-                                  View
+                                  {t("view")}
                                 </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleRemoveManualFromProject(m.manual_id)}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button size="sm" variant="outline">
+                                      <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => openMoveManualDialog(m.manual_id, m.chapter_id)}>
+                                      <MoveHorizontal className="h-4 w-4 mr-2" />
+                                      {t("moveToChapter")}
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      onClick={() => handleRemoveManualFromProject(m.manual_id)}
+                                      className="text-destructive"
+                                    >
+                                      <X className="h-4 w-4 mr-2" />
+                                      {t("removeFromProject")}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </div>
                             </CardContent>
                           </Card>
@@ -1296,6 +1951,18 @@ export default function ProjectsPage() {
                           )}
                           {exporting === "html" ? "Exporting..." : "Export HTML"}
                         </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleQuickExport(selectedProject.id, "chunks")}
+                          disabled={selectedProject.manuals.length === 0 || exporting !== null}
+                        >
+                          {exporting === "chunks" ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <FileDown className="h-4 w-4 mr-2" />
+                          )}
+                          {exporting === "chunks" ? "Exporting..." : t("semanticChunks")}
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -1315,12 +1982,12 @@ export default function ProjectsPage() {
       <Dialog open={addChapterDialogOpen} onOpenChange={setAddChapterDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Chapter</DialogTitle>
+            <DialogTitle>{t("addChapter")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Title</Label>
+                <Label>{t("chapterTitle")}</Label>
                 <span className="text-xs text-muted-foreground">
                   {newChapterTitle.length}/{VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH}
                 </span>
@@ -1328,13 +1995,13 @@ export default function ProjectsPage() {
               <Input
                 value={newChapterTitle}
                 onChange={(e) => setNewChapterTitle(e.target.value)}
-                placeholder="Chapter title"
+                placeholder={t("chapterTitle")}
                 maxLength={VALIDATION_LIMITS.CHAPTER_TITLE_MAX_LENGTH}
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Description</Label>
+                <Label>{tc("description")}</Label>
                 <span className="text-xs text-muted-foreground">
                   {newChapterDesc.length}/{VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH}
                 </span>
@@ -1342,17 +2009,175 @@ export default function ProjectsPage() {
               <Input
                 value={newChapterDesc}
                 onChange={(e) => setNewChapterDesc(e.target.value)}
-                placeholder="Optional description"
+                placeholder={t("chapterDescription")}
                 maxLength={VALIDATION_LIMITS.CHAPTER_DESC_MAX_LENGTH}
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddChapterDialogOpen(false)}>
-              Cancel
+              {tc("cancel")}
             </Button>
             <Button onClick={handleAddChapter} disabled={!newChapterTitle.trim()}>
-              Add Chapter
+              {t("addChapter")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Section Dialog */}
+      <Dialog open={addSectionDialogOpen} onOpenChange={setAddSectionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("addSection")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>{t("sectionTitle")}</Label>
+                <span className="text-xs text-muted-foreground">
+                  {newSectionTitle.length}/{VALIDATION_LIMITS.SECTION_TITLE_MAX_LENGTH}
+                </span>
+              </div>
+              <Input
+                value={newSectionTitle}
+                onChange={(e) => setNewSectionTitle(e.target.value)}
+                placeholder={t("sectionTitle")}
+                maxLength={VALIDATION_LIMITS.SECTION_TITLE_MAX_LENGTH}
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>{tc("description")}</Label>
+                <span className="text-xs text-muted-foreground">
+                  {newSectionDesc.length}/{VALIDATION_LIMITS.SECTION_DESC_MAX_LENGTH}
+                </span>
+              </div>
+              <Input
+                value={newSectionDesc}
+                onChange={(e) => setNewSectionDesc(e.target.value)}
+                placeholder={t("sectionDescription")}
+                maxLength={VALIDATION_LIMITS.SECTION_DESC_MAX_LENGTH}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddSectionDialogOpen(false)}>
+              {tc("cancel")}
+            </Button>
+            <Button onClick={handleAddSection} disabled={!newSectionTitle.trim()}>
+              <Layers className="h-4 w-4 mr-2" />
+              {t("addSection")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move Manual to Chapter Dialog */}
+      <Dialog open={moveManualDialogOpen} onOpenChange={setMoveManualDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("moveToChapter")}</DialogTitle>
+          </DialogHeader>
+          {manualToMove && selectedProject && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>{t("manual")}</Label>
+                <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">{manualToMove.manualId}</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t("targetChapter")}</Label>
+                <select
+                  className="w-full p-2 border rounded-md bg-background"
+                  value={targetChapterId}
+                  onChange={(e) => setTargetChapterId(e.target.value)}
+                >
+                  <option value="" disabled>{t("selectChapter")}</option>
+                  {selectedProject.chapters
+                    .filter((ch) => ch.id !== manualToMove.currentChapterId)
+                    .sort((a, b) => a.order - b.order)
+                    .map((ch) => (
+                      <option key={ch.id} value={ch.id}>
+                        {ch.title}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {manualToMove.currentChapterId && (
+                <p className="text-sm text-muted-foreground">
+                  {t("currentChapter")}: {selectedProject.chapters.find((ch) => ch.id === manualToMove.currentChapterId)?.title}
+                </p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMoveManualDialogOpen(false)}>
+              {tc("cancel")}
+            </Button>
+            <Button onClick={handleMoveManual} disabled={!targetChapterId}>
+              <MoveHorizontal className="h-4 w-4 mr-2" />
+              {t("moveManual")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Move Chapter to Section Dialog */}
+      <Dialog open={moveChapterToSectionDialogOpen} onOpenChange={setMoveChapterToSectionDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("moveToSection")}</DialogTitle>
+          </DialogHeader>
+          {chapterToMoveToSection && selectedProject && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>{t("chapter")}</Label>
+                <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
+                  <BookOpen className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">
+                    {selectedProject.chapters.find((ch) => ch.id === chapterToMoveToSection.chapterId)?.title}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t("targetSection")}</Label>
+                <select
+                  className="w-full p-2 border rounded-md bg-background"
+                  value={targetSectionId}
+                  onChange={(e) => setTargetSectionId(e.target.value)}
+                >
+                  <option value="" disabled>{t("selectSection")}</option>
+                  {selectedProject.sections
+                    ?.filter((s) => s.id !== chapterToMoveToSection.currentSectionId)
+                    .sort((a, b) => a.order - b.order)
+                    .map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.title}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {chapterToMoveToSection.currentSectionId && (
+                <p className="text-sm text-muted-foreground">
+                  {t("currentSection")}: {selectedProject.sections?.find((s) => s.id === chapterToMoveToSection.currentSectionId)?.title}
+                </p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setMoveChapterToSectionDialogOpen(false)}>
+              {tc("cancel")}
+            </Button>
+            <Button onClick={handleMoveChapterToSection} disabled={!targetSectionId}>
+              <Layers className="h-4 w-4 mr-2" />
+              {t("moveChapter")}
             </Button>
           </DialogFooter>
         </DialogContent>

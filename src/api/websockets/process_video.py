@@ -13,7 +13,7 @@ from ...core.runners import VideoManualRunner
 from ...core.events import EventType
 from ...core.sanitization import sanitize_target_audience, sanitize_target_objective
 from ...core.constants import normalize_language_to_code
-from ...storage.project_storage import ProjectStorage, DEFAULT_PROJECT_ID, DEFAULT_CHAPTER_ID
+from ...storage.project_storage import ProjectStorage, DEFAULT_PROJECT_ID
 from ...storage.user_storage import UserStorage
 from ...db import JobStorage
 
@@ -125,11 +125,8 @@ async def websocket_process_video(
             output_filename = message.get("output_filename")
             # Default to user's default project if not specified
             project_id = message.get("project_id") or DEFAULT_PROJECT_ID
-            # Only use DEFAULT_CHAPTER_ID for the default project
-            # For custom projects, pass None to let add_manual_to_project create/use "Uncategorized"
+            # Chapter will be auto-created from manual title if not specified
             chapter_id = message.get("chapter_id")
-            if not chapter_id and project_id == DEFAULT_PROJECT_ID:
-                chapter_id = DEFAULT_CHAPTER_ID
             tags = message.get("tags", [])
 
             # Check for duplicate: video already has manual in target project

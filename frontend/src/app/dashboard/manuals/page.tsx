@@ -181,7 +181,18 @@ function ManualsPageContent() {
   const [generateLanguage, setGenerateLanguage] = useState("English");
   const [overrideWarningOpen, setOverrideWarningOpen] = useState(false);
   const { state: processingState, startProcessing, reset: resetProcessing } = useVideoProcessing();
-  const { suppressJob, unsuppressJob } = useJobsStore();
+  const { suppressJob, unsuppressJob, jobs } = useJobsStore();
+
+  // Get set of manual IDs that are currently being processed
+  const processingManualIds = useMemo(() => {
+    const ids = new Set<string>();
+    Object.values(jobs).forEach((job) => {
+      if ((job.status === "pending" || job.status === "processing") && job.manual_id) {
+        ids.add(job.manual_id);
+      }
+    });
+    return ids;
+  }, [jobs]);
 
   // Evaluation state
   const [evaluateDialogOpen, setEvaluateDialogOpen] = useState(false);
@@ -913,6 +924,17 @@ function ManualsPageContent() {
               {/* Subtle gradient overlay on hover */}
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
+              {/* Processing overlay */}
+              {processingManualIds.has(manual.id) && (
+                <div className="absolute inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center z-10">
+                  <div className="flex flex-col items-center gap-2">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <span className="text-sm font-medium">{t("processingInProgress")}</span>
+                    <span className="text-xs text-muted-foreground">{t("pleaseWait")}</span>
+                  </div>
+                </div>
+              )}
+
               {/* Export loading overlay */}
               {exportingManual === manual.id && (
                 <div className="absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-10">
@@ -1116,9 +1138,12 @@ function ManualsPageContent() {
                         <Wand2 className="mr-2 h-4 w-4" />
                         {t("addLanguage")}
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => openCloneDialog(manual)}>
+                      <DropdownMenuItem disabled className="opacity-60">
                         <Copy className="mr-2 h-4 w-4" />
                         {t("cloneToFormat")}
+                        <Badge variant="outline" className="ml-auto text-[10px] px-1.5 py-0 h-4 border-amber-300 text-amber-600 bg-amber-50">
+                          Soon
+                        </Badge>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openEvaluateDialog(manual)}>
                         <ClipboardCheck className="mr-2 h-4 w-4" />

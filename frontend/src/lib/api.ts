@@ -564,6 +564,14 @@ export interface ChapterInfo {
   order: number;
 }
 
+export interface SectionInfo {
+  id: string;
+  title: string;
+  description: string;
+  order: number;
+  chapters: string[];  // List of chapter IDs in this section
+}
+
 export interface ProjectVideoInfo {
   name: string;
   path: string;
@@ -577,6 +585,7 @@ export interface ProjectDetail {
   description: string;
   created_at: string;
   is_default?: boolean;
+  sections: SectionInfo[];
   chapters: ChapterInfo[];
   manuals: { manual_id: string; chapter_id: string | null; order: number }[];
   videos: ProjectVideoInfo[];
@@ -629,6 +638,43 @@ export const projects = {
     request<{ status: string }>(
       `/api/projects/${projectId}/chapters/reorder`,
       { method: "PUT", body: JSON.stringify({ order }) }
+    ),
+
+  // Section operations
+  addSection: (projectId: string, title: string, description = "") =>
+    request<SectionInfo>(`/api/projects/${projectId}/sections`, {
+      method: "POST",
+      body: JSON.stringify({ title, description }),
+    }),
+
+  updateSection: (projectId: string, sectionId: string, title?: string, description?: string) =>
+    request<SectionInfo>(
+      `/api/projects/${projectId}/sections/${sectionId}`,
+      { method: "PUT", body: JSON.stringify({ title, description }) }
+    ),
+
+  deleteSection: (projectId: string, sectionId: string) =>
+    request<{ status: string }>(
+      `/api/projects/${projectId}/sections/${sectionId}`,
+      { method: "DELETE" }
+    ),
+
+  reorderSections: (projectId: string, order: string[]) =>
+    request<{ status: string }>(
+      `/api/projects/${projectId}/sections/reorder`,
+      { method: "PUT", body: JSON.stringify({ order }) }
+    ),
+
+  moveChapterToSection: (projectId: string, sectionId: string, chapterId: string) =>
+    request<{ status: string }>(
+      `/api/projects/${projectId}/sections/${sectionId}/chapters/${chapterId}`,
+      { method: "PUT" }
+    ),
+
+  removeChapterFromSection: (projectId: string, sectionId: string, chapterId: string) =>
+    request<{ status: string }>(
+      `/api/projects/${projectId}/sections/${sectionId}/chapters/${chapterId}`,
+      { method: "DELETE" }
     ),
 
   addManual: (projectId: string, manualId: string, chapterId?: string) =>

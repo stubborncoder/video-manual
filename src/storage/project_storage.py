@@ -12,7 +12,6 @@ from ..config import USERS_DIR
 
 # Default project constants
 DEFAULT_PROJECT_ID = "__default__"
-DEFAULT_CHAPTER_ID = "__uncategorized__"
 
 
 def slugify(text: str) -> str:
@@ -98,6 +97,7 @@ class ProjectStorage:
             "created_at": now,
             "updated_at": now,
             "default_language": default_language,
+            "sections": [],  # New: Sections that contain chapters
             "chapters": [],
             "tags": [],
             "template_id": None,
@@ -125,7 +125,35 @@ class ProjectStorage:
             return None
 
         with open(project_file, "r", encoding="utf-8") as f:
-            return json.load(f)
+            project = json.load(f)
+
+        # Migrate legacy "Uncategorized" chapters
+        chapters = project.get("chapters", [])
+        modified = False
+        cleaned_chapters = []
+
+        for ch in chapters:
+            if ch.get("title") == "Uncategorized":
+                manuals = ch.get("manuals", [])
+                if not manuals:
+                    # Remove empty "Uncategorized" chapters
+                    modified = True
+                    continue
+                elif len(manuals) == 1:
+                    # Rename chapter to match the single manual's title
+                    manual_id = manuals[0]
+                    metadata = self._get_manual_metadata(manual_id)
+                    if metadata:
+                        title = metadata.get("title") or manual_id.replace("-", " ").title()
+                        ch["title"] = title
+                        modified = True
+            cleaned_chapters.append(ch)
+
+        if modified:
+            project["chapters"] = cleaned_chapters
+            self._save_project(project_id, project)
+
+        return project
 
     def update_project(self, project_id: str, updates: Dict[str, Any]) -> None:
         """Update project data.
@@ -216,7 +244,7 @@ class ProjectStorage:
         - Has a fixed ID of "__default__"
         - Cannot be deleted
         - Is marked with is_default=True
-        - Has a default "Uncategorized" chapter
+        - Chapters are created automatically when manuals are added
 
         Returns:
             The default project data
@@ -241,15 +269,8 @@ class ProjectStorage:
             "created_at": now,
             "updated_at": now,
             "default_language": "en",
-            "chapters": [
-                {
-                    "id": DEFAULT_CHAPTER_ID,
-                    "title": "Uncategorized",
-                    "description": "Manuals not assigned to a specific chapter",
-                    "order": 0,
-                    "manuals": [],
-                }
-            ],
+            "sections": [],  # New: Sections that contain chapters
+            "chapters": [],  # Chapters are created automatically when manuals are added
             "tags": [],
             "template_id": None,
             "export_settings": {
@@ -420,6 +441,200 @@ class ProjectStorage:
 
         return sorted(project.get("chapters", []), key=lambda c: c.get("order", 0))
 
+    # ==================== Section Management ====================
+
+    def add_section(
+        self,
+        project_id: str,
+        title: str,
+        description: str = "",
+    ) -> str:
+        """Add a section to a project.
+
+        Args:
+            project_id: Project identifier
+            title: Section title
+            description: Section description
+
+        Returns:
+            Section ID
+        """
+        project = self.get_project(project_id)
+        if not project:
+            raise ValueError(f"Project not found: {project_id}")
+
+        sections = project.get("sections", [])
+
+        # Generate section ID
+        section_num = len(sections) + 1
+        section_id = f"sec-{section_num:02d}"
+
+        # Ensure unique ID
+        existing_ids = {sec["id"] for sec in sections}
+        while section_id in existing_ids:
+            section_num += 1
+            section_id = f"sec-{section_num:02d}"
+
+        section = {
+            "id": section_id,
+            "title": title,
+            "description": description,
+            "order": len(sections) + 1,
+            "chapters": [],  # Chapter IDs that belong to this section
+        }
+
+        sections.append(section)
+        self.update_project(project_id, {"sections": sections})
+
+        return section_id
+
+    def update_section(
+        self,
+        project_id: str,
+        section_id: str,
+        updates: Dict[str, Any],
+    ) -> None:
+        """Update a section.
+
+        Args:
+            project_id: Project identifier
+            section_id: Section identifier
+            updates: Fields to update (title, description)
+        """
+        project = self.get_project(project_id)
+        if not project:
+            raise ValueError(f"Project not found: {project_id}")
+
+        sections = project.get("sections", [])
+        for section in sections:
+            if section["id"] == section_id:
+                # Don't allow changing id or chapters through this method
+                updates.pop("id", None)
+                updates.pop("chapters", None)
+                section.update(updates)
+                self.update_project(project_id, {"sections": sections})
+                return
+
+        raise ValueError(f"Section not found: {section_id}")
+
+    def delete_section(self, project_id: str, section_id: str, force: bool = False) -> None:
+        """Delete a section.
+
+        Args:
+            project_id: Project identifier
+            section_id: Section identifier
+            force: If True, delete even if section has chapters (orphans them)
+
+        Raises:
+            ValueError: If section has chapters and force=False
+        """
+        project = self.get_project(project_id)
+        if not project:
+            raise ValueError(f"Project not found: {project_id}")
+
+        sections = project.get("sections", [])
+        new_sections = []
+
+        for section in sections:
+            if section["id"] == section_id:
+                # Check if section has chapters
+                if section.get("chapters") and not force:
+                    raise ValueError(
+                        f"Cannot delete section with chapters. "
+                        f"Move or delete the {len(section['chapters'])} chapter(s) first, "
+                        f"or use force=True to orphan them."
+                    )
+            else:
+                new_sections.append(section)
+
+        # Re-order remaining sections
+        for i, section in enumerate(new_sections):
+            section["order"] = i + 1
+
+        self.update_project(project_id, {"sections": new_sections})
+
+    def reorder_sections(self, project_id: str, section_order: List[str]) -> None:
+        """Reorder sections in a project.
+
+        Args:
+            project_id: Project identifier
+            section_order: List of section IDs in desired order
+        """
+        project = self.get_project(project_id)
+        if not project:
+            raise ValueError(f"Project not found: {project_id}")
+
+        sections = project.get("sections", [])
+        section_map = {sec["id"]: sec for sec in sections}
+
+        # Validate all IDs exist
+        for sec_id in section_order:
+            if sec_id not in section_map:
+                raise ValueError(f"Section not found: {sec_id}")
+
+        # Reorder
+        new_sections = []
+        for i, sec_id in enumerate(section_order):
+            section = section_map[sec_id]
+            section["order"] = i + 1
+            new_sections.append(section)
+
+        self.update_project(project_id, {"sections": new_sections})
+
+    def move_chapter_to_section(
+        self,
+        project_id: str,
+        chapter_id: str,
+        target_section_id: Optional[str],
+    ) -> None:
+        """Move a chapter to a different section (or remove from section if target_section_id is None).
+
+        Args:
+            project_id: Project identifier
+            chapter_id: Chapter identifier
+            target_section_id: Target section identifier (None to remove from all sections)
+        """
+        project = self.get_project(project_id)
+        if not project:
+            raise ValueError(f"Project not found: {project_id}")
+
+        sections = project.get("sections", [])
+
+        # Remove from current section
+        for section in sections:
+            if chapter_id in section.get("chapters", []):
+                section["chapters"].remove(chapter_id)
+
+        # Add to target section if specified
+        if target_section_id:
+            target_found = False
+            for section in sections:
+                if section["id"] == target_section_id:
+                    if chapter_id not in section["chapters"]:
+                        section["chapters"].append(chapter_id)
+                    target_found = True
+                    break
+
+            if not target_found:
+                raise ValueError(f"Section not found: {target_section_id}")
+
+        self.update_project(project_id, {"sections": sections})
+
+    def list_sections(self, project_id: str) -> List[Dict[str, Any]]:
+        """List all sections in a project.
+
+        Args:
+            project_id: Project identifier
+
+        Returns:
+            List of section dicts
+        """
+        project = self.get_project(project_id)
+        if not project:
+            raise ValueError(f"Project not found: {project_id}")
+
+        return sorted(project.get("sections", []), key=lambda s: s.get("order", 0))
+
     # ==================== Manual Organization ====================
 
     def add_manual_to_project(
@@ -433,7 +648,7 @@ class ProjectStorage:
         Args:
             project_id: Project identifier
             manual_id: Manual identifier
-            chapter_id: Optional chapter to add to (creates "Uncategorized" if None)
+            chapter_id: Optional chapter to add to (creates chapter from manual title if None)
         """
         project = self.get_project(project_id)
         if not project:
@@ -446,19 +661,22 @@ class ProjectStorage:
 
         chapters = project.get("chapters", [])
 
-        # If no chapter specified, use or create "Uncategorized"
+        # If no chapter specified, create a chapter named after the manual
         if chapter_id is None:
-            uncategorized = next(
-                (ch for ch in chapters if ch["id"] == "uncategorized"),
-                None
-            )
-            if not uncategorized:
-                chapter_id = self.add_chapter(project_id, "Uncategorized")
-                # Refresh project data
-                project = self.get_project(project_id)
-                chapters = project.get("chapters", [])
-            else:
-                chapter_id = "uncategorized"
+            # Get manual title from metadata
+            from .user_storage import UserStorage
+            user_storage = UserStorage(self.user_id)
+            metadata = user_storage.get_manual_metadata(manual_id)
+            manual_title = metadata.get("title") if metadata else None
+
+            # Use manual title or ID as chapter name
+            chapter_title = manual_title or manual_id.replace("-", " ").title()
+
+            # Create a new chapter for this manual
+            chapter_id = self.add_chapter(project_id, chapter_title)
+            # Refresh project data
+            project = self.get_project(project_id)
+            chapters = project.get("chapters", [])
 
         # Find chapter and add manual
         chapter_found = False
@@ -489,10 +707,19 @@ class ProjectStorage:
             raise ValueError(f"Project not found: {project_id}")
 
         chapters = project.get("chapters", [])
+        chapter_to_cleanup = None
+
         for chapter in chapters:
             if manual_id in chapter["manuals"]:
                 chapter["manuals"].remove(manual_id)
+                # Mark empty chapters for cleanup (since each manual creates its own chapter)
+                if not chapter["manuals"]:
+                    chapter_to_cleanup = chapter["id"]
                 break
+
+        # Remove empty chapters
+        if chapter_to_cleanup:
+            chapters = [ch for ch in chapters if ch["id"] != chapter_to_cleanup]
 
         self.update_project(project_id, {"chapters": chapters})
 

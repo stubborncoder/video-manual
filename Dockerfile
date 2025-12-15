@@ -44,6 +44,9 @@ COPY src/ ./src/
 # Create data directories
 RUN mkdir -p /data/users /data/checkpoints /data/templates
 
+# Copy global Word templates
+COPY templates/ /data/templates/
+
 # Set data directory
 ENV VDOCS_DATA_DIR=/data
 
