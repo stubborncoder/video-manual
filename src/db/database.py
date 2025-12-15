@@ -112,6 +112,16 @@ def init_db() -> None:
             "CREATE INDEX IF NOT EXISTS idx_usage_daily_user_date ON usage_daily(user_id, date)"
         )
 
+        # Admin settings table for global configuration (model selection, etc.)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS admin_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_by TEXT
+            )
+        """)
+
 
 @contextmanager
 def get_connection() -> Generator[sqlite3.Connection, None, None]:

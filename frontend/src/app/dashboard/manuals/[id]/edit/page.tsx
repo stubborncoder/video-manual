@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -50,11 +51,13 @@ import {
   Pencil,
   Check,
   X,
+  MessageSquare,
+  Sparkles,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
 import { manuals, type ManualDetail } from "@/lib/api";
-import { stripSemanticTags } from "@/lib/tag-utils";
+import { transformSemanticTagsForPreview } from "@/lib/tag-utils";
 import { useUndoRedo } from "@/hooks/useUndoRedo";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { useKeyboardShortcuts, createEditorShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -102,6 +105,7 @@ export default function ManualEditorPage() {
 
   // UI state
   const [activeTab, setActiveTab] = useState<"preview" | "markdown">("preview");
+  const [showCopilot, setShowCopilot] = useState(true);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
   const [showVersionHistory, setShowVersionHistory] = useState(false);
@@ -937,11 +941,11 @@ export default function ManualEditorPage() {
     return currentContent.split("\n").length;
   }, [currentContent]);
 
-  // Preprocess markdown to fix setext heading issues and strip semantic tags for preview
+  // Preprocess markdown to fix setext heading issues and transform semantic tags for preview
   // (--- without blank line before it becomes h2 instead of hr)
   const processedContent = useMemo(() => {
-    // Strip semantic tags for clean preview display
-    const withoutTags = stripSemanticTags(currentContent);
+    // Transform semantic tags: convert <step> to visible labels, strip other tags
+    const withoutTags = transformSemanticTagsForPreview(currentContent);
     // Add blank line before --- that follows non-blank lines (to make them hr, not setext h2)
     return withoutTags.replace(/([^\n])\n(---+)\n/g, '$1\n\n$2\n');
   }, [currentContent]);
@@ -1093,6 +1097,15 @@ export default function ManualEditorPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          <Button
+            variant={showCopilot ? "default" : "outline"}
+            size="sm"
+            onClick={() => setShowCopilot(!showCopilot)}
+            title={showCopilot ? t("hideAssistant") : t("showAssistant")}
+          >
+            <Sparkles className="h-4 w-4" />
+          </Button>
         </div>
 
       </div>
@@ -1173,6 +1186,7 @@ export default function ManualEditorPage() {
                   {/* Render full markdown content */}
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeRaw]}
                     urlTransform={(url) => {
                       // Allow placeholder: URLs for image placeholders
                       if (url.startsWith("placeholder:")) {
@@ -1296,27 +1310,31 @@ export default function ManualEditorPage() {
           </div>
         </ResizablePanel>
 
-        <ResizableHandle withHandle />
+        {showCopilot && (
+          <>
+            <ResizableHandle withHandle />
 
-        {/* Right Panel - Copilot Chat */}
-        <ResizablePanel defaultSize={40} minSize={25}>
-          <CopilotPanel
-            messages={messages}
-            pendingChanges={pendingChanges}
-            selection={selection}
-            onClearSelection={clearSelection}
-            imageContext={imageContext}
-            onClearImageContext={clearImageContext}
-            onSendMessage={handleSendMessage}
-            onStopGeneration={stopGeneration}
-            onClearChat={clearChat}
-            onAcceptChange={acceptChange}
-            onRejectChange={rejectChange}
-            isGenerating={isGenerating}
-            isConnected={isConnected}
-            isPaused={activeTab === "markdown"}
-          />
-        </ResizablePanel>
+            {/* Right Panel - Copilot Chat */}
+            <ResizablePanel defaultSize={40} minSize={25}>
+              <CopilotPanel
+                messages={messages}
+                pendingChanges={pendingChanges}
+                selection={selection}
+                onClearSelection={clearSelection}
+                imageContext={imageContext}
+                onClearImageContext={clearImageContext}
+                onSendMessage={handleSendMessage}
+                onStopGeneration={stopGeneration}
+                onClearChat={clearChat}
+                onAcceptChange={acceptChange}
+                onRejectChange={rejectChange}
+                isGenerating={isGenerating}
+                isConnected={isConnected}
+                isPaused={activeTab === "markdown"}
+              />
+            </ResizablePanel>
+          </>
+        )}
       </ResizablePanelGroup>
 
       {/* Unsaved Changes Dialog */}

@@ -30,12 +30,13 @@ from ...storage.screenshot_store import ScreenshotStore
 from ...core.sanitization import sanitize_target_audience, sanitize_target_objective
 from ...core.constants import (
     SUPPORTED_LANGUAGES,
-    DEFAULT_EVALUATION_MODEL,
     EVALUATION_SCORE_MIN,
     EVALUATION_SCORE_MAX,
     LLM_TIMEOUT_SECONDS,
     normalize_language_to_code,
 )
+from ...core.models import TaskType
+from ...db.admin_settings import AdminSettings
 
 
 class ManualProjectAssignment(BaseModel):
@@ -1729,7 +1730,10 @@ async def evaluate_manual(
     """
     import os
     from dotenv import load_dotenv
-    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain.chat_models import init_chat_model
+    from langchain_anthropic import ChatAnthropic
+    from langchain_anthropic.middleware import AnthropicPromptCachingMiddleware
+    from ...core.models import get_model, get_langchain_model_string, ModelProvider
 
     load_dotenv()
 
@@ -1945,20 +1949,36 @@ Scoring Guidelines:
 Provide your evaluation as valid JSON only, with no additional text before or after."""
 
     try:
-        # Use Gemini for evaluation
-        api_key = os.getenv("GOOGLE_API_KEY")
-        if not api_key:
-            raise HTTPException(
-                status_code=500,
-                detail="GOOGLE_API_KEY not configured"
-            )
+        # Get the configured model for evaluation
+        model_id = AdminSettings.get_model_for_task(TaskType.MANUAL_EVALUATION)
+        model_info = get_model(model_id)
 
-        llm = ChatGoogleGenerativeAI(
-            model=DEFAULT_EVALUATION_MODEL,
-            google_api_key=api_key,
-            temperature=0.3,
-            timeout=LLM_TIMEOUT_SECONDS,
-        )
+        # Check for appropriate API key based on provider and create LLM
+        model_string = get_langchain_model_string(model_id)
+
+        if model_info and model_info.provider == ModelProvider.ANTHROPIC:
+            api_key = os.getenv("ANTHROPIC_API_KEY")
+            if not api_key:
+                raise HTTPException(
+                    status_code=500,
+                    detail="ANTHROPIC_API_KEY not configured for Claude models"
+                )
+            # Use ChatAnthropic with prompt caching middleware for cost savings
+            llm = ChatAnthropic(
+                model=model_id,
+                api_key=api_key,
+                temperature=0.3,
+            ).with_config(
+                middleware=[AnthropicPromptCachingMiddleware(ttl="5m")]
+            )
+        else:
+            api_key = os.getenv("GOOGLE_API_KEY")
+            if not api_key:
+                raise HTTPException(
+                    status_code=500,
+                    detail="GOOGLE_API_KEY not configured"
+                )
+            llm = init_chat_model(model_string, temperature=0.3, api_key=api_key)
 
         # Use asyncio.to_thread for the blocking LLM call
         response = await asyncio.to_thread(llm.invoke, evaluation_prompt)
@@ -1969,13 +1989,27 @@ Provide your evaluation as valid JSON only, with no additional text before or af
             from ...db.usage_tracking import UsageTracking
             usage = response.usage_metadata if hasattr(response, 'usage_metadata') else {}
             if usage:
+                # Extract cache tokens based on provider format
+                # Gemini uses: cached_content_token_count
+                # Claude uses: input_token_details.cache_read, input_token_details.cache_creation
+                cached_tokens = usage.get("cached_content_token_count", 0)  # Gemini
+                cache_read_tokens = 0
+                cache_creation_tokens = 0
+
+                input_details = usage.get("input_token_details", {})
+                if input_details:
+                    cache_read_tokens = input_details.get("cache_read", 0)
+                    cache_creation_tokens = input_details.get("cache_creation", 0)
+
                 UsageTracking.log_request(
                     user_id=user_id,
                     operation="evaluation",
-                    model=DEFAULT_EVALUATION_MODEL,
+                    model=model_id,
                     input_tokens=usage.get("input_tokens", 0),
                     output_tokens=usage.get("output_tokens", 0),
-                    cached_tokens=usage.get("cached_content_token_count", 0),
+                    cached_tokens=cached_tokens,
+                    cache_read_tokens=cache_read_tokens,
+                    cache_creation_tokens=cache_creation_tokens,
                     manual_id=manual_id,
                 )
         except Exception as usage_error:
