@@ -517,12 +517,16 @@ class ProjectStorage:
 
         raise ValueError(f"Section not found: {section_id}")
 
-    def delete_section(self, project_id: str, section_id: str) -> None:
-        """Delete a section (chapters remain in project, just unassigned from section).
+    def delete_section(self, project_id: str, section_id: str, force: bool = False) -> None:
+        """Delete a section.
 
         Args:
             project_id: Project identifier
             section_id: Section identifier
+            force: If True, delete even if section has chapters (orphans them)
+
+        Raises:
+            ValueError: If section has chapters and force=False
         """
         project = self.get_project(project_id)
         if not project:
@@ -532,7 +536,15 @@ class ProjectStorage:
         new_sections = []
 
         for section in sections:
-            if section["id"] != section_id:
+            if section["id"] == section_id:
+                # Check if section has chapters
+                if section.get("chapters") and not force:
+                    raise ValueError(
+                        f"Cannot delete section with chapters. "
+                        f"Move or delete the {len(section['chapters'])} chapter(s) first, "
+                        f"or use force=True to orphan them."
+                    )
+            else:
                 new_sections.append(section)
 
         # Re-order remaining sections

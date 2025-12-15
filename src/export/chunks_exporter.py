@@ -355,6 +355,8 @@ class ProjectChunksExporter:
 
             try:
                 manual_data = self._export_manual_chunks(manual_id, language, all_images)
+                manual_data["section_id"] = manual_info.get("section_id")
+                manual_data["section_title"] = manual_info.get("section_title")
                 manual_data["chapter_id"] = manual_info.get("chapter_id")
                 manual_data["chapter_title"] = manual_info.get("chapter_title")
                 all_manuals_data.append(manual_data)
@@ -376,6 +378,16 @@ class ProjectChunksExporter:
                 "manual_count": len(all_manuals_data),
                 "total_chunks": sum(m["chunk_count"] for m in all_manuals_data),
             },
+            "sections": [
+                {
+                    "id": sec["id"],
+                    "title": sec["title"],
+                    "description": sec.get("description", ""),
+                    "order": sec.get("order", 0),
+                    "chapters": sec.get("chapters", []),
+                }
+                for sec in self.project.get("sections", [])
+            ],
             "chapters": [
                 {
                     "id": ch["id"],
