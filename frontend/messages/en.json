@@ -546,6 +546,7 @@
     "description": "Combine manuals into a single document",
     "includeTableOfContents": "Include Table of Contents",
     "includePageNumbers": "Include Page Numbers",
+    "start": "Start",
     "compiling": "Compiling...",
     "compileSuccess": "Project compiled successfully"
   },
