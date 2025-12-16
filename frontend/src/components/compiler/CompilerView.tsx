@@ -56,8 +56,6 @@ export function CompilerView({
   onMessage,
   onBack,
 }: CompilerViewProps) {
-  console.log("[CompilerView] state:", state.status, "streamedText length:", state.streamedText?.length);
-
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [compiledContent, setCompiledContent] = useState<string>("");

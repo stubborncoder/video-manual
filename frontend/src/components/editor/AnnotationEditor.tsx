@@ -23,8 +23,6 @@ export function AnnotationEditor({
   onSave,
   onCancel,
 }: AnnotationEditorProps) {
-  console.log("[AnnotationEditor] Component rendering, imageUrl:", imageUrl);
-
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const fabricRef = useRef<Canvas | null>(null);
@@ -65,13 +63,7 @@ export function AnnotationEditor({
 
   // Initialize Fabric.js canvas
   useEffect(() => {
-    console.log("[AnnotationEditor] useEffect running, refs:", {
-      canvasRef: !!canvasRef.current,
-      containerRef: !!containerRef.current,
-    });
-
     if (!canvasRef.current || !containerRef.current) {
-      console.log("[AnnotationEditor] Refs not ready, skipping init");
       return;
     }
 
@@ -80,14 +72,12 @@ export function AnnotationEditor({
     let isMounted = true;
 
     const initCanvas = async () => {
-      console.log("[AnnotationEditor] initCanvas starting");
       try {
         canvas = new Canvas(canvasRef.current!, {
           selection: true,
           preserveObjectStacking: true,
         });
         fabricRef.current = canvas;
-        console.log("[AnnotationEditor] Canvas created successfully");
 
         // Initialize pencil brush for freehand drawing
         canvas.freeDrawingBrush = new PencilBrush(canvas);
@@ -110,8 +100,6 @@ export function AnnotationEditor({
         htmlImg.onload = () => {
           if (!isMounted || !canvas || !containerRef.current) return;
 
-          console.log("[AnnotationEditor] Image loaded:", htmlImg.width, "x", htmlImg.height);
-
           // Store original image for high-res cropping
           originalImageRef.current = htmlImg;
 
@@ -124,8 +112,6 @@ export function AnnotationEditor({
           const imgWidth = img.width || 800;
           const imgHeight = img.height || 600;
 
-          console.log("[AnnotationEditor] Container:", containerWidth, "x", containerHeight);
-
           // Calculate scale to fit container while maintaining aspect ratio
           // Allow scaling up to fill available space
           const scaleX = containerWidth / imgWidth;
@@ -137,8 +123,6 @@ export function AnnotationEditor({
 
           const canvasWidth = imgWidth * scale;
           const canvasHeight = imgHeight * scale;
-
-          console.log("[AnnotationEditor] Canvas dimensions:", canvasWidth, "x", canvasHeight, "scale:", scale);
 
           canvas.setDimensions({ width: canvasWidth, height: canvasHeight });
 
@@ -160,7 +144,6 @@ export function AnnotationEditor({
 
         // Ensure absolute URL for image loading
         const absoluteUrl = imageUrl.startsWith("http") ? imageUrl : window.location.origin + imageUrl;
-        console.log("[AnnotationEditor] Loading image from:", absoluteUrl);
         htmlImg.src = absoluteUrl;
       } catch (error) {
         console.error("[AnnotationEditor] Error in initCanvas:", error);
@@ -578,8 +561,6 @@ export function AnnotationEditor({
     const origTop = Math.round(top / scale);
     const origWidth = Math.round(width / scale);
     const origHeight = Math.round(height / scale);
-
-    console.log("[AnnotationEditor] Crop at original resolution:", origWidth, "x", origHeight);
 
     // Create offscreen canvas for high-res cropping
     const offscreenCanvas = document.createElement("canvas");
