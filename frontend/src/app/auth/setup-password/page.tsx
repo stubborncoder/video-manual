@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
 import { Lock, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +23,6 @@ import { useAuthStore } from "@/stores/authStore";
  * before they can access the dashboard.
  */
 function SetupPasswordContent() {
-  const t = useTranslations("auth");
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/dashboard";
@@ -53,17 +51,17 @@ function SetupPasswordContent() {
 
     // Validation
     if (!password) {
-      setError(t("pleaseEnterPassword"));
+      setError("Please enter a password");
       return;
     }
 
     if (password.length < 6) {
-      setError(t("passwordTooShort"));
+      setError("Password must be at least 6 characters");
       return;
     }
 
     if (password !== confirmPassword) {
-      setError(t("passwordsDoNotMatch"));
+      setError("Passwords do not match");
       return;
     }
 
@@ -147,13 +145,12 @@ function SetupPasswordContent() {
             )}
           </div>
           <CardTitle className="text-2xl">
-            {success ? t("passwordSetSuccess") || "Password Set!" : t("setupPassword") || "Set Your Password"}
+            {success ? "Password Set!" : "Set Your Password"}
           </CardTitle>
           <CardDescription>
             {success
-              ? t("redirectingToDashboard") || "Redirecting to dashboard..."
-              : t("setupPasswordDescription") ||
-                "Welcome! Please set a password to secure your account, or continue with Google."}
+              ? "Redirecting to dashboard..."
+              : "Welcome! Please set a password to secure your account, or continue with Google."}
           </CardDescription>
         </CardHeader>
 
@@ -187,7 +184,7 @@ function SetupPasswordContent() {
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
                   </svg>
-                  {t("continueWithGoogle")}
+                  Continue with Google
                 </Button>
 
                 <div className="relative">
@@ -196,19 +193,19 @@ function SetupPasswordContent() {
                   </div>
                   <div className="relative flex justify-center text-xs uppercase">
                     <span className="bg-card px-2 text-muted-foreground">
-                      {t("orSetPassword") || "or set a password"}
+                      or set a password
                     </span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">{t("newPassword") || "New Password"}</Label>
+                  <Label htmlFor="password">New Password</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       id="password"
                       type="password"
-                      placeholder={t("passwordPlaceholder")}
+                      placeholder="Enter your password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={loading}
@@ -217,18 +214,18 @@ function SetupPasswordContent() {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {t("passwordMinLength") || "Minimum 6 characters"}
+                    Minimum 6 characters
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">{t("confirmPassword")}</Label>
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
                       id="confirmPassword"
                       type="password"
-                      placeholder={t("confirmPasswordPlaceholder")}
+                      placeholder="Confirm your password"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       disabled={loading}
@@ -245,15 +242,14 @@ function SetupPasswordContent() {
                 )}
 
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? t("settingPassword") || "Setting password..." : t("setPassword") || "Set Password"}
+                  {loading ? "Setting password..." : "Set Password"}
                 </Button>
               </form>
             </CardContent>
 
             <CardFooter className="justify-center">
               <p className="text-center text-sm text-muted-foreground">
-                {t("setupPasswordNote") ||
-                  "You can always add or change your password later in your profile settings."}
+                You can always add or change your password later in your profile settings.
               </p>
             </CardFooter>
           </>
