@@ -4,6 +4,7 @@ import { useEffect, useCallback, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useGuideStore } from "@/stores/guideStore";
+import { useLocale } from "@/components/providers/I18nProvider";
 import { GuideButton } from "./GuideButton";
 import { GuidePanel } from "./GuidePanel";
 import { HighlightOverlay } from "./HighlightOverlay";
@@ -74,6 +75,7 @@ function getPageTitle(pathname: string): string {
 export function GuideProvider({ children }: GuideProviderProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { locale } = useLocale();
   const { addMessage, clearMessages, setPageContext, messages, showHighlight, clearAllHighlights } = useGuideStore();
   const [suggestions, setSuggestions] = useState<string[]>([]);
   // Track if we've triggered any actions during current response
@@ -125,6 +127,7 @@ export function GuideProvider({ children }: GuideProviderProps) {
                 availableActions: [],
                 pageState: {},
               },
+              language: locale,
             },
             (token: string) => {
               greetingContent += token;
@@ -216,6 +219,7 @@ export function GuideProvider({ children }: GuideProviderProps) {
           {
             message: content,
             page_context: pageContext,
+            language: locale,
           },
           // onToken - handle text chunks
           (token: string) => {
@@ -289,7 +293,7 @@ export function GuideProvider({ children }: GuideProviderProps) {
         });
       }
     },
-    [clearAllHighlights, router]
+    [clearAllHighlights, router, locale]
   );
 
   const handleClearChat = useCallback(async () => {

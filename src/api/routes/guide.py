@@ -36,6 +36,7 @@ class GuideChatRequest(BaseModel):
     message: str
     page_context: dict | None = None
     thread_id: str | None = None
+    language: str | None = None  # User's preferred language (e.g., "en", "es")
 
 
 class GuideResponse(BaseModel):
@@ -84,7 +85,7 @@ async def generate_guide_response(
 
             import time
             start = time.time()
-            for event in runner.send_message(request.message, page_context):
+            for event in runner.send_message(request.message, page_context, request.language):
                 elapsed = time.time() - start
                 logger.info(f"[GUIDE] Event at {elapsed:.2f}s: {type(event).__name__}")
                 event_queue.put(event)

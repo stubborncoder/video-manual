@@ -15,6 +15,7 @@ interface GuideChatRequest {
   message: string;
   page_context?: PageContext | null;
   thread_id?: string | null;
+  language?: string;
 }
 
 /**

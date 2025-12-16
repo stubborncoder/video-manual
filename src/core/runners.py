@@ -949,13 +949,14 @@ class GuideAgentRunner:
 
         yield CompleteEvent(result={"status": "ready"}, message="Guide session started")
 
-    def send_message(self, message: str, page_context: dict) -> Iterator[ProgressEvent]:
+    def send_message(self, message: str, page_context: dict, language: str | None = None) -> Iterator[ProgressEvent]:
         """
         Send a message to the guide agent and stream the response.
 
         Args:
             message: User's message/question
             page_context: Current page context with currentPage, pageTitle
+            language: User's preferred language code (e.g., "en", "es")
 
         Yields:
             ProgressEvent objects including tokens and actions
@@ -971,9 +972,16 @@ class GuideAgentRunner:
         current_page = page_context.get("currentPage", "/dashboard")
         page_title = page_context.get("pageTitle", "Dashboard")
 
+        # Build language instruction
+        language_instruction = ""
+        if language and language != "en":
+            language_names = {"es": "Spanish", "fr": "French", "de": "German", "pt": "Portuguese"}
+            lang_name = language_names.get(language, language)
+            language_instruction = f"\n[IMPORTANT: Respond in {lang_name}]"
+
         # Inject context into the prompt (system prompt has placeholders)
         context_message = f"""[Current page: {current_page}]
-[Page title: {page_title}]
+[Page title: {page_title}]{language_instruction}
 
 User: {message}"""
 
