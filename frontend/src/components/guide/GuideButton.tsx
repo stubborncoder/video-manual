@@ -77,7 +77,8 @@ export function GuideButton() {
           }}
           className={cn(
             "fixed bottom-6 z-40",
-            currentPosition ? "left-6" : "right-6"
+            // When on left side, position past the sidebar (w-64 = 256px)
+            currentPosition ? "left-72" : "right-6"
           )}
         >
           <motion.div
