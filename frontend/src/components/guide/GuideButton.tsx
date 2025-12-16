@@ -77,8 +77,9 @@ export function GuideButton() {
             duration: 0.15,
             ease: "easeOut",
           }}
+          onClick={(e) => e.stopPropagation()}
           className={cn(
-            "fixed bottom-6 z-40 transition-[left] duration-200",
+            "fixed bottom-6 z-[60] transition-[left] duration-200",
             // When on left side, position past the sidebar
             // Collapsed sidebar: w-16 (64px) -> left-20 (80px)
             // Expanded sidebar: w-64 (256px) -> left-72 (288px)
@@ -97,7 +98,10 @@ export function GuideButton() {
             }}
           >
             <Button
-              onClick={toggle}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggle();
+              }}
               size="lg"
               className={cn(
                 "relative h-14 w-14 rounded-full shadow-lg overflow-hidden",

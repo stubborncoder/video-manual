@@ -33,12 +33,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -95,8 +89,10 @@ import {
   MoveHorizontal,
   Layers,
   FolderTree,
+  ArrowLeft,
 } from "lucide-react";
 import { SidebarToggle } from "@/components/layout/SidebarToggle";
+import { useSidebar } from "@/components/layout/SidebarContext";
 import {
   projects,
   manuals,
@@ -164,6 +160,7 @@ interface ProjectDeleteInfo extends ProjectSummary {
 export default function ProjectsPage() {
   const t = useTranslations("projects");
   const tc = useTranslations("common");
+  const { collapsed: sidebarCollapsed } = useSidebar();
 
   // Helper to get translated name/description for default project
   const getProjectDisplayName = (project: { name: string; is_default?: boolean }) => {
@@ -181,7 +178,6 @@ export default function ProjectsPage() {
   const [newProjectDesc, setNewProjectDesc] = useState("");
 
   const [selectedProject, setSelectedProject] = useState<ProjectDetail | null>(null);
-  const [projectSheetOpen, setProjectSheetOpen] = useState(false);
 
   // Edit project state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -247,23 +243,42 @@ export default function ProjectsPage() {
     reset: resetCompiler,
   } = useProjectCompiler();
 
-  // Get guide store action to control button position
+  // Get guide store actions
   const setForceLeftPosition = useGuideStore((state) => state.setForceLeftPosition);
+  const setPageContext = useGuideStore((state) => state.setPageContext);
 
   useEffect(() => {
     loadProjects();
   }, []);
 
-  // Move guide button to left when compiler is active
+  // Move guide button to left when compiler is active or viewing project detail
   useEffect(() => {
-    setForceLeftPosition(isCompiling);
+    setForceLeftPosition(isCompiling || !!selectedProject);
     return () => setForceLeftPosition(false);
-  }, [isCompiling, setForceLeftPosition]);
+  }, [isCompiling, selectedProject, setForceLeftPosition]);
 
   async function loadProjects() {
     try {
       const res = await projects.list();
       setProjectList(res.projects);
+
+      // Update guide context with projects data
+      const projectsForGuide = res.projects.map((p) => ({
+        id: p.id,
+        name: p.name,
+        is_default: p.is_default,
+        manual_count: p.manual_count,
+        description: p.description,
+      }));
+      setPageContext({
+        currentPage: "/dashboard/projects",
+        pageTitle: "Projects",
+        availableActions: ["create", "view", "edit", "compile", "delete"],
+        pageState: {
+          projects: projectsForGuide,
+          totalCount: projectsForGuide.length,
+        },
+      });
     } catch (e) {
       console.error("Failed to load projects:", e);
       toast.error(t("loadFailed"), {
@@ -401,7 +416,6 @@ export default function ProjectsPage() {
     try {
       const detail = await projects.get(projectId);
       setSelectedProject(detail);
-      setProjectSheetOpen(true);
     } catch (e) {
       console.error("Failed to load project details:", e);
       toast.error(t("loadDetailsFailed"), {
@@ -741,9 +755,9 @@ export default function ProjectsPage() {
   async function handleStartCompile(settings: CompileSettings) {
     if (!compileProjectId) return;
 
-    // Close settings dialog and sheet, open compiler view
+    // Close settings dialog and project view, open compiler view
     setCompileSettingsOpen(false);
-    setProjectSheetOpen(false);
+    setSelectedProject(null);
     setCompileLanguage(settings.language);
     setIsCompiling(true);
     resetCompiler();
@@ -1110,14 +1124,22 @@ export default function ProjectsPage() {
         </div>
       )}
 
-      {/* Project Detail Sheet - Full Page Panel */}
-      <Sheet open={projectSheetOpen} onOpenChange={setProjectSheetOpen}>
-        <SheetContent side="right" fullPage className="p-0 flex flex-col">
-          {selectedProject && (
-            <>
-              {/* Header Section */}
-              <SheetHeader className="border-b p-6 pr-14 space-y-0">
-                <SheetTitle className="text-2xl font-bold flex items-center gap-2">
+      {/* Project Detail Panel - Full Page View */}
+      {selectedProject && (
+        <div className={`fixed inset-y-0 right-0 z-40 bg-background flex flex-col ${sidebarCollapsed ? 'left-16' : 'left-64'}`}>
+          {/* Header Section */}
+          <div className="border-b p-6 space-y-0">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setSelectedProject(null)}
+                className="shrink-0"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold flex items-center gap-2">
                   <FolderKanban className="h-6 w-6" />
                   {getProjectDisplayName(selectedProject)}
                   {selectedProject.is_default && (
@@ -1126,10 +1148,12 @@ export default function ProjectsPage() {
                       {t("default")}
                     </Badge>
                   )}
-                </SheetTitle>
+                </h2>
                 {(selectedProject.description || selectedProject.is_default) && (
                   <p className="text-muted-foreground mt-1">{getProjectDisplayDescription(selectedProject)}</p>
                 )}
+              </div>
+            </div>
 
                 {/* Action Bar */}
                 <div className="flex gap-2 mt-4">
@@ -1197,9 +1221,9 @@ export default function ProjectsPage() {
                     </>
                   )}
                 </div>
-              </SheetHeader>
+          </div>
 
-              {/* Tabs Section */}
+          {/* Tabs Section */}
               <Tabs defaultValue="chapters" className="flex-1 flex flex-col overflow-hidden">
                 <div className="px-6 pt-4">
                   <TabsList className="w-full justify-start">
@@ -1984,11 +2008,9 @@ export default function ProjectsPage() {
                 <TabsContent value="versions" className="flex-1 overflow-auto p-6 custom-scrollbar">
                   <CompilationVersionHistory projectId={selectedProject.id} />
                 </TabsContent>
-              </Tabs>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+          </Tabs>
+        </div>
+      )}
 
       {/* Add Chapter Dialog */}
       <Dialog open={addChapterDialogOpen} onOpenChange={setAddChapterDialogOpen}>

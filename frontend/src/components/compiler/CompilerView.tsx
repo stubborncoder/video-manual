@@ -21,7 +21,6 @@ import {
   Send,
   FileText,
   Sparkles,
-  MessageSquare,
   ArrowLeft,
   Bot,
   User,
@@ -352,7 +351,7 @@ export function CompilerView({
         <ResizablePanel defaultSize={45} minSize={25}>
           <div className="h-full flex flex-col">
             <div className="p-4 border-b flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-muted-foreground" />
+              <Bot className="h-4 w-4" />
               <span className="font-medium">Compilation Assistant</span>
             </div>
 
@@ -384,8 +383,8 @@ export function CompilerView({
                             <Wrench className="h-4 w-4" />
                           </div>
                         ) : (
-                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                            <Bot className="h-4 w-4 text-primary" />
+                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                            <Bot className="h-4 w-4" />
                           </div>
                         )}
                       </div>
@@ -430,8 +429,8 @@ export function CompilerView({
                 {state.status === "processing" && !state.streamedText && (
                   <div className="flex gap-3 justify-start">
                     <div className="shrink-0">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Bot className="h-4 w-4 text-primary" />
+                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                        <Bot className="h-4 w-4" />
                       </div>
                     </div>
                     <div className="bg-muted rounded-lg px-4 py-2 max-w-[80%]">
@@ -629,7 +628,7 @@ function HITLApprovalCard({ event, onDecision }: HITLApprovalCardProps) {
                   setShowFeedback(true);
                 }
               }}
-              className="flex-1 h-11 gap-2 border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-all duration-200"
+              className="flex-1 h-11 gap-2 border-destructive/30 text-destructive hover:bg-destructive hover:text-white hover:border-destructive transition-all duration-200"
             >
               <XCircle className="h-4 w-4" />
               <span className="font-medium">{showFeedback ? "Confirm Reject" : "Reject"}</span>

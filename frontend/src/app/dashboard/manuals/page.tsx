@@ -49,12 +49,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -66,8 +60,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
-import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown, ClipboardCheck, Users, Target, History, Clock, MoreHorizontal, HelpCircle, Expand, Copy } from "lucide-react";
+import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown, ClipboardCheck, Users, Target, History, Clock, MoreHorizontal, HelpCircle, Expand, Copy, ArrowLeft } from "lucide-react";
 import { SidebarToggle } from "@/components/layout/SidebarToggle";
+import { useSidebar } from "@/components/layout/SidebarContext";
 import { manuals, manualProject, projects, type ManualSummary, type ManualDetail, type ProjectSummary, type ManualEvaluation } from "@/lib/api";
 import { ExportDialog, type ExportOptions } from "@/components/dialogs/ExportDialog";
 import { CloneManualDialog } from "@/components/dialogs/CloneManualDialog";
@@ -75,6 +70,7 @@ import { stripSemanticTags } from "@/lib/tag-utils";
 import { useVideoProcessing } from "@/hooks/useWebSocket";
 import { ProcessingProgress } from "@/components/processing/ProcessingProgress";
 import { useJobsStore } from "@/stores/jobsStore";
+import { useGuideStore } from "@/stores/guideStore";
 import { SUPPORTED_LANGUAGES, getScoreColorByRaw, getScoreColorByPercentage, getScoreLevel, SCORE_LEVEL_DESCRIPTIONS } from "@/lib/constants";
 
 // Extended manual info with additional data
@@ -90,6 +86,8 @@ function ManualsPageContent() {
   const tp = useTranslations("projects");
   const locale = useLocale();
   const router = useRouter();
+  const { collapsed: sidebarCollapsed } = useSidebar();
+  const { setPageContext, close: closeGuidePanel } = useGuideStore();
 
   // Date locale mapping
   const dateLocale = locale === "es" ? "es-ES" : "en-US";
@@ -283,6 +281,26 @@ function ManualsPageContent() {
       }
 
       setManualList(manualsWithProjects);
+
+      // Update guide context with manuals data
+      const manualsForGuide = manualsWithProjects.map((m) => ({
+        id: m.id,
+        title: m.title,
+        languages: m.languages,
+        evaluations: m.evaluations, // { lang: { evaluated: bool, score?: number } }
+        tags: m.tags,
+        project_name: m.project_name,
+        document_format: m.document_format,
+      }));
+      setPageContext({
+        currentPage: "/dashboard/manuals",
+        pageTitle: "Manuals",
+        availableActions: ["view", "edit", "export", "evaluate", "add_language", "assign_project", "manage_tags", "delete"],
+        pageState: {
+          manuals: manualsForGuide,
+          totalCount: manualsForGuide.length,
+        },
+      });
     } catch {
       // Failed to load manuals
     } finally {
@@ -300,12 +318,15 @@ function ManualsPageContent() {
   }
 
   async function handleView(manualId: string, language: string) {
+    // Set loading states before opening to prevent flicker
+    setViewingEvaluation(null);
+    setLoadingViewEval(true);
+
     try {
       const manual = await manuals.get(manualId, language);
       setSelectedManual(manual);
       setViewingManualId(manualId);
       setViewingLanguage(language);
-      setViewingEvaluation(null);
       setViewDialogOpen(true);
 
       // Load evaluation for this manual/language in background
@@ -313,6 +334,7 @@ function ManualsPageContent() {
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to load manual";
       toast.error("Load failed", { description: message });
+      setLoadingViewEval(false);
     }
   }
 
@@ -326,8 +348,7 @@ function ManualsPageContent() {
     const abortController = new AbortController();
     evalAbortControllerRef.current = abortController;
 
-    // Clear stale data immediately
-    setViewingEvaluation(null);
+    // Ensure loading state is set (may already be set by caller)
     setLoadingViewEval(true);
 
     try {
@@ -362,6 +383,11 @@ function ManualsPageContent() {
 
   async function handleLanguageChange(language: string) {
     if (!viewingManualId) return;
+
+    // Set loading state before fetching to prevent flicker
+    setViewingEvaluation(null);
+    setLoadingViewEval(true);
+
     try {
       const manual = await manuals.get(viewingManualId, language);
       setSelectedManual(manual);
@@ -372,6 +398,7 @@ function ManualsPageContent() {
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to load language";
       toast.error("Load failed", { description: message });
+      setLoadingViewEval(false);
     }
   }
 
@@ -479,6 +506,9 @@ function ManualsPageContent() {
 
   // Generate language functions
   function openGenerateDialog(manual: ManualWithProject) {
+    // Close guide panel so user can focus on generation
+    closeGuidePanel();
+
     setManualToGenerate(manual);
     setGenerateLanguage("English");
     resetProcessing();
@@ -618,6 +648,9 @@ function ManualsPageContent() {
 
   // Evaluate manual
   async function openEvaluateDialog(manual: ManualWithProject, preferredLanguage?: string) {
+    // Close guide panel so user can focus on evaluation
+    closeGuidePanel();
+
     setManualToEvaluate(manual);
     setEvaluationResult(null);
     setStoredEvaluations([]);
@@ -1182,15 +1215,24 @@ function ManualsPageContent() {
         </div>
       )}
 
-      {/* View Manual Sheet (Slide-over panel) */}
-      <Sheet open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
-        <SheetContent side="right" fullPage className="p-0 flex flex-col overflow-hidden">
+      {/* View Manual Panel - Full Page View */}
+      {viewDialogOpen && selectedManual && (
+        <div className={`fixed inset-y-0 right-0 z-40 bg-background flex flex-col overflow-hidden ${sidebarCollapsed ? 'left-16' : 'left-64'}`}>
           {/* Fixed Header */}
-          <SheetHeader className="border-b p-6 pr-14 space-y-0 shrink-0">
-            <div className="flex items-center gap-3">
-              <SheetTitle className="text-2xl font-bold">
-                {manualList.find((m) => m.id === selectedManual?.id)?.title || selectedManual?.id}
-              </SheetTitle>
+          <div className="border-b p-6 space-y-0 shrink-0">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setViewDialogOpen(false)}
+                className="shrink-0"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div className="flex items-center gap-3 flex-1">
+                <h2 className="text-2xl font-bold">
+                  {manualList.find((m) => m.id === selectedManual?.id)?.title || selectedManual?.id}
+                </h2>
               {/* Document format badge */}
               {(() => {
                 const currentManual = manualList.find((m) => m.id === selectedManual?.id);
@@ -1210,6 +1252,7 @@ function ManualsPageContent() {
                   </Badge>
                 );
               })()}
+              </div>
             </div>
 
             {/* Source info in header */}
@@ -1270,9 +1313,8 @@ function ManualsPageContent() {
                 {/* Evaluation Score Card */}
                 <div className="ml-auto">
                   {loadingViewEval ? (
-                    <div className="flex items-center gap-3 px-4 py-3 rounded-lg border bg-muted/30">
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">{tc("loading")}</span>
+                    <div className="flex flex-col items-center justify-center px-5 py-3 rounded-lg border bg-muted/30 min-w-[100px] min-h-[88px]">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                     </div>
                   ) : viewingEvaluation ? (
                     <button
@@ -1320,10 +1362,10 @@ function ManualsPageContent() {
                 </div>
               </div>
             )}
-          </SheetHeader>
+          </div>
 
           {selectedManual && (
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0 custom-scrollbar">
               <div className="p-6 prose prose-base dark:prose-invert max-w-none pb-8">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
@@ -1419,8 +1461,8 @@ function ManualsPageContent() {
               </div>
             </ScrollArea>
           )}
-        </SheetContent>
-      </Sheet>
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -1589,7 +1631,11 @@ function ManualsPageContent() {
       <Dialog open={generateDialogOpen} onOpenChange={(open) => {
         if (!open && processingState.status === "processing") return; // Prevent closing while processing
         setGenerateDialogOpen(open);
-        if (!open) resetProcessing();
+        if (!open) {
+          resetProcessing();
+          // Refresh manuals list to show new language
+          setTimeout(() => loadManuals(), 100);
+        }
       }}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -1689,6 +1735,13 @@ function ManualsPageContent() {
         // Prevent closing while evaluation is in progress
         if (!open && evaluating) return;
         setEvaluateDialogOpen(open);
+        // Refresh manuals list and guide context when closing
+        if (!open) {
+          // Small delay to ensure dialog is fully closed before refresh
+          setTimeout(() => {
+            loadManuals();
+          }, 100);
+        }
       }}>
         <DialogContent
           className="max-w-[1100px] max-h-[90vh] flex flex-col"
@@ -2055,7 +2108,11 @@ function ManualsPageContent() {
           </div>
 
           <DialogFooter className="shrink-0 border-t pt-4 mt-4">
-            <Button variant="outline" onClick={() => setEvaluateDialogOpen(false)} disabled={evaluating}>
+            <Button variant="outline" onClick={() => {
+              setEvaluateDialogOpen(false);
+              // Refresh manuals to show updated evaluation
+              setTimeout(() => loadManuals(), 100);
+            }} disabled={evaluating}>
               {evaluationResult ? tc("close") : tc("cancel")}
             </Button>
             {evaluationResult && (

@@ -39,6 +39,7 @@ export async function request<T>(
     response = await fetch(url, {
       ...fetchOptions,
       credentials: "include", // Still include cookies for legacy auth
+      cache: "no-store", // Disable caching for API requests
       headers: {
         "Content-Type": "application/json",
         ...authHeader,
