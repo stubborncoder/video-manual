@@ -20,7 +20,7 @@ import {
 import { useAuthStore } from "@/stores/authStore";
 import { useLocale } from "@/components/providers/I18nProvider";
 import { usePalette, Palette as PaletteType } from "@/components/providers/ThemeProvider";
-import { locales, localeNames, Locale } from "@/lib/i18n";
+import { locales, Locale } from "@/lib/i18n";
 import { getInitials } from "@/lib/utils";
 
 const palettes: { value: PaletteType; label: string; colorClass: string }[] = [
@@ -136,7 +136,7 @@ export default function ProfilePage() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="w-[140px] justify-between">
-                    {localeNames[locale]}
+                    {tSidebar(`languages.${locale}`)}
                     <ChevronDown className="h-4 w-4 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -144,7 +144,7 @@ export default function ProfilePage() {
                   <DropdownMenuRadioGroup value={locale} onValueChange={(value) => setLocale(value as Locale)}>
                     {locales.map((loc) => (
                       <DropdownMenuRadioItem key={loc} value={loc}>
-                        {localeNames[loc]}
+                        {tSidebar(`languages.${loc}`)}
                       </DropdownMenuRadioItem>
                     ))}
                   </DropdownMenuRadioGroup>

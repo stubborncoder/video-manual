@@ -51,7 +51,11 @@
     "darkMode": "Modo Oscuro",
     "toggleTheme": "Cambiar a modo {mode}",
     "logout": "Cerrar sesión",
-    "language": "Idioma"
+    "language": "Idioma",
+    "languages": {
+      "en": "Inglés",
+      "es": "Español"
+    }
   },
   "profile": {
     "title": "Perfil",
