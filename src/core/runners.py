@@ -986,6 +986,7 @@ User: {message}"""
 
         try:
             is_first_token = True
+            chunk_count = 0
 
             for chunk in self._agent.stream(
                 stream_input,
@@ -993,14 +994,19 @@ User: {message}"""
                 stream_mode=["messages", "updates"],
                 subgraphs=True,
             ):
+                chunk_count += 1
                 namespace, mode, data = chunk
+                logger.info(f"[GUIDE RUNNER] Chunk #{chunk_count}: mode={mode}, namespace={namespace}, data_type={type(data).__name__}")
 
                 if mode == "messages":
                     msg, metadata = data
                     msg_type = getattr(msg, "type", "").lower()
+                    content = getattr(msg, "content", None)
+                    logger.info(f"[GUIDE RUNNER] Message: type={msg_type}, content_len={len(str(content)) if content else 0}")
 
                     # Only process streaming chunks, not final messages
                     if "chunk" not in msg_type and "ai" in msg_type:
+                        logger.info(f"[GUIDE RUNNER] Skipping non-chunk AI message")
                         continue
 
                     if "ai" in msg_type:

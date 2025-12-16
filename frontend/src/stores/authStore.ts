@@ -6,7 +6,9 @@
 import { create } from "zustand";
 import { supabase, isSupabaseConfigured, getAccessToken } from "@/lib/supabase";
 import { auth as authApi } from "@/lib/api";
+import { clearGuideSession } from "@/lib/guide-api";
 import type { User, Session, AuthError } from "@supabase/supabase-js";
+import { useGuideStore } from "./guideStore";
 
 interface AuthState {
   /** Supabase user object (null if using legacy auth or not authenticated) */
@@ -74,6 +76,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (isSupabaseConfigured() && supabase) {
         // Set up auth state change listener
         supabase.auth.onAuthStateChange(async (event, session) => {
+          const previousUserId = get().user?.id;
+          const newUserId = session?.user?.id;
+
+          // Clear guide chat when user changes (sign in, sign out, or switch users)
+          if (previousUserId !== newUserId) {
+            useGuideStore.getState().clearMessages();
+          }
+
           set({
             session,
             user: session?.user ?? null,
@@ -210,10 +220,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ loading: true, error: null });
 
     try {
+      // Clear guide session BEFORE signing out (while token is still valid)
+      try {
+        await clearGuideSession();
+      } catch {
+        // Ignore errors - backend session will be orphaned but that's ok
+      }
+
+      // Clear frontend guide chat history to prevent cross-user data leakage
+      useGuideStore.getState().clearMessages();
+
       if (supabase) {
         await supabase.auth.signOut();
       }
       await authApi.logout();
+
       set({
         user: null,
         session: null,
