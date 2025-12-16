@@ -97,20 +97,6 @@ export function GuideMessageComponent({ message }: GuideMessageProps) {
           </div>
         </div>
 
-        {/* Suggestions */}
-        {message.suggestions && message.suggestions.length > 0 && (
-          <div className="flex flex-wrap gap-2 mt-2">
-            {message.suggestions.map((suggestion, idx) => (
-              <button
-                key={idx}
-                className="text-xs px-3 py-1.5 rounded-full bg-muted hover:bg-muted/80 transition-colors"
-              >
-                {suggestion}
-              </button>
-            ))}
-          </div>
-        )}
-
         {/* Timestamp */}
         <p className="text-xs text-muted-foreground">
           {new Date(message.timestamp).toLocaleTimeString([], {
