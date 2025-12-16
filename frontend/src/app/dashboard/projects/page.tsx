@@ -109,6 +109,7 @@ import { useProjectCompiler } from "@/hooks/useWebSocket";
 import { CompileSettingsDialog } from "@/components/dialogs/CompileSettingsDialog";
 import { CompilerView } from "@/components/compiler/CompilerView";
 import { CompilationVersionHistory } from "@/components/projects/CompilationVersionHistory";
+import { useGuideStore } from "@/stores/guideStore";
 import type { CompileSettings } from "@/lib/types";
 
 // Validation helper
@@ -246,9 +247,18 @@ export default function ProjectsPage() {
     reset: resetCompiler,
   } = useProjectCompiler();
 
+  // Get guide store action to control button position
+  const setForceLeftPosition = useGuideStore((state) => state.setForceLeftPosition);
+
   useEffect(() => {
     loadProjects();
   }, []);
+
+  // Move guide button to left when compiler is active
+  useEffect(() => {
+    setForceLeftPosition(isCompiling);
+    return () => setForceLeftPosition(false);
+  }, [isCompiling, setForceLeftPosition]);
 
   async function loadProjects() {
     try {

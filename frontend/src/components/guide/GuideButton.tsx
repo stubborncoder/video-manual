@@ -28,10 +28,11 @@ function hasCopilotAgent(pathname: string): boolean {
  */
 export function GuideButton() {
   const pathname = usePathname();
-  const { isOpen, hasUnread, toggle } = useGuideStore();
+  const { isOpen, hasUnread, toggle, forceLeftPosition } = useGuideStore();
 
   // Position on left side when on pages with other copilot agents
-  const positionLeft = hasCopilotAgent(pathname);
+  // OR when explicitly forced (e.g., when compiler is active on projects page)
+  const positionLeft = hasCopilotAgent(pathname) || forceLeftPosition;
 
   // Track position changes to trigger animation
   const [isVisible, setIsVisible] = useState(true);
