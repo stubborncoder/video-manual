@@ -31,12 +31,12 @@ import { cn, getInitials } from "@/lib/utils";
 import { useSidebar } from "./SidebarContext";
 
 const navItemsConfig = [
-  { href: "/dashboard", labelKey: "dashboard", icon: Home },
-  { href: "/dashboard/videos", labelKey: "videos", icon: Video },
-  { href: "/dashboard/manuals", labelKey: "manuals", icon: FileText },
-  { href: "/dashboard/projects", labelKey: "projects", icon: FolderKanban },
-  { href: "/dashboard/templates", labelKey: "templates", icon: LayoutTemplate },
-  { href: "/dashboard/trash", labelKey: "trash", icon: Trash2 },
+  { href: "/dashboard", labelKey: "dashboard", icon: Home, guideId: "nav-dashboard" },
+  { href: "/dashboard/videos", labelKey: "videos", icon: Video, guideId: "nav-videos" },
+  { href: "/dashboard/manuals", labelKey: "manuals", icon: FileText, guideId: "nav-manuals" },
+  { href: "/dashboard/projects", labelKey: "projects", icon: FolderKanban, guideId: "nav-projects" },
+  { href: "/dashboard/templates", labelKey: "templates", icon: LayoutTemplate, guideId: "nav-templates" },
+  { href: "/dashboard/trash", labelKey: "trash", icon: Trash2, guideId: "nav-trash" },
 ];
 
 export function Sidebar() {
@@ -115,6 +115,7 @@ export function Sidebar() {
               const button = (
                 <Button
                   variant={isActive ? "secondary" : "ghost"}
+                  data-guide-id={item.guideId}
                   className={cn(
                     "w-full hover:text-primary",
                     collapsed ? "justify-center px-2" : "justify-start"

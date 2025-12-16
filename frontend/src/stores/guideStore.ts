@@ -25,6 +25,12 @@ export interface GuideMessage {
   suggestions?: string[];
 }
 
+export interface GuideHighlight {
+  targetId: string;
+  duration?: number; // ms, 0 or undefined = no auto-dismiss
+  label?: string;
+}
+
 interface GuideStore {
   // UI State
   isOpen: boolean;
@@ -41,6 +47,9 @@ interface GuideStore {
   // Connection state
   isGenerating: boolean;
 
+  // Highlights
+  activeHighlights: GuideHighlight[];
+
   // Actions
   toggle: () => void;
   open: () => void;
@@ -50,6 +59,11 @@ interface GuideStore {
   setPageContext: (ctx: PageContext) => void;
   setGenerating: (generating: boolean) => void;
   markAsRead: () => void;
+
+  // Highlight actions
+  showHighlight: (targetId: string, duration?: number, label?: string) => void;
+  clearHighlight: (targetId: string) => void;
+  clearAllHighlights: () => void;
 }
 
 export const useGuideStore = create<GuideStore>()(
@@ -63,6 +77,7 @@ export const useGuideStore = create<GuideStore>()(
       currentPage: "",
       pageContext: null,
       isGenerating: false,
+      activeHighlights: [],
 
       // Actions
       toggle: () => {
@@ -101,6 +116,32 @@ export const useGuideStore = create<GuideStore>()(
 
       markAsRead: () => {
         set({ hasUnread: false });
+      },
+
+      // Highlight actions
+      showHighlight: (targetId: string, duration?: number, label?: string) => {
+        const { activeHighlights } = get();
+        // Remove existing highlight with same targetId if present
+        const filtered = activeHighlights.filter((h) => h.targetId !== targetId);
+        set({
+          activeHighlights: [
+            ...filtered,
+            { targetId, duration: duration ?? 3000, label },
+          ],
+        });
+      },
+
+      clearHighlight: (targetId: string) => {
+        const { activeHighlights } = get();
+        set({
+          activeHighlights: activeHighlights.filter(
+            (h) => h.targetId !== targetId
+          ),
+        });
+      },
+
+      clearAllHighlights: () => {
+        set({ activeHighlights: [] });
       },
     }),
     {

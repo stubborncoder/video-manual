@@ -919,3 +919,176 @@ Please analyze this image to help answer the user's question.""")
         except Exception as e:
             logger.exception(f"[EDITOR RUNNER] Error: {e}")
             yield ErrorEvent(error_message=str(e), recoverable=False)
+
+
+class GuideAgentRunner:
+    """Runner for guide agent that yields progress events for interactive guidance."""
+
+    def __init__(self, user_id: str):
+        self.user_id = user_id
+        self._agent = None
+        self._config = None
+
+    def start(self, page_context: dict) -> Iterator[ProgressEvent]:
+        """
+        Start a guide agent session.
+
+        Args:
+            page_context: Initial page context with currentPage, pageTitle
+
+        Yields:
+            Initial ready event
+        """
+        import uuid
+        from ..agents.guide_agent import get_guide_agent
+
+        # Create agent with unique session ID
+        self._agent = get_guide_agent(self.user_id)
+        session_id = uuid.uuid4().hex[:8]
+        self._config = {"configurable": {"thread_id": f"guide_{self.user_id}_{session_id}"}}
+
+        yield CompleteEvent(result={"status": "ready"}, message="Guide session started")
+
+    def send_message(self, message: str, page_context: dict) -> Iterator[ProgressEvent]:
+        """
+        Send a message to the guide agent and stream the response.
+
+        Args:
+            message: User's message/question
+            page_context: Current page context with currentPage, pageTitle
+
+        Yields:
+            ProgressEvent objects including tokens and actions
+        """
+        if not self._agent or not self._config:
+            yield ErrorEvent(
+                error_message="No agent session - start() must be called first",
+                recoverable=False,
+            )
+            return
+
+        # Build context-aware message
+        current_page = page_context.get("currentPage", "/dashboard")
+        page_title = page_context.get("pageTitle", "Dashboard")
+
+        # Inject context into the prompt (system prompt has placeholders)
+        context_message = f"""[Current page: {current_page}]
+[Page title: {page_title}]
+
+User: {message}"""
+
+        user_input = {"messages": [{"role": "user", "content": context_message}]}
+        yield from self._stream_agent(user_input)
+
+    def _stream_agent(self, stream_input: Any) -> Iterator[ProgressEvent]:
+        """Stream agent execution and yield events."""
+        from .events import GuideActionEvent
+
+        try:
+            is_first_token = True
+
+            for chunk in self._agent.stream(
+                stream_input,
+                config=self._config,
+                stream_mode=["messages", "updates"],
+                subgraphs=True,
+            ):
+                namespace, mode, data = chunk
+
+                if mode == "messages":
+                    msg, metadata = data
+                    msg_type = getattr(msg, "type", "").lower()
+
+                    # Only process streaming chunks, not final messages
+                    if "chunk" not in msg_type and "ai" in msg_type:
+                        continue
+
+                    if "ai" in msg_type:
+                        content = getattr(msg, "content", None)
+                        if isinstance(content, str) and content:
+                            yield LLMTokenEvent(
+                                token=content, is_first=is_first_token, is_last=False
+                            )
+                            is_first_token = False
+                        elif isinstance(content, list):
+                            for block in content:
+                                if isinstance(block, dict):
+                                    if block.get("type") == "text":
+                                        text = block.get("text", "")
+                                        if text:
+                                            yield LLMTokenEvent(
+                                                token=text,
+                                                is_first=is_first_token,
+                                                is_last=False,
+                                            )
+                                            is_first_token = False
+                                    elif block.get("type") == "tool_use":
+                                        tool_input = block.get("input")
+                                        if tool_input:
+                                            yield ToolCallEvent(
+                                                tool_name=block.get("name", ""),
+                                                tool_id=block.get("id", ""),
+                                                arguments=tool_input,
+                                            )
+
+                    # Handle tool result messages - check for action tools
+                    elif "tool" in msg_type:
+                        content = getattr(msg, "content", None)
+                        tool_name = getattr(msg, "name", "")
+
+                        # Check if this is an action tool result
+                        if tool_name in ("highlight_element", "navigate_to_page"):
+                            try:
+                                import json
+                                if isinstance(content, str):
+                                    result = json.loads(content)
+                                elif isinstance(content, dict):
+                                    result = content
+                                else:
+                                    result = {}
+
+                                if result.get("action"):
+                                    yield GuideActionEvent(
+                                        action_type=result.get("action"),
+                                        action_data=result,
+                                    )
+                            except (json.JSONDecodeError, TypeError):
+                                pass
+
+                elif mode == "updates":
+                    # Handle tool results in updates mode
+                    if isinstance(data, dict):
+                        for node_name, node_data in data.items():
+                            if node_name == "tools" and isinstance(node_data, dict):
+                                messages = node_data.get("messages", [])
+                                for msg in messages:
+                                    tool_name = getattr(msg, "name", "") if hasattr(msg, "name") else ""
+                                    content = getattr(msg, "content", None) if hasattr(msg, "content") else None
+
+                                    if tool_name in ("highlight_element", "navigate_to_page") and content:
+                                        try:
+                                            import json
+                                            if isinstance(content, str):
+                                                result = json.loads(content)
+                                            elif isinstance(content, dict):
+                                                result = content
+                                            else:
+                                                result = {}
+
+                                            if result.get("action"):
+                                                yield GuideActionEvent(
+                                                    action_type=result.get("action"),
+                                                    action_data=result,
+                                                )
+                                        except (json.JSONDecodeError, TypeError):
+                                            pass
+
+            # Signal end of response
+            if not is_first_token:
+                yield LLMTokenEvent(token="", is_first=False, is_last=True)
+
+            yield CompleteEvent(result={}, message="Response complete")
+
+        except Exception as e:
+            logger.exception(f"[GUIDE RUNNER] Error: {e}")
+            yield ErrorEvent(error_message=str(e), recoverable=False)

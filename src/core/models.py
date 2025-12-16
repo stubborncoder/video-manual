@@ -21,6 +21,7 @@ class TaskType(str, Enum):
     MANUAL_GENERATION = "manual_generation"
     MANUAL_EVALUATION = "manual_evaluation"
     MANUAL_EDITING = "manual_editing"
+    GUIDE_ASSISTANT = "guide_assistant"
 
 
 @dataclass
@@ -170,6 +171,15 @@ MODELS_BY_TASK: dict[TaskType, list[str]] = {
         GEMINI_2_5_PRO.id,
         GEMINI_2_5_FLASH.id,
     ],
+    # Guide assistant - fast model for interactive help
+    TaskType.GUIDE_ASSISTANT: [
+        GEMINI_2_5_FLASH.id,
+        GEMINI_2_5_PRO.id,
+        GEMINI_3_PRO_PREVIEW.id,
+        CLAUDE_HAIKU_4_5.id,
+        CLAUDE_SONNET_4_5.id,
+        CLAUDE_OPUS_4_5.id,
+    ],
 }
 
 # Default models for each task
@@ -178,6 +188,7 @@ DEFAULT_MODELS: dict[TaskType, str] = {
     TaskType.MANUAL_GENERATION: GEMINI_2_5_PRO.id,
     TaskType.MANUAL_EVALUATION: GEMINI_2_5_FLASH.id,
     TaskType.MANUAL_EDITING: CLAUDE_SONNET_4_5.id,
+    TaskType.GUIDE_ASSISTANT: GEMINI_2_5_FLASH.id,
 }
 
 

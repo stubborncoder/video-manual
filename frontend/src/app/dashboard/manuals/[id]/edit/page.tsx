@@ -24,6 +24,7 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -152,6 +153,7 @@ export default function ManualEditorPage() {
   // Refs for document preview
   const previewRef = useRef<HTMLDivElement>(null);          // Inner content for text selection
   const previewContainerRef = useRef<HTMLDivElement>(null); // Scrollable container for overlay positioning
+  const scrollAreaRef = useRef<HTMLDivElement>(null);       // ScrollArea wrapper ref
 
   // Use undo/redo hook
   const {
@@ -381,6 +383,18 @@ export default function ManualEditorPage() {
     shortcuts,
     enabled: isInitialized && !loading,
   });
+
+  // Get ScrollArea viewport for scroll operations
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      const viewport = scrollAreaRef.current.querySelector(
+        "[data-radix-scroll-area-viewport]"
+      ) as HTMLDivElement | null;
+      if (viewport) {
+        (previewContainerRef as React.MutableRefObject<HTMLDivElement | null>).current = viewport;
+      }
+    }
+  }, [loading, manual]);
 
   // Load manual content
   useEffect(() => {
@@ -950,31 +964,8 @@ export default function ManualEditorPage() {
     return withoutTags.replace(/([^\n])\n(---+)\n/g, '$1\n\n$2\n');
   }, [currentContent]);
 
-  if (loading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">{t("loadingManual")}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!manual) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-muted-foreground">{t("manualNotFound")}</p>
-          <Link href="/dashboard/manuals">
-            <Button className="mt-4">{t("backToManuals")}</Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
+  // Always render the same flex-col structure to prevent layout shift
+  // Only the content inside changes based on loading/error states
   return (
     <div className="h-full flex flex-col">
       {/* Top Toolbar */}
@@ -1026,7 +1017,7 @@ export default function ManualEditorPage() {
           ) : (
             <button
               onClick={startEditingTitle}
-              className="group flex items-center gap-2 font-semibold truncate max-w-[300px] hover:text-primary transition-colors"
+              className="group flex items-center gap-2 font-semibold truncate hover:text-primary transition-colors"
               title="Click to edit title"
             >
               <span>{manual?.title || manualId}</span>
@@ -1034,7 +1025,6 @@ export default function ManualEditorPage() {
             </button>
           )}
 
-          {/* Document format badge */}
           {manual?.document_format && (
             <Badge
               variant="secondary"
@@ -1110,7 +1100,28 @@ export default function ManualEditorPage() {
 
       </div>
 
-      {/* Main Content - Two Panel Layout */}
+      {/* Main Content Area */}
+      {loading ? (
+        // Loading state - same flex-1 container to prevent layout shift
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">{t("loadingManual")}</p>
+          </div>
+        </div>
+      ) : !manual ? (
+        // Error state - same flex-1 container
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <FileText className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+            <p className="text-muted-foreground">{t("manualNotFound")}</p>
+            <Link href="/dashboard/manuals">
+              <Button className="mt-4">{t("backToManuals")}</Button>
+            </Link>
+          </div>
+        </div>
+      ) : (
+      // Main Content - Two Panel Layout
       <ResizablePanelGroup direction="horizontal" className="flex-1">
         {/* Left Panel - Document Editor */}
         <ResizablePanel defaultSize={60} minSize={40}>
@@ -1160,23 +1171,21 @@ export default function ManualEditorPage() {
                   contentRef={previewRef}
                   markdownContent={currentContent}
                 >
-                  <div
-                    ref={previewContainerRef}
-                    className="h-full overflow-y-auto p-6 relative"
-                  >
-                    {/* Pending changes overlay */}
-                    <PendingChangesOverlay
-                      changes={pendingChanges}
-                      containerRef={previewContainerRef}
-                      totalLines={totalLines}
-                      onAccept={acceptChange}
-                      onReject={rejectChange}
-                    />
+                  <ScrollArea ref={scrollAreaRef} className="h-full">
+                    <div className="p-6 relative">
+                      {/* Pending changes overlay */}
+                      <PendingChangesOverlay
+                        changes={pendingChanges}
+                        containerRef={previewContainerRef}
+                        totalLines={totalLines}
+                        onAccept={acceptChange}
+                        onReject={rejectChange}
+                      />
 
-                    <div
-                      ref={previewRef}
-                      className="prose prose-base dark:prose-invert max-w-none relative"
-                    >
+                      <div
+                        ref={previewRef}
+                        className="prose prose-base dark:prose-invert max-w-none relative"
+                      >
                   {/* Selection highlight overlay - renders pre-calculated highlight rects */}
                   <SelectionHighlightOverlay
                     selection={selection}
@@ -1271,9 +1280,10 @@ export default function ManualEditorPage() {
                     }}
                   >
                     {processedContent}
-                    </ReactMarkdown>
+                      </ReactMarkdown>
+                      </div>
                     </div>
-                  </div>
+                  </ScrollArea>
                 </PreviewContextMenu>
               </TabsContent>
 
@@ -1336,6 +1346,7 @@ export default function ManualEditorPage() {
           </>
         )}
       </ResizablePanelGroup>
+      )}
 
       {/* Unsaved Changes Dialog */}
       <AlertDialog open={showUnsavedDialog} onOpenChange={setShowUnsavedDialog}>

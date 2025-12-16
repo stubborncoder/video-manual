@@ -1,17 +1,33 @@
-"""Guide agent chat routes."""
+"""Guide agent chat routes using deepagents."""
 
+import asyncio
+import json
 import logging
+import queue
+import threading
 from typing import AsyncGenerator
-from fastapi import APIRouter, Depends
+
+from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from ...config import get_chat_model
-from ..dependencies import get_current_user_id
+from ..dependencies import CurrentUser
+from ...core.runners import GuideAgentRunner
+from ...core.events import (
+    LLMTokenEvent,
+    ToolCallEvent,
+    GuideActionEvent,
+    CompleteEvent,
+    ErrorEvent,
+)
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/guide", tags=["guide"])
+
+# Store active guide sessions (in-memory, per-user)
+# In production, consider using Redis or similar for multi-worker support
+_guide_sessions: dict[str, GuideAgentRunner] = {}
 
 
 class GuideChatRequest(BaseModel):
@@ -29,50 +45,15 @@ class GuideResponse(BaseModel):
     thread_id: str | None = None
 
 
-# System prompt for the guide agent
-GUIDE_SYSTEM_PROMPT = """You are a helpful documentation assistant for vDocs, an AI-powered application that creates step-by-step documentation from videos.
-
-## Your Role
-- Help users navigate the application
-- Explain features and workflows
-- Guide users through tasks step-by-step
-- Answer questions about the app and its capabilities
-
-## Available Pages
-- Dashboard: Overview of recent activity and statistics
-- Videos: Upload and manage source videos for documentation
-- Manuals: View and edit generated documentation
-- Projects: Organize manuals into collections
-- Templates: Manage export templates for different formats
-- Trash: Recover deleted items
-
-## Core Workflows
-1. **Creating Documentation from Video:**
-   - Upload a video file (MP4, MOV, AVI formats)
-   - Process the video to generate step-by-step documentation
-   - Review and edit the generated manual
-   - Export in various formats (PDF, Markdown, etc.)
-
-2. **Managing Projects:**
-   - Create a project to organize related manuals
-   - Add manuals to projects as chapters
-   - Compile the project into a complete documentation package
-
-3. **Editing Documentation:**
-   - Use the manual editor to review AI-generated content
-   - Edit text, captions, and structure
-   - Add additional languages for multilingual documentation
-   - Evaluate documentation quality
-
-## Guidelines
-- Be concise but helpful
-- Provide clear step-by-step instructions when needed
-- Use friendly, conversational language
-- If you don't know something, be honest about it
-- Suggest relevant next steps based on the user's current page
-
-## Current Context
-{context}"""
+def _get_or_create_session(user_id: str) -> GuideAgentRunner:
+    """Get existing session or create new one for user."""
+    session_key = f"{user_id}_guide"
+    if session_key not in _guide_sessions:
+        runner = GuideAgentRunner(user_id)
+        # Initialize the session
+        list(runner.start({}))
+        _guide_sessions[session_key] = runner
+    return _guide_sessions[session_key]
 
 
 async def generate_guide_response(
@@ -80,67 +61,122 @@ async def generate_guide_response(
 ) -> AsyncGenerator[str, None]:
     """Generate streaming response from the guide agent.
 
+    Uses a background thread to run the synchronous agent and a queue
+    to stream events back to the async context.
+
     Args:
         request: The chat request with message and context
         user_id: The current user ID
 
     Yields:
-        Server-sent event formatted chunks
+        Server-sent event formatted chunks with structured data
     """
+    event_queue: queue.Queue = queue.Queue()
+
+    def run_agent():
+        """Run agent in background thread, pushing events to queue."""
+        try:
+            runner = _get_or_create_session(user_id)
+            page_context = request.page_context or {
+                "currentPage": "/dashboard",
+                "pageTitle": "Dashboard",
+            }
+
+            import time
+            start = time.time()
+            for event in runner.send_message(request.message, page_context):
+                elapsed = time.time() - start
+                logger.info(f"[GUIDE] Event at {elapsed:.2f}s: {type(event).__name__}")
+                event_queue.put(event)
+
+            # Signal completion
+            event_queue.put(None)
+            logger.info(f"[GUIDE] Agent completed in {time.time() - start:.2f}s")
+        except Exception as e:
+            logger.error(f"Guide agent error: {e}", exc_info=True)
+            event_queue.put(ErrorEvent(error_message=str(e)))
+            event_queue.put(None)
+
+    # Start agent in background thread
+    thread = threading.Thread(target=run_agent, daemon=True)
+    thread.start()
+
+    import time as time_mod
+    yield_start = time_mod.time()
+
     try:
-        # Build context string from page context
-        context_str = "No specific page context available."
-        if request.page_context:
-            page_title = request.page_context.get("pageTitle", "Unknown")
-            current_page = request.page_context.get("currentPage", "")
-            available_actions = request.page_context.get("availableActions", [])
+        # Yield events as they arrive
+        while True:
+            try:
+                # Use asyncio to avoid blocking - check queue with small timeout
+                event = await asyncio.get_event_loop().run_in_executor(
+                    None, lambda: event_queue.get(timeout=0.05)
+                )
 
-            context_str = f"Current Page: {page_title} ({current_page})\n"
-            if available_actions:
-                context_str += f"Available Actions: {', '.join(available_actions)}"
+                if event is None:
+                    # Agent finished
+                    break
 
-        # Format system prompt with context
-        system_prompt = GUIDE_SYSTEM_PROMPT.format(context=context_str)
+                elapsed = time_mod.time() - yield_start
+                if isinstance(event, LLMTokenEvent):
+                    if event.token:
+                        data = {"type": "token", "content": event.token}
+                        logger.info(f"[GUIDE] Yielding token at {elapsed:.2f}s")
+                        yield f"data: {json.dumps(data)}\n\n"
 
-        # Get chat model
-        model = get_chat_model()
+                elif isinstance(event, GuideActionEvent):
+                    data = {
+                        "type": "action",
+                        "action": event.action_type,
+                        **event.action_data,
+                    }
+                    yield f"data: {json.dumps(data)}\n\n"
 
-        # Create messages
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": request.message},
-        ]
+                elif isinstance(event, ToolCallEvent):
+                    logger.debug(f"Guide tool call: {event.tool_name}({event.arguments})")
 
-        # Stream response
-        accumulated_content = ""
-        async for chunk in model.astream(messages):
-            if hasattr(chunk, "content") and chunk.content:
-                accumulated_content += chunk.content
-                # Send as server-sent event
-                yield f"data: {chunk.content}\n\n"
+                elif isinstance(event, ErrorEvent):
+                    data = {"type": "error", "message": event.error_message}
+                    yield f"data: {json.dumps(data)}\n\n"
+
+                elif isinstance(event, CompleteEvent):
+                    pass
+
+            except queue.Empty:
+                # No event yet, continue waiting
+                continue
 
         # Send done signal
         yield "data: [DONE]\n\n"
 
     except Exception as e:
         logger.error(f"Error generating guide response: {e}", exc_info=True)
-        yield f"data: I apologize, but I encountered an error. Please try again.\n\n"
+        error_data = {"type": "error", "message": "An error occurred. Please try again."}
+        yield f"data: {json.dumps(error_data)}\n\n"
         yield "data: [DONE]\n\n"
+    finally:
+        # Wait for thread to finish (with timeout)
+        thread.join(timeout=5)
 
 
 @router.post("/chat")
 async def guide_chat(
     request: GuideChatRequest,
-    user_id: str = Depends(get_current_user_id),
+    user_id: CurrentUser,
 ) -> StreamingResponse:
-    """Stream guide agent responses.
+    """Stream guide agent responses with actions.
 
     Args:
         request: The chat request
         user_id: Current user ID from auth
 
     Returns:
-        Streaming response with SSE format
+        Streaming response with SSE format containing:
+        - {"type": "token", "content": "..."} for text chunks
+        - {"type": "action", "action": "highlight", "target": "...", "duration": ...}
+        - {"type": "action", "action": "navigate", "to": "..."}
+        - {"type": "error", "message": "..."}
+        - [DONE] signal
     """
     return StreamingResponse(
         generate_guide_response(request, user_id),
@@ -151,3 +187,15 @@ async def guide_chat(
             "X-Accel-Buffering": "no",
         },
     )
+
+
+@router.post("/clear")
+async def clear_guide_session(user_id: CurrentUser) -> dict:
+    """Clear the guide session for the current user.
+
+    This resets the conversation context.
+    """
+    session_key = f"{user_id}_guide"
+    if session_key in _guide_sessions:
+        del _guide_sessions[session_key]
+    return {"status": "cleared"}

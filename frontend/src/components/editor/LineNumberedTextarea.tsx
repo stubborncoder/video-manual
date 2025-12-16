@@ -43,7 +43,7 @@ export function LineNumberedTextarea({
       <Textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`h-full w-full resize-none rounded-none border-0 font-mono text-sm focus-visible:ring-0 focus-visible:ring-offset-0 overflow-auto ${className}`}
+        className={`h-full w-full resize-none rounded-none border-0 font-mono text-sm focus-visible:ring-0 focus-visible:ring-offset-0 overflow-auto custom-scrollbar ${className}`}
         placeholder={placeholder}
       />
     );
@@ -74,7 +74,7 @@ export function LineNumberedTextarea({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onScroll={handleScroll}
-        className={`flex-1 h-full resize-none rounded-none border-0 font-mono text-sm focus-visible:ring-0 focus-visible:ring-offset-0 overflow-auto leading-[1.5rem] py-2 ${className}`}
+        className={`flex-1 h-full resize-none rounded-none border-0 font-mono text-sm focus-visible:ring-0 focus-visible:ring-offset-0 overflow-auto custom-scrollbar leading-[1.5rem] py-2 ${className}`}
         placeholder={placeholder}
         style={{ lineHeight: "1.5rem" }}
       />

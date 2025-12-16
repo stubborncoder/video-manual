@@ -57,3 +57,31 @@ def ensure_directories():
     USERS_DIR.mkdir(exist_ok=True)
     CHECKPOINTS_DIR.mkdir(exist_ok=True)
     TEMPLATES_DIR.mkdir(exist_ok=True)
+
+
+def get_chat_model():
+    """Get a LangChain chat model for general-purpose use.
+
+    Returns a cost-effective model suitable for the Guide Agent
+    and other lightweight chat tasks.
+
+    Returns:
+        A LangChain chat model instance
+    """
+    from langchain.chat_models import init_chat_model
+
+    # Prefer Gemini Flash for cost-effectiveness and speed
+    if GOOGLE_API_KEY:
+        return init_chat_model(
+            "google_genai:gemini-2.0-flash",
+            api_key=GOOGLE_API_KEY,
+        )
+
+    # Fallback to Anthropic if available
+    if ANTHROPIC_API_KEY:
+        return init_chat_model(
+            "anthropic:claude-sonnet-4-20250514",
+            api_key=ANTHROPIC_API_KEY,
+        )
+
+    raise ValueError("No API key configured. Set GOOGLE_API_KEY or ANTHROPIC_API_KEY.")

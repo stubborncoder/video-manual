@@ -228,6 +228,7 @@ class ModelsResponse(BaseModel):
     manual_generation: list[ModelInfo]
     manual_evaluation: list[ModelInfo]
     manual_editing: list[ModelInfo]
+    guide_assistant: list[ModelInfo]
 
 
 @router.get("/models")
@@ -253,6 +254,7 @@ async def get_available_models(admin_user: AdminUser) -> ModelsResponse:
         manual_generation=[to_model_info(m) for m in get_models_for_task(TaskType.MANUAL_GENERATION)],
         manual_evaluation=[to_model_info(m) for m in get_models_for_task(TaskType.MANUAL_EVALUATION)],
         manual_editing=[to_model_info(m) for m in get_models_for_task(TaskType.MANUAL_EDITING)],
+        guide_assistant=[to_model_info(m) for m in get_models_for_task(TaskType.GUIDE_ASSISTANT)],
     )
 
 

@@ -911,9 +911,10 @@ function ManualsPageContent() {
         </Card>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredManuals.map((manual) => (
+          {filteredManuals.map((manual, index) => (
             <Card
               key={manual.id}
+              data-guide-id={index === 0 ? "first-manual-card" : `manual-card-${manual.id}`}
               className="
                 group relative overflow-hidden flex flex-col
                 transition-all duration-300 ease-out
@@ -1103,7 +1104,12 @@ function ManualsPageContent() {
                     {t("view")}
                   </Button>
                   <Link href={getEditUrl(manual.id)} className="contents">
-                    <Button size="sm" variant="outline" title="Edit manual content">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      title="Edit manual content"
+                      data-guide-id={index === 0 ? "first-manual-edit-btn" : `manual-edit-btn-${manual.id}`}
+                    >
                       <Pencil className="h-4 w-4" />
                     </Button>
                   </Link>
@@ -1317,8 +1323,8 @@ function ManualsPageContent() {
           </SheetHeader>
 
           {selectedManual && (
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="prose prose-base dark:prose-invert max-w-none pb-8">
+            <ScrollArea className="flex-1">
+              <div className="p-6 prose prose-base dark:prose-invert max-w-none pb-8">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
@@ -1411,7 +1417,7 @@ function ManualsPageContent() {
                   {stripSemanticTags(selectedManual.content)}
                 </ReactMarkdown>
               </div>
-            </div>
+            </ScrollArea>
           )}
         </SheetContent>
       </Sheet>
@@ -1762,7 +1768,7 @@ function ManualsPageContent() {
                           {t("targetAudience")}
                         </p>
                       </div>
-                      <div className="max-h-48 overflow-y-auto p-3">
+                      <div className="max-h-48 overflow-y-auto p-3 custom-scrollbar">
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">{manualToEvaluate.target_audience}</p>
                       </div>
                     </PopoverContent>
@@ -1785,7 +1791,7 @@ function ManualsPageContent() {
                           {t("targetObjective")}
                         </p>
                       </div>
-                      <div className="max-h-48 overflow-y-auto p-3">
+                      <div className="max-h-48 overflow-y-auto p-3 custom-scrollbar">
                         <p className="text-sm leading-relaxed whitespace-pre-wrap">{manualToEvaluate.target_objective}</p>
                       </div>
                     </PopoverContent>
@@ -1798,7 +1804,7 @@ function ManualsPageContent() {
           {/* Two Column Layout */}
           <div className="flex-1 flex gap-4 overflow-hidden min-h-0">
             {/* Left Column - Main Content */}
-            <div className="flex-[2] overflow-y-auto pr-2 space-y-6">
+            <div className="flex-[2] overflow-y-auto pr-2 space-y-6 custom-scrollbar">
 
             {/* Evaluation Results */}
             {evaluationResult ? (
@@ -1997,54 +2003,54 @@ function ManualsPageContent() {
             </div>
 
             {/* Right Column - Evaluation History Sidebar */}
-            <div className="w-[280px] shrink-0 border-l pl-4 overflow-y-auto">
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2 mb-4 sticky top-0 bg-background py-2">
-                <History className="h-4 w-4" />
-                {t("evaluationHistory")}
-              </h3>
-              {storedEvaluations.length > 0 ? (
-                <div className="space-y-2">
-                  {storedEvaluations.map((evalItem, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => loadStoredEvaluation(evalItem.version, evalItem.language)}
-                      disabled={loadingStoredEval}
-                      className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left ${
-                        selectedVersion === evalItem.version && selectedLanguage === evalItem.language
-                          ? 'bg-primary/10 border-primary/50'
-                          : 'bg-muted/30 hover:bg-muted/60'
-                      }`}
-                    >
-                      <div className={`text-lg font-bold shrink-0 ${
-                        evalItem.overall_score >= 8 ? 'text-green-500' :
-                        evalItem.overall_score >= 6 ? 'text-yellow-500' :
-                        evalItem.overall_score >= 4 ? 'text-orange-500' : 'text-red-500'
-                      }`}>
-                        {evalItem.overall_score}/10
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium truncate">v{evalItem.version}</p>
-                          <Badge variant="outline" className="text-[10px] font-mono uppercase shrink-0">
-                            {evalItem.language}
-                          </Badge>
+            <div className="w-[280px] shrink-0 border-l pl-4 overflow-y-auto custom-scrollbar">
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2 mb-4 sticky top-0 bg-background py-2">
+                  <History className="h-4 w-4" />
+                  {t("evaluationHistory")}
+                </h3>
+                {storedEvaluations.length > 0 ? (
+                  <div className="space-y-2">
+                    {storedEvaluations.map((evalItem, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => loadStoredEvaluation(evalItem.version, evalItem.language)}
+                        disabled={loadingStoredEval}
+                        className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left ${
+                          selectedVersion === evalItem.version && selectedLanguage === evalItem.language
+                            ? 'bg-primary/10 border-primary/50'
+                            : 'bg-muted/30 hover:bg-muted/60'
+                        }`}
+                      >
+                        <div className={`text-lg font-bold shrink-0 ${
+                          evalItem.overall_score >= 8 ? 'text-green-500' :
+                          evalItem.overall_score >= 6 ? 'text-yellow-500' :
+                          evalItem.overall_score >= 4 ? 'text-orange-500' : 'text-red-500'
+                        }`}>
+                          {evalItem.overall_score}/10
                         </div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                          <Clock className="h-3 w-3 shrink-0" />
-                          {new Date(evalItem.evaluated_at).toLocaleDateString(dateLocale, {
-                            month: 'short',
-                            day: 'numeric',
-                          })}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-8">
-                  {t("noPreviousEvaluations")}
-                </p>
-              )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium truncate">v{evalItem.version}</p>
+                            <Badge variant="outline" className="text-[10px] font-mono uppercase shrink-0">
+                              {evalItem.language}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                            <Clock className="h-3 w-3 shrink-0" />
+                            {new Date(evalItem.evaluated_at).toLocaleDateString(dateLocale, {
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    {t("noPreviousEvaluations")}
+                  </p>
+                )}
             </div>
           </div>
 

@@ -120,12 +120,19 @@ export function useEditorCopilot({
 }: UseEditorCopilotOptions) {
   const [messages, setMessages] = useState<ChatMessageData[]>([]);
   const [pendingChanges, setPendingChanges] = useState<PendingDocumentChange[]>([]);
-  const [isConnected, setIsConnected] = useState(false);
+  // Start optimistically connected to prevent flicker on initial mount
+  const [isConnected, setIsConnected] = useState(true);
   const [isGenerating, setIsGenerating] = useState(false);
 
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const currentAssistantMessageRef = useRef<string | null>(null);
+  // Track if we've ever connected - only show disconnected after initial connection
+  const hasConnectedRef = useRef(false);
+  // Delay showing disconnected state to prevent flicker
+  const disconnectDelayRef = useRef<NodeJS.Timeout | null>(null);
+  // Track if component is mounted to prevent state updates after unmount
+  const isMountedRef = useRef(true);
 
   /**
    * Generate a unique message ID
@@ -153,16 +160,39 @@ export function useEditorCopilot({
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
+      // Only update state if component is still mounted
+      if (!isMountedRef.current) return;
+
+      // Clear any pending disconnect delay
+      if (disconnectDelayRef.current) {
+        clearTimeout(disconnectDelayRef.current);
+        disconnectDelayRef.current = null;
+      }
+      hasConnectedRef.current = true;
       setIsConnected(true);
     };
 
     ws.onclose = () => {
-      setIsConnected(false);
+      // Only update state if component is still mounted
+      if (!isMountedRef.current) return;
+
       setIsGenerating(false);
 
-      // Auto-reconnect after 3 seconds
+      // Only show disconnected after a delay to prevent flicker during reconnects
+      // and only if we've previously connected successfully
+      if (hasConnectedRef.current) {
+        disconnectDelayRef.current = setTimeout(() => {
+          if (isMountedRef.current) {
+            setIsConnected(false);
+          }
+        }, 1500); // 1.5 second delay before showing disconnected
+      }
+
+      // Auto-reconnect after 3 seconds (only if mounted)
       reconnectTimeoutRef.current = setTimeout(() => {
-        connect();
+        if (isMountedRef.current) {
+          connect();
+        }
       }, 3000);
     };
 
@@ -496,6 +526,11 @@ export function useEditorCopilot({
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
+    if (disconnectDelayRef.current) {
+      clearTimeout(disconnectDelayRef.current);
+      disconnectDelayRef.current = null;
     }
     wsRef.current?.close();
     wsRef.current = null;
@@ -503,8 +538,12 @@ export function useEditorCopilot({
 
   // Connect on mount, disconnect on unmount
   useEffect(() => {
+    isMountedRef.current = true;
     connect();
-    return () => disconnect();
+    return () => {
+      isMountedRef.current = false;
+      disconnect();
+    };
   }, [connect, disconnect]);
 
   return {

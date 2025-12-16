@@ -18,6 +18,7 @@ SETTING_VIDEO_ANALYSIS_MODEL = "model_video_analysis"
 SETTING_MANUAL_GENERATION_MODEL = "model_manual_generation"
 SETTING_MANUAL_EVALUATION_MODEL = "model_manual_evaluation"
 SETTING_MANUAL_EDITING_MODEL = "model_manual_editing"
+SETTING_GUIDE_ASSISTANT_MODEL = "model_guide_assistant"
 
 # Map task types to setting keys
 TASK_TO_SETTING_KEY: dict[TaskType, str] = {
@@ -25,6 +26,7 @@ TASK_TO_SETTING_KEY: dict[TaskType, str] = {
     TaskType.MANUAL_GENERATION: SETTING_MANUAL_GENERATION_MODEL,
     TaskType.MANUAL_EVALUATION: SETTING_MANUAL_EVALUATION_MODEL,
     TaskType.MANUAL_EDITING: SETTING_MANUAL_EDITING_MODEL,
+    TaskType.GUIDE_ASSISTANT: SETTING_GUIDE_ASSISTANT_MODEL,
 }
 
 
@@ -174,6 +176,7 @@ class AdminSettings:
             "manual_generation": AdminSettings.get_model_for_task(TaskType.MANUAL_GENERATION),
             "manual_evaluation": AdminSettings.get_model_for_task(TaskType.MANUAL_EVALUATION),
             "manual_editing": AdminSettings.get_model_for_task(TaskType.MANUAL_EDITING),
+            "guide_assistant": AdminSettings.get_model_for_task(TaskType.GUIDE_ASSISTANT),
         }
 
     @staticmethod
@@ -196,6 +199,7 @@ class AdminSettings:
             "manual_generation": TaskType.MANUAL_GENERATION,
             "manual_evaluation": TaskType.MANUAL_EVALUATION,
             "manual_editing": TaskType.MANUAL_EDITING,
+            "guide_assistant": TaskType.GUIDE_ASSISTANT,
         }
 
         for key, model_id in settings.items():

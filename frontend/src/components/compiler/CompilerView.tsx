@@ -247,7 +247,8 @@ export function CompilerView({
 
             {/* Plan Tab */}
             <TabsContent value="plan" className="flex-1 overflow-hidden mt-0">
-              <div className="h-full overflow-y-auto p-6">
+              <ScrollArea className="h-full">
+                <div className="p-6">
                 {mergePlan ? (
                   <MergePlanDisplay plan={mergePlan} />
                 ) : state.status === "idle" ? (
@@ -281,12 +282,14 @@ export function CompilerView({
                     </p>
                   </div>
                 )}
-              </div>
+                </div>
+              </ScrollArea>
             </TabsContent>
 
             {/* Result Tab */}
             <TabsContent value="result" className="flex-1 overflow-hidden mt-0">
-              <div className="h-full overflow-y-auto p-6">
+              <ScrollArea className="h-full">
+                <div className="p-6">
                 {compiledContent ? (
                   <div className="prose prose-sm dark:prose-invert max-w-none">
                     <ReactMarkdown
@@ -337,7 +340,8 @@ export function CompilerView({
                     </p>
                   </div>
                 )}
-              </div>
+                </div>
+              </ScrollArea>
             </TabsContent>
           </Tabs>
         </ResizablePanel>
@@ -353,8 +357,8 @@ export function CompilerView({
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4" ref={scrollRef}>
-              <div className="space-y-4">
+            <ScrollArea className="flex-1" ref={scrollRef}>
+              <div className="p-4 space-y-4">
                 {messages.length === 0 && state.status === "idle" && (
                   <div className="text-center py-8 text-muted-foreground">
                     <Bot className="mx-auto h-10 w-10 mb-3 opacity-50" />
@@ -467,7 +471,7 @@ export function CompilerView({
                   </div>
                 )}
               </div>
-            </div>
+            </ScrollArea>
 
             {/* Input */}
             <div className="p-4 border-t">

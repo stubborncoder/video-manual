@@ -85,6 +85,7 @@ export interface ModelsResponse {
   manual_generation: ModelInfo[];
   manual_evaluation: ModelInfo[];
   manual_editing: ModelInfo[];
+  guide_assistant: ModelInfo[];
 }
 
 export interface ModelSettings {
@@ -92,6 +93,7 @@ export interface ModelSettings {
   manual_generation: string;
   manual_evaluation: string;
   manual_editing: string;
+  guide_assistant: string;
 }
 
 export const adminApi = {

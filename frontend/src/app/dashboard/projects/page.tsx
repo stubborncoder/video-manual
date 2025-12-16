@@ -907,7 +907,7 @@ export default function ProjectsPage() {
 
           <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button data-guide-id="create-project-btn">
                 <Plus className="mr-2 h-4 w-4" />
                 {t("newProject")}
               </Button>
@@ -983,6 +983,7 @@ export default function ProjectsPage() {
           {filteredProjects.map((project) => (
             <Card
               key={project.id}
+              data-guide-id={`project-card-${project.id}`}
               className="
                 group relative overflow-hidden
                 transition-all duration-300 ease-out
@@ -1058,6 +1059,7 @@ export default function ProjectsPage() {
                   <Button
                     size="sm"
                     className="flex-1"
+                    data-guide-id={`view-project-btn-${project.id}`}
                     onClick={() => handleViewDetails(project.id)}
                   >
                     <Eye className="mr-2 h-4 w-4" />
@@ -1215,7 +1217,7 @@ export default function ProjectsPage() {
                 </div>
 
                 {/* Chapters Tab - Hierarchical View: Sections > Chapters > Manuals */}
-                <TabsContent value="chapters" className="flex-1 overflow-auto p-6 space-y-4">
+                <TabsContent value="chapters" className="flex-1 overflow-auto p-6 space-y-4 custom-scrollbar">
                   {/* Header with action buttons */}
                   <div className="flex justify-between items-center">
                     <p className="text-sm text-muted-foreground">
@@ -1765,7 +1767,7 @@ export default function ProjectsPage() {
                 </TabsContent>
 
                 {/* Manuals Tab */}
-                <TabsContent value="manuals" className="flex-1 overflow-auto p-6">
+                <TabsContent value="manuals" className="flex-1 overflow-auto p-6 custom-scrollbar">
                   {selectedProject.manuals.length === 0 ? (
                     <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
                       <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
@@ -1837,7 +1839,7 @@ export default function ProjectsPage() {
                 </TabsContent>
 
                 {/* Videos Tab */}
-                <TabsContent value="videos" className="flex-1 overflow-auto p-6">
+                <TabsContent value="videos" className="flex-1 overflow-auto p-6 custom-scrollbar">
                   {!selectedProject.videos || selectedProject.videos.length === 0 ? (
                     <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
                       <Video className="mx-auto h-12 w-12 mb-4 opacity-50" />
@@ -1886,7 +1888,7 @@ export default function ProjectsPage() {
                 </TabsContent>
 
                 {/* Export Settings Tab */}
-                <TabsContent value="settings" className="flex-1 overflow-auto p-6">
+                <TabsContent value="settings" className="flex-1 overflow-auto p-6 custom-scrollbar">
                   <div className="max-w-2xl space-y-6">
                     <div>
                       <h3 className="text-lg font-semibold mb-4">Export Options</h3>
@@ -1969,7 +1971,7 @@ export default function ProjectsPage() {
                 </TabsContent>
 
                 {/* Version History Tab */}
-                <TabsContent value="versions" className="flex-1 overflow-auto p-6">
+                <TabsContent value="versions" className="flex-1 overflow-auto p-6 custom-scrollbar">
                   <CompilationVersionHistory projectId={selectedProject.id} />
                 </TabsContent>
               </Tabs>
@@ -2254,7 +2256,7 @@ export default function ProjectsPage() {
 
                 {/* Project Tree View */}
                 {projectToDelete && (
-                  <div className="rounded-lg border bg-muted/30 p-4 max-h-[300px] overflow-auto">
+                  <div className="rounded-lg border bg-muted/30 p-4 max-h-[300px] overflow-auto custom-scrollbar">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide mb-3">Project Contents</p>
 
                     {/* Project Root */}
@@ -2405,7 +2407,7 @@ export default function ProjectsPage() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="content" className="flex-1 overflow-y-auto mt-4 pr-2">
+              <TabsContent value="content" className="flex-1 overflow-y-auto mt-4 pr-2 custom-scrollbar">
                 <div className="prose prose-sm dark:prose-invert max-w-none pb-4">
                   <ReactMarkdown
                     remarkPlugins={[remarkGfm]}
@@ -2476,7 +2478,7 @@ export default function ProjectsPage() {
                 </div>
               </TabsContent>
 
-              <TabsContent value="screenshots" className="flex-1 overflow-y-auto mt-4 pr-2">
+              <TabsContent value="screenshots" className="flex-1 overflow-y-auto mt-4 pr-2 custom-scrollbar">
                 <div className="grid grid-cols-1 gap-4 pb-4">
                   {selectedManual.screenshots.map((screenshot, idx) => (
                     <div key={idx} className="border rounded-lg overflow-hidden shadow-sm">

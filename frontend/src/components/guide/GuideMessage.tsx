@@ -1,6 +1,7 @@
 "use client";
 
 import { Bot, User } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import type { GuideMessage } from "@/stores/guideStore";
 
@@ -49,7 +50,9 @@ export function GuideMessageComponent({ message }: GuideMessageProps) {
             isSystem && "bg-amber-50 dark:bg-amber-950 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800"
           )}
         >
-          <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+          <div className="text-sm prose prose-sm dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-ol:my-1 max-w-none">
+            <ReactMarkdown>{message.content}</ReactMarkdown>
+          </div>
         </div>
 
         {/* Suggestions */}

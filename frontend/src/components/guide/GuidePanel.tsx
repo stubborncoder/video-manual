@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Send, Loader2, Trash2, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,16 @@ import { GuideMessageComponent } from "./GuideMessage";
 import { GuideSuggestions } from "./GuideSuggestions";
 import { cn } from "@/lib/utils";
 
+/**
+ * Check if the current page has another copilot agent (editor/compiler)
+ * On these pages, the guide panel should be on the left to avoid overlap
+ */
+function hasCopilotAgent(pathname: string): boolean {
+  if (pathname.includes("/edit")) return true;
+  if (pathname.includes("/compile")) return true;
+  return false;
+}
+
 interface GuidePanelProps {
   onSendMessage: (content: string) => void;
   onClearChat?: () => void;
@@ -26,13 +37,14 @@ interface GuidePanelProps {
 
 /**
  * The guide agent chat panel
- * Slides up from the bottom-right corner when opened
+ * Positioned bottom-right normally, bottom-left on pages with other copilot agents
  */
 export function GuidePanel({
   onSendMessage,
   onClearChat,
   suggestions = [],
 }: GuidePanelProps) {
+  const pathname = usePathname();
   const {
     isOpen,
     close,
@@ -42,20 +54,30 @@ export function GuidePanel({
   } = useGuideStore();
 
   const [inputValue, setInputValue] = useState("");
+
+  // Position on left side when on pages with other copilot agents
+  const positionLeft = hasCopilotAgent(pathname);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when messages change or panel opens
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      const scrollContainer = scrollAreaRef.current.querySelector(
-        "[data-radix-scroll-area-viewport]"
-      );
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+    if (!isOpen) return;
+
+    // Small delay to ensure DOM is ready after mount/remount
+    const timeoutId = setTimeout(() => {
+      if (scrollAreaRef.current) {
+        const scrollContainer = scrollAreaRef.current.querySelector(
+          "[data-radix-scroll-area-viewport]"
+        );
+        if (scrollContainer) {
+          scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        }
       }
-    }
-  }, [messages]);
+    }, 50);
+
+    return () => clearTimeout(timeoutId);
+  }, [messages, isOpen]);
 
   // Focus textarea when panel opens
   useEffect(() => {
@@ -91,17 +113,24 @@ export function GuidePanel({
   );
 
   const hasMessages = messages.length > 0;
+  // Only show suggestions when there's just the initial greeting (no user interaction yet)
+  const showSuggestions = messages.length <= 1 && suggestions.length > 0;
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isOpen && (
         <motion.div
+          key={positionLeft ? "left" : "right"}
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
+          transition={{
+            duration: 0.2,
+            ease: "easeOut",
+          }}
           className={cn(
-            "fixed bottom-24 right-6 z-50",
+            "fixed bottom-24 z-50",
+            positionLeft ? "left-6" : "right-6",
             "w-[400px] h-[600px]",
             "bg-background border rounded-lg shadow-2xl",
             "flex flex-col overflow-hidden"
@@ -187,8 +216,8 @@ export function GuidePanel({
             )}
           </ScrollArea>
 
-          {/* Suggestions */}
-          {suggestions.length > 0 && (
+          {/* Suggestions - only shown before first user message */}
+          {showSuggestions && (
             <GuideSuggestions
               suggestions={suggestions}
               onSuggestionClick={handleSuggestionClick}

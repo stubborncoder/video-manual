@@ -376,6 +376,7 @@ export default function VideosPage() {
             disabled={uploading}
           />
           <Button
+            data-guide-id="upload-video-btn"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
           >
@@ -436,6 +437,7 @@ export default function VideosPage() {
           {filteredVideos.map((video) => (
             <Card
               key={video.name}
+              data-guide-id={`video-card-${video.name}`}
               className="
                 group overflow-hidden flex flex-col
                 transition-all duration-300 ease-out
@@ -806,7 +808,7 @@ export default function VideosPage() {
                       </span>
                     </div>
 
-                    <div className="text-sm space-y-1 max-h-32 overflow-y-auto">
+                    <div className="text-sm space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
                       {videoManuals.map((manual) => (
                         <div
                           key={manual.manual_id}

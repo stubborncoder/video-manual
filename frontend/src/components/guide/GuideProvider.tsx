@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useCallback, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useCallback, useState, useRef } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useGuideStore } from "@/stores/guideStore";
 import { GuideButton } from "./GuideButton";
 import { GuidePanel } from "./GuidePanel";
+import { HighlightOverlay } from "./HighlightOverlay";
 import type { GuideMessage, PageContext } from "@/stores/guideStore";
+import type { GuideEvent } from "@/lib/guide-api";
 
 interface GuideProviderProps {
   children: React.ReactNode;
@@ -71,8 +73,11 @@ function getPageTitle(pathname: string): string {
  */
 export function GuideProvider({ children }: GuideProviderProps) {
   const pathname = usePathname();
-  const { addMessage, clearMessages, setPageContext, messages } = useGuideStore();
+  const router = useRouter();
+  const { addMessage, clearMessages, setPageContext, messages, showHighlight, clearAllHighlights } = useGuideStore();
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  // Track if we've triggered any actions during current response
+  const hasActionsRef = useRef<boolean>(false);
 
   // Update page context when pathname changes
   useEffect(() => {
@@ -82,13 +87,16 @@ export function GuideProvider({ children }: GuideProviderProps) {
     const context: PageContext = {
       currentPage: pathname,
       pageTitle,
-      availableActions: [], // Will be populated by page-specific hooks in Phase 2
+      availableActions: [],
       pageState: {},
     };
 
     setPageContext(context);
     setSuggestions(contextualSuggestions);
-  }, [pathname, setPageContext]);
+
+    // Clear highlights when navigating to a new page
+    clearAllHighlights();
+  }, [pathname, setPageContext, clearAllHighlights]);
 
   // Show greeting message if chat is empty
   useEffect(() => {
@@ -106,7 +114,11 @@ export function GuideProvider({ children }: GuideProviderProps) {
 
   const handleSendMessage = useCallback(
     async (content: string) => {
-      const { pageContext, setGenerating, addMessage: addMsg } = useGuideStore.getState();
+      const { pageContext, setGenerating, addMessage: addMsg, showHighlight: highlight } = useGuideStore.getState();
+
+      // Clear previous highlights and reset tracking
+      clearAllHighlights();
+      hasActionsRef.current = false;
 
       // Add user message
       const userMessage: GuideMessage = {
@@ -120,7 +132,7 @@ export function GuideProvider({ children }: GuideProviderProps) {
       // Set generating state
       setGenerating(true);
 
-      // Stream response from API
+      // Create assistant message for streaming
       let assistantContent = "";
       const assistantMessageId = `msg_${Date.now()}_assistant`;
 
@@ -132,16 +144,15 @@ export function GuideProvider({ children }: GuideProviderProps) {
             message: content,
             page_context: pageContext,
           },
-          (chunk: string) => {
-            // Accumulate chunks
-            assistantContent += chunk;
+          // onToken - handle text chunks
+          (token: string) => {
+            assistantContent += token;
 
             // Update or create assistant message
             const { messages } = useGuideStore.getState();
             const existingMessage = messages.find((m) => m.id === assistantMessageId);
 
             if (existingMessage) {
-              // Update existing message
               useGuideStore.setState({
                 messages: messages.map((m) =>
                   m.id === assistantMessageId
@@ -150,7 +161,6 @@ export function GuideProvider({ children }: GuideProviderProps) {
                 ),
               });
             } else {
-              // Create new message
               addMsg({
                 id: assistantMessageId,
                 role: "assistant",
@@ -159,16 +169,33 @@ export function GuideProvider({ children }: GuideProviderProps) {
               });
             }
           },
-          () => {
-            // Complete
-            setGenerating(false);
+          // onAction - handle action events
+          (event: GuideEvent) => {
+            if (event.action === "highlight" && event.target) {
+              hasActionsRef.current = true;
+              highlight(event.target, event.duration || 5000);
+            } else if (event.action === "navigate" && event.to) {
+              hasActionsRef.current = true;
+              // Navigate after a short delay to let user see the message
+              setTimeout(() => {
+                router.push(event.to!);
+              }, 500);
+            }
           },
+          // onComplete
+          () => {
+            setGenerating(false);
+
+            // If there were highlight actions, minimize panel so user can see them
+            if (hasActionsRef.current) {
+              useGuideStore.setState({ isOpen: false, hasUnread: true });
+            }
+          },
+          // onError
           (error: Error) => {
-            // Error
             console.error("Guide chat error:", error);
             setGenerating(false);
 
-            // Add error message
             addMsg({
               id: `msg_${Date.now()}_error`,
               role: "system",
@@ -189,11 +216,21 @@ export function GuideProvider({ children }: GuideProviderProps) {
         });
       }
     },
-    []
+    [clearAllHighlights, router]
   );
 
-  const handleClearChat = useCallback(() => {
+  const handleClearChat = useCallback(async () => {
+    // Clear frontend state
     clearMessages();
+
+    // Clear backend session
+    try {
+      const { clearGuideSession } = await import("@/lib/guide-api");
+      await clearGuideSession();
+    } catch (error) {
+      console.error("Failed to clear guide session:", error);
+    }
+
     // Re-add greeting message
     const greetingMessage: GuideMessage = {
       id: `msg_${Date.now()}`,
@@ -214,6 +251,7 @@ export function GuideProvider({ children }: GuideProviderProps) {
         onClearChat={handleClearChat}
         suggestions={suggestions}
       />
+      <HighlightOverlay />
     </TooltipProvider>
   );
 }

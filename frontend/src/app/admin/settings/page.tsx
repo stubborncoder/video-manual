@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Save, Video, FileText, ClipboardCheck, MessageSquare, DollarSign } from "lucide-react";
+import { Loader2, Save, Video, FileText, ClipboardCheck, MessageSquare, DollarSign, HelpCircle } from "lucide-react";
 import { toast } from "sonner";
 
 type TaskType = keyof ModelSettings;
@@ -55,6 +55,12 @@ const TASK_CONFIGS: TaskConfig[] = [
     label: "Manual Editing (Copilot)",
     description: "Model used for the AI copilot in the manual editor",
     icon: MessageSquare,
+  },
+  {
+    key: "guide_assistant",
+    label: "Guide Assistant",
+    description: "Model used for the interactive guide that helps users navigate the app",
+    icon: HelpCircle,
   },
 ];
 

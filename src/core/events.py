@@ -14,6 +14,7 @@ class EventType(str, Enum):
     TOOL_CALL = "tool_call"
     HITL_REQUIRED = "hitl_required"
     PENDING_CHANGE = "pending_change"
+    GUIDE_ACTION = "guide_action"
     ERROR = "error"
     COMPLETE = "complete"
 
@@ -96,6 +97,15 @@ class PendingChangeEvent(ProgressEvent):
     change_id: str = ""
     change_type: str = ""  # text_replace, text_insert, text_delete, caption_update
     change_data: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class GuideActionEvent(ProgressEvent):
+    """Emitted when the guide agent wants to perform a UI action."""
+
+    event_type: EventType = field(default=EventType.GUIDE_ACTION, init=False)
+    action_type: str = ""  # highlight, navigate
+    action_data: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
