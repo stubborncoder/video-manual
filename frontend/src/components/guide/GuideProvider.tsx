@@ -98,18 +98,91 @@ export function GuideProvider({ children }: GuideProviderProps) {
     clearAllHighlights();
   }, [pathname, setPageContext, clearAllHighlights]);
 
-  // Show greeting message if chat is empty
+  // Fetch initial greeting from backend when chat is empty
+  // This allows the guide agent to check user profile and provide personalized greeting
+  const hasInitialized = useRef(false);
   useEffect(() => {
-    if (messages.length === 0) {
-      const greetingMessage: GuideMessage = {
-        id: `msg_${Date.now()}`,
-        role: "assistant",
-        content: "Welcome to vDocs! I'm your documentation assistant. I can help you upload videos, create manuals, organize projects, and navigate the app. What would you like to do today?",
-        timestamp: new Date(),
-        suggestions: getSuggestionsForPage(pathname),
-      };
-      addMessage(greetingMessage);
-    }
+    const initializeGreeting = async () => {
+      if (messages.length === 0 && !hasInitialized.current) {
+        hasInitialized.current = true;
+
+        const { setGenerating, addMessage: addMsg } = useGuideStore.getState();
+        setGenerating(true);
+
+        let greetingContent = "";
+        const greetingMessageId = `msg_${Date.now()}_greeting`;
+
+        try {
+          const { streamGuideChat } = await import("@/lib/guide-api");
+          const pageTitle = getPageTitle(pathname);
+
+          await streamGuideChat(
+            {
+              message: "Hello",
+              page_context: {
+                currentPage: pathname,
+                pageTitle,
+                availableActions: [],
+                pageState: {},
+              },
+            },
+            (token: string) => {
+              greetingContent += token;
+
+              const { messages: currentMessages } = useGuideStore.getState();
+              const existingMessage = currentMessages.find((m) => m.id === greetingMessageId);
+
+              if (existingMessage) {
+                useGuideStore.setState({
+                  messages: currentMessages.map((m) =>
+                    m.id === greetingMessageId
+                      ? { ...m, content: greetingContent }
+                      : m
+                  ),
+                });
+              } else {
+                addMsg({
+                  id: greetingMessageId,
+                  role: "assistant",
+                  content: greetingContent,
+                  timestamp: new Date(),
+                  suggestions: getSuggestionsForPage(pathname),
+                });
+              }
+            },
+            () => {}, // onAction - ignore actions during greeting
+            () => {
+              setGenerating(false);
+            },
+            (error: Error) => {
+              console.error("Failed to get greeting:", error);
+              setGenerating(false);
+              // Fallback to static greeting if backend fails
+              addMsg({
+                id: greetingMessageId,
+                role: "assistant",
+                content: "Welcome to vDocs! How can I help you today?",
+                timestamp: new Date(),
+                suggestions: getSuggestionsForPage(pathname),
+              });
+            }
+          );
+        } catch (error) {
+          console.error("Failed to initialize guide:", error);
+          setGenerating(false);
+          // Fallback to static greeting
+          addMsg({
+            id: `msg_${Date.now()}_greeting`,
+            role: "assistant",
+            content: "Welcome to vDocs! How can I help you today?",
+            timestamp: new Date(),
+            suggestions: getSuggestionsForPage(pathname),
+          });
+        }
+      }
+    };
+
+    initializeGreeting();
   }, []); // Only run once on mount
 
   const handleSendMessage = useCallback(
