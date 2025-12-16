@@ -1002,7 +1002,8 @@ User: {message}"""
                     msg, metadata = data
                     msg_type = getattr(msg, "type", "").lower()
                     content = getattr(msg, "content", None)
-                    logger.info(f"[GUIDE RUNNER] Message: type={msg_type}, content_len={len(str(content)) if content else 0}")
+                    # Log more details about the message
+                    logger.info(f"[GUIDE RUNNER] Message: type={msg_type}, content_type={type(content).__name__}, content={repr(content)[:200] if content else 'None'}")
 
                     # Only process streaming chunks, not final messages
                     if "chunk" not in msg_type and "ai" in msg_type:
@@ -1063,6 +1064,7 @@ User: {message}"""
 
                 elif mode == "updates":
                     # Handle tool results in updates mode
+                    logger.info(f"[GUIDE RUNNER] Updates data: {repr(data)[:500]}")
                     if isinstance(data, dict):
                         for node_name, node_data in data.items():
                             if node_name == "tools" and isinstance(node_data, dict):
