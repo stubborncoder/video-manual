@@ -7,6 +7,7 @@ import { Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useGuideStore } from "@/stores/guideStore";
+import { useSidebar } from "@/components/layout/SidebarContext";
 import { cn } from "@/lib/utils";
 
 /**
@@ -29,6 +30,7 @@ function hasCopilotAgent(pathname: string): boolean {
 export function GuideButton() {
   const pathname = usePathname();
   const { isOpen, hasUnread, toggle, forceLeftPosition } = useGuideStore();
+  const { collapsed: sidebarCollapsed } = useSidebar();
 
   // Position on left side when on pages with other copilot agents
   // OR when explicitly forced (e.g., when compiler is active on projects page)
@@ -76,9 +78,13 @@ export function GuideButton() {
             ease: "easeOut",
           }}
           className={cn(
-            "fixed bottom-6 z-40",
-            // When on left side, position past the sidebar (w-64 = 256px)
-            currentPosition ? "left-72" : "right-6"
+            "fixed bottom-6 z-40 transition-[left] duration-200",
+            // When on left side, position past the sidebar
+            // Collapsed sidebar: w-16 (64px) -> left-20 (80px)
+            // Expanded sidebar: w-64 (256px) -> left-72 (288px)
+            currentPosition
+              ? sidebarCollapsed ? "left-20" : "left-72"
+              : "right-6"
           )}
         >
           <motion.div
