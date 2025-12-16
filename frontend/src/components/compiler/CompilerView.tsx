@@ -672,18 +672,23 @@ function HITLApprovalCard({ event, onDecision }: HITLApprovalCardProps) {
 
 interface MergePlanPreviewProps {
   plan: {
-    sections?: Array<{ title: string; source_manuals: string[] }>;
-    duplicates_to_merge?: Array<{ topic: string; manual_ids: string[] }>;
-    transitions?: Array<{ from: string; to: string; type: string }>;
+    chapters?: Array<{
+      title: string;
+      sources: string[];
+      merge_strategy?: string;
+      notes?: string;
+    }>;
+    duplicates_detected?: Array<{ topic: string; manual_ids: string[] }>;
+    transitions_needed?: Array<{ from: string; to: string; type: string }>;
   };
 }
 
 function MergePlanPreview({ plan }: MergePlanPreviewProps) {
-  const hasSections = plan.sections && plan.sections.length > 0;
-  const hasDuplicates = plan.duplicates_to_merge && plan.duplicates_to_merge.length > 0;
-  const hasTransitions = plan.transitions && plan.transitions.length > 0;
+  const hasChapters = plan.chapters && plan.chapters.length > 0;
+  const hasDuplicates = plan.duplicates_detected && plan.duplicates_detected.length > 0;
+  const hasTransitions = plan.transitions_needed && plan.transitions_needed.length > 0;
 
-  if (!hasSections && !hasDuplicates && !hasTransitions) {
+  if (!hasChapters && !hasDuplicates && !hasTransitions) {
     return (
       <div className="text-center py-4 text-muted-foreground text-sm">
         <p>No merge plan details available</p>
@@ -693,37 +698,49 @@ function MergePlanPreview({ plan }: MergePlanPreviewProps) {
 
   return (
     <div className="space-y-3 text-sm">
-      {/* Sections */}
-      {hasSections && (
+      {/* Chapters */}
+      {hasChapters && (
         <div className="rounded-md border border-border/50 bg-muted/30 overflow-hidden">
           <div className="px-3 py-2 bg-muted/50 border-b border-border/50">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Sections ({plan.sections!.length})
+              Chapters ({plan.chapters!.length})
             </p>
           </div>
           <div className="p-2 space-y-1">
-            {plan.sections!.map((section, i) => (
+            {plan.chapters!.map((chapter, i) => (
               <div key={i} className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-muted/50 transition-colors">
-                <span className="font-medium text-foreground">{section.title}</span>
-                <Badge variant="secondary" className="text-xs">
-                  {section.source_manuals.length} sources
-                </Badge>
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium text-foreground">{chapter.title}</span>
+                  {chapter.notes && (
+                    <p className="text-xs text-muted-foreground truncate">{chapter.notes}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {chapter.merge_strategy && (
+                    <Badge variant="outline" className="text-xs">
+                      {chapter.merge_strategy}
+                    </Badge>
+                  )}
+                  <Badge variant="secondary" className="text-xs">
+                    {chapter.sources.length} sources
+                  </Badge>
+                </div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Duplicates to Merge */}
+      {/* Duplicates Detected */}
       {hasDuplicates && (
         <div className="rounded-md border border-border/50 bg-muted/30 overflow-hidden">
           <div className="px-3 py-2 bg-muted/50 border-b border-border/50">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Duplicates to Merge ({plan.duplicates_to_merge!.length})
+              Duplicates Detected ({plan.duplicates_detected!.length})
             </p>
           </div>
           <div className="p-2 space-y-1">
-            {plan.duplicates_to_merge!.map((dup, i) => (
+            {plan.duplicates_detected!.map((dup, i) => (
               <div key={i} className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-muted/50 transition-colors">
                 <span className="font-medium text-foreground">{dup.topic}</span>
                 <Badge variant="secondary" className="text-xs">
@@ -735,21 +752,21 @@ function MergePlanPreview({ plan }: MergePlanPreviewProps) {
         </div>
       )}
 
-      {/* Transitions */}
+      {/* Transitions Needed */}
       {hasTransitions && (
         <div className="rounded-md border border-border/50 bg-muted/30 overflow-hidden">
           <div className="px-3 py-2 bg-muted/50 border-b border-border/50">
             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Transitions ({plan.transitions!.length})
+              Transitions ({plan.transitions_needed!.length})
             </p>
           </div>
           <div className="p-2 space-y-1">
-            {plan.transitions!.map((trans, i) => (
+            {plan.transitions_needed!.map((trans, i) => (
               <div key={i} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/50 transition-colors">
-                <span className="text-foreground">{trans.from}</span>
-                <span className="text-primary">→</span>
-                <span className="text-foreground">{trans.to}</span>
-                <Badge variant="outline" className="ml-auto text-xs">
+                <span className="text-foreground truncate">{trans.from}</span>
+                <span className="text-primary shrink-0">→</span>
+                <span className="text-foreground truncate">{trans.to}</span>
+                <Badge variant="outline" className="ml-auto text-xs shrink-0">
                   {trans.type}
                 </Badge>
               </div>
