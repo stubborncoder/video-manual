@@ -972,12 +972,10 @@ class GuideAgentRunner:
         current_page = page_context.get("currentPage", "/dashboard")
         page_title = page_context.get("pageTitle", "Dashboard")
 
-        # Build language instruction
+        # Build language instruction (only Spanish supported besides English)
         language_instruction = ""
-        if language and language != "en":
-            language_names = {"es": "Spanish", "fr": "French", "de": "German", "pt": "Portuguese"}
-            lang_name = language_names.get(language, language)
-            language_instruction = f"\n[IMPORTANT: Respond in {lang_name}]"
+        if language == "es":
+            language_instruction = "\n[IMPORTANT: Respond in Spanish]"
 
         # Inject context into the prompt (system prompt has placeholders)
         context_message = f"""[Current page: {current_page}]
