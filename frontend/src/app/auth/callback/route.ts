@@ -14,6 +14,29 @@ function getSupabaseClient() {
 }
 
 /**
+ * Get the public origin for redirects.
+ * In production behind a proxy, request.nextUrl might show internal addresses.
+ */
+function getPublicOrigin(request: NextRequest): string {
+  // Check for forwarded host (from reverse proxy)
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
+
+  if (forwardedHost) {
+    return `${forwardedProto}://${forwardedHost}`;
+  }
+
+  // Check the host header
+  const host = request.headers.get("host");
+  if (host && !host.includes("0.0.0.0") && !host.includes("localhost")) {
+    return `https://${host}`;
+  }
+
+  // Fallback to environment variable or request origin
+  return process.env.NEXT_PUBLIC_APP_URL || request.nextUrl.origin;
+}
+
+/**
  * Auth callback route handler for Supabase authentication.
  * Handles email confirmations, magic links, password resets, and invitations.
  *
@@ -27,11 +50,8 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type");
   const next = searchParams.get("next") ?? "/dashboard";
 
-  // Create redirect URL helper
-  const redirectTo = request.nextUrl.clone();
-  redirectTo.searchParams.delete("token_hash");
-  redirectTo.searchParams.delete("type");
-  redirectTo.searchParams.delete("next");
+  // Get the public origin for proper redirects behind proxy
+  const origin = getPublicOrigin(request);
 
   if (token_hash && type) {
     const supabase = getSupabaseClient();
@@ -44,30 +64,28 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error("Auth callback error:", error);
-      redirectTo.pathname = "/";
-      redirectTo.searchParams.set("error", "auth_error");
-      redirectTo.searchParams.set("error_description", error.message);
-      return NextResponse.redirect(redirectTo);
+      const errorUrl = new URL("/", origin);
+      errorUrl.searchParams.set("error", "auth_error");
+      errorUrl.searchParams.set("error_description", error.message);
+      return NextResponse.redirect(errorUrl);
     }
 
     // Check if this is an invitation - invited users need to set a password
     if (type === "invite" && data.user) {
       // For invited users, redirect to password setup
       // The session is already established, but they need to set a password
-      redirectTo.pathname = "/auth/setup-password";
-      redirectTo.searchParams.set("next", next);
-      return NextResponse.redirect(redirectTo);
+      const setupUrl = new URL("/auth/setup-password", origin);
+      setupUrl.searchParams.set("next", next);
+      return NextResponse.redirect(setupUrl);
     }
 
     // For password recovery, redirect to password reset page
     if (type === "recovery") {
-      redirectTo.pathname = "/auth/reset-password";
-      return NextResponse.redirect(redirectTo);
+      return NextResponse.redirect(new URL("/auth/reset-password", origin));
     }
 
     // For other types (signup confirmation, magic link), redirect to dashboard
-    redirectTo.pathname = next;
-    return NextResponse.redirect(redirectTo);
+    return NextResponse.redirect(new URL(next, origin));
   }
 
   // Handle OAuth callback (code exchange)
@@ -78,17 +96,15 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error("OAuth callback error:", error);
-      redirectTo.pathname = "/";
-      redirectTo.searchParams.set("error", "auth_error");
-      redirectTo.searchParams.set("error_description", error.message);
-      return NextResponse.redirect(redirectTo);
+      const errorUrl = new URL("/", origin);
+      errorUrl.searchParams.set("error", "auth_error");
+      errorUrl.searchParams.set("error_description", error.message);
+      return NextResponse.redirect(errorUrl);
     }
 
-    redirectTo.pathname = next;
-    return NextResponse.redirect(redirectTo);
+    return NextResponse.redirect(new URL(next, origin));
   }
 
   // No valid auth parameters, redirect to home
-  redirectTo.pathname = "/";
-  return NextResponse.redirect(redirectTo);
+  return NextResponse.redirect(new URL("/", origin));
 }
