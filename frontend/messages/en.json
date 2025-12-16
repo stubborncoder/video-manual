@@ -936,5 +936,35 @@
     "plusImages": "+ images",
     "saveButton": "Save",
     "saveTooltip": "Save (Ctrl+S)"
+  },
+  "guide": {
+    "suggestions": "Suggestions",
+    "chatCleared": "Chat cleared. How can I help you?",
+    "fallbackGreeting": "Welcome to vDocs! How can I help you today?",
+    "videos": {
+      "upload": "How do I upload a video?",
+      "processing": "How does video processing work?",
+      "formats": "What video formats are supported?"
+    },
+    "manuals": {
+      "export": "How do I export a manual?",
+      "edit": "How can I edit documentation?",
+      "languages": "What languages are available?"
+    },
+    "projects": {
+      "create": "How do I create a project?",
+      "organize": "How do I organize manuals?",
+      "compile": "How do I compile a project?"
+    },
+    "dashboard": {
+      "getStarted": "Show me how to get started",
+      "capabilities": "What can I do with vDocs?",
+      "createDocs": "How do I create documentation?"
+    },
+    "default": {
+      "getStarted": "How do I get started?",
+      "features": "What features are available?",
+      "tour": "Show me around the app"
+    }
   }
 }

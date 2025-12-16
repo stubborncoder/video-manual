@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useGuideStore } from "@/stores/guideStore";
 import { useLocale } from "@/components/providers/I18nProvider";
@@ -16,42 +17,22 @@ interface GuideProviderProps {
 }
 
 /**
- * Get contextual suggestions based on the current page
+ * Get suggestion translation keys based on the current page
  */
-function getSuggestionsForPage(pathname: string): string[] {
+function getSuggestionKeysForPage(pathname: string): string[] {
   if (pathname.includes("/videos")) {
-    return [
-      "How do I upload a video?",
-      "How does video processing work?",
-      "What video formats are supported?",
-    ];
+    return ["videos.upload", "videos.processing", "videos.formats"];
   }
   if (pathname.includes("/manuals")) {
-    return [
-      "How do I export a manual?",
-      "How can I edit documentation?",
-      "What languages are available?",
-    ];
+    return ["manuals.export", "manuals.edit", "manuals.languages"];
   }
   if (pathname.includes("/projects")) {
-    return [
-      "How do I create a project?",
-      "How do I organize manuals?",
-      "How do I compile a project?",
-    ];
+    return ["projects.create", "projects.organize", "projects.compile"];
   }
   if (pathname.includes("/dashboard")) {
-    return [
-      "Show me how to get started",
-      "What can I do with vDocs?",
-      "How do I create documentation?",
-    ];
+    return ["dashboard.getStarted", "dashboard.capabilities", "dashboard.createDocs"];
   }
-  return [
-    "How do I get started?",
-    "What features are available?",
-    "Show me around the app",
-  ];
+  return ["default.getStarted", "default.features", "default.tour"];
 }
 
 /**
@@ -76,15 +57,21 @@ export function GuideProvider({ children }: GuideProviderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { locale } = useLocale();
+  const t = useTranslations("guide");
   const { addMessage, clearMessages, setPageContext, messages, showHighlight, clearAllHighlights } = useGuideStore();
   const [suggestions, setSuggestions] = useState<string[]>([]);
   // Track if we've triggered any actions during current response
   const hasActionsRef = useRef<boolean>(false);
+  // Store current suggestions and translated strings for use in callbacks
+  const suggestionsRef = useRef<string[]>([]);
+  const fallbackGreetingRef = useRef(t("fallbackGreeting"));
+  const chatClearedRef = useRef(t("chatCleared"));
 
   // Update page context when pathname changes
   useEffect(() => {
     const pageTitle = getPageTitle(pathname);
-    const contextualSuggestions = getSuggestionsForPage(pathname);
+    const suggestionKeys = getSuggestionKeysForPage(pathname);
+    const translatedSuggestions = suggestionKeys.map(key => t(key));
 
     const context: PageContext = {
       currentPage: pathname,
@@ -94,11 +81,14 @@ export function GuideProvider({ children }: GuideProviderProps) {
     };
 
     setPageContext(context);
-    setSuggestions(contextualSuggestions);
+    setSuggestions(translatedSuggestions);
+    suggestionsRef.current = translatedSuggestions;
+    fallbackGreetingRef.current = t("fallbackGreeting");
+    chatClearedRef.current = t("chatCleared");
 
     // Clear highlights when navigating to a new page
     clearAllHighlights();
-  }, [pathname, setPageContext, clearAllHighlights]);
+  }, [pathname, setPageContext, clearAllHighlights, t]);
 
   // Fetch initial greeting from backend when chat is empty
   // This allows the guide agent to check user profile and provide personalized greeting
@@ -149,7 +139,7 @@ export function GuideProvider({ children }: GuideProviderProps) {
                   role: "assistant",
                   content: greetingContent,
                   timestamp: new Date(),
-                  suggestions: getSuggestionsForPage(pathname),
+                  suggestions: suggestionsRef.current,
                 });
               }
             },
@@ -164,9 +154,9 @@ export function GuideProvider({ children }: GuideProviderProps) {
               addMsg({
                 id: greetingMessageId,
                 role: "assistant",
-                content: "Welcome to vDocs! How can I help you today?",
+                content: fallbackGreetingRef.current,
                 timestamp: new Date(),
-                suggestions: getSuggestionsForPage(pathname),
+                suggestions: suggestionsRef.current,
               });
             }
           );
@@ -177,9 +167,9 @@ export function GuideProvider({ children }: GuideProviderProps) {
           addMsg({
             id: `msg_${Date.now()}_greeting`,
             role: "assistant",
-            content: "Welcome to vDocs! How can I help you today?",
+            content: fallbackGreetingRef.current,
             timestamp: new Date(),
-            suggestions: getSuggestionsForPage(pathname),
+            suggestions: suggestionsRef.current,
           });
         }
       }
@@ -312,12 +302,12 @@ export function GuideProvider({ children }: GuideProviderProps) {
     const greetingMessage: GuideMessage = {
       id: `msg_${Date.now()}`,
       role: "assistant",
-      content: "Chat cleared. How can I help you?",
+      content: chatClearedRef.current,
       timestamp: new Date(),
-      suggestions: getSuggestionsForPage(pathname),
+      suggestions: suggestionsRef.current,
     };
     addMessage(greetingMessage);
-  }, [clearMessages, addMessage, pathname]);
+  }, [clearMessages, addMessage]);
 
   return (
     <TooltipProvider delayDuration={0}>
