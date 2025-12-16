@@ -34,7 +34,8 @@
     "yes": "Yes",
     "no": "No",
     "or": "or",
-    "and": "and"
+    "and": "and",
+    "view": "View"
   },
   "sidebar": {
     "dashboard": "Dashboard",
@@ -91,13 +92,26 @@
       "createProjectDesc": "Organize manuals together"
     },
     "gettingStarted": {
-      "title": "Getting Started",
-      "description": "How to use the platform",
-      "step1": "Upload or select a video from your videos folder",
-      "step2": "Process it to generate a step-by-step manual",
-      "step3": "Organize manuals into projects",
-      "step4": "Compile projects into unified documents",
-      "step5": "Export to PDF, Word, or HTML"
+      "title": "Your Journey",
+      "description": "From video to professional documentation",
+      "step1Title": "Upload",
+      "step1Desc": "Add your video",
+      "step2Title": "Generate",
+      "step2Desc": "AI creates docs",
+      "step3Title": "Edit",
+      "step3Desc": "Refine content",
+      "step4Title": "Export",
+      "step4Desc": "PDF, Word & more"
+    },
+    "guideAgent": {
+      "title": "Meet Your Guide",
+      "description": "Your AI assistant is here to help you navigate vDocs. Ask questions, get guidance, and learn features instantly.",
+      "cta": "Say Hello",
+      "features": {
+        "navigate": "Navigate the app",
+        "learn": "Learn features",
+        "help": "Get instant help"
+      }
     }
   },
   "videos": {
