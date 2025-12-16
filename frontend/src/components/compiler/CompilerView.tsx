@@ -602,12 +602,7 @@ function HITLApprovalCard({ event, onDecision }: HITLApprovalCardProps) {
         </CardHeader>
 
         <CardContent className="space-y-4 pb-5">
-          {/* Merge plan preview - only show if compile_manuals */}
-          {toolName === "compile_manuals" && toolArgs.merge_plan && (
-            <MergePlanPreview plan={toolArgs.merge_plan} />
-          )}
-
-          {/* Generic tool args for other tools */}
+          {/* Generic tool args for non-compile tools */}
           {toolName !== "compile_manuals" && (
             <pre className="text-xs bg-muted/50 p-3 rounded-md overflow-x-auto max-h-40 border border-border/50">
               {JSON.stringify(toolArgs, null, 2)}
