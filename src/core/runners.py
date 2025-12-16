@@ -1038,7 +1038,7 @@ User: {message}"""
 
                     # Only process streaming chunks, not final messages
                     if "chunk" not in msg_type and "ai" in msg_type:
-                        logger.info(f"[GUIDE RUNNER] Skipping non-chunk AI message")
+                        logger.info("[GUIDE RUNNER] Skipping non-chunk AI message")
                         continue
 
                     if "ai" in msg_type:
