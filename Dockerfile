@@ -41,8 +41,11 @@ RUN uv sync --frozen --no-dev 2>/dev/null || uv sync --no-dev
 # Copy application code
 COPY src/ ./src/
 
+# Copy AI documents (guide documentation and user memories)
+COPY ai_documents/ ./ai_documents/
+
 # Create data directories
-RUN mkdir -p /data/users /data/checkpoints /data/templates
+RUN mkdir -p /data/users /data/checkpoints /data/templates /app/ai_documents/user_memories
 
 # Copy global Word templates
 COPY templates/ /data/templates/
