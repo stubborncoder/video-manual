@@ -5,16 +5,14 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
   Home,
-  ArrowLeft,
+  RefreshCw,
   ShieldAlert,
   KeyRound,
   UserX,
   Mail,
-  RefreshCw,
   AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { VDocsIcon } from "@/components/ui/VDocsIcon";
 
 // Error type definitions with icons and friendly messages
@@ -81,44 +79,45 @@ function AuthErrorContent() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center relative overflow-hidden">
-      {/* Background pattern */}
+      {/* Background geometric pattern */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Gradient mesh */}
+        {/* Gradient mesh background */}
         <div
-          className="absolute top-0 left-0 w-full h-full opacity-[0.04]"
+          className="absolute top-0 left-0 w-full h-full opacity-[0.03]"
           style={{
             backgroundImage: `
-              radial-gradient(ellipse 80% 60% at 30% 30%, var(--primary) 0%, transparent 50%),
-              radial-gradient(ellipse 60% 50% at 70% 70%, #F59E0B 0%, transparent 50%)
+              radial-gradient(ellipse 80% 50% at 20% 40%, var(--primary) 0%, transparent 50%),
+              radial-gradient(ellipse 60% 40% at 80% 60%, var(--primary) 0%, transparent 50%)
             `,
           }}
         />
 
-        {/* Concentric circles pattern */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          {[...Array(4)].map((_, i) => (
-            <div
-              key={i}
-              className="absolute border border-border/30 rounded-full"
-              style={{
-                width: `${(i + 1) * 200}px`,
-                height: `${(i + 1) * 200}px`,
-                opacity: 0.5 - i * 0.1,
-              }}
-            />
-          ))}
-        </div>
+        {/* Grid lines */}
+        <div
+          className="absolute inset-0 opacity-[0.015]"
+          style={{
+            backgroundImage: `
+              linear-gradient(var(--foreground) 1px, transparent 1px),
+              linear-gradient(90deg, var(--foreground) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px',
+          }}
+        />
 
-        {/* Floating elements */}
+        {/* Floating geometric elements */}
         {mounted && (
           <>
             <div
-              className="absolute w-48 h-48 bg-primary/5 rounded-full blur-3xl animate-float-1"
-              style={{ top: '15%', right: '20%' }}
+              className="absolute w-96 h-96 border border-primary/10 rounded-full animate-float-1"
+              style={{ top: '10%', right: '5%' }}
             />
             <div
-              className="absolute w-64 h-64 bg-warning/5 rounded-full blur-3xl animate-float-2"
-              style={{ bottom: '10%', left: '15%' }}
+              className="absolute w-64 h-64 border border-primary/5 rounded-full animate-float-2"
+              style={{ bottom: '15%', left: '10%' }}
+            />
+            <div
+              className="absolute w-32 h-32 bg-primary/5 rounded-lg rotate-45 animate-float-3"
+              style={{ top: '60%', right: '15%' }}
             />
           </>
         )}
@@ -126,14 +125,14 @@ function AuthErrorContent() {
 
       {/* Content */}
       <div
-        className={`relative z-10 flex flex-col items-center px-6 w-full max-w-lg transition-all duration-700 ${
+        className={`relative z-10 flex flex-col items-center text-center px-6 max-w-xl transition-all duration-700 ${
           mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
         }`}
       >
         {/* Logo */}
         <Link
           href="/"
-          className="group mb-10 flex items-center gap-3 transition-transform hover:scale-105"
+          className="group mb-12 flex items-center gap-3 transition-transform hover:scale-105"
         >
           <VDocsIcon branded className="w-10 h-10" />
           <span className="font-display text-2xl tracking-tight text-foreground">
@@ -141,75 +140,68 @@ function AuthErrorContent() {
           </span>
         </Link>
 
-        {/* Error card */}
-        <Card className="w-full bg-card/80 backdrop-blur-sm border-border shadow-lg">
-          <CardHeader className="text-center pb-4">
-            {/* Icon with animated background */}
-            <div className="mx-auto mb-4 relative">
-              <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
-              <div className="relative bg-gradient-to-br from-primary/10 to-primary/5 rounded-full p-5 border border-primary/20">
-                <ErrorIcon className="w-10 h-10 text-primary" strokeWidth={1.5} />
-              </div>
+        {/* Error code with decorative treatment */}
+        <div className="relative mb-8">
+          <span
+            className="block font-display text-[10rem] md:text-[14rem] leading-none tracking-tighter text-primary/10 select-none"
+            style={{ fontWeight: 400 }}
+          >
+            401
+          </span>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="bg-background/80 backdrop-blur-sm px-6 py-3 rounded-lg border border-border">
+              <ErrorIcon className="w-12 h-12 text-primary mx-auto mb-2" />
+              <span className="label-md text-muted-foreground">{config.title}</span>
             </div>
+          </div>
+        </div>
 
-            <CardTitle className="font-display text-2xl tracking-tight">
-              {config.title}
-            </CardTitle>
+        {/* Message */}
+        <h1 className="font-display text-3xl md:text-4xl text-foreground mb-4 tracking-tight">
+          {config.title}
+        </h1>
+        <p className="body-lg text-muted-foreground mb-6 max-w-md leading-relaxed">
+          {config.suggestion}
+        </p>
 
-            {errorDescription && (
-              <CardDescription className="mt-3 text-base leading-relaxed">
-                {decodeURIComponent(errorDescription.replace(/\+/g, " "))}
-              </CardDescription>
-            )}
-          </CardHeader>
+        {/* Error details */}
+        {errorDescription && (
+          <div className="bg-muted/50 rounded-lg p-4 mb-6 max-w-md">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {decodeURIComponent(errorDescription.replace(/\+/g, " "))}
+            </p>
+          </div>
+        )}
 
-          <CardContent className="pt-0">
-            {/* Suggestion box */}
-            <div className="bg-muted/50 rounded-lg p-4 mb-6">
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {config.suggestion}
-              </p>
-            </div>
+        {/* Error code badge */}
+        {errorCode !== "default" && (
+          <div className="flex justify-center mb-8">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted text-xs font-mono text-muted-foreground">
+              <span className="w-1.5 h-1.5 rounded-full bg-warning" />
+              {errorCode}
+            </span>
+          </div>
+        )}
 
-            {/* Error code badge */}
-            {errorCode !== "default" && (
-              <div className="flex justify-center mb-6">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted text-xs font-mono text-muted-foreground">
-                  <span className="w-1.5 h-1.5 rounded-full bg-warning" />
-                  {errorCode}
-                </span>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex flex-col gap-3">
-              <Button asChild size="lg" className="w-full gap-2">
-                <Link href="/">
-                  <RefreshCw className="w-4 h-4" />
-                  Try Again
-                </Link>
-              </Button>
-              <div className="flex gap-3">
-                <Button asChild variant="outline" size="lg" className="flex-1 gap-2">
-                  <Link href="/">
-                    <Home className="w-4 h-4" />
-                    Home
-                  </Link>
-                </Button>
-                <Button asChild variant="ghost" size="lg" className="flex-1 gap-2">
-                  <Link href="/dashboard">
-                    <ArrowLeft className="w-4 h-4" />
-                    Dashboard
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Actions */}
+        <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+          <Button asChild size="lg" className="gap-2 min-w-[160px]">
+            <Link href="/">
+              <RefreshCw className="w-4 h-4" />
+              Try Again
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="lg" className="gap-2 min-w-[160px]">
+            <Link href="/">
+              <Home className="w-4 h-4" />
+              Go Home
+            </Link>
+          </Button>
+        </div>
 
         {/* Help text */}
-        <p className="mt-8 text-sm text-muted-foreground/60 text-center">
-          Having trouble?{" "}
+        <p className="mt-12 text-sm text-muted-foreground/60">
+          Need help?{" "}
           <Link
             href="mailto:support@vdocs.io"
             className="text-primary hover:underline underline-offset-4 transition-colors"
@@ -220,7 +212,7 @@ function AuthErrorContent() {
       </div>
 
       {/* Bottom accent line */}
-      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
     </div>
   );
 }
