@@ -357,8 +357,9 @@ export function CompilerView({
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1" ref={scrollRef}>
-              <div className="p-4 space-y-4">
+            <div className="flex-1 overflow-hidden min-h-0">
+              <ScrollArea className="h-full" ref={scrollRef}>
+                <div className="p-4 space-y-4">
                 {messages.length === 0 && state.status === "idle" && (
                   <div className="text-center py-8 text-muted-foreground">
                     <Bot className="mx-auto h-10 w-10 mb-3 opacity-50" />
@@ -471,7 +472,8 @@ export function CompilerView({
                   </div>
                 )}
               </div>
-            </ScrollArea>
+              </ScrollArea>
+            </div>
 
             {/* Input */}
             <div className="p-4 border-t">

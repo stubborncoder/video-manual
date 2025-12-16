@@ -344,7 +344,9 @@ export function CompilerViewNew({
 
               {/* Right: Thread Chat */}
               <ResizablePanel defaultSize={45} minSize={25}>
-                <CompilerThread />
+                <div className="h-full">
+                  <CompilerThread />
+                </div>
               </ResizablePanel>
             </ResizablePanelGroup>
           </div>
