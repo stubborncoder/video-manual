@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Lock, CheckCircle2, AlertCircle } from "lucide-react";
+import { Lock, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,29 +21,65 @@ import { useAuthStore } from "@/stores/authStore";
  * Password setup page for invited users.
  * Users who receive an invitation email are redirected here to set their password
  * before they can access the dashboard.
+ *
+ * This page can receive a token_hash directly from the email link and verify it
+ * client-side, which properly establishes the session with cookies.
  */
 function SetupPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/dashboard";
+  const tokenHash = searchParams.get("token_hash");
+  const type = searchParams.get("type");
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(!!tokenHash);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const { user, initialized } = useAuthStore((state) => ({
-    user: state.user,
-    initialized: state.initialized,
-  }));
+  const user = useAuthStore((state) => state.user);
+  const initialized = useAuthStore((state) => state.initialized);
 
-  // Redirect if not authenticated (shouldn't happen, but safety check)
+  // Handle token verification if token_hash is present in URL
   useEffect(() => {
-    if (initialized && !user) {
+    async function verifyToken() {
+      if (!tokenHash || !type || !supabase) {
+        setVerifying(false);
+        return;
+      }
+
+      try {
+        const { error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: type as "invite" | "signup" | "recovery" | "email" | "magiclink",
+        });
+
+        if (verifyError) {
+          setError(verifyError.message);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to verify invitation");
+      } finally {
+        setVerifying(false);
+        // Clean up URL parameters
+        const url = new URL(window.location.href);
+        url.searchParams.delete("token_hash");
+        url.searchParams.delete("type");
+        window.history.replaceState({}, "", url.toString());
+      }
+    }
+
+    verifyToken();
+  }, [tokenHash, type]);
+
+  // Redirect if not authenticated after verification is complete
+  useEffect(() => {
+    if (initialized && !verifying && !user && !tokenHash) {
       router.push("/");
     }
-  }, [initialized, user, router]);
+  }, [initialized, verifying, user, tokenHash, router]);
 
   const handleSetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,10 +161,22 @@ function SetupPasswordContent() {
     }
   };
 
-  if (!initialized) {
+  if (!initialized || verifying) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
+      <div className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <Loader2 className="h-6 w-6 text-primary animate-spin" />
+            </div>
+            <CardTitle className="text-2xl">
+              {verifying ? "Verifying Invitation..." : "Loading..."}
+            </CardTitle>
+            <CardDescription>
+              {verifying ? "Please wait while we verify your invitation link." : "Loading..."}
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     );
   }
