@@ -461,3 +461,27 @@ class SetTierRequest(BaseModel):
 class SetTesterRequest(BaseModel):
     """Request to set user tester status."""
     tester: bool
+
+
+class UserStats(BaseModel):
+    """User statistics for admin user detail page."""
+    user_id: str
+    email: Optional[str] = None
+    display_name: Optional[str] = None
+    role: str = "user"
+    tier: str = "free"
+    tester: bool = False
+    created_at: Optional[str] = None
+    last_login: Optional[str] = None
+    # Content statistics
+    video_count: int = 0
+    manual_count: int = 0
+    project_count: int = 0
+    template_count: int = 0
+    trash_count: int = 0
+    # Usage statistics
+    total_requests: int = 0
+    total_input_tokens: int = 0
+    total_output_tokens: int = 0
+    total_cached_tokens: int = 0
+    total_cost_usd: float = 0.0

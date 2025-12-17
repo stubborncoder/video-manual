@@ -13,14 +13,22 @@ import {
   Activity,
   ArrowRight,
   Database,
+  Copy,
 } from "lucide-react";
+import { toast } from "sonner";
+import {
+  Tooltip as UITooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   AreaChart,
   Area,
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as ChartTooltip,
   ResponsiveContainer,
   BarChart,
   Bar,
@@ -97,6 +105,18 @@ export default function AdminDashboardPage() {
   const topUsers = [...summary]
     .sort((a, b) => b.total_cost_usd - a.total_cost_usd)
     .slice(0, 5);
+
+  // Create lookup map from user_id to user info
+  const usersById = users.reduce((acc, user) => {
+    acc[user.id] = user;
+    return acc;
+  }, {} as Record<string, UserInfo>);
+
+  // Copy user ID to clipboard
+  const copyUserId = (userId: string) => {
+    navigator.clipboard.writeText(userId);
+    toast.success(t("copiedToClipboard"));
+  };
 
   const formatCost = (cost: number) => {
     if (cost >= 1) return `$${cost.toFixed(2)}`;
@@ -219,7 +239,7 @@ export default function AdminDashboardPage() {
                     axisLine={{ stroke: 'var(--color-border)' }}
                     tickLine={{ stroke: 'var(--color-border)' }}
                   />
-                  <Tooltip
+                  <ChartTooltip
                     formatter={(value: number) => [`$${value.toFixed(4)}`, "Cost"]}
                     labelFormatter={(label) => `Date: ${label}`}
                     contentStyle={{
@@ -275,7 +295,7 @@ export default function AdminDashboardPage() {
                     axisLine={{ stroke: 'var(--color-border)' }}
                     tickLine={{ stroke: 'var(--color-border)' }}
                   />
-                  <Tooltip
+                  <ChartTooltip
                     formatter={(value: number) => [value, "Requests"]}
                     labelFormatter={(label) => `Date: ${label}`}
                     contentStyle={{
@@ -317,29 +337,51 @@ export default function AdminDashboardPage() {
             {topUsers.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("noUsageDataYet")}</p>
             ) : (
-              <div className="space-y-3">
-                {topUsers.map((user, index) => (
-                  <div
-                    key={user.user_id}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-muted-foreground w-4">
-                        {index + 1}.
-                      </span>
-                      <span className="text-sm font-medium">{user.user_id}</span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-sm font-mono">
-                        {formatCost(user.total_cost_usd)}
-                      </span>
-                      <span className="text-xs text-muted-foreground ml-2">
-                        ({formatNumber(user.total_requests)} req)
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <TooltipProvider>
+                <div className="space-y-3">
+                  {topUsers.map((user, index) => {
+                    const userInfo = usersById[user.user_id];
+                    const displayEmail = userInfo?.email || user.user_id;
+                    return (
+                      <div
+                        key={user.user_id}
+                        className="flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground w-4">
+                            {index + 1}.
+                          </span>
+                          <UITooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => copyUserId(user.user_id)}
+                                className="p-1 hover:bg-muted rounded transition-colors"
+                              >
+                                <Copy className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="max-w-xs">
+                              <p className="font-mono text-xs break-all">{user.user_id}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{t("clickToCopy")}</p>
+                            </TooltipContent>
+                          </UITooltip>
+                          <span className="text-sm font-medium">
+                            {displayEmail}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm font-mono">
+                            {formatCost(user.total_cost_usd)}
+                          </span>
+                          <span className="text-xs text-muted-foreground ml-2">
+                            ({formatNumber(user.total_requests)} req)
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </TooltipProvider>
             )}
           </CardContent>
         </Card>
@@ -358,27 +400,43 @@ export default function AdminDashboardPage() {
             {users.length === 0 ? (
               <p className="text-sm text-muted-foreground">{t("noUsersYet")}</p>
             ) : (
-              <div className="space-y-3">
-                {users.slice(0, 5).map((user) => (
-                  <div key={user.id} className="flex items-center justify-between">
-                    <div>
-                      <span className="text-sm font-medium">
-                        {user.display_name || user.id}
-                      </span>
-                      {user.role === "admin" && (
-                        <span className="ml-2 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                          Admin
+              <TooltipProvider>
+                <div className="space-y-3">
+                  {users.slice(0, 5).map((user) => (
+                    <div key={user.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <UITooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => copyUserId(user.id)}
+                              className="p-1 hover:bg-muted rounded transition-colors"
+                            >
+                              <Copy className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="max-w-xs">
+                            <p className="font-mono text-xs break-all">{user.id}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{t("clickToCopy")}</p>
+                          </TooltipContent>
+                        </UITooltip>
+                        <span className="text-sm font-medium">
+                          {user.email || user.id}
                         </span>
-                      )}
+                        {user.role === "admin" && (
+                          <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                            Admin
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground">
+                        {user.last_login
+                          ? new Date(user.last_login).toLocaleDateString()
+                          : t("never")}
+                      </span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
-                      {user.last_login
-                        ? new Date(user.last_login).toLocaleDateString()
-                        : t("never")}
-                    </span>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </TooltipProvider>
             )}
           </CardContent>
         </Card>
