@@ -97,6 +97,10 @@ export function GuideButton() {
               damping: 20,
             }}
           >
+            {/* Glow effect when has unread messages */}
+            {hasUnread && (
+              <div className="absolute inset-0 rounded-full bg-primary/50 animate-ping" />
+            )}
             <Button
               onClick={(e) => {
                 e.stopPropagation();
@@ -107,7 +111,7 @@ export function GuideButton() {
                 "relative h-14 w-14 rounded-full shadow-lg overflow-hidden",
                 "hover:shadow-xl",
                 isOpen && "scale-95",
-                hasUnread && "animate-pulse"
+                hasUnread && "shadow-primary/50 shadow-xl"
               )}
             >
               {/* Traveling shimmer effect */}
@@ -123,13 +127,15 @@ export function GuideButton() {
               {hasUnread && (
                 <div
                   className={cn(
-                    "absolute -top-1 h-5 w-5 z-20",
+                    "absolute -top-1 z-20",
                     currentPosition ? "-left-1" : "-right-1"
                   )}
                 >
+                  {/* Ping effect behind badge */}
+                  <span className="absolute h-5 w-5 rounded-full bg-destructive/60 animate-ping" />
                   <Badge
                     variant="destructive"
-                    className="h-5 w-5 rounded-full p-0 flex items-center justify-center"
+                    className="relative h-5 w-5 rounded-full p-0 flex items-center justify-center"
                   >
                     <span className="sr-only">Unread messages</span>
                   </Badge>

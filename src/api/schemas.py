@@ -410,6 +410,8 @@ class UserInfo(BaseModel):
     display_name: Optional[str] = None
     email: Optional[str] = None
     role: str
+    tier: str = "free"
+    tester: bool = False
     created_at: str
     last_login: Optional[str] = None
     total_cost_usd: float = 0.0
@@ -449,3 +451,13 @@ class UsageSummary(BaseModel):
 class SetRoleRequest(BaseModel):
     """Request to set user role."""
     role: str = Field(..., pattern="^(user|admin)$")
+
+
+class SetTierRequest(BaseModel):
+    """Request to set user tier."""
+    tier: str = Field(..., pattern="^(free|basic|pro|enterprise)$")
+
+
+class SetTesterRequest(BaseModel):
+    """Request to set user tester status."""
+    tester: bool

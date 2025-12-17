@@ -205,15 +205,19 @@ export default function AdminDashboardPage() {
             ) : (
               <ResponsiveContainer width="100%" height={200}>
                 <AreaChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                   <XAxis
                     dataKey="date"
                     tickFormatter={(v) => v.slice(5)}
-                    className="text-xs"
+                    tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
+                    axisLine={{ stroke: 'var(--color-border)' }}
+                    tickLine={{ stroke: 'var(--color-border)' }}
                   />
                   <YAxis
                     tickFormatter={(v) => `$${v.toFixed(2)}`}
-                    className="text-xs"
+                    tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
+                    axisLine={{ stroke: 'var(--color-border)' }}
+                    tickLine={{ stroke: 'var(--color-border)' }}
                   />
                   <Tooltip
                     formatter={(value: number) => [`$${value.toFixed(4)}`, "Cost"]}
@@ -231,13 +235,14 @@ export default function AdminDashboardPage() {
                     itemStyle={{
                       color: 'var(--color-foreground)',
                     }}
-                    cursor={{ stroke: 'rgba(150, 150, 150, 0.4)', strokeWidth: 1 }}
+                    cursor={{ stroke: 'var(--color-muted-foreground)', strokeWidth: 1, strokeOpacity: 0.4 }}
                   />
                   <Area
                     type="monotone"
                     dataKey="cost"
-                    stroke="hsl(var(--primary))"
-                    fill="hsl(var(--primary) / 0.2)"
+                    stroke="var(--color-primary)"
+                    fill="var(--color-primary)"
+                    fillOpacity={0.2}
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -257,13 +262,19 @@ export default function AdminDashboardPage() {
             ) : (
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                   <XAxis
                     dataKey="date"
                     tickFormatter={(v) => v.slice(5)}
-                    className="text-xs"
+                    tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
+                    axisLine={{ stroke: 'var(--color-border)' }}
+                    tickLine={{ stroke: 'var(--color-border)' }}
                   />
-                  <YAxis className="text-xs" />
+                  <YAxis
+                    tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
+                    axisLine={{ stroke: 'var(--color-border)' }}
+                    tickLine={{ stroke: 'var(--color-border)' }}
+                  />
                   <Tooltip
                     formatter={(value: number) => [value, "Requests"]}
                     labelFormatter={(label) => `Date: ${label}`}
@@ -280,9 +291,9 @@ export default function AdminDashboardPage() {
                     itemStyle={{
                       color: 'var(--color-foreground)',
                     }}
-                    cursor={{ fill: 'rgba(150, 150, 150, 0.15)' }}
+                    cursor={{ fill: 'var(--color-muted-foreground)', fillOpacity: 0.1 }}
                   />
-                  <Bar dataKey="requests" fill="hsl(var(--primary))" />
+                  <Bar dataKey="requests" fill="var(--color-primary)" />
                 </BarChart>
               </ResponsiveContainer>
             )}

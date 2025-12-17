@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from ..dependencies import CurrentUser
 from ..middleware.admin import require_admin
-from ..schemas import UserInfo, UsageSummary, SetRoleRequest
+from ..schemas import UserInfo, UsageSummary, SetRoleRequest, SetTierRequest, SetTesterRequest
 from ...db.user_management import UserManagement
 from ...db.usage_tracking import UsageTracking
 from ...db.admin_settings import AdminSettings
@@ -36,6 +36,7 @@ async def list_users(admin_user: AdminUser) -> list[UserInfo]:
     """List all users with usage statistics.
 
     Requires admin role.
+    Fetches users directly from Supabase Auth.
     """
     users = UserManagement.list_users()
     user_infos = []
@@ -55,6 +56,8 @@ async def list_users(admin_user: AdminUser) -> list[UserInfo]:
                 display_name=user.get("display_name"),
                 email=user.get("email"),
                 role=user["role"],
+                tier=user.get("tier", "free"),
+                tester=user.get("tester", False),
                 created_at=str(user["created_at"]),
                 last_login=str(user["last_login"]) if user.get("last_login") else None,
                 total_cost_usd=total_cost,
@@ -195,6 +198,62 @@ async def set_user_role(
         raise HTTPException(status_code=500, detail="Failed to update role")
 
     return {"user_id": user_id, "role": request.role}
+
+
+@router.post("/users/{user_id}/tier")
+async def set_user_tier(
+    user_id: str,
+    request: SetTierRequest,
+    admin_user: AdminUser,
+) -> dict:
+    """Set user tier.
+
+    Requires admin role.
+
+    Args:
+        user_id: User to update
+        request: Tier to set (free, basic, pro, enterprise)
+    """
+    # Check user exists
+    user = UserManagement.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Update tier
+    success = UserManagement.set_tier(user_id, request.tier)
+
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to update tier")
+
+    return {"user_id": user_id, "tier": request.tier}
+
+
+@router.post("/users/{user_id}/tester")
+async def set_user_tester(
+    user_id: str,
+    request: SetTesterRequest,
+    admin_user: AdminUser,
+) -> dict:
+    """Set user tester status.
+
+    Requires admin role.
+
+    Args:
+        user_id: User to update
+        request: Tester status to set
+    """
+    # Check user exists
+    user = UserManagement.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Update tester status
+    success = UserManagement.set_tester(user_id, request.tester)
+
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to update tester status")
+
+    return {"user_id": user_id, "tester": request.tester}
 
 
 # ============================================

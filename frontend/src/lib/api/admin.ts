@@ -4,11 +4,15 @@
 
 import { request } from "../api";
 
+export type UserTier = "free" | "basic" | "pro" | "enterprise";
+
 export interface UserInfo {
   id: string;
   display_name?: string;
   email?: string;
   role: string;
+  tier: UserTier;
+  tester: boolean;
   created_at: string;
   last_login?: string;
   total_cost_usd: number;
@@ -165,6 +169,30 @@ export const adminApi = {
       {
         method: "POST",
         body: JSON.stringify({ role }),
+      }
+    ),
+
+  /**
+   * Set user tier
+   */
+  setUserTier: (userId: string, tier: UserTier) =>
+    request<{ user_id: string; tier: string }>(
+      `/api/admin/users/${userId}/tier`,
+      {
+        method: "POST",
+        body: JSON.stringify({ tier }),
+      }
+    ),
+
+  /**
+   * Set user tester status
+   */
+  setUserTester: (userId: string, tester: boolean) =>
+    request<{ user_id: string; tester: boolean }>(
+      `/api/admin/users/${userId}/tester`,
+      {
+        method: "POST",
+        body: JSON.stringify({ tester }),
       }
     ),
 

@@ -678,7 +678,7 @@ export default function VideosPage() {
                                   value={targetAudience}
                                   onChange={(e) => setTargetAudience(e.target.value.slice(0, MAX_TARGET_AUDIENCE_LENGTH))}
                                   maxLength={MAX_TARGET_AUDIENCE_LENGTH}
-                                  placeholder="Who is this documentation for?&#10;&#10;e.g., New employees unfamiliar with the system, IT administrators with technical background"
+                                  placeholder={t("targetAudiencePlaceholder")}
                                   disabled={!audienceEnabled}
                                   onClick={() => !audienceEnabled && setAudienceEnabled(true)}
                                   className={`flex-1 w-full rounded-md border px-3 py-2 text-[13px] leading-relaxed ring-offset-background placeholder:text-muted-foreground/70 placeholder:text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none transition-colors ${
@@ -718,7 +718,7 @@ export default function VideosPage() {
                                   value={targetObjective}
                                   onChange={(e) => setTargetObjective(e.target.value.slice(0, MAX_TARGET_OBJECTIVE_LENGTH))}
                                   maxLength={MAX_TARGET_OBJECTIVE_LENGTH}
-                                  placeholder="What should readers accomplish?&#10;&#10;e.g., Complete initial setup in under 5 minutes, Troubleshoot common errors independently"
+                                  placeholder={t("objectivePlaceholder")}
                                   disabled={!objectiveEnabled}
                                   onClick={() => !objectiveEnabled && setObjectiveEnabled(true)}
                                   className={`flex-1 w-full rounded-md border px-3 py-2 text-[13px] leading-relaxed ring-offset-background placeholder:text-muted-foreground/70 placeholder:text-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-none transition-colors ${

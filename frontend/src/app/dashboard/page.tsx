@@ -74,7 +74,7 @@ export default function DashboardPage() {
       {/* Guide Agent Introduction - TOP */}
       <Card className="overflow-hidden border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-background to-primary/5">
         <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row items-center gap-6">
+          <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8">
             {/* Bot Icon with Glow */}
             <div className="relative shrink-0">
               <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-xl animate-pulse" />
@@ -89,7 +89,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Content */}
-            <div className="flex-1 text-center md:text-left">
+            <div className="text-center md:text-left">
               <h3 className="font-display text-xl font-semibold mb-2">
                 {t("guideAgent.title")}
               </h3>
@@ -115,9 +115,9 @@ export default function DashboardPage() {
             <Button
               onClick={openGuide}
               size="lg"
-              className="shrink-0 gap-2 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300"
+              className="shrink-0 gap-2 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 md:ml-72 px-8 py-6 text-base"
             >
-              <MessageCircle className="h-4 w-4" />
+              <MessageCircle className="h-5 w-5" />
               {t("guideAgent.cta")}
             </Button>
           </div>
