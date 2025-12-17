@@ -54,6 +54,7 @@ import { VideoCardProgress } from "@/components/videos/VideoCardProgress";
 import { videos, projects, type VideoInfo, type UploadProgress, type ProjectSummary, type VideoManualInfo, type JobInfo } from "@/lib/api";
 import { useVideoProcessing } from "@/hooks/useWebSocket";
 import { useJobsStore } from "@/stores/jobsStore";
+import { useGuideStore } from "@/stores/guideStore";
 import { MAX_TARGET_AUDIENCE_LENGTH, MAX_TARGET_OBJECTIVE_LENGTH } from "@/lib/constants";
 
 function getVideoStreamUrl(videoName: string): string {
@@ -326,6 +327,9 @@ export default function VideosPage() {
 
   async function handleProcess() {
     if (!selectedVideo) return;
+
+    // Close guide panel so user can see the processing
+    useGuideStore.getState().close();
 
     // Only include if enabled and has content
     const audience = audienceEnabled && targetAudience.trim() ? targetAudience.trim() : undefined;
@@ -608,6 +612,8 @@ export default function VideosPage() {
                     onOpenChange={(open) => {
                       setProcessDialogOpen(open);
                       if (open) {
+                        // Close guide panel so user can focus on processing options
+                        useGuideStore.getState().close();
                         setSelectedVideo(video);
                         setSelectedProjectId("__default__");
                         setDocumentFormat("step-manual");
