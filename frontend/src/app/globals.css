@@ -1584,3 +1584,16 @@ mark.editor-selection-highlight {
 .custom-scrollbar::-webkit-scrollbar-corner {
   background: hsl(var(--card));
 }
+
+/* ============================================
+   SCROLLBAR HIDE UTILITY
+   ============================================ */
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
