@@ -829,6 +829,22 @@ mark.editor-selection-highlight {
   50% { opacity: 1; }
 }
 
+/* Fade in up animation for cards */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
 .animate-pulse-slow {
   animation: pulse-slow 2s ease-in-out infinite;
 }

@@ -379,99 +379,140 @@ export default function VideosPage() {
     : projectList.find((p) => p.id === filterProjectId)?.name || t("selectProject");
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex gap-3">
-          <SidebarToggle className="mt-1.5 shrink-0" />
-          <div>
-            <h1 className="text-3xl font-bold">{t("title")}</h1>
-            <p className="text-muted-foreground">
-              {t("description")}
-            </p>
+    <div className="space-y-8">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-background to-primary/5">
+        {/* Decorative background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-bl from-primary/10 via-primary/5 to-transparent rounded-full blur-3xl" />
+          <div className="absolute -bottom-12 -left-12 w-64 h-64 bg-gradient-to-tr from-primary/5 to-transparent rounded-full blur-2xl" />
+          {/* Icon pattern */}
+          <div className="absolute top-8 right-12 opacity-[0.03]">
+            <Video className="w-64 h-64" strokeWidth={0.5} />
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* Project Filter - Searchable Combobox */}
-          <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={filterOpen}
-                className="w-[200px] justify-between"
-              >
-                <FolderKanban className="h-4 w-4 mr-2 shrink-0 text-muted-foreground" />
-                <span className="truncate">{selectedProjectName}</span>
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0">
-              <Command>
-                <CommandInput placeholder={t("searchProjects")} />
-                <CommandList>
-                  <CommandEmpty>{t("noProjectFound")}</CommandEmpty>
-                  <CommandGroup>
-                    <CommandItem
-                      value="__all__"
-                      onSelect={() => {
-                        setFilterProjectId("__all__");
-                        setFilterOpen(false);
-                      }}
-                    >
-                      <Check
-                        className={`mr-2 h-4 w-4 ${filterProjectId === "__all__" ? "opacity-100" : "opacity-0"}`}
-                      />
-                      {t("allProjects")}
-                    </CommandItem>
-                    {projectList.map((project) => (
-                      <CommandItem
-                        key={project.id}
-                        value={getProjectDisplayName(project)}
-                        onSelect={() => {
-                          setFilterProjectId(project.id);
-                          setFilterOpen(false);
-                        }}
-                      >
-                        <Check
-                          className={`mr-2 h-4 w-4 ${filterProjectId === project.id ? "opacity-100" : "opacity-0"}`}
-                        />
-                        {getProjectDisplayName(project)}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+        <div className="relative p-8 lg:p-10">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+            <div className="flex items-start gap-4 flex-1">
+              <SidebarToggle className="mt-1 shrink-0" />
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10">
+                    <Video className="h-5 w-5 text-primary" />
+                  </div>
+                  <h1 className="font-display text-3xl tracking-tight">{t("title")}</h1>
+                </div>
+                <p className="text-muted-foreground max-w-xl leading-relaxed">
+                  {t("description")}
+                </p>
+                {/* Quick stats */}
+                {!loading && (
+                  <div className="flex items-center gap-4 pt-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-muted">
+                        <Video className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                      <span className="text-muted-foreground">{videoList.length} {t("videosCount")}</span>
+                    </div>
+                    <div className="w-px h-4 bg-border" />
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-muted">
+                        <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                      <span className="text-muted-foreground">
+                        {videoList.reduce((acc, v) => acc + (v.manual_count || 0), 0)} {tc("manuals").toLowerCase()}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
 
-          <div>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleUpload}
-            accept="video/*"
-            className="hidden"
-            disabled={uploading}
-          />
-          <Button
-            data-guide-id="upload-video-btn"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-          >
-            {uploading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                {tc("loading")}
-              </>
-            ) : (
-              <>
-                <Upload className="mr-2 h-4 w-4" />
-                {t("upload")}
-              </>
-            )}
-          </Button>
-        </div>
+            {/* Actions */}
+            <div className="flex items-center gap-3 lg:self-center">
+              {/* Project Filter */}
+              <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={filterOpen}
+                    className="w-[200px] justify-between"
+                  >
+                    <FolderKanban className="h-4 w-4 mr-2 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{selectedProjectName}</span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[200px] p-0">
+                  <Command>
+                    <CommandInput placeholder={t("searchProjects")} />
+                    <CommandList>
+                      <CommandEmpty>{t("noProjectFound")}</CommandEmpty>
+                      <CommandGroup>
+                        <CommandItem
+                          value="__all__"
+                          onSelect={() => {
+                            setFilterProjectId("__all__");
+                            setFilterOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={`mr-2 h-4 w-4 ${filterProjectId === "__all__" ? "opacity-100" : "opacity-0"}`}
+                          />
+                          {t("allProjects")}
+                        </CommandItem>
+                        {projectList.map((project) => (
+                          <CommandItem
+                            key={project.id}
+                            value={getProjectDisplayName(project)}
+                            onSelect={() => {
+                              setFilterProjectId(project.id);
+                              setFilterOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={`mr-2 h-4 w-4 ${filterProjectId === project.id ? "opacity-100" : "opacity-0"}`}
+                            />
+                            {getProjectDisplayName(project)}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleUpload}
+                accept="video/*"
+                className="hidden"
+                disabled={uploading}
+              />
+              <Button
+                data-guide-id="upload-video-btn"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                size="lg"
+                className="gap-2 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all"
+              >
+                {uploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    {tc("loading")}
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4" />
+                    {t("upload")}
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -496,21 +537,40 @@ export default function VideosPage() {
       )}
 
       {loading ? (
-        <div className="text-center py-8 text-muted-foreground">
-          {tc("loading")}
+        <div className="flex flex-col items-center justify-center py-24">
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-card border">
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+            </div>
+          </div>
+          <p className="mt-6 text-muted-foreground font-medium">{tc("loading")}</p>
         </div>
       ) : filteredVideos.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <Video className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">
-              {t("noVideos")}
-            </p>
-            <p className="text-sm text-muted-foreground mt-1">
-              {t("noVideosDesc")}
-            </p>
-          </CardContent>
-        </Card>
+        <div
+          className="group relative overflow-hidden rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-300 hover:border-primary/50 hover:bg-primary/5"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <div className="absolute inset-0 opacity-[0.02] group-hover:opacity-[0.04] transition-opacity">
+            <div className="absolute inset-0" style={{
+              backgroundImage: `repeating-linear-gradient(45deg, currentColor, currentColor 1px, transparent 1px, transparent 12px)`
+            }} />
+          </div>
+          <div className="relative flex flex-col items-center justify-center py-16 px-6 text-center">
+            <div className="relative mb-6">
+              <div className="absolute inset-0 bg-primary/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-muted group-hover:bg-primary/10 transition-colors">
+                <Video className="h-7 w-7 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+            </div>
+            <h3 className="font-semibold text-lg mb-2">{t("noVideos")}</h3>
+            <p className="text-muted-foreground max-w-sm">{t("noVideosDesc")}</p>
+            <div className="mt-6 flex items-center gap-2 text-sm text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+              <Upload className="h-4 w-4" />
+              <span>{t("uploadFirst")}</span>
+            </div>
+          </div>
+        </div>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredVideos.map((video) => {
@@ -523,9 +583,9 @@ export default function VideosPage() {
               data-guide-id={`video-card-${video.name}`}
               className={`
                 group overflow-hidden flex flex-col relative
+                border border-primary/10 bg-gradient-to-br from-primary/5 via-background to-primary/5
                 transition-all duration-300 ease-out
-                hover:shadow-lg hover:-translate-y-1
-                hover:border-primary/30
+                hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 hover:border-primary/20
                 ${isProcessing ? "border-primary/50 shadow-lg shadow-primary/20" : ""}
               `}
             >
