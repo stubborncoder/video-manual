@@ -128,17 +128,24 @@ async def websocket_process_video(
             # Chapter will be auto-created from manual title if not specified
             chapter_id = message.get("chapter_id")
             tags = message.get("tags", [])
+            # Get document format early for duplicate check
+            requested_format = message.get("document_format", "step-manual")
 
-            # Check for duplicate: video already has manual in target project
+            # Check for duplicate: video already has manual with same format in target project
             video_name = video_path.name
             existing_manuals = user_storage.get_manuals_by_video(video_name)
             for existing in existing_manuals:
-                if existing.get("project_id") == project_id:
+                # Only block if same project AND both have explicit document_format AND formats match
+                # Legacy manuals without document_format are ignored (no false positives)
+                existing_format = existing.get("document_format")
+                if (existing.get("project_id") == project_id and
+                    existing_format is not None and
+                    existing_format == requested_format):
                     await websocket.send_json({
                         "event_type": "error",
                         "timestamp": 0,
                         "data": {
-                            "error_message": "Manual already exists for this video in the selected project",
+                            "error_message": "Manual already exists for this video with the same format in the selected project",
                             "error_type": "duplicate_manual",
                             "existing_manual_id": existing.get("manual_id"),
                             "recoverable": False

@@ -306,6 +306,7 @@ class UserStorage:
                         "languages": metadata.get("languages_generated", []),
                         "created_at": metadata.get("created_at"),
                         "project_id": metadata.get("project_id"),
+                        "document_format": metadata.get("document_format", "step-manual"),
                     })
             except (json.JSONDecodeError, IOError):
                 continue

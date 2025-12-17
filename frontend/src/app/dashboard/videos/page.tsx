@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
@@ -50,8 +50,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Upload, Trash2, Video, Loader2, Eye, Wand2, FileText, FolderKanban, AlertTriangle, ArrowUpRight, Check, ChevronsUpDown } from "lucide-react";
 import { SidebarToggle } from "@/components/layout/SidebarToggle";
-import { videos, projects, type VideoInfo, type UploadProgress, type ProjectSummary, type VideoManualInfo } from "@/lib/api";
+import { VideoCardProgress } from "@/components/videos/VideoCardProgress";
+import { videos, projects, type VideoInfo, type UploadProgress, type ProjectSummary, type VideoManualInfo, type JobInfo } from "@/lib/api";
 import { useVideoProcessing } from "@/hooks/useWebSocket";
+import { useJobsStore } from "@/stores/jobsStore";
 import { MAX_TARGET_AUDIENCE_LENGTH, MAX_TARGET_OBJECTIVE_LENGTH } from "@/lib/constants";
 
 function getVideoStreamUrl(videoName: string): string {
@@ -112,7 +114,80 @@ export default function VideosPage() {
   const [filterProjectId, setFilterProjectId] = useState<string>("__all__");
   const [filterOpen, setFilterOpen] = useState(false);
 
+  // Dismissed jobs (locally dismissed from card view)
+  const [dismissedJobIds, setDismissedJobIds] = useState<Set<string>>(new Set());
+
   const { startProcessing, reset } = useVideoProcessing();
+  const { jobs, suppressJob, unsuppressJob } = useJobsStore();
+
+  // Memoize job lookup by video name for performance
+  const jobsByVideo = useMemo(() => {
+    const lookup = new Map<string, JobInfo[]>();
+    for (const job of Object.values(jobs)) {
+      if (dismissedJobIds.has(job.id)) continue;
+      const existing = lookup.get(job.video_name) || [];
+      existing.push(job);
+      lookup.set(job.video_name, existing);
+    }
+    return lookup;
+  }, [jobs, dismissedJobIds]);
+
+  // Get job for a specific video with proper prioritization
+  const getJobForVideo = useCallback((videoName: string): JobInfo | null => {
+    const videoJobs = jobsByVideo.get(videoName) || [];
+    if (videoJobs.length === 0) return null;
+
+    // Sort by started_at descending (newest first) within each priority level
+    const sortByTime = (a: JobInfo, b: JobInfo) => {
+      const timeA = a.started_at ? new Date(a.started_at).getTime() : 0;
+      const timeB = b.started_at ? new Date(b.started_at).getTime() : 0;
+      return timeB - timeA;
+    };
+
+    // Prioritize: processing > pending > complete (unseen) > error (unseen)
+    const processing = videoJobs.filter((j) => j.status === "processing").sort(sortByTime);
+    if (processing.length > 0) return processing[0];
+
+    const pending = videoJobs.filter((j) => j.status === "pending").sort(sortByTime);
+    if (pending.length > 0) return pending[0];
+
+    const complete = videoJobs.filter((j) => j.status === "complete" && !j.seen).sort(sortByTime);
+    if (complete.length > 0) return complete[0];
+
+    const error = videoJobs.filter((j) => j.status === "error" && !j.seen).sort(sortByTime);
+    if (error.length > 0) return error[0];
+
+    return null;
+  }, [jobsByVideo]);
+
+  // Track which jobs are suppressed to avoid redundant calls
+  const suppressedJobsRef = useRef<Set<string>>(new Set());
+
+  // When a job is shown in a card, suppress it from floating toast
+  useEffect(() => {
+    const videoNames = new Set(videoList.map((v) => v.name));
+    const currentSuppressed = new Set<string>();
+
+    for (const job of Object.values(jobs)) {
+      const shouldSuppress = videoNames.has(job.video_name) && !dismissedJobIds.has(job.id);
+
+      if (shouldSuppress) {
+        currentSuppressed.add(job.id);
+        // Only call suppressJob if not already suppressed
+        if (!suppressedJobsRef.current.has(job.id)) {
+          suppressJob(job.id);
+        }
+      } else {
+        // Only call unsuppressJob if it was suppressed
+        if (suppressedJobsRef.current.has(job.id)) {
+          unsuppressJob(job.id);
+        }
+      }
+    }
+
+    suppressedJobsRef.current = currentSuppressed;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobs, videoList, dismissedJobIds]);
 
   useEffect(() => {
     loadVideos();
@@ -434,17 +509,32 @@ export default function VideosPage() {
         </Card>
       ) : (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredVideos.map((video) => (
+          {filteredVideos.map((video) => {
+            const activeJob = getJobForVideo(video.name);
+            const isProcessing = activeJob && (activeJob.status === "processing" || activeJob.status === "pending");
+
+            return (
             <Card
               key={video.name}
               data-guide-id={`video-card-${video.name}`}
-              className="
-                group overflow-hidden flex flex-col
+              className={`
+                group overflow-hidden flex flex-col relative
                 transition-all duration-300 ease-out
                 hover:shadow-lg hover:-translate-y-1
                 hover:border-primary/30
-              "
+                ${isProcessing ? "border-primary/50 shadow-lg shadow-primary/20" : ""}
+              `}
             >
+              {/* Full-card Processing/Complete/Error Overlay */}
+              {activeJob && (
+                <VideoCardProgress
+                  job={activeJob}
+                  onDismiss={() => {
+                    setDismissedJobIds((prev) => new Set([...prev, activeJob.id]));
+                  }}
+                />
+              )}
+
               {/* Video Preview */}
               <div className="relative aspect-video bg-black overflow-hidden">
                 <video
@@ -745,7 +835,8 @@ export default function VideosPage() {
                 </div>
               </CardContent>
             </Card>
-          ))}
+            );
+          })}
         </div>
       )}
 
