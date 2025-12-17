@@ -39,17 +39,13 @@ async def list_users(admin_user: AdminUser) -> list[UserInfo]:
     Fetches users directly from Supabase Auth.
     """
     users = UserManagement.list_users()
+
+    # Fetch usage summary once and create lookup dictionary for O(1) access
+    usage_summaries = UsageTracking.get_all_users_usage()
+    usage_by_user = {s["user_id"]: s.get("total_cost_usd", 0.0) for s in usage_summaries}
+
     user_infos = []
-
     for user in users:
-        # Get total cost for user
-        usage_summary = UsageTracking.get_all_users_usage()
-        total_cost = 0.0
-        for summary in usage_summary:
-            if summary["user_id"] == user["id"]:
-                total_cost = summary.get("total_cost_usd", 0.0)
-                break
-
         user_infos.append(
             UserInfo(
                 id=user["id"],
@@ -60,7 +56,7 @@ async def list_users(admin_user: AdminUser) -> list[UserInfo]:
                 tester=user.get("tester", False),
                 created_at=str(user["created_at"]),
                 last_login=str(user["last_login"]) if user.get("last_login") else None,
-                total_cost_usd=total_cost,
+                total_cost_usd=usage_by_user.get(user["id"], 0.0),
             )
         )
 
