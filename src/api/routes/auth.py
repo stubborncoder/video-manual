@@ -95,20 +95,9 @@ async def get_me(
     if not user_id:
         return {"authenticated": False}
 
-    # Ensure user folders and record exist
+    # Ensure user folders exist for file storage
     storage = UserStorage(user_id)
     storage.ensure_user_folders()
-    UserManagement.ensure_user_exists(user_id, display_name)
-
-    # Update email and display_name if we have them from JWT
-    if email or display_name:
-        update_fields = {}
-        if email:
-            update_fields["email"] = email
-        if display_name:
-            update_fields["display_name"] = display_name
-        if update_fields:
-            UserManagement.update_user(user_id, **update_fields)
 
     # Sync session cookie if authenticated via JWT but cookie is missing/different
     # This allows <video> and <img> tags to work (they can't send Authorization headers)
@@ -121,7 +110,7 @@ async def get_me(
             max_age=60 * 60 * 24 * 7,  # 7 days
         )
 
-    # Get user role from database
+    # Get user role from Supabase
     user = UserManagement.get_user(user_id)
     role = user.get("role", "user") if user else "user"
 

@@ -1,42 +1,39 @@
-"""User management service for admin dashboard."""
+"""User management service using Supabase Auth as the source of truth."""
 
-from datetime import datetime
+import logging
 from typing import Optional
 
-from .database import get_connection
+import httpx
+
+from ..config import SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+
+logger = logging.getLogger(__name__)
 
 
 class UserManagement:
-    """Service for managing users and roles."""
+    """Service for managing users via Supabase Auth.
+
+    Uses Supabase Auth admin API for user management.
+    Roles are stored in Supabase's app_metadata.
+    """
 
     @staticmethod
-    def create_user(
-        user_id: str, display_name: Optional[str] = None, role: str = "user"
-    ) -> dict:
-        """Create a new user record.
+    def _get_headers() -> dict:
+        """Get headers for Supabase Admin API requests."""
+        return {
+            "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+            "apikey": SUPABASE_SERVICE_ROLE_KEY,
+            "Content-Type": "application/json",
+        }
 
-        Args:
-            user_id: Unique user identifier
-            display_name: Optional display name
-            role: User role ('user' or 'admin')
-
-        Returns:
-            dict with user information
-        """
-        with get_connection() as conn:
-            conn.execute(
-                """
-                INSERT INTO users (id, display_name, role, created_at, last_login)
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                (user_id, display_name, role, datetime.now(), datetime.now()),
-            )
-
-        return UserManagement.get_user(user_id)
+    @staticmethod
+    def _is_configured() -> bool:
+        """Check if Supabase is configured."""
+        return bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
 
     @staticmethod
     def get_user(user_id: str) -> Optional[dict]:
-        """Get user by ID.
+        """Get user by ID from Supabase.
 
         Args:
             user_id: User identifier
@@ -44,67 +41,113 @@ class UserManagement:
         Returns:
             User dict or None if not found
         """
-        with get_connection() as conn:
-            cursor = conn.execute(
-                """
-                SELECT id, display_name, email, role, created_at, last_login
-                FROM users
-                WHERE id = ?
-                """,
-                (user_id,),
-            )
-            row = cursor.fetchone()
+        if not UserManagement._is_configured():
+            logger.warning("Supabase not configured")
+            return None
 
-            if row:
-                return dict(row)
+        try:
+            response = httpx.get(
+                f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+                headers=UserManagement._get_headers(),
+                timeout=30.0,
+            )
+
+            if response.status_code == 404:
+                return None
+
+            response.raise_for_status()
+            user = response.json()
+
+            # Extract role from app_metadata
+            app_metadata = user.get("app_metadata", {})
+            user_metadata = user.get("user_metadata", {})
+
+            return {
+                "id": user.get("id"),
+                "email": user.get("email"),
+                "display_name": (
+                    user_metadata.get("full_name")
+                    or user_metadata.get("name")
+                    or user_metadata.get("display_name")
+                ),
+                "role": app_metadata.get("role", "user"),
+                "tier": app_metadata.get("tier", "free"),
+                "tester": app_metadata.get("tester", False),
+                "created_at": user.get("created_at"),
+                "last_login": user.get("last_sign_in_at"),
+            }
+
+        except httpx.HTTPError as e:
+            logger.error(f"Failed to get user from Supabase: {e}")
             return None
 
     @staticmethod
     def list_users() -> list[dict]:
-        """List all users.
+        """List all users from Supabase.
 
         Returns:
             List of user dicts
         """
-        with get_connection() as conn:
-            cursor = conn.execute(
-                """
-                SELECT id, display_name, email, role, created_at, last_login
-                FROM users
-                ORDER BY created_at DESC
-                """
-            )
-            return [dict(row) for row in cursor.fetchall()]
+        if not UserManagement._is_configured():
+            logger.warning("Supabase not configured")
+            return []
 
-    @staticmethod
-    def update_user(user_id: str, **fields) -> bool:
-        """Update user fields.
+        all_users = []
+        page = 1
+        per_page = 100
 
-        Args:
-            user_id: User identifier
-            **fields: Fields to update (display_name, email, role)
+        try:
+            while True:
+                response = httpx.get(
+                    f"{SUPABASE_URL}/auth/v1/admin/users",
+                    params={"page": page, "per_page": per_page},
+                    headers=UserManagement._get_headers(),
+                    timeout=30.0,
+                )
+                response.raise_for_status()
+                data = response.json()
 
-        Returns:
-            True if user was updated
-        """
-        allowed_fields = {"display_name", "email", "role"}
-        update_fields = {k: v for k, v in fields.items() if k in allowed_fields}
+                # Handle both array and object responses
+                users = data.get("users", []) if isinstance(data, dict) else data
 
-        if not update_fields:
-            return False
+                if not users:
+                    break
 
-        set_clause = ", ".join(f"{field} = ?" for field in update_fields)
-        values = list(update_fields.values()) + [user_id]
+                for user in users:
+                    app_metadata = user.get("app_metadata", {})
+                    user_metadata = user.get("user_metadata", {})
 
-        with get_connection() as conn:
-            cursor = conn.execute(
-                f"UPDATE users SET {set_clause} WHERE id = ?", values
-            )
-            return cursor.rowcount > 0
+                    all_users.append({
+                        "id": user.get("id"),
+                        "email": user.get("email"),
+                        "display_name": (
+                            user_metadata.get("full_name")
+                            or user_metadata.get("name")
+                            or user_metadata.get("display_name")
+                        ),
+                        "role": app_metadata.get("role", "user"),
+                        "tier": app_metadata.get("tier", "free"),
+                        "tester": app_metadata.get("tester", False),
+                        "created_at": user.get("created_at"),
+                        "last_login": user.get("last_sign_in_at"),
+                    })
+
+                # Check if there are more pages
+                if len(users) < per_page:
+                    break
+                page += 1
+
+            # Sort by created_at descending
+            all_users.sort(key=lambda u: u.get("created_at") or "", reverse=True)
+            return all_users
+
+        except httpx.HTTPError as e:
+            logger.error(f"Failed to list users from Supabase: {e}")
+            return []
 
     @staticmethod
     def set_role(user_id: str, role: str) -> bool:
-        """Set user role.
+        """Set user role in Supabase app_metadata.
 
         Args:
             user_id: User identifier
@@ -112,8 +155,99 @@ class UserManagement:
 
         Returns:
             True if role was updated
+
+        Raises:
+            ValueError: If role is not valid
         """
-        return UserManagement.update_user(user_id, role=role)
+        if not UserManagement._is_configured():
+            logger.warning("Supabase not configured")
+            return False
+
+        valid_roles = ("user", "admin")
+        if role not in valid_roles:
+            raise ValueError(f"Invalid role: {role}. Must be one of {valid_roles}")
+
+        try:
+            response = httpx.put(
+                f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+                headers=UserManagement._get_headers(),
+                json={"app_metadata": {"role": role}},
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            logger.info(f"Set role '{role}' for user {user_id}")
+            return True
+
+        except httpx.HTTPError as e:
+            logger.error(f"Failed to set role in Supabase: {e}")
+            return False
+
+    @staticmethod
+    def set_tier(user_id: str, tier: str) -> bool:
+        """Set user tier in Supabase app_metadata.
+
+        Args:
+            user_id: User identifier
+            tier: Tier to set ('free', 'basic', 'pro', 'enterprise')
+
+        Returns:
+            True if tier was updated
+
+        Raises:
+            ValueError: If tier is not valid
+        """
+        if not UserManagement._is_configured():
+            logger.warning("Supabase not configured")
+            return False
+
+        valid_tiers = ("free", "basic", "pro", "enterprise")
+        if tier not in valid_tiers:
+            raise ValueError(f"Invalid tier: {tier}. Must be one of {valid_tiers}")
+
+        try:
+            response = httpx.put(
+                f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+                headers=UserManagement._get_headers(),
+                json={"app_metadata": {"tier": tier}},
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            logger.info(f"Set tier '{tier}' for user {user_id}")
+            return True
+
+        except httpx.HTTPError as e:
+            logger.error(f"Failed to set tier in Supabase: {e}")
+            return False
+
+    @staticmethod
+    def set_tester(user_id: str, is_tester: bool) -> bool:
+        """Set user tester status in Supabase app_metadata.
+
+        Args:
+            user_id: User identifier
+            is_tester: Whether the user is a tester
+
+        Returns:
+            True if tester status was updated
+        """
+        if not UserManagement._is_configured():
+            logger.warning("Supabase not configured")
+            return False
+
+        try:
+            response = httpx.put(
+                f"{SUPABASE_URL}/auth/v1/admin/users/{user_id}",
+                headers=UserManagement._get_headers(),
+                json={"app_metadata": {"tester": is_tester}},
+                timeout=30.0,
+            )
+            response.raise_for_status()
+            logger.info(f"Set tester={is_tester} for user {user_id}")
+            return True
+
+        except httpx.HTTPError as e:
+            logger.error(f"Failed to set tester status in Supabase: {e}")
+            return False
 
     @staticmethod
     def is_admin(user_id: str) -> bool:
@@ -129,32 +263,68 @@ class UserManagement:
         return user is not None and user.get("role") == "admin"
 
     @staticmethod
-    def update_last_login(user_id: str) -> None:
-        """Update user's last login timestamp.
+    def get_role(user_id: str) -> str:
+        """Get user's role.
 
         Args:
             user_id: User identifier
-        """
-        with get_connection() as conn:
-            conn.execute(
-                "UPDATE users SET last_login = ? WHERE id = ?",
-                (datetime.now(), user_id),
-            )
-
-    @staticmethod
-    def ensure_user_exists(
-        user_id: str, display_name: Optional[str] = None
-    ) -> dict:
-        """Ensure user exists, create if not.
-
-        Args:
-            user_id: User identifier
-            display_name: Optional display name
 
         Returns:
-            User dict
+            Role string ('user' or 'admin'), defaults to 'user'
         """
         user = UserManagement.get_user(user_id)
-        if not user:
-            user = UserManagement.create_user(user_id, display_name)
-        return user
+        if user:
+            return user.get("role", "user")
+        return "user"
+
+    # Legacy methods kept for backwards compatibility
+    # These are no-ops since Supabase manages users
+
+    @staticmethod
+    def ensure_user_exists(user_id: str, display_name: Optional[str] = None) -> dict:
+        """Get user from Supabase (users are managed by Supabase Auth).
+
+        Args:
+            user_id: User identifier
+            display_name: Ignored (managed by Supabase)
+
+        Returns:
+            User dict or empty dict if not found
+        """
+        user = UserManagement.get_user(user_id)
+        return user or {"id": user_id, "role": "user"}
+
+    @staticmethod
+    def update_last_login(user_id: str) -> None:
+        """No-op - Supabase tracks last_sign_in_at automatically."""
+        pass
+
+    @staticmethod
+    def update_user(user_id: str, **fields) -> bool:
+        """Update user metadata in Supabase.
+
+        Args:
+            user_id: User identifier
+            **fields: Fields to update (role, tier, tester supported via app_metadata)
+
+        Returns:
+            True if user was updated
+        """
+        success = True
+
+        if "role" in fields:
+            success = UserManagement.set_role(user_id, fields["role"]) and success
+
+        if "tier" in fields:
+            success = UserManagement.set_tier(user_id, fields["tier"]) and success
+
+        if "tester" in fields:
+            success = UserManagement.set_tester(user_id, fields["tester"]) and success
+
+        # Check for unsupported fields
+        supported = {"role", "tier", "tester"}
+        unsupported = set(fields.keys()) - supported
+        if unsupported:
+            logger.warning(f"Unsupported fields for update: {list(unsupported)}")
+
+        return success

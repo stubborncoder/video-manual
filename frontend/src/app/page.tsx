@@ -229,19 +229,9 @@ export default function LandingPage() {
                     {t("nav.goToDashboard")}
                   </Button>
                 ) : (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleLoginAttempt}
-                      className="hidden sm:flex"
-                    >
-                      {t("nav.signIn")}
-                    </Button>
-                    <Button size="sm" onClick={handleLoginAttempt} className="text-xs sm:text-sm px-2 sm:px-4">
-                      {t("nav.getStarted")}
-                    </Button>
-                  </>
+                  <Button size="sm" onClick={handleLoginAttempt} className="text-xs sm:text-sm px-2 sm:px-4">
+                    {t("nav.getStarted")}
+                  </Button>
                 )}
                 <Button
                   variant="outline"
