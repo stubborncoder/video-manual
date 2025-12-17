@@ -949,13 +949,14 @@ class GuideAgentRunner:
 
         yield CompleteEvent(result={"status": "ready"}, message="Guide session started")
 
-    def send_message(self, message: str, page_context: dict) -> Iterator[ProgressEvent]:
+    def send_message(self, message: str, page_context: dict, language: str | None = None) -> Iterator[ProgressEvent]:
         """
         Send a message to the guide agent and stream the response.
 
         Args:
             message: User's message/question
             page_context: Current page context with currentPage, pageTitle
+            language: User's preferred language code (e.g., "en", "es")
 
         Yields:
             ProgressEvent objects including tokens and actions
@@ -970,10 +971,40 @@ class GuideAgentRunner:
         # Build context-aware message
         current_page = page_context.get("currentPage", "/dashboard")
         page_title = page_context.get("pageTitle", "Dashboard")
+        page_state = page_context.get("pageState", {})
+
+        # Build language instruction (only Spanish supported besides English)
+        language_instruction = ""
+        if language == "es":
+            language_instruction = "\n[IMPORTANT: Respond in Spanish]"
+
+        # Build page state info (e.g., list of manuals with their languages and evaluations)
+        page_state_info = ""
+        if page_state:
+            # Format page state as readable context for the agent
+            if "manuals" in page_state:
+                manuals_summary = []
+                for m in page_state.get("manuals", []):
+                    manual_info = f"- {m.get('title', m.get('id', 'Unknown'))}: languages={m.get('languages', [])}"
+                    evals = m.get("evaluations", {})
+                    if evals:
+                        eval_info = ", ".join(
+                            f"{lang}={'evaluated' if e.get('evaluated') else 'not evaluated'}"
+                            + (f" (score:{e.get('score')})" if e.get('score') is not None else "")
+                            for lang, e in evals.items()
+                        )
+                        manual_info += f", evaluations={{{eval_info}}}"
+                    manuals_summary.append(manual_info)
+                page_state_info = f"\n[Page data - {len(page_state.get('manuals', []))} manuals on this page:]\n" + "\n".join(manuals_summary)
+            elif "projects" in page_state:
+                projects_summary = []
+                for p in page_state.get("projects", []):
+                    projects_summary.append(f"- {p.get('name', p.get('id', 'Unknown'))}: {p.get('manual_count', 0)} manuals")
+                page_state_info = f"\n[Page data - {len(page_state.get('projects', []))} projects on this page:]\n" + "\n".join(projects_summary)
 
         # Inject context into the prompt (system prompt has placeholders)
         context_message = f"""[Current page: {current_page}]
-[Page title: {page_title}]
+[Page title: {page_title}]{page_state_info}{language_instruction}
 
 User: {message}"""
 
@@ -1002,11 +1033,12 @@ User: {message}"""
                     msg, metadata = data
                     msg_type = getattr(msg, "type", "").lower()
                     content = getattr(msg, "content", None)
-                    logger.info(f"[GUIDE RUNNER] Message: type={msg_type}, content_len={len(str(content)) if content else 0}")
+                    # Log more details about the message
+                    logger.info(f"[GUIDE RUNNER] Message: type={msg_type}, content_type={type(content).__name__}, content={repr(content)[:200] if content else 'None'}")
 
                     # Only process streaming chunks, not final messages
                     if "chunk" not in msg_type and "ai" in msg_type:
-                        logger.info(f"[GUIDE RUNNER] Skipping non-chunk AI message")
+                        logger.info("[GUIDE RUNNER] Skipping non-chunk AI message")
                         continue
 
                     if "ai" in msg_type:
@@ -1063,6 +1095,7 @@ User: {message}"""
 
                 elif mode == "updates":
                     # Handle tool results in updates mode
+                    logger.info(f"[GUIDE RUNNER] Updates data: {repr(data)[:500]}")
                     if isinstance(data, dict):
                         for node_name, node_data in data.items():
                             if node_name == "tools" and isinstance(node_data, dict):

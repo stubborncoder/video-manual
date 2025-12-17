@@ -30,9 +30,11 @@ logs/
 .env.*.local
 
 # Documentation
+docs/
+# Exclude markdown except README and ai_documents
 *.md
 !README.md
-docs/
+!ai_documents/**/*.md
 
 # Tests
 tests/

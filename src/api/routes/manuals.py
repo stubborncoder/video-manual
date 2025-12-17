@@ -1,6 +1,7 @@
 """Manual management routes."""
 
 import asyncio
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -8,6 +9,8 @@ from typing import Optional
 import json
 import tempfile
 import shutil
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, HTTPException, File, UploadFile, Query
 from fastapi.responses import FileResponse

@@ -281,7 +281,7 @@ export function CompileSettingsDialog({
             {tc("cancel")}
           </Button>
           <Button onClick={handleStartCompile} disabled={!canCompile}>
-            {t("compiling")}
+            {t("start")}
           </Button>
         </DialogFooter>
       </DialogContent>

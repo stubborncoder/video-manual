@@ -267,7 +267,6 @@ export function ImageLightbox({
 
   // Show annotation editor if in annotation mode
   if (isAnnotating) {
-    console.log("[ImageLightbox] Rendering AnnotationEditor with imageUrl:", imageUrl);
     return (
       <AnnotationEditor
         imageUrl={imageUrl}
@@ -431,10 +430,7 @@ export function ImageLightbox({
           {/* Annotate */}
           <Button
             variant="secondary"
-            onClick={() => {
-              console.log("[ImageLightbox] Annotate button clicked");
-              setIsAnnotating(true);
-            }}
+            onClick={() => setIsAnnotating(true)}
             className="gap-2"
           >
             <Pencil className="h-4 w-4" />

@@ -21,7 +21,6 @@ import {
   Send,
   FileText,
   Sparkles,
-  MessageSquare,
   ArrowLeft,
   Bot,
   User,
@@ -57,8 +56,6 @@ export function CompilerView({
   onMessage,
   onBack,
 }: CompilerViewProps) {
-  console.log("[CompilerView] state:", state.status, "streamedText length:", state.streamedText?.length);
-
   const [inputValue, setInputValue] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [compiledContent, setCompiledContent] = useState<string>("");
@@ -352,13 +349,14 @@ export function CompilerView({
         <ResizablePanel defaultSize={45} minSize={25}>
           <div className="h-full flex flex-col">
             <div className="p-4 border-b flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-muted-foreground" />
+              <Bot className="h-4 w-4" />
               <span className="font-medium">Compilation Assistant</span>
             </div>
 
             {/* Messages */}
-            <ScrollArea className="flex-1" ref={scrollRef}>
-              <div className="p-4 space-y-4">
+            <div className="flex-1 overflow-hidden min-h-0">
+              <ScrollArea className="h-full" ref={scrollRef}>
+                <div className="p-4 space-y-4">
                 {messages.length === 0 && state.status === "idle" && (
                   <div className="text-center py-8 text-muted-foreground">
                     <Bot className="mx-auto h-10 w-10 mb-3 opacity-50" />
@@ -383,8 +381,8 @@ export function CompilerView({
                             <Wrench className="h-4 w-4" />
                           </div>
                         ) : (
-                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                            <Bot className="h-4 w-4 text-primary" />
+                          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                            <Bot className="h-4 w-4" />
                           </div>
                         )}
                       </div>
@@ -429,8 +427,8 @@ export function CompilerView({
                 {state.status === "processing" && !state.streamedText && (
                   <div className="flex gap-3 justify-start">
                     <div className="shrink-0">
-                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Bot className="h-4 w-4 text-primary" />
+                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                        <Bot className="h-4 w-4" />
                       </div>
                     </div>
                     <div className="bg-muted rounded-lg px-4 py-2 max-w-[80%]">
@@ -471,7 +469,8 @@ export function CompilerView({
                   </div>
                 )}
               </div>
-            </ScrollArea>
+              </ScrollArea>
+            </div>
 
             {/* Input */}
             <div className="p-4 border-t">
@@ -568,120 +567,203 @@ interface HITLApprovalCardProps {
 
 function HITLApprovalCard({ event, onDecision }: HITLApprovalCardProps) {
   const [feedback, setFeedback] = useState("");
+  const [showFeedback, setShowFeedback] = useState(false);
 
   const toolArgs = event.data?.tool_args || {};
   const toolName = event.data?.tool_name || "Unknown";
 
   return (
-    <Card className="border-yellow-500/50 bg-yellow-500/5 my-4">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-yellow-500" />
-          Approval Required
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <p className="text-sm font-medium mb-2">Tool: {toolName}</p>
+    <div className="my-4 relative">
+      {/* Subtle glow effect */}
+      <div className="absolute inset-0 bg-primary/10 rounded-lg blur-xl" />
 
-          {toolName === "compile_manuals" && toolArgs.merge_plan && (
-            <MergePlanPreview plan={toolArgs.merge_plan} />
-          )}
+      <Card className="relative border-2 border-primary/30 bg-gradient-to-br from-primary/5 via-background to-primary/5 shadow-lg shadow-primary/10 overflow-hidden">
+        {/* Accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary/50 via-primary to-primary/50" />
 
+        <CardHeader className="pb-3 pt-5">
+          <CardTitle className="text-base flex items-center gap-3">
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-md animate-pulse" />
+              <div className="relative flex items-center justify-center h-9 w-9 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30">
+                <Sparkles className="h-4 w-4 text-primary" />
+              </div>
+            </div>
+            <div>
+              <span className="font-display text-lg">Approval Required</span>
+              <p className="text-xs text-muted-foreground font-normal mt-0.5">
+                Review the merge plan and confirm to proceed
+              </p>
+            </div>
+          </CardTitle>
+        </CardHeader>
+
+        <CardContent className="space-y-4 pb-5">
+          {/* Generic tool args for non-compile tools */}
           {toolName !== "compile_manuals" && (
-            <pre className="text-xs bg-muted p-2 rounded overflow-x-auto max-h-40">
+            <pre className="text-xs bg-muted/50 p-3 rounded-md overflow-x-auto max-h-40 border border-border/50">
               {JSON.stringify(toolArgs, null, 2)}
             </pre>
           )}
-        </div>
 
-        <div className="flex gap-2">
-          <Button
-            variant="default"
-            className="flex-1"
-            onClick={() => onDecision({ approved: true })}
-          >
-            <CheckCircle2 className="h-4 w-4 mr-2" />
-            Approve
-          </Button>
-          <Button
-            variant="destructive"
-            className="flex-1"
-            onClick={() =>
-              onDecision({ approved: false, feedback: feedback || "Rejected" })
-            }
-          >
-            <XCircle className="h-4 w-4 mr-2" />
-            Reject
-          </Button>
-        </div>
+          {/* Action buttons */}
+          <div className="flex gap-3 pt-2">
+            <Button
+              onClick={() => onDecision({ approved: true })}
+              className="flex-1 h-11 gap-2 shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all duration-200"
+            >
+              <CheckCircle2 className="h-4 w-4" />
+              <span className="font-medium">Approve & Compile</span>
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (showFeedback && feedback) {
+                  onDecision({ approved: false, feedback });
+                } else if (showFeedback) {
+                  onDecision({ approved: false, feedback: "Rejected by user" });
+                } else {
+                  setShowFeedback(true);
+                }
+              }}
+              className="flex-1 h-11 gap-2 border-destructive/30 text-destructive hover:bg-destructive hover:text-white hover:border-destructive transition-all duration-200"
+            >
+              <XCircle className="h-4 w-4" />
+              <span className="font-medium">{showFeedback ? "Confirm Reject" : "Reject"}</span>
+            </Button>
+          </div>
 
-        <Input
-          value={feedback}
-          onChange={(e) => setFeedback(e.target.value)}
-          placeholder="Optional feedback for rejection..."
-        />
-      </CardContent>
-    </Card>
+          {/* Feedback input - shows after clicking reject */}
+          {showFeedback && (
+            <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Rejection Feedback (optional)
+              </label>
+              <Input
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                placeholder="Explain why you're rejecting this plan..."
+                className="bg-background/50 border-border/50 focus:border-primary/50"
+                autoFocus
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowFeedback(false)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
 interface MergePlanPreviewProps {
   plan: {
-    sections?: Array<{ title: string; source_manuals: string[] }>;
-    duplicates_to_merge?: Array<{ topic: string; manual_ids: string[] }>;
-    transitions?: Array<{ from: string; to: string; type: string }>;
+    chapters?: Array<{
+      title: string;
+      sources: string[];
+      merge_strategy?: string;
+      notes?: string;
+    }>;
+    duplicates_detected?: Array<{ topic: string; manual_ids: string[] }>;
+    transitions_needed?: Array<{ from: string; to: string; type: string }>;
   };
 }
 
 function MergePlanPreview({ plan }: MergePlanPreviewProps) {
+  const hasChapters = plan.chapters && plan.chapters.length > 0;
+  const hasDuplicates = plan.duplicates_detected && plan.duplicates_detected.length > 0;
+  const hasTransitions = plan.transitions_needed && plan.transitions_needed.length > 0;
+
+  if (!hasChapters && !hasDuplicates && !hasTransitions) {
+    return (
+      <div className="text-center py-4 text-muted-foreground text-sm">
+        <p>No merge plan details available</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-3 text-sm bg-muted p-3 rounded-lg">
-      {plan.sections && plan.sections.length > 0 && (
-        <div>
-          <p className="font-medium mb-1">Sections:</p>
-          <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-            {plan.sections.map((section, i) => (
-              <li key={i}>
-                {section.title}
-                <span className="opacity-75">
-                  {" "}
-                  ({section.source_manuals.length} sources)
-                </span>
-              </li>
+    <div className="space-y-3 text-sm">
+      {/* Chapters */}
+      {hasChapters && (
+        <div className="rounded-md border border-border/50 bg-muted/30 overflow-hidden">
+          <div className="px-3 py-2 bg-muted/50 border-b border-border/50">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Chapters ({plan.chapters!.length})
+            </p>
+          </div>
+          <div className="p-2 space-y-1">
+            {plan.chapters!.map((chapter, i) => (
+              <div key={i} className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-muted/50 transition-colors">
+                <div className="flex-1 min-w-0">
+                  <span className="font-medium text-foreground">{chapter.title}</span>
+                  {chapter.notes && (
+                    <p className="text-xs text-muted-foreground truncate">{chapter.notes}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {chapter.merge_strategy && (
+                    <Badge variant="outline" className="text-xs">
+                      {chapter.merge_strategy}
+                    </Badge>
+                  )}
+                  <Badge variant="secondary" className="text-xs">
+                    {chapter.sources.length} sources
+                  </Badge>
+                </div>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
-      {plan.duplicates_to_merge && plan.duplicates_to_merge.length > 0 && (
-        <div>
-          <p className="font-medium mb-1">Duplicates to Merge:</p>
-          <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-            {plan.duplicates_to_merge.map((dup, i) => (
-              <li key={i}>
-                {dup.topic}
-                <span className="opacity-75">
-                  {" "}
-                  ({dup.manual_ids.length} manuals)
-                </span>
-              </li>
+      {/* Duplicates Detected */}
+      {hasDuplicates && (
+        <div className="rounded-md border border-border/50 bg-muted/30 overflow-hidden">
+          <div className="px-3 py-2 bg-muted/50 border-b border-border/50">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Duplicates Detected ({plan.duplicates_detected!.length})
+            </p>
+          </div>
+          <div className="p-2 space-y-1">
+            {plan.duplicates_detected!.map((dup, i) => (
+              <div key={i} className="flex items-center justify-between px-2 py-1.5 rounded hover:bg-muted/50 transition-colors">
+                <span className="font-medium text-foreground">{dup.topic}</span>
+                <Badge variant="secondary" className="text-xs">
+                  {dup.manual_ids.length} manuals
+                </Badge>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
 
-      {plan.transitions && plan.transitions.length > 0 && (
-        <div>
-          <p className="font-medium mb-1">Transitions:</p>
-          <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-            {plan.transitions.map((trans, i) => (
-              <li key={i}>
-                {trans.from} &rarr; {trans.to}
-                <span className="opacity-75"> ({trans.type})</span>
-              </li>
+      {/* Transitions Needed */}
+      {hasTransitions && (
+        <div className="rounded-md border border-border/50 bg-muted/30 overflow-hidden">
+          <div className="px-3 py-2 bg-muted/50 border-b border-border/50">
+            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Transitions ({plan.transitions_needed!.length})
+            </p>
+          </div>
+          <div className="p-2 space-y-1">
+            {plan.transitions_needed!.map((trans, i) => (
+              <div key={i} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/50 transition-colors">
+                <span className="text-foreground truncate">{trans.from}</span>
+                <span className="text-primary shrink-0">→</span>
+                <span className="text-foreground truncate">{trans.to}</span>
+                <Badge variant="outline" className="ml-auto text-xs shrink-0">
+                  {trans.type}
+                </Badge>
+              </div>
             ))}
-          </ul>
+          </div>
         </div>
       )}
     </div>

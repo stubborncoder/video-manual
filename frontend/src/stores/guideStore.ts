@@ -35,6 +35,7 @@ interface GuideStore {
   // UI State
   isOpen: boolean;
   hasUnread: boolean;
+  forceLeftPosition: boolean; // Force button to left side (when another copilot is active)
 
   // Conversation
   messages: GuideMessage[];
@@ -59,6 +60,7 @@ interface GuideStore {
   setPageContext: (ctx: PageContext) => void;
   setGenerating: (generating: boolean) => void;
   markAsRead: () => void;
+  setForceLeftPosition: (force: boolean) => void;
 
   // Highlight actions
   showHighlight: (targetId: string, duration?: number, label?: string) => void;
@@ -72,6 +74,7 @@ export const useGuideStore = create<GuideStore>()(
       // Initial state
       isOpen: false,
       hasUnread: false,
+      forceLeftPosition: false,
       messages: [],
       threadId: null,
       currentPage: "",
@@ -116,6 +119,10 @@ export const useGuideStore = create<GuideStore>()(
 
       markAsRead: () => {
         set({ hasUnread: false });
+      },
+
+      setForceLeftPosition: (force: boolean) => {
+        set({ forceLeftPosition: force });
       },
 
       // Highlight actions

@@ -2,8 +2,10 @@
 
 import { useEffect, useCallback, useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useGuideStore } from "@/stores/guideStore";
+import { useLocale } from "@/components/providers/I18nProvider";
 import { GuideButton } from "./GuideButton";
 import { GuidePanel } from "./GuidePanel";
 import { HighlightOverlay } from "./HighlightOverlay";
@@ -15,42 +17,22 @@ interface GuideProviderProps {
 }
 
 /**
- * Get contextual suggestions based on the current page
+ * Get suggestion translation keys based on the current page
  */
-function getSuggestionsForPage(pathname: string): string[] {
+function getSuggestionKeysForPage(pathname: string): string[] {
   if (pathname.includes("/videos")) {
-    return [
-      "How do I upload a video?",
-      "How does video processing work?",
-      "What video formats are supported?",
-    ];
+    return ["videos.upload", "videos.processing", "videos.formats"];
   }
   if (pathname.includes("/manuals")) {
-    return [
-      "How do I export a manual?",
-      "How can I edit documentation?",
-      "What languages are available?",
-    ];
+    return ["manuals.export", "manuals.edit", "manuals.languages"];
   }
   if (pathname.includes("/projects")) {
-    return [
-      "How do I create a project?",
-      "How do I organize manuals?",
-      "How do I compile a project?",
-    ];
+    return ["projects.create", "projects.organize", "projects.compile"];
   }
   if (pathname.includes("/dashboard")) {
-    return [
-      "Show me how to get started",
-      "What can I do with vDocs?",
-      "How do I create documentation?",
-    ];
+    return ["dashboard.getStarted", "dashboard.capabilities", "dashboard.createDocs"];
   }
-  return [
-    "How do I get started?",
-    "What features are available?",
-    "Show me around the app",
-  ];
+  return ["default.getStarted", "default.features", "default.tour"];
 }
 
 /**
@@ -74,15 +56,22 @@ function getPageTitle(pathname: string): string {
 export function GuideProvider({ children }: GuideProviderProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { locale } = useLocale();
+  const t = useTranslations("guide");
   const { addMessage, clearMessages, setPageContext, messages, showHighlight, clearAllHighlights } = useGuideStore();
   const [suggestions, setSuggestions] = useState<string[]>([]);
   // Track if we've triggered any actions during current response
   const hasActionsRef = useRef<boolean>(false);
+  // Store current suggestions and translated strings for use in callbacks
+  const suggestionsRef = useRef<string[]>([]);
+  const fallbackGreetingRef = useRef(t("fallbackGreeting"));
+  const chatClearedRef = useRef(t("chatCleared"));
 
   // Update page context when pathname changes
   useEffect(() => {
     const pageTitle = getPageTitle(pathname);
-    const contextualSuggestions = getSuggestionsForPage(pathname);
+    const suggestionKeys = getSuggestionKeysForPage(pathname);
+    const translatedSuggestions = suggestionKeys.map(key => t(key));
 
     const context: PageContext = {
       currentPage: pathname,
@@ -92,24 +81,101 @@ export function GuideProvider({ children }: GuideProviderProps) {
     };
 
     setPageContext(context);
-    setSuggestions(contextualSuggestions);
+    setSuggestions(translatedSuggestions);
+    suggestionsRef.current = translatedSuggestions;
+    fallbackGreetingRef.current = t("fallbackGreeting");
+    chatClearedRef.current = t("chatCleared");
 
     // Clear highlights when navigating to a new page
     clearAllHighlights();
-  }, [pathname, setPageContext, clearAllHighlights]);
+  }, [pathname, setPageContext, clearAllHighlights, t]);
 
-  // Show greeting message if chat is empty
+  // Fetch initial greeting from backend when chat is empty
+  // This allows the guide agent to check user profile and provide personalized greeting
+  const hasInitialized = useRef(false);
   useEffect(() => {
-    if (messages.length === 0) {
-      const greetingMessage: GuideMessage = {
-        id: `msg_${Date.now()}`,
-        role: "assistant",
-        content: "Welcome to vDocs! I'm your documentation assistant. I can help you upload videos, create manuals, organize projects, and navigate the app. What would you like to do today?",
-        timestamp: new Date(),
-        suggestions: getSuggestionsForPage(pathname),
-      };
-      addMessage(greetingMessage);
-    }
+    const initializeGreeting = async () => {
+      if (messages.length === 0 && !hasInitialized.current) {
+        hasInitialized.current = true;
+
+        const { setGenerating, addMessage: addMsg } = useGuideStore.getState();
+        setGenerating(true);
+
+        let greetingContent = "";
+        const greetingMessageId = `msg_${Date.now()}_greeting`;
+
+        try {
+          const { streamGuideChat } = await import("@/lib/guide-api");
+          const pageTitle = getPageTitle(pathname);
+
+          await streamGuideChat(
+            {
+              message: "Hello",
+              page_context: {
+                currentPage: pathname,
+                pageTitle,
+                availableActions: [],
+                pageState: {},
+              },
+              language: locale,
+            },
+            (token: string) => {
+              greetingContent += token;
+
+              const { messages: currentMessages } = useGuideStore.getState();
+              const existingMessage = currentMessages.find((m) => m.id === greetingMessageId);
+
+              if (existingMessage) {
+                useGuideStore.setState({
+                  messages: currentMessages.map((m) =>
+                    m.id === greetingMessageId
+                      ? { ...m, content: greetingContent }
+                      : m
+                  ),
+                });
+              } else {
+                addMsg({
+                  id: greetingMessageId,
+                  role: "assistant",
+                  content: greetingContent,
+                  timestamp: new Date(),
+                  suggestions: suggestionsRef.current,
+                });
+              }
+            },
+            () => {}, // onAction - ignore actions during greeting
+            () => {
+              setGenerating(false);
+            },
+            (error: Error) => {
+              console.error("Failed to get greeting:", error);
+              setGenerating(false);
+              // Fallback to static greeting if backend fails
+              addMsg({
+                id: greetingMessageId,
+                role: "assistant",
+                content: fallbackGreetingRef.current,
+                timestamp: new Date(),
+                suggestions: suggestionsRef.current,
+              });
+            }
+          );
+        } catch (error) {
+          console.error("Failed to initialize guide:", error);
+          setGenerating(false);
+          // Fallback to static greeting
+          addMsg({
+            id: `msg_${Date.now()}_greeting`,
+            role: "assistant",
+            content: fallbackGreetingRef.current,
+            timestamp: new Date(),
+            suggestions: suggestionsRef.current,
+          });
+        }
+      }
+    };
+
+    initializeGreeting();
   }, []); // Only run once on mount
 
   const handleSendMessage = useCallback(
@@ -143,6 +209,7 @@ export function GuideProvider({ children }: GuideProviderProps) {
           {
             message: content,
             page_context: pageContext,
+            language: locale,
           },
           // onToken - handle text chunks
           (token: string) => {
@@ -216,7 +283,7 @@ export function GuideProvider({ children }: GuideProviderProps) {
         });
       }
     },
-    [clearAllHighlights, router]
+    [clearAllHighlights, router, locale]
   );
 
   const handleClearChat = useCallback(async () => {
@@ -235,12 +302,12 @@ export function GuideProvider({ children }: GuideProviderProps) {
     const greetingMessage: GuideMessage = {
       id: `msg_${Date.now()}`,
       role: "assistant",
-      content: "Chat cleared. How can I help you?",
+      content: chatClearedRef.current,
       timestamp: new Date(),
-      suggestions: getSuggestionsForPage(pathname),
+      suggestions: suggestionsRef.current,
     };
     addMessage(greetingMessage);
-  }, [clearMessages, addMessage, pathname]);
+  }, [clearMessages, addMessage]);
 
   return (
     <TooltipProvider delayDuration={0}>

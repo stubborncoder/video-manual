@@ -1,6 +1,7 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +20,8 @@ export function GuideSuggestions({
   onSuggestionClick,
   disabled = false,
 }: GuideSuggestionsProps) {
+  const t = useTranslations("guide");
+
   if (suggestions.length === 0) return null;
 
   return (
@@ -26,7 +29,7 @@ export function GuideSuggestions({
       <div className="flex items-center gap-2 mb-2">
         <Sparkles className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="text-xs font-medium text-muted-foreground">
-          Suggestions
+          {t("suggestions")}
         </span>
       </div>
       <div className="flex flex-wrap gap-2">

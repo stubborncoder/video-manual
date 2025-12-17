@@ -246,7 +246,6 @@ export function VideoDrawer({
       videoRef.current.playbackRate = parseFloat(playbackSpeed);
       // Only do initial seek once per drawer open
       if (!initialSeekDoneRef.current) {
-        console.log("[VideoDrawer] Initial seek to:", currentTimestamp);
         videoRef.current.currentTime = currentTimestamp;
         setCurrentTime(currentTimestamp);
         initialSeekDoneRef.current = true;

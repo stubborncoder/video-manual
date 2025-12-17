@@ -34,7 +34,8 @@
     "yes": "Sí",
     "no": "No",
     "or": "o",
-    "and": "y"
+    "and": "y",
+    "view": "Ver"
   },
   "sidebar": {
     "dashboard": "Panel",
@@ -51,7 +52,11 @@
     "darkMode": "Modo Oscuro",
     "toggleTheme": "Cambiar a modo {mode}",
     "logout": "Cerrar sesión",
-    "language": "Idioma"
+    "language": "Idioma",
+    "languages": {
+      "en": "Inglés",
+      "es": "Español"
+    }
   },
   "profile": {
     "title": "Perfil",
@@ -87,13 +92,26 @@
       "createProjectDesc": "Organizar manuales juntos"
     },
     "gettingStarted": {
-      "title": "Primeros Pasos",
-      "description": "Cómo usar la plataforma",
-      "step1": "Sube o selecciona un video de tu carpeta de videos",
-      "step2": "Procésalo para generar un manual paso a paso",
-      "step3": "Organiza los manuales en proyectos",
-      "step4": "Compila proyectos en documentos unificados",
-      "step5": "Exporta a PDF, Word o HTML"
+      "title": "Tu Recorrido",
+      "description": "De video a documentación profesional",
+      "step1Title": "Subir",
+      "step1Desc": "Agrega tu video",
+      "step2Title": "Generar",
+      "step2Desc": "La IA crea docs",
+      "step3Title": "Editar",
+      "step3Desc": "Refina el contenido",
+      "step4Title": "Exportar",
+      "step4Desc": "PDF, Word y más"
+    },
+    "guideAgent": {
+      "title": "Conoce tu Guía",
+      "description": "Tu asistente de IA está aquí para ayudarte a navegar vDocs. Haz preguntas, obtén orientación y aprende funciones al instante.",
+      "cta": "Saluda",
+      "features": {
+        "navigate": "Navega la app",
+        "learn": "Aprende funciones",
+        "help": "Ayuda instantánea"
+      }
     }
   },
   "videos": {
@@ -528,6 +546,7 @@
     "description": "Combinar manuales en un solo documento",
     "includeTableOfContents": "Incluir Tabla de Contenidos",
     "includePageNumbers": "Incluir Números de Página",
+    "start": "Iniciar",
     "compiling": "Compilando...",
     "compileSuccess": "Proyecto compilado exitosamente"
   },
@@ -932,5 +951,35 @@
     "plusImages": "+ imágenes",
     "saveButton": "Guardar",
     "saveTooltip": "Guardar (Ctrl+S)"
+  },
+  "guide": {
+    "suggestions": "Sugerencias",
+    "chatCleared": "Chat limpiado. ¿En qué puedo ayudarte?",
+    "fallbackGreeting": "¡Bienvenido a vDocs! ¿En qué puedo ayudarte hoy?",
+    "videos": {
+      "upload": "¿Cómo subo un video?",
+      "processing": "¿Cómo funciona el procesamiento de video?",
+      "formats": "¿Qué formatos de video son compatibles?"
+    },
+    "manuals": {
+      "export": "¿Cómo exporto un manual?",
+      "edit": "¿Cómo puedo editar la documentación?",
+      "languages": "¿Qué idiomas están disponibles?"
+    },
+    "projects": {
+      "create": "¿Cómo creo un proyecto?",
+      "organize": "¿Cómo organizo los manuales?",
+      "compile": "¿Cómo compilo un proyecto?"
+    },
+    "dashboard": {
+      "getStarted": "Muéstrame cómo empezar",
+      "capabilities": "¿Qué puedo hacer con vDocs?",
+      "createDocs": "¿Cómo creo documentación?"
+    },
+    "default": {
+      "getStarted": "¿Cómo empiezo?",
+      "features": "¿Qué funciones están disponibles?",
+      "tour": "Muéstrame la aplicación"
+    }
   }
 }

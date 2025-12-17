@@ -15,6 +15,7 @@ interface GuideChatRequest {
   message: string;
   page_context?: PageContext | null;
   thread_id?: string | null;
+  language?: string;
 }
 
 /**
@@ -116,17 +117,14 @@ export async function streamGuideChat(
               const event: GuideEvent = JSON.parse(data);
 
               if (event.type === "token" && event.content) {
-                console.log(`[Guide SSE] Token received at ${Date.now()}: "${event.content.slice(0, 20)}..."`);
                 onToken(event.content);
               } else if (event.type === "action") {
-                console.log(`[Guide SSE] Action received:`, event);
                 onAction(event);
               } else if (event.type === "error") {
                 onError(new Error(event.message || "Unknown error"));
               }
             } catch {
               // If not JSON, treat as raw token (backwards compatibility)
-              console.log(`[Guide SSE] Raw token: "${data.slice(0, 20)}..."`);
               onToken(data);
             }
           }

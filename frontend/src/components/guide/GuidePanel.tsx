@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useGuideStore } from "@/stores/guideStore";
+import { useSidebar } from "@/components/layout/SidebarContext";
 import { GuideMessageComponent } from "./GuideMessage";
 import { GuideSuggestions } from "./GuideSuggestions";
 import { cn } from "@/lib/utils";
@@ -51,12 +52,15 @@ export function GuidePanel({
     messages,
     isGenerating,
     pageContext,
+    forceLeftPosition,
   } = useGuideStore();
+  const { collapsed: sidebarCollapsed } = useSidebar();
 
   const [inputValue, setInputValue] = useState("");
 
   // Position on left side when on pages with other copilot agents
-  const positionLeft = hasCopilotAgent(pathname);
+  // OR when explicitly forced (e.g., when project view or compiler is active)
+  const positionLeft = hasCopilotAgent(pathname) || forceLeftPosition;
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -128,21 +132,33 @@ export function GuidePanel({
             duration: 0.2,
             ease: "easeOut",
           }}
+          onClick={(e) => e.stopPropagation()}
           className={cn(
-            "fixed bottom-24 z-50",
-            positionLeft ? "left-6" : "right-6",
-            "w-[400px] h-[600px]",
+            "fixed bottom-24 top-4 z-[60] transition-[left] duration-200",
+            // When on left side, position past the sidebar
+            // Collapsed sidebar: w-16 (64px) -> left-20 (80px)
+            // Expanded sidebar: w-64 (256px) -> left-72 (288px)
+            positionLeft
+              ? sidebarCollapsed ? "left-20" : "left-72"
+              : "right-6",
+            "w-[400px]",
             "bg-background border rounded-lg shadow-2xl",
             "flex flex-col overflow-hidden"
           )}
         >
           {/* Header */}
-          <div className="border-b px-4 py-3 flex items-center justify-between bg-muted/30">
-            <div className="flex items-center gap-2">
-              <Bot className="h-4 w-4 text-primary" />
-              <span className="font-semibold">vDocs Guide</span>
+          <div className="border-b px-4 py-3 flex items-center justify-between bg-muted/30 shrink-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <Bot className="h-4 w-4 text-primary shrink-0" />
+              <span className="font-semibold shrink-0">vDocs Guide</span>
+              {/* Page context chip - inline in header */}
+              {pageContext && (
+                <Badge variant="outline" className="text-xs truncate ml-1">
+                  {pageContext.pageTitle}
+                </Badge>
+              )}
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 shrink-0">
               {hasMessages && onClearChat && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -168,15 +184,6 @@ export function GuidePanel({
               </Button>
             </div>
           </div>
-
-          {/* Page context chip */}
-          {pageContext && (
-            <div className="px-4 py-2 border-b bg-muted/20">
-              <Badge variant="outline" className="text-xs">
-                Viewing: {pageContext.pageTitle}
-              </Badge>
-            </div>
-          )}
 
           {/* Messages */}
           <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0">

@@ -68,11 +68,11 @@ def get_guide_agent(user_id: str, model: Optional[str] = None):
         tools=tools,
         system_prompt=GUIDE_SYSTEM_PROMPT,
         checkpointer=checkpointer,
-         backend=lambda rt: CompositeBackend(
+        backend=lambda rt: CompositeBackend(
             default=StateBackend(rt),
             routes={
-                "/guides/": FilesystemBackend(str(PUBLIC_DOCS_ROOT)),
-                "/memories/": FilesystemBackend(str(user_memories_path))
+                "/guides/": FilesystemBackend(str(PUBLIC_DOCS_ROOT), virtual_mode=True),
+                "/memories/": FilesystemBackend(str(user_memories_path), virtual_mode=True)
             }
         )
     )
