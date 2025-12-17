@@ -181,7 +181,20 @@
       "identifyKeyframes": "Identificando Fotogramas Clave",
       "identifyKeyframesDesc": "Detectando momentos clave y extrayendo fotogramas...",
       "generateManual": "Generando Manual",
-      "generateManualDesc": "Creando instrucciones paso a paso..."
+      "generateManualDesc": "Creando instrucciones paso a paso...",
+      "card": {
+        "status": "Procesando...",
+        "completed": "Completado",
+        "failedStatus": "Fallido",
+        "inProgress": "En progreso...",
+        "findingKeyMoments": "Encontrando momentos clave",
+        "manualReady": "¡Manual Listo!",
+        "manualReadyDesc": "Tu documentación ha sido generada exitosamente",
+        "viewManual": "Ver Manual",
+        "processingFailed": "Procesamiento Fallido",
+        "errorDefault": "Ocurrió un error inesperado durante el procesamiento",
+        "dismiss": "Cerrar"
+      }
     },
     "manualCount": "{count} manual | {count} manuales",
     "formats": {

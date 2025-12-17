@@ -181,7 +181,20 @@
       "identifyKeyframes": "Identifying Keyframes",
       "identifyKeyframesDesc": "Detecting key moments and extracting frames...",
       "generateManual": "Generating Manual",
-      "generateManualDesc": "Creating step-by-step instructions..."
+      "generateManualDesc": "Creating step-by-step instructions...",
+      "card": {
+        "status": "Processing...",
+        "completed": "Completed",
+        "failedStatus": "Failed",
+        "inProgress": "In progress...",
+        "findingKeyMoments": "Finding key moments",
+        "manualReady": "Manual Ready!",
+        "manualReadyDesc": "Your documentation has been generated successfully",
+        "viewManual": "View Manual",
+        "processingFailed": "Processing Failed",
+        "errorDefault": "An unexpected error occurred during processing",
+        "dismiss": "Dismiss"
+      }
     },
     "manualCount": "{count} manual | {count} manuals",
     "formats": {
