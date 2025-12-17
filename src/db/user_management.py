@@ -155,14 +155,17 @@ class UserManagement:
 
         Returns:
             True if role was updated
+
+        Raises:
+            ValueError: If role is not valid
         """
         if not UserManagement._is_configured():
             logger.warning("Supabase not configured")
             return False
 
-        if role not in ("user", "admin"):
-            logger.error(f"Invalid role: {role}")
-            return False
+        valid_roles = ("user", "admin")
+        if role not in valid_roles:
+            raise ValueError(f"Invalid role: {role}. Must be one of {valid_roles}")
 
         try:
             response = httpx.put(
@@ -189,6 +192,9 @@ class UserManagement:
 
         Returns:
             True if tier was updated
+
+        Raises:
+            ValueError: If tier is not valid
         """
         if not UserManagement._is_configured():
             logger.warning("Supabase not configured")
@@ -196,8 +202,7 @@ class UserManagement:
 
         valid_tiers = ("free", "basic", "pro", "enterprise")
         if tier not in valid_tiers:
-            logger.error(f"Invalid tier: {tier}. Must be one of {valid_tiers}")
-            return False
+            raise ValueError(f"Invalid tier: {tier}. Must be one of {valid_tiers}")
 
         try:
             response = httpx.put(

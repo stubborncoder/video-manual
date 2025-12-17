@@ -188,7 +188,10 @@ async def set_user_role(
         raise HTTPException(status_code=404, detail="User not found")
 
     # Update role
-    success = UserManagement.set_role(user_id, request.role)
+    try:
+        success = UserManagement.set_role(user_id, request.role)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     if not success:
         raise HTTPException(status_code=500, detail="Failed to update role")
@@ -216,7 +219,10 @@ async def set_user_tier(
         raise HTTPException(status_code=404, detail="User not found")
 
     # Update tier
-    success = UserManagement.set_tier(user_id, request.tier)
+    try:
+        success = UserManagement.set_tier(user_id, request.tier)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
     if not success:
         raise HTTPException(status_code=500, detail="Failed to update tier")
