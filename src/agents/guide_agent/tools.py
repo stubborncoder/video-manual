@@ -17,6 +17,7 @@ PAGE_ELEMENT_REGISTRY: dict[str, list[dict[str, str]]] = {
         {"id": "nav-videos", "description": "Videos navigation link"},
         {"id": "nav-manuals", "description": "Manuals navigation link"},
         {"id": "nav-projects", "description": "Projects navigation link"},
+        {"id": "nav-templates", "description": "Templates navigation link"},
     ],
     "/dashboard/videos": [
         {"id": "upload-video-btn", "description": "Upload Video button"},
@@ -30,6 +31,13 @@ PAGE_ELEMENT_REGISTRY: dict[str, list[dict[str, str]]] = {
     "/dashboard/projects": [
         {"id": "create-project-btn", "description": "Create Project button"},
         {"id": "nav-projects", "description": "Projects navigation link"},
+    ],
+    "/dashboard/templates": [
+        {"id": "upload-template-btn", "description": "Upload Template button"},
+        {"id": "nav-templates", "description": "Templates navigation link"},
+    ],
+    "/dashboard/trash": [
+        {"id": "nav-trash", "description": "Trash navigation link"},
     ],
 }
 
