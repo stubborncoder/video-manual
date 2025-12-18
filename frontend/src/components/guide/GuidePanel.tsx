@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Send, Loader2, Trash2, Bot } from "lucide-react";
+import { X, Send, Loader2, Trash2, Bot, ChevronUp, ChevronDown, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -53,6 +53,11 @@ export function GuidePanel({
     isGenerating,
     pageContext,
     forceLeftPosition,
+    panelSize,
+    setFull,
+    setMedium,
+    setCompact,
+    applyPendingHighlight,
   } = useGuideStore();
   const { collapsed: sidebarCollapsed } = useSidebar();
 
@@ -118,23 +123,42 @@ export function GuidePanel({
 
   const hasMessages = messages.length > 0;
   // Only show suggestions when there's just the initial greeting (no user interaction yet)
-  const showSuggestions = messages.length <= 1 && suggestions.length > 0;
+  const showSuggestions = messages.length <= 1 && suggestions.length > 0 && panelSize === "full";
+
+  // Get last assistant message for compact view
+  const lastAssistantMessage = [...messages].reverse().find(m => m.role === "assistant");
+
+  // Height classes based on panel size
+  const heightClasses = {
+    full: "top-4 bottom-24",
+    medium: "h-[calc(33vh)] bottom-24",
+    compact: "h-[160px] bottom-24",
+  };
+
+  const isMinimized = panelSize !== "full";
 
   return (
     <AnimatePresence mode="wait">
       {isOpen && (
         <motion.div
-          key={positionLeft ? "left" : "right"}
+          key={`${positionLeft ? "left" : "right"}-${panelSize}`}
+          layout
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{
             duration: 0.2,
             ease: "easeOut",
+            layout: { duration: 0.2 },
+          }}
+          onAnimationComplete={() => {
+            // Apply any pending highlight after resize animation completes
+            applyPendingHighlight();
           }}
           onClick={(e) => e.stopPropagation()}
           className={cn(
-            "fixed bottom-24 top-4 z-[60] transition-[left] duration-200",
+            "fixed z-[60] transition-[left] duration-200",
+            heightClasses[panelSize],
             // When on left side, position past the sidebar
             // Collapsed sidebar: w-16 (64px) -> left-20 (80px)
             // Expanded sidebar: w-64 (256px) -> left-72 (288px)
@@ -159,7 +183,8 @@ export function GuidePanel({
               )}
             </div>
             <div className="flex items-center gap-1 shrink-0">
-              {hasMessages && onClearChat && (
+              {/* Clear chat - only in full mode */}
+              {panelSize === "full" && hasMessages && onClearChat && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -174,6 +199,52 @@ export function GuidePanel({
                   <TooltipContent>Clear chat</TooltipContent>
                 </Tooltip>
               )}
+              {/* Size toggle buttons */}
+              {panelSize === "medium" && (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={setCompact}
+                        className="h-7 w-7 p-0"
+                      >
+                        <Minimize2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Minimize</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={setFull}
+                        className="h-7 w-7 p-0"
+                      >
+                        <ChevronUp className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Expand</TooltipContent>
+                  </Tooltip>
+                </>
+              )}
+              {panelSize === "compact" && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={setFull}
+                      className="h-7 w-7 p-0"
+                    >
+                      <ChevronUp className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Expand</TooltipContent>
+                </Tooltip>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -185,43 +256,62 @@ export function GuidePanel({
             </div>
           </div>
 
-          {/* Messages */}
-          <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0">
-            {hasMessages ? (
-              <div className="py-2">
-                {messages.map((message) => (
-                  <GuideMessageComponent key={message.id} message={message} />
-                ))}
-                {/* Thinking indicator */}
-                {isGenerating && (
-                  <div className="px-4 py-3">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                        <Bot className="h-4 w-4" />
-                      </div>
-                      <div className="flex items-center gap-2 py-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                        <span className="text-sm text-muted-foreground">
-                          Thinking...
-                        </span>
+          {/* Messages - different layouts based on panel size */}
+          {panelSize === "compact" ? (
+            /* Compact view - show only last message preview */
+            <div
+              className="flex-1 px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors overflow-hidden"
+              onClick={setFull}
+            >
+              {lastAssistantMessage ? (
+                <p className="text-sm text-muted-foreground line-clamp-3">
+                  {lastAssistantMessage.content}
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">
+                  Click to expand...
+                </p>
+              )}
+            </div>
+          ) : (
+            /* Full/Medium view - show scrollable messages */
+            <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0">
+              {hasMessages ? (
+                <div className="py-2">
+                  {messages.map((message) => (
+                    <GuideMessageComponent key={message.id} message={message} />
+                  ))}
+                  {/* Thinking indicator */}
+                  {isGenerating && (
+                    <div className="px-4 py-3">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                          <Bot className="h-4 w-4" />
+                        </div>
+                        <div className="flex items-center gap-2 py-2">
+                          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          <span className="text-sm text-muted-foreground">
+                            Thinking...
+                          </span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="h-full flex items-center justify-center p-6">
-                <div className="text-center text-muted-foreground">
-                  <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p className="font-medium mb-2">How can I help you?</p>
-                  <p className="text-sm max-w-[280px]">
-                    Ask me anything about vDocs or get help with your
-                    documentation workflow.
-                  </p>
+                  )}
                 </div>
-              </div>
-            )}
-          </ScrollArea>
+              ) : (
+                <div className="h-full flex items-center justify-center p-6">
+                  <div className="text-center text-muted-foreground">
+                    <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="font-medium mb-2">How can I help you?</p>
+                    <p className="text-sm max-w-[280px]">
+                      Ask me anything about vDocs or get help with your
+                      documentation workflow.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </ScrollArea>
+          )}
 
           {/* Suggestions - only shown before first user message */}
           {showSuggestions && (
@@ -232,32 +322,40 @@ export function GuidePanel({
             />
           )}
 
-          {/* Input area */}
-          <div className="border-t p-4">
-            <div className="flex gap-2">
-              <Textarea
-                ref={textareaRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask me anything..."
-                className="resize-none min-h-[60px]"
-                rows={2}
-                disabled={isGenerating}
-              />
-              <Button
-                onClick={handleSend}
-                disabled={!inputValue.trim() || isGenerating}
-                className="h-[60px] w-10 flex-shrink-0"
-              >
-                {isGenerating ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <Send className="h-5 w-5" />
-                )}
-              </Button>
+          {/* Input area - hidden in compact mode */}
+          {panelSize !== "compact" && (
+            <div className={cn("border-t", panelSize === "medium" ? "p-2" : "p-4")}>
+              <div className="flex gap-2">
+                <Textarea
+                  ref={textareaRef}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ask me anything..."
+                  className={cn(
+                    "resize-none",
+                    panelSize === "medium" ? "min-h-[40px]" : "min-h-[60px]"
+                  )}
+                  rows={panelSize === "medium" ? 1 : 2}
+                  disabled={isGenerating}
+                />
+                <Button
+                  onClick={handleSend}
+                  disabled={!inputValue.trim() || isGenerating}
+                  className={cn(
+                    "w-10 flex-shrink-0",
+                    panelSize === "medium" ? "h-[40px]" : "h-[60px]"
+                  )}
+                >
+                  {isGenerating ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    <Send className="h-5 w-5" />
+                  )}
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </motion.div>
       )}
     </AnimatePresence>

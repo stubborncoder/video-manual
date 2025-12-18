@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLocale } from "@/components/providers/I18nProvider";
 import { adminApi, UsageSummary, DailyUsage, ModelUsage, ManualUsage } from "@/lib/api/admin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { ChevronDown, ChevronUp, Filter, RefreshCw } from "lucide-react";
 
 export default function UsagePage() {
+  const { locale } = useLocale();
   const [summary, setSummary] = useState<UsageSummary[]>([]);
   const [dailyUsage, setDailyUsage] = useState<DailyUsage[]>([]);
   const [modelUsage, setModelUsage] = useState<ModelUsage[]>([]);
@@ -319,7 +321,7 @@ export default function UsagePage() {
                           {formatCost(m.total_cost_usd)}
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground text-xs">
-                          {new Date(m.last_request).toLocaleDateString()}
+                          {new Date(m.last_request).toLocaleDateString(locale)}
                         </TableCell>
                       </TableRow>
                     ))

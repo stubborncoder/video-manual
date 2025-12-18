@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
+import { useLocale } from "@/components/providers/I18nProvider";
 import { adminApi, UserStats, UserTier } from "@/lib/api/admin";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -40,6 +41,7 @@ export default function UserDetailPage() {
   const params = useParams();
   const router = useRouter();
   const t = useTranslations("admin");
+  const { locale } = useLocale();
   const userId = params.id as string;
 
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -116,9 +118,9 @@ export default function UserDetailPage() {
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "—";
     const date = new Date(dateStr);
-    return new Intl.DateTimeFormat("en-US", {
-      month: "short",
-      day: "numeric",
+    return new Intl.DateTimeFormat(locale, {
+      day: "2-digit",
+      month: "2-digit",
       year: "numeric",
       hour: "2-digit",
       minute: "2-digit",
