@@ -10,6 +10,7 @@ from .jobs import router as jobs_router
 from .admin import router as admin_router
 from .templates import router as templates_router
 from .guide import router as guide_router
+from .bugs import router as bugs_router
 
 __all__ = [
     "auth_router",
@@ -22,4 +23,5 @@ __all__ = [
     "admin_router",
     "templates_router",
     "guide_router",
+    "bugs_router",
 ]

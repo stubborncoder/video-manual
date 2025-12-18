@@ -34,6 +34,7 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 import { SidebarToggle } from "@/components/layout/SidebarToggle";
+import { AlphaBadge } from "@/components/ui/alpha-badge";
 import { cn } from "@/lib/utils";
 import { TemplatePreviewDialog } from "@/components/dialogs/TemplatePreviewDialog";
 
@@ -199,6 +200,7 @@ export default function TemplatesPage() {
                     <File className="h-5 w-5 text-primary" />
                   </div>
                   <h1 className="font-display text-3xl tracking-tight">{t("title")}</h1>
+                  <AlphaBadge />
                 </div>
                 <p className="text-muted-foreground max-w-xl leading-relaxed">
                   {t("description")}

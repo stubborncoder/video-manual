@@ -9,6 +9,7 @@ import {
   ModelSettings,
 } from "@/lib/api/admin";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlphaBadge } from "@/components/ui/alpha-badge";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import {
@@ -171,7 +172,10 @@ export default function AdminSettingsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Settings</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            Settings
+            <AlphaBadge />
+          </h1>
           <p className="text-sm text-muted-foreground">
             Configure AI models and system settings
           </p>

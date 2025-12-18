@@ -19,6 +19,7 @@ import { useSidebar } from "@/components/layout/SidebarContext";
 import { GuideMessageComponent } from "./GuideMessage";
 import { GuideSuggestions } from "./GuideSuggestions";
 import { cn } from "@/lib/utils";
+import { VDocsText } from "@/components/ui/vdocs-text";
 
 /**
  * Check if the current page has another copilot agent (editor/compiler)
@@ -70,11 +71,13 @@ export function GuidePanel({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll to bottom when messages change or panel opens
+  // Auto-scroll to bottom when messages change, panel opens, or size changes
   useEffect(() => {
     if (!isOpen) return;
+    // Only scroll in full/medium view (not compact)
+    if (panelSize === "compact") return;
 
-    // Small delay to ensure DOM is ready after mount/remount
+    // Small delay to ensure DOM is ready after mount/remount/resize
     const timeoutId = setTimeout(() => {
       if (scrollAreaRef.current) {
         const scrollContainer = scrollAreaRef.current.querySelector(
@@ -84,10 +87,10 @@ export function GuidePanel({
           scrollContainer.scrollTop = scrollContainer.scrollHeight;
         }
       }
-    }, 50);
+    }, 100);  // Slightly longer delay to account for panel resize animation
 
     return () => clearTimeout(timeoutId);
-  }, [messages, isOpen]);
+  }, [messages, isOpen, panelSize]);
 
   // Focus textarea when panel opens
   useEffect(() => {
@@ -144,7 +147,7 @@ export function GuidePanel({
   const heightClasses = {
     full: "top-4 bottom-24",
     medium: "h-[calc(33vh)] bottom-24",
-    compact: "h-[160px] bottom-24",
+    compact: "h-[200px] bottom-24",  // Increased from 160px for better scrolling
   };
 
   const isMinimized = panelSize !== "full";
@@ -186,7 +189,7 @@ export function GuidePanel({
           <div className="border-b px-4 py-3 flex items-center justify-between bg-muted/30 shrink-0">
             <div className="flex items-center gap-2 min-w-0">
               <Bot className="h-4 w-4 text-primary shrink-0" />
-              <span className="font-semibold shrink-0">vDocs Guide</span>
+              <VDocsText suffix=" Guide" className="shrink-0" />
               {/* Page context chip - inline in header */}
               {pageContext && (
                 <Badge variant="outline" className="text-xs truncate ml-1">
@@ -270,21 +273,23 @@ export function GuidePanel({
 
           {/* Messages - different layouts based on panel size */}
           {panelSize === "compact" ? (
-            /* Compact view - show only last message preview */
-            <div
-              className="flex-1 px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors overflow-hidden"
+            /* Compact view - show only last message preview with scroll */
+            <ScrollArea
+              className="flex-1 min-h-0 cursor-pointer hover:bg-muted/30 transition-colors"
               onClick={setFull}
             >
-              {lastAssistantMessage ? (
-                <p className="text-sm text-muted-foreground line-clamp-3">
-                  {lastAssistantMessage.content}
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground italic">
-                  Click to expand...
-                </p>
-              )}
-            </div>
+              <div className="px-4 py-3">
+                {lastAssistantMessage ? (
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {lastAssistantMessage.content}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">
+                    Click to expand...
+                  </p>
+                )}
+              </div>
+            </ScrollArea>
           ) : (
             /* Full/Medium view - show scrollable messages */
             <ScrollArea ref={scrollAreaRef} className="flex-1 min-h-0">
@@ -316,7 +321,7 @@ export function GuidePanel({
                     <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p className="font-medium mb-2">How can I help you?</p>
                     <p className="text-sm max-w-[280px]">
-                      Ask me anything about vDocs or get help with your
+                      Ask me anything about <VDocsText /> or get help with your
                       documentation workflow.
                     </p>
                   </div>

@@ -20,13 +20,14 @@ PUBLIC_DOCS_ROOT = Path(__file__).parent.parent.parent.parent / "ai_documents" /
 USER_MEMORIES_ROOT = Path(__file__).parent.parent.parent.parent / "ai_documents" / "user_memories"
 
 
-def get_guide_agent(user_id: str, model: Optional[str] = None):
+def get_guide_agent(user_id: str, model: Optional[str] = None, user_email: Optional[str] = None):
     """Get the guide deep agent with user-specific tools.
 
     Args:
         user_id: User ID to bind tools to for data access
         model: LLM model to use in format 'provider:model'.
                If not provided, uses configured model from admin settings.
+        user_email: User email for bug reporting context
 
     Returns:
         Ready-to-use deep agent for guiding users
@@ -54,7 +55,7 @@ def get_guide_agent(user_id: str, model: Optional[str] = None):
         model = init_chat_model(model, api_key=api_key)
 
     # Create tools bound to this user
-    tools = create_guide_tools(user_id)
+    tools = create_guide_tools(user_id, user_email=user_email)
 
     # Use MemorySaver for session-based memory (not persisted)
     checkpointer = MemorySaver()

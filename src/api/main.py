@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 
-from .routes import auth_router, videos_router, manuals_router, projects_router, trash_router, compile_stream_router, jobs_router, admin_router, templates_router, guide_router
+from .routes import auth_router, videos_router, manuals_router, projects_router, trash_router, compile_stream_router, jobs_router, admin_router, templates_router, guide_router, bugs_router
 from .websockets import process_video_router, compile_project_router, editor_copilot_router
 from ..config import ensure_directories, CORS_ORIGINS
 from ..db import init_db
@@ -64,6 +64,7 @@ def create_app(
     app.include_router(jobs_router, prefix="/api")
     app.include_router(templates_router, prefix="/api")
     app.include_router(guide_router, prefix="/api")
+    app.include_router(bugs_router, prefix="/api")
     app.include_router(admin_router)  # Admin routes already have /api/admin prefix
     app.include_router(compile_stream_router, prefix="/api/assistant")
 

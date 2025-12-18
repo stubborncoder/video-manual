@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { useTheme } from "next-themes";
 import { User, Mail, Palette, Sun, Moon, Globe, ChevronDown } from "lucide-react";
 import { SidebarToggle } from "@/components/layout/SidebarToggle";
+import { AlphaBadge } from "@/components/ui/alpha-badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
@@ -60,7 +61,10 @@ export default function ProfilePage() {
       <div className="flex gap-3">
         <SidebarToggle className="mt-1.5 shrink-0" />
         <div>
-          <h1 className="text-3xl font-bold">{t("title")}</h1>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            {t("title")}
+            <AlphaBadge />
+          </h1>
           <p className="text-muted-foreground">{t("description")}</p>
         </div>
       </div>

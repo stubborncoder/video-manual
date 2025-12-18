@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { VDocsIcon } from "@/components/ui/VDocsIcon";
+import { VDocsText } from "@/components/ui/vdocs-text";
 import { Badge } from "@/components/ui/badge";
 import { useAdminSidebar } from "./AdminSidebarContext";
 
@@ -68,7 +69,7 @@ export function AdminSidebar() {
                   </div>
                 </div>
               </TooltipTrigger>
-              <TooltipContent side="right">vDocs Admin (Alpha)</TooltipContent>
+              <TooltipContent side="right"><VDocsText suffix=" Admin (Alpha)" /></TooltipContent>
             </Tooltip>
           ) : (
             <div className="flex items-center gap-3">
@@ -78,7 +79,7 @@ export function AdminSidebar() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h1 className="text-xl font-bold">v<span className="text-primary">D</span>ocs</h1>
+                  <VDocsText className="text-xl" />
                   <Badge variant="secondary" className="text-xs font-normal px-1.5 py-0">alpha</Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">Admin</p>

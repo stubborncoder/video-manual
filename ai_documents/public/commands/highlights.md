@@ -28,6 +28,7 @@ highlight_element("upload-video-btn", 5000)
 | `nav-videos` | Videos navigation link | User wants to go to videos |
 | `nav-manuals` | Manuals navigation link | User wants to see manuals |
 | `nav-projects` | Projects navigation link | User wants to see projects |
+| `nav-bugs` | Bug Tracker navigation link | User wants to report or view issues |
 
 ### /dashboard/videos
 | Element ID | Description | Use When |
@@ -59,6 +60,13 @@ highlight_element("upload-video-btn", 5000)
 |------------|-------------|----------|
 | `create-project-btn` | Create Project button | User wants to create project |
 | `nav-projects` | Projects navigation link | Show current section |
+
+### /dashboard/bugs
+| Element ID | Description | Use When |
+|------------|-------------|----------|
+| `nav-bugs` | Bug Tracker navigation link | Show current section |
+
+**Note**: The Bug Tracker page has no action buttons to highlight. Users can report issues by talking to the guide agent or by viewing existing issues and adding comments.
 
 ## Discovering Elements
 

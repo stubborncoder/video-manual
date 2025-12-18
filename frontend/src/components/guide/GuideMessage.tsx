@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import type { GuideMessage } from "@/stores/guideStore";
 
 /**
- * Styles "vDocs" text in bold with primary color
+ * Styles "vDocs" text in bold with the "D" in primary color
  */
 function styleVDocs(text: string): React.ReactNode {
   const parts = text.split(/(vDocs)/gi);
@@ -14,7 +14,7 @@ function styleVDocs(text: string): React.ReactNode {
 
   return parts.map((part, i) =>
     part.toLowerCase() === "vdocs" ? (
-      <span key={i} className="font-bold text-primary">vDocs</span>
+      <span key={i} className="font-bold">v<span className="text-primary">D</span>ocs</span>
     ) : (
       part
     )

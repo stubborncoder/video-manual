@@ -50,6 +50,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Upload, Trash2, Video, Loader2, Eye, Wand2, FileText, FolderKanban, AlertTriangle, ArrowUpRight, Check, ChevronsUpDown } from "lucide-react";
 import { SidebarToggle } from "@/components/layout/SidebarToggle";
+import { AlphaBadge } from "@/components/ui/alpha-badge";
 import { VideoCardProgress } from "@/components/videos/VideoCardProgress";
 import { videos, projects, type VideoInfo, type UploadProgress, type ProjectSummary, type VideoManualInfo, type JobInfo } from "@/lib/api";
 import { useVideoProcessing } from "@/hooks/useWebSocket";
@@ -402,6 +403,7 @@ export default function VideosPage() {
                     <Video className="h-5 w-5 text-primary" />
                   </div>
                   <h1 className="font-display text-3xl tracking-tight">{t("title")}</h1>
+                  <AlphaBadge />
                 </div>
                 <p className="text-muted-foreground max-w-xl leading-relaxed">
                   {t("description")}

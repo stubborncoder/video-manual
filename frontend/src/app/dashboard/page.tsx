@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Video, FileText, FolderKanban, Upload, Sparkles, Download, Bot, Compass, BookOpen, MessageCircle, ChevronRight, Pencil } from "lucide-react";
 import { videos, manuals, projects } from "@/lib/api";
 import { SidebarToggle } from "@/components/layout/SidebarToggle";
+import { AlphaBadge } from "@/components/ui/alpha-badge";
+import { VDocsText } from "@/components/ui/vdocs-text";
 import { useGuideStore } from "@/stores/guideStore";
 
 export default function DashboardPage() {
@@ -64,9 +66,12 @@ export default function DashboardPage() {
       <div className="flex gap-3">
         <SidebarToggle className="mt-1.5 shrink-0" />
         <div>
-          <h1 className="text-3xl font-bold">{t("title")}</h1>
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            {t("title")}
+            <AlphaBadge />
+          </h1>
           <p className="text-muted-foreground">
-            {t("welcome")}
+            {t.rich("welcome", { vdocs: () => <VDocsText /> })}
           </p>
         </div>
       </div>
@@ -94,7 +99,7 @@ export default function DashboardPage() {
                 {t("guideAgent.title")}
               </h3>
               <p className="text-muted-foreground text-sm mb-4 max-w-md">
-                {t("guideAgent.description")}
+                {t.rich("guideAgent.description", { vdocs: () => <VDocsText /> })}
               </p>
 
               {/* Feature pills */}

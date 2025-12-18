@@ -36,7 +36,9 @@
     "or": "or",
     "and": "and",
     "view": "View",
-    "manuals": "Manuals"
+    "manuals": "Manuals",
+    "alphaVersion": "Alpha Release",
+    "alphaDescription": "This is an early preview. Report bugs or suggest features via the Bug Tracker."
   },
   "sidebar": {
     "dashboard": "Dashboard",
@@ -44,6 +46,7 @@
     "manuals": "Manuals",
     "projects": "Projects",
     "templates": "Templates",
+    "bugs": "Bug Tracker",
     "profile": "Profile",
     "trash": "Trash",
     "admin": "Admin",
@@ -75,7 +78,7 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "welcome": "Welcome to vDocs",
+    "welcome": "Welcome to <vdocs></vdocs>",
     "stats": {
       "videos": "Videos",
       "videosDesc": "Available for processing",
@@ -106,7 +109,7 @@
     },
     "guideAgent": {
       "title": "Meet Your Guide",
-      "description": "Your AI assistant is here to help you navigate vDocs. Ask questions, get guidance, and learn features instantly.",
+      "description": "Your AI assistant is here to help you navigate <vdocs></vdocs>. Ask questions, get guidance, and learn features instantly.",
       "cta": "Say Hello",
       "features": {
         "navigate": "Navigate the app",
@@ -692,7 +695,7 @@
     },
     "mobileWarning": {
       "title": "Desktop Required",
-      "description": "vDocs is optimized for desktop browsers. Please visit us on a desktop computer for the best experience.",
+      "description": "<vdocs></vdocs> is optimized for desktop browsers. Please visit us on a desktop computer for the best experience.",
       "understood": "Got it"
     },
     "heroAnimation": {
@@ -1052,5 +1055,27 @@
       "features": "What features are available?",
       "tour": "Show me around the app"
     }
+  },
+  "bugs": {
+    "title": "Bug Tracker",
+    "description": "Report bugs, request features, and track issues during the alpha phase",
+    "searchPlaceholder": "Search issues...",
+    "open": "Open",
+    "closed": "Closed",
+    "all": "All",
+    "noIssues": "No issues found",
+    "noIssuesDesc": "No issues match your current filters",
+    "viewOnGitHub": "View all issues on GitHub",
+    "loadFailed": "Failed to load issues",
+    "backToList": "Back to Issues",
+    "notFound": "Issue not found",
+    "notFoundDesc": "The issue you're looking for doesn't exist or has been deleted",
+    "noDescription": "No description provided",
+    "comments": "Comments",
+    "noComments": "No comments yet",
+    "addComment": "Add Comment",
+    "addCommentPlaceholder": "Write a comment...",
+    "commentAdded": "Comment added successfully",
+    "commentFailed": "Failed to add comment"
   }
 }
