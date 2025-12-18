@@ -12,6 +12,8 @@ Reference for app pages and navigation commands.
 | `/dashboard/manuals/[id]/edit` | Manual Editor | Edit a specific manual |
 | `/dashboard/projects` | Projects | Organize manuals into collections |
 | `/dashboard/templates` | Templates | Manage export templates |
+| `/dashboard/bugs` | Bug Tracker | Report issues and request features |
+| `/dashboard/bugs/[id]` | Issue Detail | View issue details and comments |
 | `/dashboard/trash` | Trash | Recover deleted items |
 
 ## Important: Modal/Panel Views (No Direct URLs)
@@ -71,5 +73,8 @@ Users can also navigate using the sidebar. Sidebar elements:
 - `nav-videos` - Videos link
 - `nav-manuals` - Manuals link
 - `nav-projects` - Projects link
+- `nav-templates` - Templates link
+- `nav-bugs` - Bug Tracker link
+- `nav-trash` - Trash link
 
 You can highlight these to show where to click.

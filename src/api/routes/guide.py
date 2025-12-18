@@ -11,7 +11,7 @@ from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from ..dependencies import CurrentUser
+from ..dependencies import CurrentUserInfo
 from ...core.runners import GuideAgentRunner
 from ...core.events import (
     LLMTokenEvent,
@@ -46,11 +46,11 @@ class GuideResponse(BaseModel):
     thread_id: str | None = None
 
 
-def _get_or_create_session(user_id: str) -> GuideAgentRunner:
+def _get_or_create_session(user_id: str, user_email: str | None = None) -> GuideAgentRunner:
     """Get existing session or create new one for user."""
     session_key = f"{user_id}_guide"
     if session_key not in _guide_sessions:
-        runner = GuideAgentRunner(user_id)
+        runner = GuideAgentRunner(user_id, user_email=user_email)
         # Initialize the session
         list(runner.start({}))
         _guide_sessions[session_key] = runner
@@ -58,7 +58,7 @@ def _get_or_create_session(user_id: str) -> GuideAgentRunner:
 
 
 async def generate_guide_response(
-    request: GuideChatRequest, user_id: str
+    request: GuideChatRequest, user_id: str, user_email: str | None = None
 ) -> AsyncGenerator[str, None]:
     """Generate streaming response from the guide agent.
 
@@ -68,6 +68,7 @@ async def generate_guide_response(
     Args:
         request: The chat request with message and context
         user_id: The current user ID
+        user_email: The current user's email
 
     Yields:
         Server-sent event formatted chunks with structured data
@@ -77,7 +78,7 @@ async def generate_guide_response(
     def run_agent():
         """Run agent in background thread, pushing events to queue."""
         try:
-            runner = _get_or_create_session(user_id)
+            runner = _get_or_create_session(user_id, user_email=user_email)
             page_context = request.page_context or {
                 "currentPage": "/dashboard",
                 "pageTitle": "Dashboard",
@@ -163,13 +164,13 @@ async def generate_guide_response(
 @router.post("/chat")
 async def guide_chat(
     request: GuideChatRequest,
-    user_id: CurrentUser,
+    user_info: CurrentUserInfo,
 ) -> StreamingResponse:
     """Stream guide agent responses with actions.
 
     Args:
         request: The chat request
-        user_id: Current user ID from auth
+        user_info: Current user info (ID and email) from auth
 
     Returns:
         Streaming response with SSE format containing:
@@ -180,7 +181,7 @@ async def guide_chat(
         - [DONE] signal
     """
     return StreamingResponse(
-        generate_guide_response(request, user_id),
+        generate_guide_response(request, user_info.user_id, user_info.email),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -191,12 +192,12 @@ async def guide_chat(
 
 
 @router.post("/clear")
-async def clear_guide_session(user_id: CurrentUser) -> dict:
+async def clear_guide_session(user_info: CurrentUserInfo) -> dict:
     """Clear the guide session for the current user.
 
     This resets the conversation context.
     """
-    session_key = f"{user_id}_guide"
+    session_key = f"{user_info.user_id}_guide"
     if session_key in _guide_sessions:
         del _guide_sessions[session_key]
     return {"status": "cleared"}

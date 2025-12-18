@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Trash2, RotateCcw, Video, FileText, FolderKanban, Clock } from "lucide-react";
 import { SidebarToggle } from "@/components/layout/SidebarToggle";
+import { AlphaBadge } from "@/components/ui/alpha-badge";
 import { trash, type TrashItem, type TrashStats } from "@/lib/api";
 
 function formatDate(dateStr: string): string {
@@ -145,6 +146,7 @@ export default function TrashPage() {
                     <Trash2 className="h-5 w-5 text-primary" />
                   </div>
                   <h1 className="font-display text-3xl tracking-tight">{t("title")}</h1>
+                  <AlphaBadge />
                 </div>
                 <p className="text-muted-foreground max-w-xl leading-relaxed">
                   {t("description")}

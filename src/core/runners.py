@@ -924,8 +924,9 @@ Please analyze this image to help answer the user's question.""")
 class GuideAgentRunner:
     """Runner for guide agent that yields progress events for interactive guidance."""
 
-    def __init__(self, user_id: str):
+    def __init__(self, user_id: str, user_email: str | None = None):
         self.user_id = user_id
+        self.user_email = user_email
         self._agent = None
         self._config = None
 
@@ -943,7 +944,7 @@ class GuideAgentRunner:
         from ..agents.guide_agent import get_guide_agent
 
         # Create agent with unique session ID
-        self._agent = get_guide_agent(self.user_id)
+        self._agent = get_guide_agent(self.user_id, user_email=self.user_email)
         session_id = uuid.uuid4().hex[:8]
         self._config = {"configurable": {"thread_id": f"guide_{self.user_id}_{session_id}"}}
 

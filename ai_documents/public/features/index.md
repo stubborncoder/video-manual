@@ -12,6 +12,7 @@ This section documents all major features of vDocs.
 - [Projects](projects.md) - Organize manuals into collections
 - [Export](export.md) - Download documentation in various formats
 - [Templates](templates.md) - Customize export styling
+- [Bug Tracker](bug-tracker.md) - Report bugs and request features
 - [Trash](trash.md) - Recover or permanently delete items
 
 ## Feature Overview
@@ -24,4 +25,5 @@ This section documents all major features of vDocs.
 | Evaluation | AI-powered quality assessment | `/dashboard/manuals` |
 | Projects | Organize manuals into collections | `/dashboard/projects` |
 | Templates | Customize export formats | `/dashboard/templates` |
+| Bug Tracker | Report bugs and request features | `/dashboard/bugs` |
 | Trash | Recover deleted items | `/dashboard/trash` |

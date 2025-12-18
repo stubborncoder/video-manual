@@ -5,6 +5,7 @@ import { useLocale } from "@/components/providers/I18nProvider";
 import { adminApi, UsageSummary, DailyUsage, ModelUsage, ManualUsage } from "@/lib/api/admin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlphaBadge } from "@/components/ui/alpha-badge";
 import {
   Table,
   TableBody,
@@ -125,7 +126,10 @@ export default function UsagePage() {
       {/* Header with filter toggle */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Usage & Costs</h1>
+          <h1 className="text-2xl font-bold flex items-center gap-2">
+            Usage & Costs
+            <AlphaBadge />
+          </h1>
           <p className="text-sm text-muted-foreground">
             {startDate} to {endDate}
           </p>

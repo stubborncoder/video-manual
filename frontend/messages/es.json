@@ -36,7 +36,9 @@
     "or": "o",
     "and": "y",
     "view": "Ver",
-    "manuals": "Manuales"
+    "manuals": "Manuales",
+    "alphaVersion": "Versión Alpha",
+    "alphaDescription": "Esta es una vista previa. Reporta errores o sugiere funciones en el Reporte de Errores."
   },
   "sidebar": {
     "dashboard": "Panel",
@@ -44,6 +46,7 @@
     "manuals": "Manuales",
     "projects": "Proyectos",
     "templates": "Plantillas",
+    "bugs": "Reporte de Errores",
     "profile": "Perfil",
     "trash": "Papelera",
     "admin": "Admin",
@@ -75,7 +78,7 @@
   },
   "dashboard": {
     "title": "Panel",
-    "welcome": "Bienvenido a vDocs",
+    "welcome": "Bienvenido a <vdocs></vdocs>",
     "stats": {
       "videos": "Videos",
       "videosDesc": "Disponibles para procesar",
@@ -106,7 +109,7 @@
     },
     "guideAgent": {
       "title": "Conoce tu Guía",
-      "description": "Tu asistente de IA está aquí para ayudarte a navegar vDocs. Haz preguntas, obtén orientación y aprende funciones al instante.",
+      "description": "Tu asistente de IA está aquí para ayudarte a navegar <vdocs></vdocs>. Haz preguntas, obtén orientación y aprende funciones al instante.",
       "cta": "Saluda",
       "features": {
         "navigate": "Navega la app",
@@ -692,7 +695,7 @@
     },
     "mobileWarning": {
       "title": "Se requiere escritorio",
-      "description": "vDocs está optimizado para navegadores de escritorio. Por favor visítanos desde un ordenador de escritorio para la mejor experiencia.",
+      "description": "<vdocs></vdocs> está optimizado para navegadores de escritorio. Por favor visítanos desde un ordenador de escritorio para la mejor experiencia.",
       "understood": "Entendido"
     },
     "heroAnimation": {
@@ -1052,5 +1055,27 @@
       "features": "¿Qué funciones están disponibles?",
       "tour": "Muéstrame la aplicación"
     }
+  },
+  "bugs": {
+    "title": "Reporte de Errores",
+    "description": "Reporta errores, solicita funciones y rastrea problemas durante la fase alfa",
+    "searchPlaceholder": "Buscar problemas...",
+    "open": "Abiertos",
+    "closed": "Cerrados",
+    "all": "Todos",
+    "noIssues": "No se encontraron problemas",
+    "noIssuesDesc": "No hay problemas que coincidan con los filtros actuales",
+    "viewOnGitHub": "Ver todos los problemas en GitHub",
+    "loadFailed": "Error al cargar problemas",
+    "backToList": "Volver a Problemas",
+    "notFound": "Problema no encontrado",
+    "notFoundDesc": "El problema que buscas no existe o ha sido eliminado",
+    "noDescription": "Sin descripción",
+    "comments": "Comentarios",
+    "noComments": "Sin comentarios aún",
+    "addComment": "Agregar Comentario",
+    "addCommentPlaceholder": "Escribe un comentario...",
+    "commentAdded": "Comentario agregado exitosamente",
+    "commentFailed": "Error al agregar comentario"
   }
 }

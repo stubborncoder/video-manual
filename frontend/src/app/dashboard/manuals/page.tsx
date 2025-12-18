@@ -62,6 +62,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown, ClipboardCheck, Users, Target, History, Clock, MoreHorizontal, HelpCircle, Expand, Copy, ArrowLeft } from "lucide-react";
 import { SidebarToggle } from "@/components/layout/SidebarToggle";
+import { AlphaBadge } from "@/components/ui/alpha-badge";
 import { useSidebar } from "@/components/layout/SidebarContext";
 import { manuals, manualProject, projects, type ManualSummary, type ManualDetail, type ProjectSummary, type ManualEvaluation } from "@/lib/api";
 import { ExportDialog, type ExportOptions } from "@/components/dialogs/ExportDialog";
@@ -805,6 +806,7 @@ function ManualsPageContent() {
                     <FileText className="h-5 w-5 text-primary" />
                   </div>
                   <h1 className="font-display text-3xl tracking-tight">{t("title")}</h1>
+                  <AlphaBadge />
                 </div>
                 <p className="text-muted-foreground max-w-xl leading-relaxed">
                   {t("description")}

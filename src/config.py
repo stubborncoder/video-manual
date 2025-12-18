@@ -47,6 +47,10 @@ CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 
+# GitHub integration (for bug tracker)
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
+GITHUB_REPO = os.getenv("GITHUB_REPO", "")  # Format: "owner/repo"
+
 # Feature flags
 USE_SUPABASE_AUTH = bool(SUPABASE_URL and SUPABASE_JWT_SECRET)
 

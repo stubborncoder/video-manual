@@ -5,6 +5,22 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+/**
+ * Styles "vDocs" text in bold with the "D" in primary color
+ */
+function styleVDocs(text: string): React.ReactNode {
+  const parts = text.split(/(vDocs)/gi);
+  if (parts.length === 1) return text;
+
+  return parts.map((part, i) =>
+    part.toLowerCase() === "vdocs" ? (
+      <span key={i} className="font-bold">v<span className="text-primary">D</span>ocs</span>
+    ) : (
+      part
+    )
+  );
+}
+
 interface GuideSuggestionsProps {
   suggestions: string[];
   onSuggestionClick: (suggestion: string) => void;
@@ -99,7 +115,7 @@ export function GuideSuggestions({
                 "hover:bg-primary/10 transition-colors"
               )}
             >
-              {suggestion}
+              {styleVDocs(suggestion)}
             </Button>
           ))}
         </div>

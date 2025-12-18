@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Home, RefreshCw, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VDocsIcon } from "@/components/ui/VDocsIcon";
+import { VDocsText } from "@/components/ui/vdocs-text";
 
 interface ErrorProps {
   error: Error & { digest?: string };
@@ -77,9 +78,7 @@ export default function Error({ error, reset }: ErrorProps) {
           className="group mb-12 flex items-center gap-3 transition-transform hover:scale-105"
         >
           <VDocsIcon branded className="w-10 h-10" />
-          <span className="font-display text-2xl tracking-tight text-foreground">
-            vDocs
-          </span>
+          <VDocsText className="font-display text-2xl tracking-tight text-foreground" />
         </Link>
 
         {/* Error code with decorative treatment */}

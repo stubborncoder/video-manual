@@ -13,6 +13,7 @@ import {
   Home,
   Shield,
   LayoutTemplate,
+  Bug,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { VDocsIcon } from "@/components/ui/VDocsIcon";
+import { VDocsText } from "@/components/ui/vdocs-text";
 import { Badge } from "@/components/ui/badge";
 import { auth } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
@@ -36,6 +38,7 @@ const navItemsConfig = [
   { href: "/dashboard/manuals", labelKey: "manuals", icon: FileText, guideId: "nav-manuals" },
   { href: "/dashboard/projects", labelKey: "projects", icon: FolderKanban, guideId: "nav-projects" },
   { href: "/dashboard/templates", labelKey: "templates", icon: LayoutTemplate, guideId: "nav-templates" },
+  { href: "/dashboard/bugs", labelKey: "bugs", icon: Bug, guideId: "nav-bugs" },
   { href: "/dashboard/trash", labelKey: "trash", icon: Trash2, guideId: "nav-trash" },
 ];
 
@@ -86,7 +89,7 @@ export function Sidebar() {
                   <VDocsIcon className="h-11 w-11 text-primary" aria-label="vDocs logo" />
                 </Link>
               </TooltipTrigger>
-              <TooltipContent side="right">vDocs (Alpha)</TooltipContent>
+              <TooltipContent side="right"><VDocsText suffix=" (Alpha)" /></TooltipContent>
             </Tooltip>
           ) : (
             <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
@@ -94,7 +97,7 @@ export function Sidebar() {
                 <VDocsIcon className="h-11 w-11 text-primary" aria-label="vDocs logo" />
               </div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold">v<span className="text-primary">D</span>ocs</h1>
+                <VDocsText className="text-xl" />
                 <Badge variant="secondary" className="text-xs font-normal px-1.5 py-0">alpha</Badge>
               </div>
             </Link>

@@ -7,6 +7,7 @@ import { useLocale } from "@/components/providers/I18nProvider";
 import { adminApi, UserInfo, UserTier } from "@/lib/api/admin";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { AlphaBadge } from "@/components/ui/alpha-badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
@@ -326,7 +327,10 @@ export default function UsersPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold">{t("users")}</h1>
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          {t("users")}
+          <AlphaBadge />
+        </h1>
         <p className="text-muted-foreground">
           {t("manageUsersDesc")}
         </p>

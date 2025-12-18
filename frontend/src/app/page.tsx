@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { VDocsIcon } from "@/components/ui/VDocsIcon";
+import { VDocsText } from "@/components/ui/vdocs-text";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -770,7 +771,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-[1400px] px-6">
           <div className="mb-16 grid gap-16 md:grid-cols-2 lg:grid-cols-4">
             <div className="max-w-[350px]">
-              <div className="mb-4 font-display text-xl">vDocs</div>
+              <VDocsText className="mb-4 font-display text-xl" />
               <p className="leading-relaxed text-muted-foreground">
                 {t("hero.badge")}
               </p>
@@ -867,7 +868,7 @@ export default function LandingPage() {
 
           <div className="border-t border-border pt-8">
             <p className="text-sm text-muted-foreground">
-              © 2025 vDocs. {t("footer.copyright")}
+              © 2025 <VDocsText />. {t("footer.copyright")}
             </p>
           </div>
         </div>
@@ -1144,7 +1145,7 @@ export default function LandingPage() {
               {t("mobileWarning.title")}
             </DialogTitle>
             <DialogDescription className="pt-2">
-              {t("mobileWarning.description")}
+              {t.rich("mobileWarning.description", { vdocs: () => <VDocsText /> })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

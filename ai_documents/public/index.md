@@ -24,3 +24,4 @@ vDocs is an AI-powered application that creates step-by-step documentation from 
 - **Projects** - Organize multiple manuals into collections
 - **Export Options** - PDF, Markdown, HTML export formats
 - **Templates** - Customize export styling and format
+- **Bug Tracker** - Report issues and request features (synced with GitHub)

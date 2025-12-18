@@ -7,6 +7,7 @@ import { useLocale } from "@/components/providers/I18nProvider";
 import { adminApi, UserStats, UserTier } from "@/lib/api/admin";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AlphaBadge } from "@/components/ui/alpha-badge";
 import {
   Select,
   SelectContent,
@@ -233,8 +234,9 @@ export default function UserDetailPage() {
               {/* User Info */}
               <div className="flex-1 min-w-0 space-y-4">
                 <div>
-                  <h1 className="text-2xl font-semibold tracking-tight truncate">
+                  <h1 className="text-2xl font-semibold tracking-tight truncate flex items-center gap-2">
                     {stats.email || t("noEmail")}
+                    <AlphaBadge />
                   </h1>
                   {stats.display_name && (
                     <p className="text-muted-foreground mt-1">{stats.display_name}</p>

@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useLocale } from "@/components/providers/I18nProvider";
 import { adminApi, UsageSummary, UserInfo, DailyUsage } from "@/lib/api/admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlphaBadge } from "@/components/ui/alpha-badge";
 import { Button } from "@/components/ui/button";
 import {
   DollarSign,
@@ -144,7 +145,10 @@ export default function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">{t("dashboard")}</h1>
+        <h1 className="text-2xl font-bold flex items-center gap-2">
+          {t("dashboard")}
+          <AlphaBadge />
+        </h1>
         <p className="text-sm text-muted-foreground">
           {t("systemOverview")}
         </p>
