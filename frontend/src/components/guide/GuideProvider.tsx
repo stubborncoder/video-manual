@@ -240,10 +240,16 @@ export function GuideProvider({ children }: GuideProviderProps) {
           (event: GuideEvent) => {
             if (event.action === "highlight" && event.target) {
               hasActionsRef.current = true;
-              highlight(event.target, event.duration || 5000);
+              // Store pending highlight, will be applied after panel resize animation
+              useGuideStore.getState().setPendingHighlight({
+                target: event.target,
+                duration: event.duration || 5000,
+              });
+              useGuideStore.getState().setCompact();
             } else if (event.action === "navigate" && event.to) {
               hasActionsRef.current = true;
-              // Navigate after a short delay to let user see the message
+              // First minimize panel, then navigate
+              useGuideStore.getState().setCompact();
               setTimeout(() => {
                 router.push(event.to!);
               }, 500);
@@ -252,11 +258,7 @@ export function GuideProvider({ children }: GuideProviderProps) {
           // onComplete
           () => {
             setGenerating(false);
-
-            // If there were highlight actions, minimize panel so user can see them
-            if (hasActionsRef.current) {
-              useGuideStore.setState({ isOpen: false, hasUnread: true });
-            }
+            // Panel resize already handled in onAction when actions occur
           },
           // onError
           (error: Error) => {
