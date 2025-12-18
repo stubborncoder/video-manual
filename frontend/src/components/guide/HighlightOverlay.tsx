@@ -21,6 +21,35 @@ function findGuideElement(targetId: string): HTMLElement | null {
 }
 
 /**
+ * Check if element is fully visible in viewport
+ */
+function isElementInViewport(element: HTMLElement): boolean {
+  const rect = element.getBoundingClientRect();
+  return (
+    rect.top >= 0 &&
+    rect.left >= 0 &&
+    rect.bottom <= window.innerHeight &&
+    rect.right <= window.innerWidth
+  );
+}
+
+/**
+ * Scroll element into view with smooth animation
+ * Returns a promise that resolves when scroll completes
+ */
+function scrollToElement(element: HTMLElement): Promise<void> {
+  return new Promise((resolve) => {
+    element.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+      inline: "nearest",
+    });
+    // Wait for scroll animation to complete
+    setTimeout(resolve, 500);
+  });
+}
+
+/**
  * Renders pulsing highlight overlays around UI elements.
  * Used by the Guide Agent to visually indicate elements to users.
  */
@@ -50,10 +79,23 @@ export function HighlightOverlay() {
     setRects(newRects);
   }, [activeHighlights]);
 
-  // Update positions on mount and when highlights change
+  // Handle scrolling to elements and updating positions when highlights change
   useEffect(() => {
     setMounted(true);
-    updateRects();
+
+    async function scrollAndHighlight() {
+      // Scroll to any off-screen elements first
+      for (const highlight of activeHighlights) {
+        const element = findGuideElement(highlight.targetId);
+        if (element && !isElementInViewport(element)) {
+          await scrollToElement(element);
+        }
+      }
+      // Update rects after scrolling
+      updateRects();
+    }
+
+    scrollAndHighlight();
 
     // Update on scroll and resize
     window.addEventListener("scroll", updateRects, true);
@@ -63,7 +105,7 @@ export function HighlightOverlay() {
       window.removeEventListener("scroll", updateRects, true);
       window.removeEventListener("resize", updateRects);
     };
-  }, [updateRects]);
+  }, [activeHighlights, updateRects]);
 
   // Auto-dismiss highlights after duration
   useEffect(() => {

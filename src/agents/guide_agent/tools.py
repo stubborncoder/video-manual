@@ -12,25 +12,68 @@ from ...storage.project_storage import ProjectStorage
 
 
 # Element registry - maps pages to available highlightable elements
-PAGE_ELEMENT_REGISTRY: dict[str, list[dict[str, str]]] = {
-    "/dashboard": [
-        {"id": "nav-videos", "description": "Videos navigation link"},
-        {"id": "nav-manuals", "description": "Manuals navigation link"},
-        {"id": "nav-projects", "description": "Projects navigation link"},
-    ],
-    "/dashboard/videos": [
-        {"id": "upload-video-btn", "description": "Upload Video button"},
-        {"id": "nav-videos", "description": "Videos navigation link"},
-    ],
-    "/dashboard/manuals": [
-        {"id": "first-manual-card", "description": "First manual card"},
-        {"id": "first-manual-edit-btn", "description": "Edit button on first manual"},
-        {"id": "nav-manuals", "description": "Manuals navigation link"},
-    ],
-    "/dashboard/projects": [
-        {"id": "create-project-btn", "description": "Create Project button"},
-        {"id": "nav-projects", "description": "Projects navigation link"},
-    ],
+# Static elements are always available, dynamic elements depend on user data
+PAGE_ELEMENT_REGISTRY: dict[str, dict[str, Any]] = {
+    "/dashboard": {
+        "static": [
+            {"id": "nav-videos", "description": "Videos navigation link"},
+            {"id": "nav-manuals", "description": "Manuals navigation link"},
+            {"id": "nav-projects", "description": "Projects navigation link"},
+            {"id": "nav-templates", "description": "Templates navigation link"},
+        ],
+    },
+    "/dashboard/videos": {
+        "static": [
+            {"id": "upload-video-btn", "description": "Upload Video button"},
+            {"id": "nav-videos", "description": "Videos navigation link"},
+        ],
+        "dynamic": {
+            "pattern": "video-card-{name}",
+            "description": "Video card for '{name}'",
+            "data_source": "videos",
+        },
+    },
+    "/dashboard/manuals": {
+        "static": [
+            {"id": "first-manual-card", "description": "First manual card"},
+            {"id": "first-manual-edit-btn", "description": "Edit button on first manual"},
+            {"id": "nav-manuals", "description": "Manuals navigation link"},
+        ],
+        "dynamic": {
+            "pattern": "manual-card-{id}",
+            "description": "Manual card for '{title}'",
+            "data_source": "manuals",
+            "also": [
+                {"pattern": "manual-edit-btn-{id}", "description": "Edit button for '{title}'"},
+            ],
+        },
+    },
+    "/dashboard/projects": {
+        "static": [
+            {"id": "create-project-btn", "description": "Create Project button"},
+            {"id": "nav-projects", "description": "Projects navigation link"},
+        ],
+        "dynamic": {
+            "pattern": "project-card-{id}",
+            "description": "Project card for '{name}'",
+            "data_source": "projects",
+            "also": [
+                {"pattern": "view-project-btn-{id}", "description": "View button for '{name}'"},
+            ],
+        },
+    },
+    "/dashboard/templates": {
+        "static": [
+            {"id": "upload-template-btn", "description": "Upload Template button"},
+            {"id": "nav-templates", "description": "Templates navigation link"},
+        ],
+    },
+    "/dashboard/trash": {
+        "static": [
+            {"id": "empty-trash-btn", "description": "Empty Trash button"},
+            {"id": "nav-trash", "description": "Trash navigation link"},
+        ],
+    },
 }
 
 
@@ -65,7 +108,12 @@ def create_guide_tools(user_id: str) -> list:
                 if metadata_file.exists():
                     import json
 
-                    metadata = json.loads(metadata_file.read_text())
+                    try:
+                        metadata = json.loads(metadata_file.read_text())
+                    except (json.JSONDecodeError, OSError):
+                        # Skip corrupted or unreadable metadata
+                        continue
+
                     # Get available languages
                     languages = []
                     for f in manual_dir.iterdir():
@@ -164,12 +212,23 @@ def create_guide_tools(user_id: str) -> list:
 
         Args:
             element_id: The data-guide-id of the element to highlight.
-                       Common IDs:
+                       Static IDs (always available):
                        - upload-video-btn: Upload Video button
+                       - upload-template-btn: Upload Template button
                        - create-project-btn: Create Project button
+                       - empty-trash-btn: Empty Trash button
                        - first-manual-card: First manual in the list
                        - first-manual-edit-btn: Edit button on first manual
-                       - nav-videos, nav-manuals, nav-projects: Navigation links
+                       - nav-videos, nav-manuals, nav-projects, nav-templates, nav-trash
+
+                       Dynamic IDs (based on user data):
+                       - video-card-{filename}: Specific video card
+                       - manual-card-{id}: Specific manual card
+                       - manual-edit-btn-{id}: Edit button for specific manual
+                       - project-card-{id}: Specific project card
+                       - view-project-btn-{id}: View button for specific project
+
+                       Use get_page_elements() to discover available elements.
             duration_ms: How long to highlight in milliseconds (default 5000)
 
         Returns:
@@ -207,6 +266,9 @@ def create_guide_tools(user_id: str) -> list:
         Use this to discover what elements can be highlighted on
         a specific page before deciding what to highlight.
 
+        Returns both static elements (always available) and dynamic
+        elements based on user's actual data (videos, manuals, projects).
+
         Args:
             page_path: The page path (e.g., /dashboard/videos)
 
@@ -217,12 +279,78 @@ def create_guide_tools(user_id: str) -> list:
         if not page_path.startswith("/"):
             page_path = "/" + page_path
 
-        # Find matching page (handle nested routes)
-        for registered_path, elements in PAGE_ELEMENT_REGISTRY.items():
-            if page_path.startswith(registered_path):
-                return elements
+        result: list[dict[str, str]] = []
 
-        return []
+        # Find matching page (handle nested routes)
+        page_config = None
+        for registered_path, config in PAGE_ELEMENT_REGISTRY.items():
+            if page_path.startswith(registered_path):
+                page_config = config
+                break
+
+        if not page_config:
+            return []
+
+        # Add static elements
+        result.extend(page_config.get("static", []))
+
+        # Add dynamic elements based on user data
+        dynamic = page_config.get("dynamic")
+        if dynamic:
+            data_source = dynamic.get("data_source")
+            items: list[dict[str, Any]] = []
+
+            if data_source == "videos":
+                storage = UserStorage(user_id)
+                if storage.videos_dir.exists():
+                    for video_file in storage.videos_dir.iterdir():
+                        if video_file.is_file() and video_file.suffix.lower() in (
+                            ".mp4", ".mov", ".avi", ".webm"
+                        ):
+                            items.append({"name": video_file.name})
+
+            elif data_source == "manuals":
+                storage = UserStorage(user_id)
+                if storage.manuals_dir.exists():
+                    for manual_dir in storage.manuals_dir.iterdir():
+                        if manual_dir.is_dir():
+                            metadata_file = manual_dir / "metadata.json"
+                            if metadata_file.exists():
+                                import json
+                                try:
+                                    metadata = json.loads(metadata_file.read_text())
+                                    items.append({
+                                        "id": manual_dir.name,
+                                        "title": metadata.get("title", manual_dir.name),
+                                    })
+                                except (json.JSONDecodeError, OSError):
+                                    # Skip corrupted or unreadable metadata
+                                    continue
+
+            elif data_source == "projects":
+                storage = ProjectStorage(user_id)
+                for project in storage.list_projects():
+                    items.append({
+                        "id": project.get("id"),
+                        "name": project.get("name", project.get("id")),
+                    })
+
+            # Generate dynamic element IDs from items
+            for item in items:
+                # Main dynamic element
+                pattern = dynamic.get("pattern", "")
+                desc_pattern = dynamic.get("description", "")
+                element_id = pattern.format(**item)
+                description = desc_pattern.format(**item)
+                result.append({"id": element_id, "description": description})
+
+                # Additional related elements (e.g., edit buttons)
+                for also in dynamic.get("also", []):
+                    also_id = also.get("pattern", "").format(**item)
+                    also_desc = also.get("description", "").format(**item)
+                    result.append({"id": also_id, "description": also_desc})
+
+        return result
 
     return [
         get_user_manuals,

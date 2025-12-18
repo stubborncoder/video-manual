@@ -58,6 +58,7 @@ export function GuidePanel({
     setMedium,
     setCompact,
     applyPendingHighlight,
+    pendingHighlight,
   } = useGuideStore();
   const { collapsed: sidebarCollapsed } = useSidebar();
 
@@ -94,6 +95,17 @@ export function GuidePanel({
       textareaRef.current.focus();
     }
   }, [isOpen]);
+
+  // Apply pending highlight when panel minimizes
+  useEffect(() => {
+    if (pendingHighlight && panelSize !== "full") {
+      // Small delay to ensure layout animation has started
+      const timer = setTimeout(() => {
+        applyPendingHighlight();
+      }, 250);
+      return () => clearTimeout(timer);
+    }
+  }, [panelSize, pendingHighlight, applyPendingHighlight]);
 
   const handleSend = useCallback(() => {
     const content = inputValue.trim();
@@ -141,7 +153,7 @@ export function GuidePanel({
     <AnimatePresence mode="wait">
       {isOpen && (
         <motion.div
-          key={`${positionLeft ? "left" : "right"}-${panelSize}`}
+          key={positionLeft ? "left" : "right"}
           layout
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -151,7 +163,7 @@ export function GuidePanel({
             ease: "easeOut",
             layout: { duration: 0.2 },
           }}
-          onAnimationComplete={() => {
+          onLayoutAnimationComplete={() => {
             // Apply any pending highlight after resize animation completes
             applyPendingHighlight();
           }}

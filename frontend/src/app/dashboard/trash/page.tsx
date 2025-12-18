@@ -182,7 +182,7 @@ export default function TrashPage() {
               <div className="flex items-center gap-3 lg:self-center">
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="lg" className="gap-2 shadow-lg">
+                    <Button data-guide-id="empty-trash-btn" variant="destructive" size="lg" className="gap-2 shadow-lg">
                       <Trash2 className="h-4 w-4" />
                       {t("emptyTrashCount", { count: stats.total })}
                     </Button>

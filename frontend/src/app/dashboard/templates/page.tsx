@@ -227,6 +227,7 @@ export default function TemplatesPage() {
             {/* Upload CTA */}
             <div className="lg:self-center">
               <Button
+                data-guide-id="upload-template-btn"
                 onClick={() => fileInputRef.current?.click()}
                 size="lg"
                 className="gap-2 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all"
