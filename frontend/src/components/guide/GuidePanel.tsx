@@ -272,11 +272,11 @@ export function GuidePanel({
           {panelSize === "compact" ? (
             /* Compact view - show only last message preview */
             <div
-              className="flex-1 px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors overflow-hidden"
+              className="flex-1 px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors overflow-y-auto"
               onClick={setFull}
             >
               {lastAssistantMessage ? (
-                <p className="text-sm text-muted-foreground line-clamp-3">
+                <p className="text-sm text-muted-foreground">
                   {lastAssistantMessage.content}
                 </p>
               ) : (
