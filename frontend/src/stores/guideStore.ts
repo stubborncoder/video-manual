@@ -31,11 +31,19 @@ export interface GuideHighlight {
   label?: string;
 }
 
+export interface PendingHighlight {
+  target: string;
+  duration: number;
+}
+
+export type PanelSize = "full" | "medium" | "compact";
+
 interface GuideStore {
   // UI State
   isOpen: boolean;
   hasUnread: boolean;
   forceLeftPosition: boolean; // Force button to left side (when another copilot is active)
+  panelSize: PanelSize; // Panel size: full, medium (1/3), or compact
 
   // Conversation
   messages: GuideMessage[];
@@ -50,6 +58,7 @@ interface GuideStore {
 
   // Highlights
   activeHighlights: GuideHighlight[];
+  pendingHighlight: PendingHighlight | null; // Highlight waiting for animation to complete
 
   // Actions
   toggle: () => void;
@@ -62,10 +71,17 @@ interface GuideStore {
   markAsRead: () => void;
   setForceLeftPosition: (force: boolean) => void;
 
+  // Panel size actions
+  setFull: () => void;
+  setMedium: () => void;
+  setCompact: () => void;
+
   // Highlight actions
   showHighlight: (targetId: string, duration?: number, label?: string) => void;
   clearHighlight: (targetId: string) => void;
   clearAllHighlights: () => void;
+  setPendingHighlight: (highlight: PendingHighlight | null) => void;
+  applyPendingHighlight: () => void; // Apply pending highlight after animation
 }
 
 export const useGuideStore = create<GuideStore>()(
@@ -75,25 +91,27 @@ export const useGuideStore = create<GuideStore>()(
       isOpen: false,
       hasUnread: false,
       forceLeftPosition: false,
+      panelSize: "full",
       messages: [],
       threadId: null,
       currentPage: "",
       pageContext: null,
       isGenerating: false,
       activeHighlights: [],
+      pendingHighlight: null,
 
       // Actions
       toggle: () => {
         const { isOpen } = get();
-        set({ isOpen: !isOpen, hasUnread: false });
+        set({ isOpen: !isOpen, hasUnread: false, panelSize: "full" });
       },
 
       open: () => {
-        set({ isOpen: true, hasUnread: false });
+        set({ isOpen: true, hasUnread: false, panelSize: "full" });
       },
 
       close: () => {
-        set({ isOpen: false });
+        set({ isOpen: false, panelSize: "full" });
       },
 
       addMessage: (msg: GuideMessage) => {
@@ -125,6 +143,19 @@ export const useGuideStore = create<GuideStore>()(
         set({ forceLeftPosition: force });
       },
 
+      // Panel size actions
+      setFull: () => {
+        set({ panelSize: "full" });
+      },
+
+      setMedium: () => {
+        set({ panelSize: "medium" });
+      },
+
+      setCompact: () => {
+        set({ panelSize: "compact" });
+      },
+
       // Highlight actions
       showHighlight: (targetId: string, duration?: number, label?: string) => {
         const { activeHighlights } = get();
@@ -149,6 +180,30 @@ export const useGuideStore = create<GuideStore>()(
 
       clearAllHighlights: () => {
         set({ activeHighlights: [] });
+      },
+
+      setPendingHighlight: (highlight: PendingHighlight | null) => {
+        set({ pendingHighlight: highlight });
+      },
+
+      applyPendingHighlight: () => {
+        const { pendingHighlight, activeHighlights } = get();
+        if (pendingHighlight) {
+          // Remove existing highlight with same targetId if present
+          const filtered = activeHighlights.filter(
+            (h) => h.targetId !== pendingHighlight.target
+          );
+          set({
+            activeHighlights: [
+              ...filtered,
+              {
+                targetId: pendingHighlight.target,
+                duration: pendingHighlight.duration,
+              },
+            ],
+            pendingHighlight: null,
+          });
+        }
       },
     }),
     {

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { useLocale } from "@/components/providers/I18nProvider";
 import { adminApi, UsageSummary, UserInfo, DailyUsage } from "@/lib/api/admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,7 @@ import {
 
 export default function AdminDashboardPage() {
   const t = useTranslations("admin");
+  const { locale } = useLocale();
   const [summary, setSummary] = useState<UsageSummary[]>([]);
   const [users, setUsers] = useState<UserInfo[]>([]);
   const [dailyUsage, setDailyUsage] = useState<DailyUsage[]>([]);
@@ -228,7 +230,10 @@ export default function AdminDashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                   <XAxis
                     dataKey="date"
-                    tickFormatter={(v) => v.slice(5)}
+                    tickFormatter={(v) => {
+                      const [, m, d] = v.split("-");
+                      return `${d}/${m}`;
+                    }}
                     tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
                     axisLine={{ stroke: 'var(--color-border)' }}
                     tickLine={{ stroke: 'var(--color-border)' }}
@@ -241,7 +246,10 @@ export default function AdminDashboardPage() {
                   />
                   <ChartTooltip
                     formatter={(value: number) => [`$${value.toFixed(4)}`, "Cost"]}
-                    labelFormatter={(label) => `Date: ${label}`}
+                    labelFormatter={(label) => {
+                      const [y, m, d] = label.split("-");
+                      return `Date: ${d}/${m}/${y}`;
+                    }}
                     contentStyle={{
                       backgroundColor: 'var(--color-card)',
                       borderColor: 'var(--color-border)',
@@ -285,7 +293,10 @@ export default function AdminDashboardPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
                   <XAxis
                     dataKey="date"
-                    tickFormatter={(v) => v.slice(5)}
+                    tickFormatter={(v) => {
+                      const [, m, d] = v.split("-");
+                      return `${d}/${m}`;
+                    }}
                     tick={{ fill: 'var(--color-muted-foreground)', fontSize: 12 }}
                     axisLine={{ stroke: 'var(--color-border)' }}
                     tickLine={{ stroke: 'var(--color-border)' }}
@@ -297,7 +308,10 @@ export default function AdminDashboardPage() {
                   />
                   <ChartTooltip
                     formatter={(value: number) => [value, "Requests"]}
-                    labelFormatter={(label) => `Date: ${label}`}
+                    labelFormatter={(label) => {
+                      const [y, m, d] = label.split("-");
+                      return `Date: ${d}/${m}/${y}`;
+                    }}
                     contentStyle={{
                       backgroundColor: 'var(--color-card)',
                       borderColor: 'var(--color-border)',
@@ -430,7 +444,7 @@ export default function AdminDashboardPage() {
                       </div>
                       <span className="text-xs text-muted-foreground">
                         {user.last_login
-                          ? new Date(user.last_login).toLocaleDateString()
+                          ? new Date(user.last_login).toLocaleDateString(locale)
                           : t("never")}
                       </span>
                     </div>

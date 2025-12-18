@@ -63,6 +63,17 @@ GEMINI_3_PRO_PREVIEW = ModelInfo(
     description="Latest Gemini model with advanced reasoning",
 )
 
+GEMINI_3_FLASH = ModelInfo(
+    id="gemini-3-flash-preview",
+    name="Gemini 3 Flash",
+    provider=ModelProvider.GOOGLE,
+    input_cost_per_million=0.50,
+    output_cost_per_million=3.00,
+    supports_video=True,
+    supports_vision=True,
+    description="Fast and affordable Gemini 3 model",
+)
+
 GEMINI_2_5_PRO = ModelInfo(
     id="gemini-2.5-pro",
     name="Gemini 2.5 Pro",
@@ -128,6 +139,7 @@ CLAUDE_HAIKU_4_5 = ModelInfo(
 MODEL_REGISTRY: dict[str, ModelInfo] = {
     model.id: model for model in [
         GEMINI_3_PRO_PREVIEW,
+        GEMINI_3_FLASH,
         GEMINI_2_5_PRO,
         GEMINI_2_5_FLASH,
         CLAUDE_OPUS_4_5,
@@ -141,12 +153,14 @@ MODELS_BY_TASK: dict[TaskType, list[str]] = {
     # Video analysis requires video processing capability (Gemini only)
     TaskType.VIDEO_ANALYSIS: [
         GEMINI_3_PRO_PREVIEW.id,
+        GEMINI_3_FLASH.id,
         GEMINI_2_5_PRO.id,
         GEMINI_2_5_FLASH.id,
     ],
     # Manual generation works with any model (text-based)
     TaskType.MANUAL_GENERATION: [
         GEMINI_3_PRO_PREVIEW.id,
+        GEMINI_3_FLASH.id,
         GEMINI_2_5_PRO.id,
         GEMINI_2_5_FLASH.id,
         CLAUDE_OPUS_4_5.id,
@@ -156,6 +170,7 @@ MODELS_BY_TASK: dict[TaskType, list[str]] = {
     # Manual evaluation works with any model (text-based)
     TaskType.MANUAL_EVALUATION: [
         GEMINI_3_PRO_PREVIEW.id,
+        GEMINI_3_FLASH.id,
         GEMINI_2_5_PRO.id,
         GEMINI_2_5_FLASH.id,
         CLAUDE_OPUS_4_5.id,
@@ -168,11 +183,13 @@ MODELS_BY_TASK: dict[TaskType, list[str]] = {
         CLAUDE_SONNET_4_5.id,
         CLAUDE_HAIKU_4_5.id,
         GEMINI_3_PRO_PREVIEW.id,
+        GEMINI_3_FLASH.id,
         GEMINI_2_5_PRO.id,
         GEMINI_2_5_FLASH.id,
     ],
     # Guide assistant - fast model for interactive help
     TaskType.GUIDE_ASSISTANT: [
+        GEMINI_3_FLASH.id,
         GEMINI_2_5_FLASH.id,
         GEMINI_2_5_PRO.id,
         GEMINI_3_PRO_PREVIEW.id,

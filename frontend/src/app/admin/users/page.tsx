@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { useLocale } from "@/components/providers/I18nProvider";
 import { adminApi, UserInfo, UserTier } from "@/lib/api/admin";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +57,7 @@ interface Filters {
 
 export default function UsersPage() {
   const t = useTranslations("admin");
+  const { locale } = useLocale();
   const [users, setUsers] = useState<UserInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -256,7 +258,7 @@ export default function UsersPage() {
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return t("never");
-    return new Date(dateStr).toLocaleString();
+    return new Date(dateStr).toLocaleString(locale);
   };
 
   const formatCost = (cost: number) => {
