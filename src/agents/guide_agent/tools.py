@@ -108,7 +108,12 @@ def create_guide_tools(user_id: str) -> list:
                 if metadata_file.exists():
                     import json
 
-                    metadata = json.loads(metadata_file.read_text())
+                    try:
+                        metadata = json.loads(metadata_file.read_text())
+                    except (json.JSONDecodeError, OSError):
+                        # Skip corrupted or unreadable metadata
+                        continue
+
                     # Get available languages
                     languages = []
                     for f in manual_dir.iterdir():
@@ -312,11 +317,15 @@ def create_guide_tools(user_id: str) -> list:
                             metadata_file = manual_dir / "metadata.json"
                             if metadata_file.exists():
                                 import json
-                                metadata = json.loads(metadata_file.read_text())
-                                items.append({
-                                    "id": manual_dir.name,
-                                    "title": metadata.get("title", manual_dir.name),
-                                })
+                                try:
+                                    metadata = json.loads(metadata_file.read_text())
+                                    items.append({
+                                        "id": manual_dir.name,
+                                        "title": metadata.get("title", manual_dir.name),
+                                    })
+                                except (json.JSONDecodeError, OSError):
+                                    # Skip corrupted or unreadable metadata
+                                    continue
 
             elif data_source == "projects":
                 storage = ProjectStorage(user_id)
