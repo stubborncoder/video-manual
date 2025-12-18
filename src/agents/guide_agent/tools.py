@@ -37,6 +37,7 @@ PAGE_ELEMENT_REGISTRY: dict[str, list[dict[str, str]]] = {
         {"id": "nav-templates", "description": "Templates navigation link"},
     ],
     "/dashboard/trash": [
+        {"id": "empty-trash-btn", "description": "Empty Trash button"},
         {"id": "nav-trash", "description": "Trash navigation link"},
     ],
 }
