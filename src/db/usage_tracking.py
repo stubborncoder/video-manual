@@ -406,6 +406,48 @@ class UsageTracking:
             return [dict(row) for row in cursor.fetchall()]
 
     @staticmethod
+    def get_user_usage_summary(user_id: str) -> dict:
+        """Get usage summary for a specific user.
+
+        Args:
+            user_id: User identifier
+
+        Returns:
+            Dictionary with usage summary (total_requests, tokens, cost)
+        """
+        query = """
+            SELECT SUM(request_count) as total_requests,
+                   SUM(total_input_tokens) as total_input_tokens,
+                   SUM(total_output_tokens) as total_output_tokens,
+                   SUM(total_cached_tokens) as total_cached_tokens,
+                   SUM(total_cache_read_tokens) as total_cache_read_tokens,
+                   SUM(total_cost_usd) as total_cost_usd
+            FROM usage_daily
+            WHERE user_id = ?
+        """
+
+        with get_connection() as conn:
+            cursor = conn.execute(query, [user_id])
+            row = cursor.fetchone()
+            if row:
+                return {
+                    "total_requests": row["total_requests"] or 0,
+                    "total_input_tokens": row["total_input_tokens"] or 0,
+                    "total_output_tokens": row["total_output_tokens"] or 0,
+                    "total_cached_tokens": row["total_cached_tokens"] or 0,
+                    "total_cache_read_tokens": row["total_cache_read_tokens"] or 0,
+                    "total_cost_usd": row["total_cost_usd"] or 0.0,
+                }
+            return {
+                "total_requests": 0,
+                "total_input_tokens": 0,
+                "total_output_tokens": 0,
+                "total_cached_tokens": 0,
+                "total_cache_read_tokens": 0,
+                "total_cost_usd": 0.0,
+            }
+
+    @staticmethod
     def get_model_summary(
         start_date: Optional[str] = None, end_date: Optional[str] = None
     ) -> list[dict]:

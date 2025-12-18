@@ -8,6 +8,20 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv()
 
+# ============================================
+# LangSmith Tracing Configuration
+# ============================================
+# LangSmith automatically traces LangGraph/LangChain when these env vars are set
+LANGSMITH_API_KEY = os.getenv("LANGSMITH_API_KEY", "")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")  # "development" | "production"
+LANGSMITH_PROJECT = os.getenv("LANGSMITH_PROJECT", f"vdocs-{ENVIRONMENT}")
+
+# Enable tracing if API key is present
+if LANGSMITH_API_KEY:
+    os.environ["LANGSMITH_TRACING"] = "true"
+    os.environ["LANGSMITH_API_KEY"] = LANGSMITH_API_KEY
+    os.environ["LANGSMITH_PROJECT"] = LANGSMITH_PROJECT
+
 # Project root
 PROJECT_ROOT = Path(__file__).parent.parent
 

@@ -28,6 +28,29 @@ export interface UsageSummary {
   total_cost_usd: number;
 }
 
+export interface UserStats {
+  user_id: string;
+  email?: string;
+  display_name?: string;
+  role: string;
+  tier: string;
+  tester: boolean;
+  created_at?: string;
+  last_login?: string;
+  // Content statistics
+  video_count: number;
+  manual_count: number;
+  project_count: number;
+  template_count: number;
+  trash_count: number;
+  // Usage statistics
+  total_requests: number;
+  total_input_tokens: number;
+  total_output_tokens: number;
+  total_cached_tokens: number;
+  total_cost_usd: number;
+}
+
 export interface UsageRecord {
   timestamp: string;
   operation: string;
@@ -119,6 +142,12 @@ export const adminApi = {
     if (endDate) params.end_date = endDate;
     return request<UsageRecord[]>(`/api/admin/users/${userId}/usage`, { params });
   },
+
+  /**
+   * Get comprehensive statistics for a specific user
+   */
+  getUserStats: (userId: string) =>
+    request<UserStats>(`/api/admin/users/${userId}/stats`),
 
   /**
    * Get usage summary for all users

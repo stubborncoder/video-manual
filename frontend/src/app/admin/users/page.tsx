@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { adminApi, UserInfo, UserTier } from "@/lib/api/admin";
 import { Button } from "@/components/ui/button";
@@ -33,8 +34,15 @@ import {
   User,
   FlaskConical,
   RefreshCw,
+  Copy,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 type SortField = "display_name" | "email" | "role" | "tier" | "created_at" | "last_login" | "total_cost_usd";
 type SortDirection = "asc" | "desc";
@@ -188,6 +196,12 @@ export default function UsersPage() {
     filters.role !== "all" ||
     filters.tier !== "all" ||
     filters.tester !== "all";
+
+  // Copy user ID to clipboard
+  const copyUserId = (userId: string) => {
+    navigator.clipboard.writeText(userId);
+    toast.success(t("copiedToClipboard"));
+  };
 
   const handleRoleChange = async (userId: string, newRole: "user" | "admin") => {
     // Optimistic update
@@ -476,16 +490,6 @@ export default function UsersPage() {
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
-              <TableHead className="w-[100px]">{t("userId")}</TableHead>
-              <TableHead
-                className="cursor-pointer hover:bg-muted/80 transition-colors"
-                onClick={() => handleSort("display_name")}
-              >
-                <div className="flex items-center">
-                  {t("displayName")}
-                  <SortIcon field="display_name" />
-                </div>
-              </TableHead>
               <TableHead
                 className="cursor-pointer hover:bg-muted/80 transition-colors"
                 onClick={() => handleSort("email")}
@@ -546,21 +550,39 @@ export default function UsersPage() {
           <TableBody>
             {filteredAndSortedUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                   {hasActiveFilters ? t("noUsersMatchFilter") : t("noUsersFound")}
                 </TableCell>
               </TableRow>
             ) : (
-              filteredAndSortedUsers.map((user) => (
-                <TableRow key={user.id} className="hover:bg-muted/50 transition-colors">
-                  <TableCell className="font-mono text-xs text-muted-foreground">
-                    {user.id.slice(0, 8)}...
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {user.display_name || "—"}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">{user.email || "—"}</TableCell>
-                  <TableCell className={`${getRoleCellClass(user.role)}`}>
+              <TooltipProvider>
+                {filteredAndSortedUsers.map((user) => (
+                  <TableRow key={user.id} className="hover:bg-muted/50 transition-colors">
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => copyUserId(user.id)}
+                              className="p-1 hover:bg-muted rounded transition-colors"
+                            >
+                              <Copy className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="max-w-xs">
+                            <p className="font-mono text-xs break-all">{user.id}</p>
+                            <p className="text-xs text-muted-foreground mt-1">{t("clickToCopy")}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Link
+                          href={`/admin/users/${user.id}`}
+                          className="font-medium hover:text-primary hover:underline transition-colors"
+                        >
+                          {user.email || "—"}
+                        </Link>
+                      </div>
+                    </TableCell>
+                    <TableCell className={`${getRoleCellClass(user.role)}`}>
                     <Select
                       value={user.role}
                       onValueChange={(value) =>
@@ -616,8 +638,9 @@ export default function UsersPage() {
                   <TableCell className="text-right font-mono text-sm">
                     {formatCost(user.total_cost_usd)}
                   </TableCell>
-                </TableRow>
-              ))
+                  </TableRow>
+                ))}
+              </TooltipProvider>
             )}
           </TableBody>
         </Table>

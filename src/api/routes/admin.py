@@ -6,10 +6,14 @@ from pydantic import BaseModel
 
 from ..dependencies import CurrentUser
 from ..middleware.admin import require_admin
-from ..schemas import UserInfo, UsageSummary, SetRoleRequest, SetTierRequest, SetTesterRequest
+from ..schemas import UserInfo, UsageSummary, SetRoleRequest, SetTierRequest, SetTesterRequest, UserStats
 from ...db.user_management import UserManagement
 from ...db.usage_tracking import UsageTracking
 from ...db.admin_settings import AdminSettings
+from ...storage.user_storage import UserStorage
+from ...storage.project_storage import ProjectStorage
+from ...storage.template_storage import TemplateStorage
+from ...storage.trash_storage import TrashStorage
 from ...core.models import (
     TaskType,
     MODEL_REGISTRY,
@@ -85,6 +89,58 @@ async def get_user_usage(
         raise HTTPException(status_code=404, detail="User not found")
 
     return UsageTracking.get_user_usage(user_id, start_date, end_date)
+
+
+@router.get("/users/{user_id}/stats")
+async def get_user_stats(user_id: str, admin_user: AdminUser) -> UserStats:
+    """Get comprehensive statistics for a specific user.
+
+    Requires admin role.
+
+    Returns user info plus counts of videos, manuals, projects, templates, trash items,
+    and usage statistics.
+    """
+    # Get user info
+    user = UserManagement.get_user(user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Get content counts using storage classes
+    user_storage = UserStorage(user_id)
+    project_storage = ProjectStorage(user_id)
+    template_storage = TemplateStorage(user_id)
+    trash_storage = TrashStorage(user_id)
+
+    # Count items
+    video_count = len(user_storage.list_videos())
+    manual_count = len(user_storage.list_manuals())
+    project_count = len(project_storage.list_projects())
+    template_count = len(template_storage.list_user_templates())
+    trash_count = len(trash_storage.list_trash())
+
+    # Get usage statistics
+    usage_summary = UsageTracking.get_user_usage_summary(user_id)
+
+    return UserStats(
+        user_id=user_id,
+        email=user.get("email"),
+        display_name=user.get("display_name"),
+        role=user["role"],
+        tier=user.get("tier", "free"),
+        tester=user.get("tester", False),
+        created_at=str(user["created_at"]) if user.get("created_at") else None,
+        last_login=str(user["last_login"]) if user.get("last_login") else None,
+        video_count=video_count,
+        manual_count=manual_count,
+        project_count=project_count,
+        template_count=template_count,
+        trash_count=trash_count,
+        total_requests=usage_summary.get("total_requests", 0),
+        total_input_tokens=usage_summary.get("total_input_tokens", 0),
+        total_output_tokens=usage_summary.get("total_output_tokens", 0),
+        total_cached_tokens=usage_summary.get("total_cached_tokens", 0),
+        total_cost_usd=usage_summary.get("total_cost_usd", 0.0),
+    )
 
 
 @router.get("/usage/summary")

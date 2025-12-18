@@ -122,64 +122,130 @@ export default function TrashPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex gap-3">
-          <SidebarToggle className="mt-1.5 shrink-0" />
-          <div>
-            <h1 className="text-3xl font-bold">{t("title")}</h1>
-            <p className="text-muted-foreground">
-              {t("description")}
-            </p>
+    <div className="space-y-8">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden rounded-2xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-background to-primary/5">
+        {/* Decorative background */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-bl from-primary/10 via-primary/5 to-transparent rounded-full blur-3xl" />
+          <div className="absolute -bottom-12 -left-12 w-64 h-64 bg-gradient-to-tr from-primary/5 to-transparent rounded-full blur-2xl" />
+          {/* Icon pattern */}
+          <div className="absolute top-8 right-12 opacity-[0.03]">
+            <Trash2 className="w-64 h-64" strokeWidth={0.5} />
           </div>
         </div>
 
-        {stats && stats.total > 0 && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive">
-                <Trash2 className="mr-2 h-4 w-4" />
-                {t("emptyTrashCount", { count: stats.total })}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t("emptyTrashTitle")}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {t("emptyTrashDesc", { count: stats.total })}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{tc("cancel")}</AlertDialogCancel>
-                <AlertDialogAction onClick={handleEmptyTrash}>
-                  {t("emptyTrash")}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+        <div className="relative p-8 lg:p-10">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+            <div className="flex items-start gap-4 flex-1">
+              <SidebarToggle className="mt-1 shrink-0" />
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10">
+                    <Trash2 className="h-5 w-5 text-primary" />
+                  </div>
+                  <h1 className="font-display text-3xl tracking-tight">{t("title")}</h1>
+                </div>
+                <p className="text-muted-foreground max-w-xl leading-relaxed">
+                  {t("description")}
+                </p>
+                {/* Quick stats */}
+                {!loading && stats && (
+                  <div className="flex items-center gap-4 pt-2">
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-muted">
+                        <Video className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                      <span className="text-muted-foreground">{stats.videos} {t("videos").toLowerCase()}</span>
+                    </div>
+                    <div className="w-px h-4 bg-border" />
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-muted">
+                        <FileText className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                      <span className="text-muted-foreground">{stats.manuals} {t("manuals").toLowerCase()}</span>
+                    </div>
+                    <div className="w-px h-4 bg-border" />
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-md bg-muted">
+                        <FolderKanban className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                      <span className="text-muted-foreground">{stats.projects} {t("projects").toLowerCase()}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Actions */}
+            {stats && stats.total > 0 && (
+              <div className="flex items-center gap-3 lg:self-center">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="lg" className="gap-2 shadow-lg">
+                      <Trash2 className="h-4 w-4" />
+                      {t("emptyTrashCount", { count: stats.total })}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>{t("emptyTrashTitle")}</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {t("emptyTrashDesc", { count: stats.total })}
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>{tc("cancel")}</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleEmptyTrash}>
+                        {t("emptyTrash")}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {loading ? (
-        <div className="text-center py-8 text-muted-foreground">
-          {tc("loading")}
+        <div className="flex flex-col items-center justify-center py-24">
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl animate-pulse" />
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-card border">
+              <Trash2 className="h-7 w-7 animate-pulse text-primary" />
+            </div>
+          </div>
+          <p className="mt-6 text-muted-foreground font-medium">{tc("loading")}</p>
         </div>
       ) : items.length === 0 ? (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <Trash2 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">{t("empty")}</p>
-          </CardContent>
-        </Card>
+        <div className="relative overflow-hidden rounded-2xl border-2 border-dashed">
+          <div className="absolute inset-0 opacity-[0.02]">
+            <div className="absolute inset-0" style={{
+              backgroundImage: `repeating-linear-gradient(45deg, currentColor, currentColor 1px, transparent 1px, transparent 12px)`
+            }} />
+          </div>
+          <div className="relative flex flex-col items-center justify-center py-16 px-6 text-center">
+            <div className="relative mb-6">
+              <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
+                <Trash2 className="h-7 w-7 text-muted-foreground" />
+              </div>
+            </div>
+            <h3 className="font-semibold text-lg mb-2">{t("empty")}</h3>
+            <p className="text-muted-foreground max-w-sm">{t("emptyDesc")}</p>
+          </div>
+        </div>
       ) : (
         <div className="space-y-6">
           {/* Videos */}
           {groupedItems.video.length > 0 && (
-            <Card>
+            <Card className="border border-primary/10 bg-gradient-to-br from-primary/5 via-background to-primary/5">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Video className="h-5 w-5" />
-                  {t("videos")} ({groupedItems.video.length})
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10">
+                    <Video className="h-4 w-4 text-primary" />
+                  </div>
+                  <span className="font-display">{t("videos")} ({groupedItems.video.length})</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -201,11 +267,13 @@ export default function TrashPage() {
 
           {/* Manuals */}
           {groupedItems.manual.length > 0 && (
-            <Card>
+            <Card className="border border-primary/10 bg-gradient-to-br from-primary/5 via-background to-primary/5">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  {t("manuals")} ({groupedItems.manual.length})
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10">
+                    <FileText className="h-4 w-4 text-primary" />
+                  </div>
+                  <span className="font-display">{t("manuals")} ({groupedItems.manual.length})</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -227,11 +295,13 @@ export default function TrashPage() {
 
           {/* Projects */}
           {groupedItems.project.length > 0 && (
-            <Card>
+            <Card className="border border-primary/10 bg-gradient-to-br from-primary/5 via-background to-primary/5">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <FolderKanban className="h-5 w-5" />
-                  {t("projects")} ({groupedItems.project.length})
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10">
+                    <FolderKanban className="h-4 w-4 text-primary" />
+                  </div>
+                  <span className="font-display">{t("projects")} ({groupedItems.project.length})</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -276,9 +346,9 @@ function TrashItemRow({
   const daysLeft = getDaysUntilExpiry(item.expires_at);
 
   return (
-    <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+    <div className="flex items-center justify-between p-3 rounded-lg border border-primary/10 bg-background/50 hover:bg-background transition-colors">
       <div className="flex items-center gap-3">
-        <div className="p-2 rounded-md bg-muted">
+        <div className="p-2 rounded-md bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/10">
           {getItemIcon(item.item_type)}
         </div>
         <div>
