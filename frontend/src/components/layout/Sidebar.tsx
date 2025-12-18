@@ -38,8 +38,9 @@ const navItemsConfig = [
   { href: "/dashboard/manuals", labelKey: "manuals", icon: FileText, guideId: "nav-manuals" },
   { href: "/dashboard/projects", labelKey: "projects", icon: FolderKanban, guideId: "nav-projects" },
   { href: "/dashboard/templates", labelKey: "templates", icon: LayoutTemplate, guideId: "nav-templates" },
-  { href: "/dashboard/bugs", labelKey: "bugs", icon: Bug, guideId: "nav-bugs" },
   { href: "/dashboard/trash", labelKey: "trash", icon: Trash2, guideId: "nav-trash" },
+  // Bug tracker at the end - temporary for alpha, will be removed on launch
+  { href: "/dashboard/bugs", labelKey: "bugs", icon: Bug, guideId: "nav-bugs" },
 ];
 
 export function Sidebar() {

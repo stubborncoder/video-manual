@@ -4,13 +4,22 @@ These tools provide real context awareness and action capabilities.
 The agent can query actual user data and trigger UI actions.
 """
 
+import logging
 from typing import Any
+
 import httpx
 from langchain_core.tools import tool
 
 from ...storage.user_storage import UserStorage
 from ...storage.project_storage import ProjectStorage
 from ...config import GITHUB_TOKEN, GITHUB_REPO
+from ...api.dependencies import (
+    rate_limiter,
+    RATE_LIMIT_ISSUES_PER_HOUR,
+    RATE_LIMIT_COMMENTS_PER_HOUR,
+)
+
+logger = logging.getLogger(__name__)
 
 
 # Element registry - maps pages to available highlightable elements
@@ -385,6 +394,14 @@ def create_guide_tools(user_id: str, user_email: str | None = None) -> list:
         if not GITHUB_TOKEN or not GITHUB_REPO:
             return {"error": "GitHub integration not configured. Please set GITHUB_TOKEN and GITHUB_REPO."}
 
+        # Check rate limit
+        if not rate_limiter.check_rate_limit(
+            user_id, "create_issue", RATE_LIMIT_ISSUES_PER_HOUR
+        ):
+            return {
+                "error": f"Rate limit exceeded. You can create {RATE_LIMIT_ISSUES_PER_HOUR} issues per hour. Please try again later."
+            }
+
         # Map category to labels
         label_map = {
             "bug": ["vdocs:user-report", "vdocs:bug"],
@@ -425,6 +442,9 @@ def create_guide_tools(user_id: str, user_email: str | None = None) -> list:
                 response.raise_for_status()
                 data = response.json()
 
+                # Record successful request for rate limiting
+                rate_limiter.record_request(user_id, "create_issue")
+
                 return {
                     "success": True,
                     "issue_number": data["number"],
@@ -432,9 +452,11 @@ def create_guide_tools(user_id: str, user_email: str | None = None) -> list:
                     "message": f"Issue #{data['number']} created successfully",
                 }
         except httpx.HTTPStatusError as e:
-            return {"error": f"GitHub API error: {e.response.status_code} - {e.response.text[:200]}"}
+            logger.error(f"GitHub API error creating issue: {e.response.text}")
+            return {"error": "Failed to communicate with issue tracker. Please try again later."}
         except Exception as e:
-            return {"error": f"Failed to create issue: {str(e)}"}
+            logger.error(f"Failed to create issue: {str(e)}")
+            return {"error": "Failed to create issue. Please try again later."}
 
     @tool
     def get_issues(
@@ -505,9 +527,11 @@ def create_guide_tools(user_id: str, user_email: str | None = None) -> list:
                     ],
                 }
         except httpx.HTTPStatusError as e:
-            return {"error": f"GitHub API error: {e.response.status_code}"}
+            logger.error(f"GitHub API error fetching issues: {e.response.text}")
+            return {"error": "Failed to communicate with issue tracker. Please try again later."}
         except Exception as e:
-            return {"error": f"Failed to fetch issues: {str(e)}"}
+            logger.error(f"Failed to fetch issues: {str(e)}")
+            return {"error": "Failed to fetch issues. Please try again later."}
 
     @tool
     def add_issue_comment(
@@ -529,6 +553,18 @@ def create_guide_tools(user_id: str, user_email: str | None = None) -> list:
         """
         if not GITHUB_TOKEN or not GITHUB_REPO:
             return {"error": "GitHub integration not configured. Please set GITHUB_TOKEN and GITHUB_REPO."}
+
+        # Validate comment is not empty
+        if not comment or not comment.strip():
+            return {"error": "Comment cannot be empty."}
+
+        # Check rate limit
+        if not rate_limiter.check_rate_limit(
+            user_id, "add_comment", RATE_LIMIT_COMMENTS_PER_HOUR
+        ):
+            return {
+                "error": f"Rate limit exceeded. You can add {RATE_LIMIT_COMMENTS_PER_HOUR} comments per hour. Please try again later."
+            }
 
         # Add user context to comment
         user_info = f"*User ID: `{user_id}`*"
@@ -556,6 +592,9 @@ def create_guide_tools(user_id: str, user_email: str | None = None) -> list:
                 response.raise_for_status()
                 data = response.json()
 
+                # Record successful request for rate limiting
+                rate_limiter.record_request(user_id, "add_comment")
+
                 return {
                     "success": True,
                     "comment_url": data["html_url"],
@@ -564,9 +603,11 @@ def create_guide_tools(user_id: str, user_email: str | None = None) -> list:
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 return {"error": f"Issue #{issue_number} not found"}
-            return {"error": f"GitHub API error: {e.response.status_code}"}
+            logger.error(f"GitHub API error adding comment to #{issue_number}: {e.response.text}")
+            return {"error": "Failed to communicate with issue tracker. Please try again later."}
         except Exception as e:
-            return {"error": f"Failed to add comment: {str(e)}"}
+            logger.error(f"Failed to add comment to #{issue_number}: {str(e)}")
+            return {"error": "Failed to add comment. Please try again later."}
 
     @tool
     def get_issue_details(issue_number: int) -> dict[str, Any]:
@@ -637,9 +678,11 @@ def create_guide_tools(user_id: str, user_email: str | None = None) -> list:
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 404:
                 return {"error": f"Issue #{issue_number} not found"}
-            return {"error": f"GitHub API error: {e.response.status_code}"}
+            logger.error(f"GitHub API error fetching issue #{issue_number}: {e.response.text}")
+            return {"error": "Failed to communicate with issue tracker. Please try again later."}
         except Exception as e:
-            return {"error": f"Failed to get issue details: {str(e)}"}
+            logger.error(f"Failed to get issue details #{issue_number}: {str(e)}")
+            return {"error": "Failed to get issue details. Please try again later."}
 
     return [
         get_user_manuals,

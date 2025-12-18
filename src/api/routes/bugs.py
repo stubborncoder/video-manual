@@ -1,13 +1,22 @@
 """Bug tracker routes - GitHub Issues integration."""
 
+import logging
 from typing import Any
 
 import httpx
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
-from ..dependencies import CurrentUser, CurrentUserInfo
+from ..dependencies import (
+    CurrentUser,
+    CurrentUserInfo,
+    rate_limiter,
+    RATE_LIMIT_ISSUES_PER_HOUR,
+    RATE_LIMIT_COMMENTS_PER_HOUR,
+)
 from ...config import GITHUB_TOKEN, GITHUB_REPO
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/bugs", tags=["bugs"])
 
@@ -64,6 +73,13 @@ class CommentRequest(BaseModel):
     """Request to add a comment."""
 
     body: str
+
+    @field_validator("body")
+    @classmethod
+    def validate_body(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Comment body cannot be empty")
+        return v.strip()
 
 
 class CommentResponse(BaseModel):
@@ -160,12 +176,14 @@ async def list_bugs(
                 ],
             )
     except httpx.HTTPStatusError as e:
+        logger.error(f"GitHub API error fetching issues: {e.response.text}")
         raise HTTPException(
-            status_code=e.response.status_code,
-            detail=f"GitHub API error: {e.response.text[:200]}",
+            status_code=502,
+            detail="Failed to communicate with issue tracker",
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch issues: {str(e)}")
+        logger.error(f"Failed to fetch issues: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch issues")
 
 
 @router.get("/{issue_number}")
@@ -224,12 +242,14 @@ async def get_bug(
     except HTTPException:
         raise
     except httpx.HTTPStatusError as e:
+        logger.error(f"GitHub API error fetching issue #{issue_number}: {e.response.text}")
         raise HTTPException(
-            status_code=e.response.status_code,
-            detail=f"GitHub API error: {e.response.text[:200]}",
+            status_code=502,
+            detail="Failed to communicate with issue tracker",
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch issue: {str(e)}")
+        logger.error(f"Failed to fetch issue #{issue_number}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to fetch issue")
 
 
 @router.post("/{issue_number}/comments")
@@ -245,6 +265,18 @@ async def add_comment(
         request: Comment body
     """
     check_github_config()
+
+    # Check rate limit
+    if not rate_limiter.check_rate_limit(
+        user_info.user_id, "add_comment", RATE_LIMIT_COMMENTS_PER_HOUR
+    ):
+        remaining = rate_limiter.get_remaining(
+            user_info.user_id, "add_comment", RATE_LIMIT_COMMENTS_PER_HOUR
+        )
+        raise HTTPException(
+            status_code=429,
+            detail=f"Rate limit exceeded. You can add {RATE_LIMIT_COMMENTS_PER_HOUR} comments per hour. Try again later.",
+        )
 
     # Add user context to comment
     user_context = f"*User ID: `{user_info.user_id}`*"
@@ -270,6 +302,9 @@ async def add_comment(
             response.raise_for_status()
             data = response.json()
 
+            # Record successful request for rate limiting
+            rate_limiter.record_request(user_info.user_id, "add_comment")
+
             return CommentResponse(
                 id=data["id"],
                 url=data["html_url"],
@@ -278,9 +313,11 @@ async def add_comment(
     except HTTPException:
         raise
     except httpx.HTTPStatusError as e:
+        logger.error(f"GitHub API error adding comment to #{issue_number}: {e.response.text}")
         raise HTTPException(
-            status_code=e.response.status_code,
-            detail=f"GitHub API error: {e.response.text[:200]}",
+            status_code=502,
+            detail="Failed to communicate with issue tracker",
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to add comment: {str(e)}")
+        logger.error(f"Failed to add comment to #{issue_number}: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to add comment")
