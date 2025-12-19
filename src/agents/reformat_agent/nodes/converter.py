@@ -7,6 +7,7 @@ from langchain_anthropic import ChatAnthropic
 from ..state import ReformatState
 from ..config import DEFAULT_REFORMAT_MODEL, LLM_TIMEOUT
 from ..prompts import get_conversion_prompt
+from ....db.usage_tracking import UsageTracking
 
 
 def convert_manual(state: ReformatState) -> Dict[str, Any]:
@@ -76,6 +77,36 @@ Now convert the above manual to {target_format} format. Start directly with the 
         response = llm.invoke(full_prompt)
 
         converted_content = response.content
+
+        # Log token usage
+        try:
+            usage = response.usage_metadata if hasattr(response, 'usage_metadata') else {}
+            if usage:
+                user_id = state.get("user_id")
+                manual_id = state.get("source_manual_id")
+
+                # Extract cache tokens for Claude
+                cache_read_tokens = 0
+                cache_creation_tokens = 0
+                input_details = usage.get("input_token_details", {})
+                if input_details:
+                    cache_read_tokens = input_details.get("cache_read", 0)
+                    cache_creation_tokens = input_details.get("cache_creation", 0)
+
+                UsageTracking.log_request(
+                    user_id=user_id,
+                    operation="manual_reformat",
+                    model=model_name,
+                    input_tokens=usage.get("input_tokens", 0),
+                    output_tokens=usage.get("output_tokens", 0),
+                    cached_tokens=0,  # Gemini only
+                    cache_read_tokens=cache_read_tokens,
+                    cache_creation_tokens=cache_creation_tokens,
+                    manual_id=manual_id,
+                )
+        except Exception as usage_error:
+            # Don't fail the whole operation if usage tracking fails
+            print(f"Warning: Failed to log token usage for reformat: {usage_error}")
 
         # Basic validation - check that output has expected structure
         if not converted_content or len(converted_content.strip()) < 50:

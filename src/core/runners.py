@@ -19,6 +19,7 @@ from .events import (
     ErrorEvent,
     CompleteEvent,
 )
+from ..db.usage_tracking import UsageTracking
 
 
 # Node order for video manual agent
@@ -392,7 +393,34 @@ class ProjectCompilerRunner:
 
                     # Only process streaming chunks, not final messages
                     # AIMessageChunk = streaming (delta), AIMessage = final (full, would duplicate)
+                    # But capture usage_metadata from the final AI message
                     if "chunk" not in msg_type and "ai" in msg_type:
+                        # Capture token usage from final message
+                        try:
+                            usage = getattr(msg, "usage_metadata", None)
+                            if usage:
+                                model_name = getattr(msg, "response_metadata", {}).get("model_name", "unknown")
+                                cache_read_tokens = 0
+                                cache_creation_tokens = 0
+                                cached_tokens = usage.get("cached_content_token_count", 0)  # Gemini
+                                input_details = usage.get("input_token_details", {})
+                                if input_details:
+                                    cache_read_tokens = input_details.get("cache_read", 0)
+                                    cache_creation_tokens = input_details.get("cache_creation", 0)
+
+                                UsageTracking.log_request(
+                                    user_id=self.user_id,
+                                    operation="project_compilation",
+                                    model=model_name,
+                                    input_tokens=usage.get("input_tokens", 0),
+                                    output_tokens=usage.get("output_tokens", 0),
+                                    cached_tokens=cached_tokens,
+                                    cache_read_tokens=cache_read_tokens,
+                                    cache_creation_tokens=cache_creation_tokens,
+                                )
+                                logger.info(f"[COMPILER RUNNER] Logged usage: input={usage.get('input_tokens', 0)}, output={usage.get('output_tokens', 0)}")
+                        except Exception as usage_error:
+                            logger.warning(f"[COMPILER RUNNER] Failed to log usage: {usage_error}")
                         continue
 
                     if "ai" in msg_type:
@@ -789,8 +817,36 @@ Please analyze this image to help answer the user's question.""")
 
                     # Only process streaming chunks, not final messages
                     # AIMessageChunk = streaming (delta), AIMessage = final (full, would duplicate)
+                    # But capture usage_metadata from the final AI message
                     if "chunk" not in msg_type and "ai" in msg_type:
                         logger.debug("[EDITOR RUNNER] Skipping final AIMessage (already streamed)")
+                        # Capture token usage from final message
+                        try:
+                            usage = getattr(msg, "usage_metadata", None)
+                            if usage:
+                                model_name = getattr(msg, "response_metadata", {}).get("model_name", "unknown")
+                                cache_read_tokens = 0
+                                cache_creation_tokens = 0
+                                cached_tokens = usage.get("cached_content_token_count", 0)  # Gemini
+                                input_details = usage.get("input_token_details", {})
+                                if input_details:
+                                    cache_read_tokens = input_details.get("cache_read", 0)
+                                    cache_creation_tokens = input_details.get("cache_creation", 0)
+
+                                UsageTracking.log_request(
+                                    user_id=self.user_id,
+                                    operation="manual_editing",
+                                    model=model_name,
+                                    input_tokens=usage.get("input_tokens", 0),
+                                    output_tokens=usage.get("output_tokens", 0),
+                                    cached_tokens=cached_tokens,
+                                    cache_read_tokens=cache_read_tokens,
+                                    cache_creation_tokens=cache_creation_tokens,
+                                    manual_id=self.manual_id,
+                                )
+                                logger.info(f"[EDITOR RUNNER] Logged usage: input={usage.get('input_tokens', 0)}, output={usage.get('output_tokens', 0)}")
+                        except Exception as usage_error:
+                            logger.warning(f"[EDITOR RUNNER] Failed to log usage: {usage_error}")
                         continue
 
                     if "ai" in msg_type:
@@ -1038,8 +1094,35 @@ User: {message}"""
                     logger.info(f"[GUIDE RUNNER] Message: type={msg_type}, content_type={type(content).__name__}, content={repr(content)[:200] if content else 'None'}")
 
                     # Only process streaming chunks, not final messages
+                    # But capture usage_metadata from the final AI message
                     if "chunk" not in msg_type and "ai" in msg_type:
                         logger.info("[GUIDE RUNNER] Skipping non-chunk AI message")
+                        # Capture token usage from final message
+                        try:
+                            usage = getattr(msg, "usage_metadata", None)
+                            if usage:
+                                model_name = getattr(msg, "response_metadata", {}).get("model_name", "unknown")
+                                cache_read_tokens = 0
+                                cache_creation_tokens = 0
+                                cached_tokens = usage.get("cached_content_token_count", 0)  # Gemini
+                                input_details = usage.get("input_token_details", {})
+                                if input_details:
+                                    cache_read_tokens = input_details.get("cache_read", 0)
+                                    cache_creation_tokens = input_details.get("cache_creation", 0)
+
+                                UsageTracking.log_request(
+                                    user_id=self.user_id,
+                                    operation="guide_assistant",
+                                    model=model_name,
+                                    input_tokens=usage.get("input_tokens", 0),
+                                    output_tokens=usage.get("output_tokens", 0),
+                                    cached_tokens=cached_tokens,
+                                    cache_read_tokens=cache_read_tokens,
+                                    cache_creation_tokens=cache_creation_tokens,
+                                )
+                                logger.info(f"[GUIDE RUNNER] Logged usage: input={usage.get('input_tokens', 0)}, output={usage.get('output_tokens', 0)}")
+                        except Exception as usage_error:
+                            logger.warning(f"[GUIDE RUNNER] Failed to log usage: {usage_error}")
                         continue
 
                     if "ai" in msg_type:
