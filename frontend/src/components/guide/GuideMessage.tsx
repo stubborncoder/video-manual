@@ -62,7 +62,7 @@ export function GuideMessageComponent({ message }: GuideMessageProps) {
         <div
           className={cn(
             "flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center",
-            isUser ? "bg-primary text-primary-foreground" : "bg-muted"
+            isUser ? "bg-primary text-white dark:text-black" : "bg-muted"
           )}
         >
           {isUser ? (
@@ -78,12 +78,19 @@ export function GuideMessageComponent({ message }: GuideMessageProps) {
         <div
           className={cn(
             "rounded-lg px-4 py-2 max-w-[85%]",
-            isUser && "bg-primary text-primary-foreground",
+            isUser && "bg-primary",
             !isUser && !isSystem && "bg-muted",
             isSystem && "bg-amber-50 dark:bg-amber-950 text-amber-900 dark:text-amber-100 border border-amber-200 dark:border-amber-800"
           )}
         >
-          <div className="text-sm prose prose-sm dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-ol:my-1 max-w-none">
+          <div className={cn(
+            "text-sm max-w-none",
+            isUser
+              // User: force white text in light mode, black text in dark mode
+              ? "!text-white dark:!text-black [&_p]:!text-white [&_li]:!text-white [&_strong]:!text-white dark:[&_p]:!text-black dark:[&_li]:!text-black dark:[&_strong]:!text-black"
+              // Non-user: use prose styling
+              : "prose prose-sm dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-ol:my-1"
+          )}>
             <ReactMarkdown
               components={{
                 p: ({ children }) => <p><StyledText>{children}</StyledText></p>,
