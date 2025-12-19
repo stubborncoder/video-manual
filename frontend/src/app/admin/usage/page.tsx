@@ -304,7 +304,7 @@ export default function UsagePage() {
 
   // Sorted user usage
   const sortedUserUsage = useMemo(() => {
-    let result = [...summary];
+    const result = [...summary];
 
     result.sort((a, b) => {
       let aVal: string | number = 0;
