@@ -6,8 +6,12 @@ from typing import Iterator, Optional, Any
 import threading
 import queue
 import time
+from uuid import UUID
 
 logger = logging.getLogger(__name__)
+
+from langchain_core.callbacks import BaseCallbackHandler
+from langchain_core.outputs import LLMResult
 
 from .events import (
     ProgressEvent,
@@ -20,6 +24,91 @@ from .events import (
     CompleteEvent,
 )
 from ..db.usage_tracking import UsageTracking
+
+
+class UsageTrackingCallback(BaseCallbackHandler):
+    """Callback handler to track token usage from LLM calls."""
+
+    def __init__(self, user_id: str, operation: str, manual_id: Optional[str] = None):
+        super().__init__()
+        self.user_id = user_id
+        self.operation = operation
+        self.manual_id = manual_id
+
+    def on_llm_end(self, response: LLMResult, *, run_id: UUID, **kwargs) -> None:
+        """Log token usage when LLM call completes."""
+        try:
+            logger.debug(f"[USAGE CALLBACK] on_llm_end called for {self.operation}")
+
+            # Initialize tracking vars
+            input_tokens = 0
+            output_tokens = 0
+            cached_tokens = 0  # Gemini
+            cache_read_tokens = 0  # Claude
+            cache_creation_tokens = 0  # Claude
+            model_name = "unknown"
+
+            # Try to get token usage from llm_output
+            if response.llm_output:
+                token_usage = response.llm_output.get("token_usage", {})
+                model_name = response.llm_output.get("model_name", model_name)
+
+                if token_usage:
+                    input_tokens = token_usage.get("prompt_tokens", 0) or token_usage.get("input_tokens", 0)
+                    output_tokens = token_usage.get("completion_tokens", 0) or token_usage.get("output_tokens", 0)
+
+            # Also check usage_metadata on generations (more reliable for some models)
+            if response.generations:
+                for gen_list in response.generations:
+                    for gen in gen_list:
+                        if hasattr(gen, "message"):
+                            msg = gen.message
+
+                            # Get model name from response_metadata
+                            if hasattr(msg, "response_metadata") and msg.response_metadata:
+                                model_name = msg.response_metadata.get("model_name", model_name)
+
+                            # Get usage from usage_metadata
+                            if hasattr(msg, "usage_metadata") and msg.usage_metadata:
+                                usage = msg.usage_metadata
+                                logger.debug(f"[USAGE CALLBACK] Found usage_metadata: {usage}")
+
+                                # Override with more complete data
+                                input_tokens = usage.get("input_tokens", input_tokens)
+                                output_tokens = usage.get("output_tokens", output_tokens)
+
+                                # Gemini cache tokens
+                                cached_tokens = usage.get("cached_content_token_count", 0)
+
+                                # Claude cache tokens (nested in input_token_details)
+                                input_details = usage.get("input_token_details", {})
+                                if input_details:
+                                    cache_read_tokens = input_details.get("cache_read", 0)
+                                    cache_creation_tokens = input_details.get("cache_creation", 0)
+                                break
+                    if input_tokens > 0:
+                        break
+
+            # Only log if we have actual token data
+            if input_tokens == 0 and output_tokens == 0:
+                logger.debug(f"[USAGE CALLBACK] No tokens to log for {self.operation}")
+                return
+
+            UsageTracking.log_request(
+                user_id=self.user_id,
+                operation=self.operation,
+                model=model_name,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                cached_tokens=cached_tokens,
+                cache_read_tokens=cache_read_tokens,
+                cache_creation_tokens=cache_creation_tokens,
+                manual_id=self.manual_id,
+            )
+            logger.info(f"[USAGE CALLBACK] Logged {self.operation}: input={input_tokens}, output={output_tokens}, cached={cached_tokens}, cache_read={cache_read_tokens}, model={model_name}")
+
+        except Exception as e:
+            logger.warning(f"[USAGE CALLBACK] Failed to log usage: {e}", exc_info=True)
 
 
 # Node order for video manual agent
@@ -278,7 +367,17 @@ class ProjectCompilerRunner:
         import uuid
         self._agent = get_compiler_agent()
         session_id = uuid.uuid4().hex[:8]
-        self._config = {"configurable": {"thread_id": f"compile_{project_id}_{session_id}"}}
+
+        # Create callback for usage tracking
+        self._usage_callback = UsageTrackingCallback(
+            user_id=self.user_id,
+            operation="project_compilation"
+        )
+
+        self._config = {
+            "configurable": {"thread_id": f"compile_{project_id}_{session_id}"},
+            "callbacks": [self._usage_callback]
+        }
 
         # Build context for the agent with all required info
         chapter_info = []
@@ -393,34 +492,8 @@ class ProjectCompilerRunner:
 
                     # Only process streaming chunks, not final messages
                     # AIMessageChunk = streaming (delta), AIMessage = final (full, would duplicate)
-                    # But capture usage_metadata from the final AI message
+                    # Usage is tracked via UsageTrackingCallback
                     if "chunk" not in msg_type and "ai" in msg_type:
-                        # Capture token usage from final message
-                        try:
-                            usage = getattr(msg, "usage_metadata", None)
-                            if usage:
-                                model_name = getattr(msg, "response_metadata", {}).get("model_name", "unknown")
-                                cache_read_tokens = 0
-                                cache_creation_tokens = 0
-                                cached_tokens = usage.get("cached_content_token_count", 0)  # Gemini
-                                input_details = usage.get("input_token_details", {})
-                                if input_details:
-                                    cache_read_tokens = input_details.get("cache_read", 0)
-                                    cache_creation_tokens = input_details.get("cache_creation", 0)
-
-                                UsageTracking.log_request(
-                                    user_id=self.user_id,
-                                    operation="project_compilation",
-                                    model=model_name,
-                                    input_tokens=usage.get("input_tokens", 0),
-                                    output_tokens=usage.get("output_tokens", 0),
-                                    cached_tokens=cached_tokens,
-                                    cache_read_tokens=cache_read_tokens,
-                                    cache_creation_tokens=cache_creation_tokens,
-                                )
-                                logger.info(f"[COMPILER RUNNER] Logged usage: input={usage.get('input_tokens', 0)}, output={usage.get('output_tokens', 0)}")
-                        except Exception as usage_error:
-                            logger.warning(f"[COMPILER RUNNER] Failed to log usage: {usage_error}")
                         continue
 
                     if "ai" in msg_type:
@@ -567,7 +640,18 @@ class ManualEditorRunner:
         # Create agent with unique session ID
         self._agent = get_editor_agent()
         session_id = uuid.uuid4().hex[:8]
-        self._config = {"configurable": {"thread_id": f"editor_{self.manual_id}_{session_id}"}}
+
+        # Create callback for usage tracking
+        self._usage_callback = UsageTrackingCallback(
+            user_id=self.user_id,
+            operation="manual_editing",
+            manual_id=self.manual_id
+        )
+
+        self._config = {
+            "configurable": {"thread_id": f"editor_{self.manual_id}_{session_id}"},
+            "callbacks": [self._usage_callback]
+        }
 
         # Store document context for the agent
         self._document_content = document_content
@@ -817,36 +901,9 @@ Please analyze this image to help answer the user's question.""")
 
                     # Only process streaming chunks, not final messages
                     # AIMessageChunk = streaming (delta), AIMessage = final (full, would duplicate)
-                    # But capture usage_metadata from the final AI message
+                    # Usage is tracked via UsageTrackingCallback
                     if "chunk" not in msg_type and "ai" in msg_type:
                         logger.debug("[EDITOR RUNNER] Skipping final AIMessage (already streamed)")
-                        # Capture token usage from final message
-                        try:
-                            usage = getattr(msg, "usage_metadata", None)
-                            if usage:
-                                model_name = getattr(msg, "response_metadata", {}).get("model_name", "unknown")
-                                cache_read_tokens = 0
-                                cache_creation_tokens = 0
-                                cached_tokens = usage.get("cached_content_token_count", 0)  # Gemini
-                                input_details = usage.get("input_token_details", {})
-                                if input_details:
-                                    cache_read_tokens = input_details.get("cache_read", 0)
-                                    cache_creation_tokens = input_details.get("cache_creation", 0)
-
-                                UsageTracking.log_request(
-                                    user_id=self.user_id,
-                                    operation="manual_editing",
-                                    model=model_name,
-                                    input_tokens=usage.get("input_tokens", 0),
-                                    output_tokens=usage.get("output_tokens", 0),
-                                    cached_tokens=cached_tokens,
-                                    cache_read_tokens=cache_read_tokens,
-                                    cache_creation_tokens=cache_creation_tokens,
-                                    manual_id=self.manual_id,
-                                )
-                                logger.info(f"[EDITOR RUNNER] Logged usage: input={usage.get('input_tokens', 0)}, output={usage.get('output_tokens', 0)}")
-                        except Exception as usage_error:
-                            logger.warning(f"[EDITOR RUNNER] Failed to log usage: {usage_error}")
                         continue
 
                     if "ai" in msg_type:
@@ -1002,7 +1059,17 @@ class GuideAgentRunner:
         # Create agent with unique session ID
         self._agent = get_guide_agent(self.user_id, user_email=self.user_email)
         session_id = uuid.uuid4().hex[:8]
-        self._config = {"configurable": {"thread_id": f"guide_{self.user_id}_{session_id}"}}
+
+        # Create callback for usage tracking
+        self._usage_callback = UsageTrackingCallback(
+            user_id=self.user_id,
+            operation="guide_assistant"
+        )
+
+        self._config = {
+            "configurable": {"thread_id": f"guide_{self.user_id}_{session_id}"},
+            "callbacks": [self._usage_callback]
+        }
 
         yield CompleteEvent(result={"status": "ready"}, message="Guide session started")
 
@@ -1094,35 +1161,9 @@ User: {message}"""
                     logger.info(f"[GUIDE RUNNER] Message: type={msg_type}, content_type={type(content).__name__}, content={repr(content)[:200] if content else 'None'}")
 
                     # Only process streaming chunks, not final messages
-                    # But capture usage_metadata from the final AI message
+                    # Usage is tracked via UsageTrackingCallback
                     if "chunk" not in msg_type and "ai" in msg_type:
-                        logger.info("[GUIDE RUNNER] Skipping non-chunk AI message")
-                        # Capture token usage from final message
-                        try:
-                            usage = getattr(msg, "usage_metadata", None)
-                            if usage:
-                                model_name = getattr(msg, "response_metadata", {}).get("model_name", "unknown")
-                                cache_read_tokens = 0
-                                cache_creation_tokens = 0
-                                cached_tokens = usage.get("cached_content_token_count", 0)  # Gemini
-                                input_details = usage.get("input_token_details", {})
-                                if input_details:
-                                    cache_read_tokens = input_details.get("cache_read", 0)
-                                    cache_creation_tokens = input_details.get("cache_creation", 0)
-
-                                UsageTracking.log_request(
-                                    user_id=self.user_id,
-                                    operation="guide_assistant",
-                                    model=model_name,
-                                    input_tokens=usage.get("input_tokens", 0),
-                                    output_tokens=usage.get("output_tokens", 0),
-                                    cached_tokens=cached_tokens,
-                                    cache_read_tokens=cache_read_tokens,
-                                    cache_creation_tokens=cache_creation_tokens,
-                                )
-                                logger.info(f"[GUIDE RUNNER] Logged usage: input={usage.get('input_tokens', 0)}, output={usage.get('output_tokens', 0)}")
-                        except Exception as usage_error:
-                            logger.warning(f"[GUIDE RUNNER] Failed to log usage: {usage_error}")
+                        logger.debug("[GUIDE RUNNER] Skipping non-chunk AI message")
                         continue
 
                     if "ai" in msg_type:
