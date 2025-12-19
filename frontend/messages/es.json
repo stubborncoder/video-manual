@@ -880,7 +880,20 @@
     "templates": "Plantillas",
     "trash": "Papelera",
     "inputTokens": "Tokens de Entrada",
-    "outputTokens": "Tokens de Salida"
+    "outputTokens": "Tokens de Salida",
+    "dateRange": "Rango de Fechas",
+    "startDate": "Fecha Inicio",
+    "endDate": "Fecha Fin",
+    "apply": "Aplicar",
+    "usageByModel": "Uso por Modelo/API",
+    "usageByManual": "Uso por Manual",
+    "usageByUser": "Uso por Usuario",
+    "dailyBreakdown": "Desglose Diario",
+    "allProviders": "Todos los Proveedores",
+    "allOperations": "Todas las Operaciones",
+    "allModels": "Todos los Modelos",
+    "operation": "Operación",
+    "lastActivity": "Última Actividad"
   },
   "processing": {
     "title": "Procesando Video",

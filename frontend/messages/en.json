@@ -880,7 +880,20 @@
     "templates": "Templates",
     "trash": "Trash",
     "inputTokens": "Input Tokens",
-    "outputTokens": "Output Tokens"
+    "outputTokens": "Output Tokens",
+    "dateRange": "Date Range",
+    "startDate": "Start Date",
+    "endDate": "End Date",
+    "apply": "Apply",
+    "usageByModel": "Usage by Model/API",
+    "usageByManual": "Usage by Manual",
+    "usageByUser": "Usage by User",
+    "dailyBreakdown": "Daily Breakdown",
+    "allProviders": "All Providers",
+    "allOperations": "All Operations",
+    "allModels": "All Models",
+    "operation": "Operation",
+    "lastActivity": "Last Activity"
   },
   "processing": {
     "title": "Processing Video",
