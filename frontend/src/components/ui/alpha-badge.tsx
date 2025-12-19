@@ -42,10 +42,10 @@ export function AlphaBadge({ className }: AlphaBadgeProps) {
       <TooltipContent className="max-w-xs">
         <div className="space-y-1">
           <p className="font-semibold">{t("alphaVersion")}</p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs opacity-80">
             {t("alphaDescription")}
           </p>
-          <p className="text-xs font-mono text-muted-foreground">v{version}</p>
+          <p className="text-xs font-mono opacity-70">v{version}</p>
         </div>
       </TooltipContent>
     </Tooltip>
