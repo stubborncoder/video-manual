@@ -18,6 +18,41 @@ class UserManagement:
     """
 
     @staticmethod
+    def _get_local_last_login(user_id: str) -> Optional[str]:
+        """Get last_login from local database.
+
+        This tracks actual app access, not just sign-in events.
+        """
+        from .database import get_connection
+
+        with get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT last_login FROM users WHERE id = ?",
+                (user_id,),
+            )
+            row = cursor.fetchone()
+            if row and row["last_login"]:
+                return str(row["last_login"])
+        return None
+
+    @staticmethod
+    def _get_all_local_last_logins() -> dict[str, str]:
+        """Get all last_login values from local database.
+
+        Returns a dict mapping user_id to last_login timestamp.
+        """
+        from .database import get_connection
+
+        result = {}
+        with get_connection() as conn:
+            cursor = conn.execute(
+                "SELECT id, last_login FROM users WHERE last_login IS NOT NULL"
+            )
+            for row in cursor.fetchall():
+                result[row["id"]] = str(row["last_login"])
+        return result
+
+    @staticmethod
     def _get_headers() -> dict:
         """Get headers for Supabase Admin API requests."""
         return {
@@ -62,8 +97,13 @@ class UserManagement:
             app_metadata = user.get("app_metadata", {})
             user_metadata = user.get("user_metadata", {})
 
+            user_id = user.get("id")
+
+            # Use local last_login (tracks actual access) over Supabase's last_sign_in_at
+            local_last_login = UserManagement._get_local_last_login(user_id)
+
             return {
-                "id": user.get("id"),
+                "id": user_id,
                 "email": user.get("email"),
                 "display_name": (
                     user_metadata.get("full_name")
@@ -74,7 +114,7 @@ class UserManagement:
                 "tier": app_metadata.get("tier", "free"),
                 "tester": app_metadata.get("tester", False),
                 "created_at": user.get("created_at"),
-                "last_login": user.get("last_sign_in_at"),
+                "last_login": local_last_login or user.get("last_sign_in_at"),
             }
 
         except httpx.HTTPError as e:
@@ -96,6 +136,9 @@ class UserManagement:
         page = 1
         per_page = 100
 
+        # Get all local last_login values in one query for efficiency
+        local_last_logins = UserManagement._get_all_local_last_logins()
+
         try:
             while True:
                 response = httpx.get(
@@ -116,9 +159,13 @@ class UserManagement:
                 for user in users:
                     app_metadata = user.get("app_metadata", {})
                     user_metadata = user.get("user_metadata", {})
+                    user_id = user.get("id")
+
+                    # Use local last_login (tracks actual access) over Supabase's last_sign_in_at
+                    last_login = local_last_logins.get(user_id) or user.get("last_sign_in_at")
 
                     all_users.append({
-                        "id": user.get("id"),
+                        "id": user_id,
                         "email": user.get("email"),
                         "display_name": (
                             user_metadata.get("full_name")
@@ -129,7 +176,7 @@ class UserManagement:
                         "tier": app_metadata.get("tier", "free"),
                         "tester": app_metadata.get("tester", False),
                         "created_at": user.get("created_at"),
-                        "last_login": user.get("last_sign_in_at"),
+                        "last_login": last_login,
                     })
 
                 # Check if there are more pages
@@ -296,8 +343,32 @@ class UserManagement:
 
     @staticmethod
     def update_last_login(user_id: str) -> None:
-        """No-op - Supabase tracks last_sign_in_at automatically."""
-        pass
+        """Update last_access timestamp in local database.
+
+        This tracks actual app access, not just sign-in events.
+        Supabase's last_sign_in_at only updates on actual sign-in,
+        not when using a persisted session.
+        """
+        from .database import get_connection
+        from datetime import datetime
+
+        with get_connection() as conn:
+            conn.execute(
+                """
+                UPDATE users SET last_login = ?
+                WHERE id = ?
+                """,
+                (datetime.now(), user_id),
+            )
+            # If no user exists yet, insert one
+            if conn.total_changes == 0:
+                conn.execute(
+                    """
+                    INSERT OR IGNORE INTO users (id, last_login)
+                    VALUES (?, ?)
+                    """,
+                    (user_id, datetime.now()),
+                )
 
     @staticmethod
     def update_user(user_id: str, **fields) -> bool:

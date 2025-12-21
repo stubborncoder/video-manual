@@ -114,4 +114,7 @@ async def get_me(
     user = UserManagement.get_user(user_id)
     role = user.get("role", "user") if user else "user"
 
+    # Update last access timestamp in local database
+    UserManagement.update_last_login(user_id)
+
     return {"authenticated": True, "user_id": user_id, "role": role}
