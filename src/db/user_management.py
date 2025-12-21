@@ -350,25 +350,19 @@ class UserManagement:
         not when using a persisted session.
         """
         from .database import get_connection
-        from datetime import datetime
+        from datetime import datetime, timezone
 
         with get_connection() as conn:
+            # Use IMMEDIATE isolation to prevent busy/locked errors in concurrent writes
+            conn.isolation_level = "IMMEDIATE"
+            # Use UPSERT to avoid race condition between UPDATE check and INSERT
             conn.execute(
                 """
-                UPDATE users SET last_login = ?
-                WHERE id = ?
+                INSERT INTO users (id, last_login) VALUES (?, ?)
+                ON CONFLICT(id) DO UPDATE SET last_login = excluded.last_login
                 """,
-                (datetime.now(), user_id),
+                (user_id, datetime.now(timezone.utc)),
             )
-            # If no user exists yet, insert one
-            if conn.total_changes == 0:
-                conn.execute(
-                    """
-                    INSERT OR IGNORE INTO users (id, last_login)
-                    VALUES (?, ?)
-                    """,
-                    (user_id, datetime.now()),
-                )
 
     @staticmethod
     def update_user(user_id: str, **fields) -> bool:
