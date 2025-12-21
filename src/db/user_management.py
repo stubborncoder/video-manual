@@ -341,6 +341,10 @@ class UserManagement:
         user = UserManagement.get_user(user_id)
         return user or {"id": user_id, "role": "user"}
 
+    # In-memory cache to throttle last_login updates (user_id -> last_update_time)
+    _last_login_cache: dict[str, float] = {}
+    _LAST_LOGIN_THROTTLE_SECONDS = 300  # 5 minutes
+
     @staticmethod
     def update_last_login(user_id: str) -> None:
         """Update last_access timestamp in local database.
@@ -348,21 +352,38 @@ class UserManagement:
         This tracks actual app access, not just sign-in events.
         Supabase's last_sign_in_at only updates on actual sign-in,
         not when using a persisted session.
+
+        Throttled to avoid excessive writes - only updates if last update
+        was more than 5 minutes ago.
         """
+        import sqlite3
+        import time
         from .database import get_connection
         from datetime import datetime, timezone
 
-        with get_connection() as conn:
-            # Use IMMEDIATE isolation to prevent busy/locked errors in concurrent writes
-            conn.isolation_level = "IMMEDIATE"
-            # Use UPSERT to avoid race condition between UPDATE check and INSERT
-            conn.execute(
-                """
-                INSERT INTO users (id, last_login) VALUES (?, ?)
-                ON CONFLICT(id) DO UPDATE SET last_login = excluded.last_login
-                """,
-                (user_id, datetime.now(timezone.utc)),
-            )
+        # Throttle: skip if updated recently (within 5 minutes)
+        now = time.time()
+        last_update = UserManagement._last_login_cache.get(user_id, 0)
+        if now - last_update < UserManagement._LAST_LOGIN_THROTTLE_SECONDS:
+            return
+
+        try:
+            with get_connection() as conn:
+                # Use BEGIN IMMEDIATE for proper write locking
+                conn.execute("BEGIN IMMEDIATE")
+                # Use UPSERT to avoid race condition
+                conn.execute(
+                    """
+                    INSERT INTO users (id, last_login) VALUES (?, ?)
+                    ON CONFLICT(id) DO UPDATE SET last_login = excluded.last_login
+                    """,
+                    (user_id, datetime.now(timezone.utc)),
+                )
+            # Update cache only after successful write
+            UserManagement._last_login_cache[user_id] = now
+        except sqlite3.Error as e:
+            # Log but don't raise - this is a non-critical update
+            logger.warning(f"Failed to update last_login for {user_id}: {e}")
 
     @staticmethod
     def update_user(user_id: str, **fields) -> bool:
