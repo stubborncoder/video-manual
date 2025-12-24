@@ -1,6 +1,6 @@
 # Workflow: Export Documentation
 
-Guide to exporting your manuals and projects.
+Guide to exporting your docs and projects.
 
 ## Overview
 
@@ -9,11 +9,11 @@ Guide to exporting your manuals and projects.
 3. Configure options
 4. Download
 
-## Exporting a Single Manual
+## Exporting a Single Doc
 
-**Open the manual**
-- Go to **Manuals** page (`nav-manuals`)
-- Click **Edit** on the manual
+**Open the doc**
+- Go to **Docs** page (`nav-docs`)
+- Click **Edit** on the doc
 
 **Export**
 - Click **Export** button in the editor toolbar

@@ -45,7 +45,7 @@ export function VideoCardProgress({ job, onDismiss }: VideoCardProgressProps) {
     const labelMap: Record<string, string> = {
       analyze_video: t("analyzeVideo"),
       identify_keyframes: t("identifyKeyframes"),
-      generate_manual: t("generateManual"),
+      generate_manual: t("generateDoc"),
     };
     return labelMap[node] || node;
   };
@@ -63,7 +63,7 @@ export function VideoCardProgress({ job, onDismiss }: VideoCardProgressProps) {
       console.error("Failed to mark job as seen:", error);
     }
 
-    router.push(`/dashboard/manuals/${job.manual_id}/edit`);
+    router.push(`/dashboard/docs/${job.manual_id}/edit`);
   };
 
   const handleDismiss = async () => {

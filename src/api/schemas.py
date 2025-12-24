@@ -62,7 +62,7 @@ class AdditionalVideoInfo(BaseModel):
     exists: bool = True  # False if file was deleted from disk
 
 
-class ManualVideosResponse(BaseModel):
+class DocVideosResponse(BaseModel):
     """Response for listing all videos for a manual."""
     primary: dict  # Primary video info (id, filename, label, duration, exists)
     additional: list[AdditionalVideoInfo] = []
@@ -84,7 +84,7 @@ class LanguageEvaluation(BaseModel):
     evaluated: bool = False
 
 
-class ManualSummary(BaseModel):
+class DocSummary(BaseModel):
     id: str
     title: str = ""  # Display title (derived from video name or manual content)
     created_at: Optional[str] = None
@@ -105,7 +105,7 @@ class SourceLanguages(BaseModel):
     confidence: str = "medium"  # high, medium, low
 
 
-class ManualDetail(BaseModel):
+class DocDetail(BaseModel):
     id: str
     title: str = ""  # Display title
     content: str
@@ -116,12 +116,12 @@ class ManualDetail(BaseModel):
     source_languages: Optional[SourceLanguages] = None  # Detected video/audio languages
 
 
-class ManualListResponse(BaseModel):
-    manuals: list[ManualSummary]
+class DocListResponse(BaseModel):
+    docs: list[DocSummary]
 
 
-class CloneManualRequest(BaseModel):
-    """Request to clone a manual to a different document format."""
+class CloneDocRequest(BaseModel):
+    """Request to clone a doc to a different document format."""
     document_format: str  # "step-manual", "quick-guide", "reference", "summary"
     title: Optional[str] = None  # Custom title, defaults to "Original Title (Format)"
     reformat_content: bool = False  # If true, use AI to adapt content to new format style
@@ -130,7 +130,7 @@ class CloneManualRequest(BaseModel):
     @classmethod
     def validate_document_format(cls, v: str) -> str:
         """Validate document format is a known format type."""
-        from ..agents.video_manual_agent.prompts import DOCUMENT_FORMATS
+        from ..agents.video_doc_agent.prompts import DOCUMENT_FORMATS
         if v not in DOCUMENT_FORMATS:
             valid_formats = list(DOCUMENT_FORMATS.keys())
             raise ValueError(f"Invalid document format '{v}'. Valid formats: {valid_formats}")
@@ -269,7 +269,7 @@ class ProcessVideoRequest(BaseModel):
     @classmethod
     def validate_document_format(cls, v: str) -> str:
         """Validate document format is a known format type."""
-        from ..agents.video_manual_agent.prompts import DOCUMENT_FORMATS
+        from ..agents.video_doc_agent.prompts import DOCUMENT_FORMATS
         if v not in DOCUMENT_FORMATS:
             valid_formats = list(DOCUMENT_FORMATS.keys())
             raise ValueError(f"Invalid document format '{v}'. Valid formats: {valid_formats}")
@@ -369,12 +369,12 @@ class EvaluationScoreRange(BaseModel):
     max: int = EVALUATION_SCORE_MAX
 
 
-class ManualEvaluation(BaseModel):
-    """Schema for manual evaluation data.
+class DocEvaluation(BaseModel):
+    """Schema for doc evaluation data.
 
     Used to validate stored evaluations when loading from disk.
     """
-    manual_id: str
+    doc_id: str
     language: str
     overall_score: int = Field(..., ge=EVALUATION_SCORE_MIN, le=EVALUATION_SCORE_MAX)
     summary: str = ""

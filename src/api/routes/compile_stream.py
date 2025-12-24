@@ -76,7 +76,7 @@ async def compile_project_stream(
     if not project:
         return {"error": f"Project not found: {project_id}"}, 404
 
-    manuals = storage.get_project_manuals(project_id)
+    manuals = storage.get_project_docs(project_id)
     if not manuals:
         return {"error": "Cannot compile empty project. Add manuals first."}, 400
 

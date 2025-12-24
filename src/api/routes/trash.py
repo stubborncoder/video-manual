@@ -72,7 +72,7 @@ async def restore_item(
         # If video restored, update associated manuals
         if item_type == "video":
             video_name = Path(restored_path).name
-            storage.mark_video_restored_for_manuals(video_name)
+            storage.mark_video_restored_for_docs(video_name)
 
         return RestoreResponse(
             restored_path=str(restored_path),

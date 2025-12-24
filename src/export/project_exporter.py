@@ -239,7 +239,7 @@ class ProjectExporter(BaseExporter):
 
         # Generate PDF with WeasyPrint
         css = CSS(string=custom_css or DEFAULT_CSS)
-        html_doc = HTML(string=html_content, base_url=str(self.user_storage.manuals_dir))
+        html_doc = HTML(string=html_content, base_url=str(self.user_storage.docs_dir))
         html_doc.write_pdf(output_path, stylesheets=[css])
 
         return output_path

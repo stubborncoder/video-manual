@@ -37,7 +37,7 @@ class EditorCopilotSession:
         self.should_cancel = False
 
         # Load manual metadata for context
-        metadata = self.storage.get_manual_metadata(manual_id) or {}
+        metadata = self.storage.get_doc_metadata(manual_id) or {}
         self.target_audience = metadata.get("target_audience")
         self.target_objective = metadata.get("target_objective")
         self.manual_title = metadata.get("title", "")
@@ -320,7 +320,7 @@ async def websocket_editor_copilot(
 
     # Verify manual exists
     storage = UserStorage(auth_user_id)
-    manual_dir = storage.manuals_dir / manual_id
+    manual_dir = storage.docs_dir / manual_id
     if not manual_dir.exists():
         await websocket.send_json({
             "type": "error",

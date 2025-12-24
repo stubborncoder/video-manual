@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { templates, TemplateInfo } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -32,11 +32,93 @@ import {
   Clock,
   HardDrive,
   ArrowUpRight,
+  BookOpen,
+  ClipboardList,
+  AlertTriangle,
+  CheckSquare,
+  TrendingUp,
+  Zap,
+  FileSearch,
+  BarChart3,
 } from "lucide-react";
 import { SidebarToggle } from "@/components/layout/SidebarToggle";
 import { AlphaBadge } from "@/components/ui/alpha-badge";
 import { cn } from "@/lib/utils";
 import { TemplatePreviewDialog } from "@/components/dialogs/TemplatePreviewDialog";
+
+// Document format categories and metadata
+const FORMAT_CATEGORIES = {
+  instructional: {
+    id: "instructional",
+    labelKey: "categoryInstructional",
+    descKey: "categoryInstructionalDesc",
+    icon: BookOpen,
+    color: "from-blue-500/20 to-cyan-500/10",
+    borderColor: "border-blue-500/30",
+    textColor: "text-blue-600 dark:text-blue-400",
+    formats: ["step-manual", "quick-guide", "reference", "summary"],
+  },
+  reports: {
+    id: "reports",
+    labelKey: "categoryReports",
+    descKey: "categoryReportsDesc",
+    icon: ClipboardList,
+    color: "from-amber-500/20 to-orange-500/10",
+    borderColor: "border-amber-500/30",
+    textColor: "text-amber-600 dark:text-amber-400",
+    formats: ["incident-report", "inspection-report", "progress-report"],
+  },
+} as const;
+
+const FORMAT_METADATA: Record<string, {
+  labelKey: string;
+  icon: React.ComponentType<{ className?: string }>;
+  badgeColor: string;
+  category: keyof typeof FORMAT_CATEGORIES;
+}> = {
+  "step-manual": {
+    labelKey: "formatStepManual",
+    icon: BookOpen,
+    badgeColor: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+    category: "instructional",
+  },
+  "quick-guide": {
+    labelKey: "formatQuickGuide",
+    icon: Zap,
+    badgeColor: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
+    category: "instructional",
+  },
+  "reference": {
+    labelKey: "formatReference",
+    icon: FileSearch,
+    badgeColor: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20",
+    category: "instructional",
+  },
+  "summary": {
+    labelKey: "formatSummary",
+    icon: BarChart3,
+    badgeColor: "bg-violet-500/10 text-violet-600 dark:text-violet-400 border-violet-500/20",
+    category: "instructional",
+  },
+  "incident-report": {
+    labelKey: "formatIncidentReport",
+    icon: AlertTriangle,
+    badgeColor: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+    category: "reports",
+  },
+  "inspection-report": {
+    labelKey: "formatInspectionReport",
+    icon: CheckSquare,
+    badgeColor: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    category: "reports",
+  },
+  "progress-report": {
+    labelKey: "formatProgressReport",
+    icon: TrendingUp,
+    badgeColor: "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20",
+    category: "reports",
+  },
+};
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) return "0 B";
@@ -154,6 +236,27 @@ export default function TemplatesPage() {
 
   const userTemplates = templateList.filter((t) => !t.is_global);
   const globalTemplates = templateList.filter((t) => t.is_global);
+
+  // Group global templates by category
+  const groupedGlobalTemplates = useMemo(() => {
+    const grouped: Record<string, TemplateInfo[]> = {
+      instructional: [],
+      reports: [],
+      other: [],
+    };
+
+    globalTemplates.forEach((template) => {
+      const format = template.document_format;
+      if (format && FORMAT_METADATA[format]) {
+        const category = FORMAT_METADATA[format].category;
+        grouped[category].push(template);
+      } else {
+        grouped.other.push(template);
+      }
+    });
+
+    return grouped;
+  }, [globalTemplates]);
 
   return (
     <div
@@ -345,6 +448,7 @@ export default function TemplatesPage() {
                     key={template.name}
                     template={template}
                     index={idx}
+                    t={t}
                     onPreview={() => setPreviewTemplate({ name: template.name, isGlobal: false })}
                     onDownload={() => window.open(templates.download(template.name))}
                     onDelete={() => {
@@ -389,16 +493,55 @@ export default function TemplatesPage() {
                 <p className="text-muted-foreground">{t("noDefaultTemplates")}</p>
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {globalTemplates.map((template, idx) => (
-                  <TemplateCard
-                    key={template.name}
-                    template={template}
-                    index={idx}
-                    onPreview={() => setPreviewTemplate({ name: template.name, isGlobal: true })}
-                    onDownload={() => window.open(templates.download(template.name))}
+              <div className="space-y-8">
+                {/* Instructional Templates Category */}
+                {groupedGlobalTemplates.instructional.length > 0 && (
+                  <TemplateCategorySection
+                    category={FORMAT_CATEGORIES.instructional}
+                    templates={groupedGlobalTemplates.instructional}
+                    t={t}
+                    onPreview={(name) => setPreviewTemplate({ name, isGlobal: true })}
+                    onDownload={(name) => window.open(templates.download(name))}
                   />
-                ))}
+                )}
+
+                {/* Reports Templates Category */}
+                {groupedGlobalTemplates.reports.length > 0 && (
+                  <TemplateCategorySection
+                    category={FORMAT_CATEGORIES.reports}
+                    templates={groupedGlobalTemplates.reports}
+                    t={t}
+                    onPreview={(name) => setPreviewTemplate({ name, isGlobal: true })}
+                    onDownload={(name) => window.open(templates.download(name))}
+                  />
+                )}
+
+                {/* Other Templates (uncategorized) */}
+                {groupedGlobalTemplates.other.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <h3 className="font-medium text-muted-foreground">{t("categoryOther")}</h3>
+                      <Badge variant="outline" className="ml-auto">
+                        {groupedGlobalTemplates.other.length}
+                      </Badge>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                      {groupedGlobalTemplates.other.map((template, idx) => (
+                        <TemplateCard
+                          key={template.name}
+                          template={template}
+                          index={idx}
+                          t={t}
+                          onPreview={() => setPreviewTemplate({ name: template.name, isGlobal: true })}
+                          onDownload={() => window.open(templates.download(template.name))}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </section>
@@ -556,23 +699,84 @@ export default function TemplatesPage() {
   );
 }
 
+// Category section component for grouped templates
+interface TemplateCategorySectionProps {
+  category: typeof FORMAT_CATEGORIES[keyof typeof FORMAT_CATEGORIES];
+  templates: TemplateInfo[];
+  t: ReturnType<typeof useTranslations>;
+  onPreview: (name: string) => void;
+  onDownload: (name: string) => void;
+}
+
+function TemplateCategorySection({ category, templates, t, onPreview, onDownload }: TemplateCategorySectionProps) {
+  const CategoryIcon = category.icon;
+
+  return (
+    <div className="space-y-4">
+      {/* Category Header */}
+      <div className={cn(
+        "flex items-center gap-3 p-3 rounded-xl border",
+        `bg-gradient-to-r ${category.color}`,
+        category.borderColor
+      )}>
+        <div className={cn(
+          "flex h-9 w-9 items-center justify-center rounded-lg",
+          "bg-background/80 backdrop-blur-sm border",
+          category.borderColor
+        )}>
+          <CategoryIcon className={cn("h-4.5 w-4.5", category.textColor)} />
+        </div>
+        <div className="flex-1">
+          <h3 className={cn("font-semibold", category.textColor)}>
+            {t(category.labelKey)}
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            {t(category.descKey)}
+          </p>
+        </div>
+        <Badge variant="outline" className={cn("border", category.borderColor, category.textColor)}>
+          {templates.length}
+        </Badge>
+      </div>
+
+      {/* Templates Grid */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 pl-3">
+        {templates.map((template, idx) => (
+          <TemplateCard
+            key={template.name}
+            template={template}
+            index={idx}
+            t={t}
+            onPreview={() => onPreview(template.name)}
+            onDownload={() => onDownload(template.name)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 interface TemplateCardProps {
   template: TemplateInfo;
   index: number;
+  t: ReturnType<typeof useTranslations>;
   onPreview: () => void;
   onDownload: () => void;
   onDelete?: () => void;
 }
 
-function TemplateCard({ template, index, onPreview, onDownload, onDelete }: TemplateCardProps) {
+function TemplateCard({ template, index, t, onPreview, onDownload, onDelete }: TemplateCardProps) {
   const tc = useTranslations("common");
+  const formatMeta = template.document_format ? FORMAT_METADATA[template.document_format] : null;
+  const FormatIcon = formatMeta?.icon || FileText;
 
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-xl border border-primary/10 bg-gradient-to-br from-primary/5 via-background to-primary/5",
+        "group relative overflow-hidden rounded-xl border bg-card",
         "transition-all duration-300",
-        "hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 hover:border-primary/20"
+        "hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 hover:border-primary/20",
+        formatMeta ? `border-l-2 ${formatMeta.badgeColor.replace('bg-', 'border-l-').replace('/10', '')}` : "border-primary/10"
       )}
       style={{
         animationDelay: `${index * 50}ms`,
@@ -583,10 +787,18 @@ function TemplateCard({ template, index, onPreview, onDownload, onDelete }: Temp
       {/* Top accent line */}
       <div className="absolute inset-x-0 top-0 h-0.5 bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
 
-      {/* Background decoration on hover */}
-      <div className="absolute -top-12 -right-12 w-32 h-32 bg-gradient-to-bl from-primary/5 to-transparent rounded-full opacity-0 group-hover:opacity-100 transition-opacity blur-2xl" />
-
       <div className="relative p-5">
+        {/* Format Badge - Top Right */}
+        {formatMeta && (
+          <div className={cn(
+            "absolute top-3 right-3 flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium border",
+            formatMeta.badgeColor
+          )}>
+            <FormatIcon className="h-3 w-3" />
+            <span>{t(formatMeta.labelKey)}</span>
+          </div>
+        )}
+
         <div className="flex items-start gap-4">
           {/* Icon with badge */}
           <div className="relative shrink-0">
@@ -594,11 +806,16 @@ function TemplateCard({ template, index, onPreview, onDownload, onDelete }: Temp
               "flex h-12 w-12 items-center justify-center rounded-xl",
               "bg-gradient-to-br border transition-all",
               "group-hover:scale-105 group-hover:shadow-md",
-              template.is_global
-                ? "from-muted to-muted/50 border-border"
-                : "from-primary/20 to-primary/5 border-primary/20"
+              formatMeta
+                ? `${formatMeta.badgeColor} border-transparent`
+                : template.is_global
+                  ? "from-muted to-muted/50 border-border"
+                  : "from-primary/20 to-primary/5 border-primary/20"
             )}>
-              <FileText className={cn("h-6 w-6", template.is_global ? "text-muted-foreground" : "text-primary")} />
+              <FormatIcon className={cn(
+                "h-6 w-6",
+                formatMeta ? "" : template.is_global ? "text-muted-foreground" : "text-primary"
+              )} />
             </div>
             {template.is_global && (
               <div className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30">
@@ -609,7 +826,7 @@ function TemplateCard({ template, index, onPreview, onDownload, onDelete }: Temp
 
           {/* Content */}
           <div className="flex-1 min-w-0 pt-0.5">
-            <h3 className="font-semibold truncate group-hover:text-primary transition-colors">
+            <h3 className="font-semibold truncate group-hover:text-primary transition-colors pr-20">
               {template.name}
             </h3>
             <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">

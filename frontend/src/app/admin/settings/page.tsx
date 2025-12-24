@@ -41,20 +41,20 @@ const TASK_CONFIGS: TaskConfig[] = [
   },
   {
     key: "manual_generation",
-    label: "Manual Generation",
+    label: "Doc Generation",
     description: "Model used to generate step-by-step documentation from video analysis",
     icon: FileText,
   },
   {
     key: "manual_evaluation",
-    label: "Manual Evaluation",
-    description: "Model used to evaluate and score manual quality",
+    label: "Doc Evaluation",
+    description: "Model used to evaluate and score doc quality",
     icon: ClipboardCheck,
   },
   {
     key: "manual_editing",
-    label: "Manual Editing (Copilot)",
-    description: "Model used for the AI copilot in the manual editor",
+    label: "Doc Editing (Copilot)",
+    description: "Model used for the AI copilot in the doc editor",
     icon: MessageSquare,
   },
   {

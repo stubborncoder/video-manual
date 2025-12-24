@@ -616,7 +616,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-[1400px] px-6">
           <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
             {[
-              { value: "10K+", labelKey: "stats.manuals" },
+              { value: "10K+", labelKey: "stats.docs" },
               { value: "95%", labelKey: "stats.hours" },
               { value: "500+", labelKey: "stats.users" },
               { value: "4.9/5", labelKey: "stats.videos" },

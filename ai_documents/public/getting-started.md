@@ -25,9 +25,9 @@ This guide walks you through creating your first documentation from a video.
 
 ## Step 3: Review and Edit
 
-1. Go to the **Manuals** page (`/dashboard/manuals`)
-2. Find your newly created manual
-3. Click **Edit** to open the manual editor
+1. Go to the **Docs** page (`/dashboard/docs`)
+2. Find your newly created doc
+3. Click **Edit** to open the doc editor
 4. Review the generated content:
    - Check screenshot accuracy
    - Refine step descriptions
@@ -35,7 +35,7 @@ This guide walks you through creating your first documentation from a video.
 
 ## Step 4: Export Your Documentation
 
-1. In the manual editor, click **Export**
+1. In the doc editor, click **Export**
 2. Choose your format:
    - **PDF** - Best for printing or sharing
    - **Markdown** - Best for technical documentation
@@ -51,6 +51,6 @@ This guide walks you through creating your first documentation from a video.
 
 ## Next Steps
 
-- Learn about [Projects](/guides/features/projects.md) to organize multiple manuals
+- Learn about [Projects](/guides/features/projects.md) to organize multiple docs
 - Explore [Templates](/guides/features/templates.md) for custom export styling
 - Check [Export Options](/guides/features/export.md) for advanced export settings

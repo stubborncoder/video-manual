@@ -57,7 +57,7 @@ async def list_projects(
 
     summaries = []
     for project in projects:
-        manuals = storage.get_project_manuals(project["id"])
+        manuals = storage.get_project_docs(project["id"])
         # Only count chapters that have manuals
         chapters_with_manuals = sum(
             1 for ch in project.get("chapters", [])
@@ -86,7 +86,7 @@ async def get_default_project(
 ) -> dict:
     """Get the user's default project."""
     project = storage.ensure_default_project()
-    manuals = storage.get_project_manuals(project["id"])
+    manuals = storage.get_project_docs(project["id"])
     # Only count chapters that have manuals
     chapters_with_manuals = sum(
         1 for ch in project.get("chapters", [])
@@ -136,12 +136,12 @@ async def get_project(
         raise HTTPException(status_code=404, detail="Project not found")
 
     chapters = storage.list_chapters(project_id)
-    manuals = storage.get_project_manuals(project_id)
+    manuals = storage.get_project_docs(project_id)
 
     # Collect unique videos from manuals
     video_map: dict[str, dict] = {}  # path -> {name, path, exists, manual_count}
     for m in manuals:
-        metadata = user_storage.get_manual_metadata(m["id"])
+        metadata = user_storage.get_doc_metadata(m["id"])
         if metadata:
             source_video = metadata.get("source_video", {})
             video_path = source_video.get("path") or metadata.get("video_path", "")
@@ -244,7 +244,7 @@ async def delete_project(
         raise HTTPException(status_code=400, detail="Cannot delete the default project")
 
     # Get manuals in project
-    manuals = storage.get_project_manuals(project_id)
+    manuals = storage.get_project_docs(project_id)
     manual_ids = [m["id"] for m in manuals]
 
     if delete_manuals and manual_ids:
@@ -601,12 +601,12 @@ async def get_compile_info(
     for chapter in storage.list_chapters(project_id):
         chapter_manuals = []
 
-        for manual_id in chapter.get("manuals", []):
+        for manual_id in chapter.get("docs", []):
             # Get available languages for this manual
-            available_languages = user_storage.list_manual_languages(manual_id)
+            available_languages = user_storage.list_doc_languages(manual_id)
 
             # Get manual title from metadata
-            metadata = user_storage.get_manual_metadata(manual_id)
+            metadata = user_storage.get_doc_metadata(manual_id)
             title = manual_id
             if metadata:
                 video_meta = metadata.get("video_metadata", {})
@@ -663,7 +663,7 @@ async def export_project(
         raise HTTPException(status_code=404, detail="Project not found")
 
     # Check if project has manuals
-    manuals = storage.get_project_manuals(project_id)
+    manuals = storage.get_project_docs(project_id)
     if not manuals:
         raise HTTPException(
             status_code=400,
@@ -723,10 +723,18 @@ async def export_project(
             from ...export.chunks_exporter import create_project_chunks_exporter
             exporter = create_project_chunks_exporter(user_id, project_id)
             output_path = exporter.export(language=request.language)
+        elif format_lower in ("markdown", "md"):
+            from ...export.project_markdown_exporter import ProjectMarkdownExporter
+            exporter = ProjectMarkdownExporter(user_id, project_id)
+            output_path = exporter.export(
+                language=request.language,
+                include_toc=request.include_toc,
+                include_chapter_covers=request.include_chapter_covers,
+            )
         else:
             raise HTTPException(
                 status_code=400,
-                detail=f"Unknown format '{request.format}'. Use: pdf, word, html, chunks",
+                detail=f"Unknown format '{request.format}'. Use: pdf, word, html, chunks, markdown",
             )
 
         return ExportResponse(output_path=str(output_path), format=format_lower)

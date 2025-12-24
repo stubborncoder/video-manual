@@ -183,12 +183,12 @@ class VideoManualRunner:
         Yields:
             ProgressEvent objects for each state change
         """
-        from ..agents.video_manual_agent import VideoManualAgent
-        from ..agents.video_manual_agent.state import VideoManualState
+        from ..agents.video_doc_agent import VideoDocAgent
+        from ..agents.video_doc_agent.state import VideoDocState
         from ..storage.user_storage import UserStorage
 
         # Create agent
-        agent = VideoManualAgent(use_checkpointer=True)
+        agent = VideoDocAgent(use_checkpointer=True)
 
         # Setup storage
         storage = UserStorage(self.user_id)
@@ -196,16 +196,16 @@ class VideoManualRunner:
         video_name = output_filename or video_path.name
 
         # Check for existing manual (enables caching)
-        existing_manual_id = storage.find_existing_manual(video_name)
+        existing_manual_id = storage.find_existing_doc(video_name)
         if existing_manual_id:
-            manual_dir, manual_id = storage.get_manual_dir(manual_id=existing_manual_id)
+            manual_dir, manual_id = storage.get_doc_dir(doc_id=existing_manual_id)
         else:
-            manual_dir, manual_id = storage.get_manual_dir(video_name=video_name)
+            manual_dir, manual_id = storage.get_doc_dir(video_name=video_name)
 
         # Prepare initial state
-        initial_state: VideoManualState = {
+        initial_state: VideoDocState = {
             "user_id": self.user_id,
-            "manual_id": manual_id,
+            "doc_id": manual_id,
             "video_path": str(video_path),
             "output_filename": output_filename,
             "use_scene_detection": use_scene_detection,
@@ -222,7 +222,7 @@ class VideoManualRunner:
             "scene_changes": None,
             "total_keyframes": None,
             "manual_content": None,
-            "manual_path": None,
+            "doc_path": None,
             "screenshots": None,
             "output_directory": None,
             "status": "pending",
@@ -280,15 +280,13 @@ class VideoManualRunner:
                         # Store state for final result
                         self._final_state = state_update
 
-                # Emit completion
-                result = {}
-                if self._final_state:
-                    result = {
-                        "manual_id": self._final_state.get("manual_id"),
-                        "manual_path": self._final_state.get("manual_path"),
-                        "screenshots": self._final_state.get("screenshots", []),
-                        "output_directory": self._final_state.get("output_directory"),
-                    }
+                # Emit completion - use doc_id from initial state since we already know it
+                result = {
+                    "manual_id": initial_state.get("doc_id"),  # Use from initial state, not final
+                    "manual_path": self._final_state.get("doc_path") if self._final_state else None,
+                    "screenshots": self._final_state.get("screenshots", []) if self._final_state else [],
+                    "output_directory": self._final_state.get("output_directory") if self._final_state else None,
+                }
                 self._event_queue.put(
                     CompleteEvent(result=result, message="Manual generated successfully")
                 )
@@ -634,7 +632,7 @@ class ManualEditorRunner:
             Initial events (ready event)
         """
         import uuid
-        from ..agents.manual_editor_agent import get_editor_agent
+        from ..agents.doc_editor_agent import get_editor_agent
         from ..storage.user_storage import UserStorage
 
         # Create agent with unique session ID
@@ -808,7 +806,7 @@ Please analyze this image to help answer the user's question.""")
                 # The URL is a relative API path, we need to read from local storage
                 from ..storage.user_storage import UserStorage
                 storage = UserStorage(self.user_id)
-                screenshot_path = storage.manuals_dir / self.manual_id / "screenshots" / image.get('name', '')
+                screenshot_path = storage.docs_dir / self.manual_id / "screenshots" / image.get('name', '')
 
                 if screenshot_path.exists():
                     with open(screenshot_path, 'rb') as f:

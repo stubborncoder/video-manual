@@ -21,7 +21,7 @@ class ScreenshotStore:
     copying the files, eliminating duplication.
 
     Directory structure:
-        manuals/{manual_id}/
+        manuals/{doc_id}/
         ├── screenshots/           # Working directory (unchanged)
         ├── .screenshot_store/     # Content-addressable storage
         │   ├── a1b2c3d4e5f6g7h8.png
@@ -33,14 +33,14 @@ class ScreenshotStore:
 
     HASH_LENGTH = 16  # First 16 chars of SHA256 (64-bit collision resistance)
 
-    def __init__(self, manual_dir: Path):
+    def __init__(self, doc_dir: Path):
         """Initialize screenshot store.
 
         Args:
-            manual_dir: Path to the manual directory
+            doc_dir: Path to the manual directory
         """
-        self.manual_dir = Path(manual_dir)
-        self.store_dir = self.manual_dir / ".screenshot_store"
+        self.doc_dir = Path(doc_dir)
+        self.store_dir = self.doc_dir / ".screenshot_store"
 
     def _ensure_store_dir(self) -> None:
         """Create store directory if it doesn't exist."""
@@ -191,7 +191,7 @@ class ScreenshotStore:
             Set of hash strings that are referenced
         """
         referenced = set()
-        versions_dir = self.manual_dir / "versions"
+        versions_dir = self.doc_dir / "versions"
 
         if not versions_dir.exists():
             return referenced
@@ -220,7 +220,7 @@ class ScreenshotStore:
             Set of hash strings for current screenshots
         """
         current = set()
-        screenshots_dir = self.manual_dir / "screenshots"
+        screenshots_dir = self.doc_dir / "screenshots"
 
         if not screenshots_dir.exists():
             return current

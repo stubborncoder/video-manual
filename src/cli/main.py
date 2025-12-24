@@ -106,11 +106,11 @@ def process_with_streaming(
     tags: Optional[List[str]] = None,
 ):
     """Process video with streaming node events and animated spinner."""
-    from ..agents.video_manual_agent import VideoManualAgent
-    from ..agents.video_manual_agent.state import VideoManualState
+    from ..agents.video_doc_agent import VideoDocAgent
+    from ..agents.video_doc_agent.state import VideoDocState
 
     # Create agent
-    agent = VideoManualAgent(use_checkpointer=True)
+    agent = VideoDocAgent(use_checkpointer=True)
 
     # Check for existing manual to enable caching
     storage = UserStorage(user_id)
@@ -118,16 +118,16 @@ def process_with_streaming(
     video_name = output_filename or video_path.name
 
     # Try to find existing manual for this video (enables caching)
-    existing_manual_id = storage.find_existing_manual(video_name)
+    existing_manual_id = storage.find_existing_doc(video_name)
     if existing_manual_id:
-        manual_dir, manual_id = storage.get_manual_dir(manual_id=existing_manual_id)
+        manual_dir, manual_id = storage.get_doc_dir(doc_id=existing_manual_id)
     else:
-        manual_dir, manual_id = storage.get_manual_dir(video_name=video_name)
+        manual_dir, manual_id = storage.get_doc_dir(video_name=video_name)
 
     # Prepare initial state
-    initial_state: VideoManualState = {
+    initial_state: VideoDocState = {
         "user_id": user_id,
-        "manual_id": manual_id,
+        "doc_id": manual_id,
         "video_path": str(video_path),
         "output_filename": output_filename,
         "use_scene_detection": use_scene_detection,
@@ -141,7 +141,7 @@ def process_with_streaming(
         "scene_changes": None,
         "total_keyframes": None,
         "manual_content": None,
-        "manual_path": None,
+        "doc_path": None,
         "screenshots": None,
         "output_directory": None,
         "status": "pending",
@@ -408,7 +408,7 @@ def list_manuals_cmd(
 
     print_welcome()
 
-    manuals = storage.list_manuals()
+    manuals = storage.list_docs()
 
     if not manuals:
         console.print(f"[yellow]No manuals found for user '{user}'[/yellow]")
@@ -421,12 +421,12 @@ def list_manuals_cmd(
     # Build detailed manual info
     manual_details = []
     for manual_id in manuals:
-        languages = storage.list_manual_languages(manual_id)
+        languages = storage.list_doc_languages(manual_id)
         # Screenshots are now shared across languages
         screenshots = storage.list_screenshots(manual_id)
         screenshot_count = len(screenshots)
 
-        manual_dir = storage.manuals_dir / manual_id
+        manual_dir = storage.docs_dir / manual_id
         created = "-"
         if manual_dir.exists():
             import datetime
@@ -473,7 +473,7 @@ def view_manual(
     storage = UserStorage(user)
 
     # Check available languages
-    languages = storage.list_manual_languages(manual_id)
+    languages = storage.list_doc_languages(manual_id)
     if languages and language not in languages:
         console.print(f"[yellow]Language '{language}' not found for this manual.[/yellow]")
         console.print(f"Available languages: [cyan]{', '.join(languages)}[/cyan]")
@@ -483,7 +483,7 @@ def view_manual(
         console.print(f"Showing '{language}' version instead.")
         console.print()
 
-    content = storage.get_manual_content(manual_id, language)
+    content = storage.get_doc_content(manual_id, language)
 
     if content is None:
         console.print(f"[red]Manual not found: {manual_id}[/red]")
@@ -617,7 +617,7 @@ def project_show(
     console.print()
 
     if tree:
-        manuals_info = storage.get_project_manuals(project_id)
+        manuals_info = storage.get_project_docs(project_id)
         console.print(project_tree(project, manuals_info))
     else:
         console.print(project_detail_panel(project))
@@ -627,7 +627,7 @@ def project_show(
             console.print()
             console.print(chapters_table(chapters))
 
-        manuals = storage.get_project_manuals(project_id)
+        manuals = storage.get_project_docs(project_id)
         if manuals:
             console.print()
             console.print(project_manuals_table(manuals))
@@ -1301,7 +1301,7 @@ def tag_list(
         # Get counts for each tag
         tags_with_counts = []
         for tag in all_tags:
-            manuals = storage.get_manuals_by_tag(tag)
+            manuals = storage.get_docs_by_tag(tag)
             tags_with_counts.append({"tag": tag, "count": len(manuals)})
 
         console.print(tags_table(tags_with_counts))
@@ -1322,7 +1322,7 @@ def tag_search(
     ensure_directories()
     storage = ProjectStorage(user)
 
-    manuals = storage.get_manuals_by_tag(tag)
+    manuals = storage.get_docs_by_tag(tag)
 
     console.print()
 

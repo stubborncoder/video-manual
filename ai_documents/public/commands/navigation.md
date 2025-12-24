@@ -8,9 +8,9 @@ Reference for app pages and navigation commands.
 |------|------|---------|
 | `/dashboard` | Dashboard | Main overview, recent activity |
 | `/dashboard/videos` | Videos | Upload and manage source videos |
-| `/dashboard/manuals` | Manuals | View and edit generated documentation |
-| `/dashboard/manuals/[id]/edit` | Manual Editor | Edit a specific manual |
-| `/dashboard/projects` | Projects | Organize manuals into collections |
+| `/dashboard/docs` | Docs | View and edit generated documentation |
+| `/dashboard/docs/[id]/edit` | Doc Editor | Edit a specific doc |
+| `/dashboard/projects` | Projects | Organize docs into collections |
 | `/dashboard/templates` | Templates | Manage export templates |
 | `/dashboard/bugs` | Bug Tracker | Report issues and request features |
 | `/dashboard/bugs/[id]` | Issue Detail | View issue details and comments |
@@ -24,7 +24,7 @@ Some views open as **modals or side panels** from the main page. They do NOT hav
 |------|------------|-------------|
 | Project Details | `/dashboard/projects` | Click "View Project" button → opens side panel |
 | Process Video | `/dashboard/videos` | Click "Process" button → opens modal |
-| Export Manual | `/dashboard/manuals` | Click ⋯ menu → Export → opens modal |
+| Export Doc | `/dashboard/docs` | Click ⋯ menu → Export → opens modal |
 | Compile Project | `/dashboard/projects` (inside project panel) | Click "Compile" button → opens modal |
 
 **NEVER navigate to URLs like `/dashboard/project-name` or `/dashboard/videos/process`** - these don't exist. Always navigate to the parent page first, then instruct the user to click the appropriate button.
@@ -71,7 +71,7 @@ Always check this before deciding to navigate.
 Users can also navigate using the sidebar. Sidebar elements:
 - `nav-dashboard` - Dashboard link
 - `nav-videos` - Videos link
-- `nav-manuals` - Manuals link
+- `nav-docs` - Docs link
 - `nav-projects` - Projects link
 - `nav-templates` - Templates link
 - `nav-bugs` - Bug Tracker link

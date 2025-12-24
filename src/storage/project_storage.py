@@ -1,10 +1,11 @@
-"""Project storage management for organizing manuals into projects."""
+"""Project storage management for organizing docs into projects."""
 
 import json
 import re
+import secrets
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 import uuid
 
 from ..config import USERS_DIR
@@ -34,7 +35,7 @@ def slugify(text: str) -> str:
 class ProjectStorage:
     """Manages project organization and metadata.
 
-    Projects group related manuals into hierarchical chapters.
+    Projects group related docs into hierarchical chapters.
     Structure:
         users/{user_id}/projects/{project_id}/
             project.json        # Project configuration
@@ -50,7 +51,7 @@ class ProjectStorage:
         self.user_id = user_id
         self.user_dir = USERS_DIR / user_id
         self.projects_dir = self.user_dir / "projects"
-        self.manuals_dir = self.user_dir / "manuals"
+        self.docs_dir = self.user_dir / "docs"
 
     def ensure_projects_dir(self) -> None:
         """Create projects directory if it doesn't exist."""
@@ -134,17 +135,17 @@ class ProjectStorage:
 
         for ch in chapters:
             if ch.get("title") == "Uncategorized":
-                manuals = ch.get("manuals", [])
-                if not manuals:
+                docs = ch.get("docs", [])
+                if not docs:
                     # Remove empty "Uncategorized" chapters
                     modified = True
                     continue
-                elif len(manuals) == 1:
+                elif len(docs) == 1:
                     # Rename chapter to match the single manual's title
-                    manual_id = manuals[0]
-                    metadata = self._get_manual_metadata(manual_id)
+                    doc_id = docs[0]
+                    metadata = self._get_doc_metadata(doc_id)
                     if metadata:
-                        title = metadata.get("title") or manual_id.replace("-", " ").title()
+                        title = metadata.get("title") or doc_id.replace("-", " ").title()
                         ch["title"] = title
                         modified = True
             cleaned_chapters.append(ch)
@@ -174,12 +175,12 @@ class ProjectStorage:
 
         self._save_project(project_id, project)
 
-    def delete_project(self, project_id: str, delete_manuals: bool = False) -> None:
+    def delete_project(self, project_id: str, delete_docs: bool = False) -> None:
         """Delete a project.
 
         Args:
             project_id: Project identifier
-            delete_manuals: If True, also delete manuals in the project
+            delete_docs: If True, also delete docs in the project
 
         Raises:
             ValueError: If project not found or is the default project
@@ -194,18 +195,18 @@ class ProjectStorage:
         if not project:
             raise ValueError(f"Project not found: {project_id}")
 
-        if delete_manuals:
+        if delete_docs:
             # Delete all manuals in the project
             for chapter in project.get("chapters", []):
-                for manual_id in chapter.get("manuals", []):
-                    manual_dir = self.manuals_dir / manual_id
-                    if manual_dir.exists():
-                        shutil.rmtree(manual_dir)
+                for doc_id in chapter.get("docs", []):
+                    doc_dir = self.docs_dir / doc_id
+                    if doc_dir.exists():
+                        shutil.rmtree(doc_dir)
         else:
             # Just remove project_id from manual metadata
             for chapter in project.get("chapters", []):
-                for manual_id in chapter.get("manuals", []):
-                    self._update_manual_project_ref(manual_id, None, None)
+                for doc_id in chapter.get("docs", []):
+                    self._update_doc_project_ref(doc_id, None, None)
 
         # Delete project directory
         project_dir = self.projects_dir / project_id
@@ -227,11 +228,11 @@ class ProjectStorage:
                 project = self.get_project(project_dir.name)
                 if project:
                     # Add computed fields
-                    total_manuals = sum(
-                        len(ch.get("manuals", []))
+                    total_docs = sum(
+                        len(ch.get("docs", []))
                         for ch in project.get("chapters", [])
                     )
-                    project["total_manuals"] = total_manuals
+                    project["total_docs"] = total_docs
                     project["total_chapters"] = len(project.get("chapters", []))
                     projects.append(project)
 
@@ -244,7 +245,7 @@ class ProjectStorage:
         - Has a fixed ID of "__default__"
         - Cannot be deleted
         - Is marked with is_default=True
-        - Chapters are created automatically when manuals are added
+        - Chapters are created automatically when docs are added
 
         Returns:
             The default project data
@@ -263,14 +264,14 @@ class ProjectStorage:
         now = datetime.now().isoformat()
         project_data = {
             "id": DEFAULT_PROJECT_ID,
-            "name": "My Manuals",
-            "description": "Default project for new manuals",
+            "name": "My Docs",
+            "description": "Default project for new docs",
             "is_default": True,
             "created_at": now,
             "updated_at": now,
             "default_language": "en",
             "sections": [],  # New: Sections that contain chapters
-            "chapters": [],  # Chapters are created automatically when manuals are added
+            "chapters": [],  # Chapters are created automatically when docs are added
             "tags": [],
             "template_id": None,
             "export_settings": {
@@ -333,7 +334,7 @@ class ProjectStorage:
             "title": title,
             "description": description,
             "order": len(chapters) + 1,
-            "manuals": [],
+            "docs": [],
         }
 
         chapters.append(chapter)
@@ -363,7 +364,7 @@ class ProjectStorage:
             if chapter["id"] == chapter_id:
                 # Don't allow changing id or manuals through this method
                 updates.pop("id", None)
-                updates.pop("manuals", None)
+                updates.pop("docs", None)
                 chapter.update(updates)
                 self.update_project(project_id, {"chapters": chapters})
                 return
@@ -387,8 +388,8 @@ class ProjectStorage:
         for chapter in chapters:
             if chapter["id"] == chapter_id:
                 # Update manual metadata to remove chapter reference
-                for manual_id in chapter.get("manuals", []):
-                    self._update_manual_project_ref(manual_id, project_id, None)
+                for doc_id in chapter.get("docs", []):
+                    self._update_doc_project_ref(doc_id, project_id, None)
             else:
                 new_chapters.append(chapter)
 
@@ -635,29 +636,29 @@ class ProjectStorage:
 
         return sorted(project.get("sections", []), key=lambda s: s.get("order", 0))
 
-    # ==================== Manual Organization ====================
+    # ==================== Doc Organization ====================
 
-    def add_manual_to_project(
+    def add_doc_to_project(
         self,
         project_id: str,
-        manual_id: str,
+        doc_id: str,
         chapter_id: Optional[str] = None,
     ) -> None:
-        """Add a manual to a project.
+        """Add a doc to a project.
 
         Args:
             project_id: Project identifier
-            manual_id: Manual identifier
-            chapter_id: Optional chapter to add to (creates chapter from manual title if None)
+            doc_id: Doc identifier
+            chapter_id: Optional chapter to add to (creates chapter from doc title if None)
         """
         project = self.get_project(project_id)
         if not project:
             raise ValueError(f"Project not found: {project_id}")
 
         # Verify manual exists
-        manual_dir = self.manuals_dir / manual_id
-        if not manual_dir.exists():
-            raise ValueError(f"Manual not found: {manual_id}")
+        doc_dir = self.docs_dir / doc_id
+        if not doc_dir.exists():
+            raise ValueError(f"Manual not found: {doc_id}")
 
         chapters = project.get("chapters", [])
 
@@ -666,11 +667,11 @@ class ProjectStorage:
             # Get manual title from metadata
             from .user_storage import UserStorage
             user_storage = UserStorage(self.user_id)
-            metadata = user_storage.get_manual_metadata(manual_id)
-            manual_title = metadata.get("title") if metadata else None
+            metadata = user_storage.get_doc_metadata(doc_id)
+            doc_title = metadata.get("title") if metadata else None
 
             # Use manual title or ID as chapter name
-            chapter_title = manual_title or manual_id.replace("-", " ").title()
+            chapter_title = doc_title or doc_id.replace("-", " ").title()
 
             # Create a new chapter for this manual
             chapter_id = self.add_chapter(project_id, chapter_title)
@@ -682,8 +683,8 @@ class ProjectStorage:
         chapter_found = False
         for chapter in chapters:
             if chapter["id"] == chapter_id:
-                if manual_id not in chapter["manuals"]:
-                    chapter["manuals"].append(manual_id)
+                if doc_id not in chapter["docs"]:
+                    chapter["docs"].append(doc_id)
                 chapter_found = True
                 break
 
@@ -693,14 +694,14 @@ class ProjectStorage:
         self.update_project(project_id, {"chapters": chapters})
 
         # Update manual metadata
-        self._update_manual_project_ref(manual_id, project_id, chapter_id)
+        self._update_doc_project_ref(doc_id, project_id, chapter_id)
 
-    def remove_manual_from_project(self, project_id: str, manual_id: str) -> None:
-        """Remove a manual from a project (keeps the manual, just removes association).
+    def remove_doc_from_project(self, project_id: str, doc_id: str) -> None:
+        """Remove a doc from a project (keeps the manual, just removes association).
 
         Args:
             project_id: Project identifier
-            manual_id: Manual identifier
+            doc_id: Doc identifier
         """
         project = self.get_project(project_id)
         if not project:
@@ -710,10 +711,10 @@ class ProjectStorage:
         chapter_to_cleanup = None
 
         for chapter in chapters:
-            if manual_id in chapter["manuals"]:
-                chapter["manuals"].remove(manual_id)
+            if doc_id in chapter["docs"]:
+                chapter["docs"].remove(doc_id)
                 # Mark empty chapters for cleanup (since each manual creates its own chapter)
-                if not chapter["manuals"]:
+                if not chapter["docs"]:
                     chapter_to_cleanup = chapter["id"]
                 break
 
@@ -724,19 +725,19 @@ class ProjectStorage:
         self.update_project(project_id, {"chapters": chapters})
 
         # Update manual metadata
-        self._update_manual_project_ref(manual_id, None, None)
+        self._update_doc_project_ref(doc_id, None, None)
 
-    def move_manual_to_chapter(
+    def move_doc_to_chapter(
         self,
         project_id: str,
-        manual_id: str,
+        doc_id: str,
         target_chapter_id: str,
     ) -> None:
         """Move a manual to a different chapter within the same project.
 
         Args:
             project_id: Project identifier
-            manual_id: Manual identifier
+            doc_id: Doc identifier
             target_chapter_id: Target chapter identifier
         """
         project = self.get_project(project_id)
@@ -747,16 +748,16 @@ class ProjectStorage:
 
         # Remove from current chapter
         for chapter in chapters:
-            if manual_id in chapter["manuals"]:
-                chapter["manuals"].remove(manual_id)
+            if doc_id in chapter["docs"]:
+                chapter["docs"].remove(doc_id)
                 break
 
         # Add to target chapter
         target_found = False
         for chapter in chapters:
             if chapter["id"] == target_chapter_id:
-                if manual_id not in chapter["manuals"]:
-                    chapter["manuals"].append(manual_id)
+                if doc_id not in chapter["docs"]:
+                    chapter["docs"].append(doc_id)
                 target_found = True
                 break
 
@@ -766,20 +767,20 @@ class ProjectStorage:
         self.update_project(project_id, {"chapters": chapters})
 
         # Update manual metadata
-        self._update_manual_project_ref(manual_id, project_id, target_chapter_id)
+        self._update_doc_project_ref(doc_id, project_id, target_chapter_id)
 
-    def reorder_manuals_in_chapter(
+    def reorder_docs_in_chapter(
         self,
         project_id: str,
         chapter_id: str,
-        manual_order: List[str],
+        doc_order: List[str],
     ) -> None:
         """Reorder manuals within a chapter.
 
         Args:
             project_id: Project identifier
             chapter_id: Chapter identifier
-            manual_order: List of manual IDs in desired order
+            doc_order: List of doc IDs in desired order
         """
         project = self.get_project(project_id)
         if not project:
@@ -789,11 +790,11 @@ class ProjectStorage:
         for chapter in chapters:
             if chapter["id"] == chapter_id:
                 # Validate all manual IDs exist in chapter
-                current_manuals = set(chapter["manuals"])
-                new_manuals = set(manual_order)
-                if current_manuals != new_manuals:
+                current_docs = set(chapter["docs"])
+                new_docs = set(doc_order)
+                if current_docs != new_docs:
                     raise ValueError("Manual order must contain exactly the same manuals")
-                chapter["manuals"] = manual_order
+                chapter["docs"] = doc_order
                 self.update_project(project_id, {"chapters": chapters})
                 return
 
@@ -801,113 +802,113 @@ class ProjectStorage:
 
     # ==================== Queries ====================
 
-    def get_project_manuals(self, project_id: str) -> List[Dict[str, Any]]:
+    def get_project_docs(self, project_id: str) -> List[Dict[str, Any]]:
         """Get all manuals in a project with their metadata.
 
         Args:
             project_id: Project identifier
 
         Returns:
-            List of manual info dicts with chapter context
+            List of doc info dicts with chapter context
         """
         project = self.get_project(project_id)
         if not project:
             raise ValueError(f"Project not found: {project_id}")
 
-        manuals = []
+        docs = []
         for chapter in project.get("chapters", []):
-            for manual_id in chapter.get("manuals", []):
-                manual_info = {
-                    "id": manual_id,
+            for doc_id in chapter.get("docs", []):
+                doc_info = {
+                    "id": doc_id,
                     "chapter_id": chapter["id"],
                     "chapter_title": chapter["title"],
                 }
 
                 # Try to get manual metadata
-                metadata = self._get_manual_metadata(manual_id)
+                metadata = self._get_doc_metadata(doc_id)
                 if metadata:
-                    manual_info["video_path"] = metadata.get("video_path")
-                    manual_info["created_at"] = metadata.get("created_at")
-                    manual_info["languages"] = metadata.get("languages_generated", [])
-                    manual_info["tags"] = metadata.get("tags", [])
-                    manual_info["version"] = metadata.get("version", {}).get("number", "1.0.0")
+                    doc_info["video_path"] = metadata.get("video_path")
+                    doc_info["created_at"] = metadata.get("created_at")
+                    doc_info["languages"] = metadata.get("languages_generated", [])
+                    doc_info["tags"] = metadata.get("tags", [])
+                    doc_info["version"] = metadata.get("version", {}).get("number", "1.0.0")
 
-                manuals.append(manual_info)
+                docs.append(doc_info)
 
-        return manuals
+        return docs
 
-    def get_manuals_by_tag(self, tag: str) -> List[str]:
+    def get_docs_by_tag(self, tag: str) -> List[str]:
         """Find all manuals with a specific tag.
 
         Args:
             tag: Tag to search for
 
         Returns:
-            List of manual IDs
+            List of doc IDs
         """
-        if not self.manuals_dir.exists():
+        if not self.docs_dir.exists():
             return []
 
         matching = []
-        for manual_dir in self.manuals_dir.iterdir():
-            if manual_dir.is_dir():
-                metadata = self._get_manual_metadata(manual_dir.name)
+        for doc_dir in self.docs_dir.iterdir():
+            if doc_dir.is_dir():
+                metadata = self._get_doc_metadata(doc_dir.name)
                 if metadata and tag in metadata.get("tags", []):
-                    matching.append(manual_dir.name)
+                    matching.append(doc_dir.name)
 
         return matching
 
-    def get_unassigned_manuals(self) -> List[str]:
+    def get_unassigned_docs(self) -> List[str]:
         """Get manuals not assigned to any project.
 
         Returns:
-            List of manual IDs
+            List of doc IDs
         """
-        if not self.manuals_dir.exists():
+        if not self.docs_dir.exists():
             return []
 
         unassigned = []
-        for manual_dir in self.manuals_dir.iterdir():
-            if manual_dir.is_dir():
-                metadata = self._get_manual_metadata(manual_dir.name)
+        for doc_dir in self.docs_dir.iterdir():
+            if doc_dir.is_dir():
+                metadata = self._get_doc_metadata(doc_dir.name)
                 if not metadata or not metadata.get("project_id"):
-                    unassigned.append(manual_dir.name)
+                    unassigned.append(doc_dir.name)
 
         return unassigned
 
     # ==================== Tags ====================
 
-    def add_tag_to_manual(self, manual_id: str, tag: str) -> None:
+    def add_tag_to_doc(self, doc_id: str, tag: str) -> None:
         """Add a tag to a manual.
 
         Args:
-            manual_id: Manual identifier
+            doc_id: Doc identifier
             tag: Tag to add
         """
-        metadata = self._get_manual_metadata(manual_id)
+        metadata = self._get_doc_metadata(doc_id)
         if metadata is None:
             metadata = {}
 
         tags = metadata.get("tags", [])
         if tag not in tags:
             tags.append(tag)
-            self._update_manual_metadata(manual_id, {"tags": tags})
+            self._update_doc_metadata(doc_id, {"tags": tags})
 
-    def remove_tag_from_manual(self, manual_id: str, tag: str) -> None:
+    def remove_tag_from_doc(self, doc_id: str, tag: str) -> None:
         """Remove a tag from a manual.
 
         Args:
-            manual_id: Manual identifier
+            doc_id: Doc identifier
             tag: Tag to remove
         """
-        metadata = self._get_manual_metadata(manual_id)
+        metadata = self._get_doc_metadata(doc_id)
         if metadata is None:
             return
 
         tags = metadata.get("tags", [])
         if tag in tags:
             tags.remove(tag)
-            self._update_manual_metadata(manual_id, {"tags": tags})
+            self._update_doc_metadata(doc_id, {"tags": tags})
 
     def list_all_tags(self) -> List[str]:
         """List all unique tags across all manuals.
@@ -915,17 +916,107 @@ class ProjectStorage:
         Returns:
             Sorted list of unique tags
         """
-        if not self.manuals_dir.exists():
+        if not self.docs_dir.exists():
             return []
 
         all_tags = set()
-        for manual_dir in self.manuals_dir.iterdir():
-            if manual_dir.is_dir():
-                metadata = self._get_manual_metadata(manual_dir.name)
+        for doc_dir in self.docs_dir.iterdir():
+            if doc_dir.is_dir():
+                metadata = self._get_doc_metadata(doc_dir.name)
                 if metadata:
                     all_tags.update(metadata.get("tags", []))
 
         return sorted(all_tags)
+
+    # ==================== Share Token Methods ====================
+
+    def create_share_token(self, project_id: str, language: str = "en") -> str:
+        """Create a share token for a project.
+
+        Generates a unique, cryptographically secure token that can be used
+        to access the compiled project without authentication.
+
+        Note: Projects must be compiled before they can be shared.
+
+        Args:
+            project_id: Project identifier
+            language: Language code for the shared version
+
+        Returns:
+            The generated share token
+
+        Raises:
+            ValueError: If project not found or not compiled
+        """
+        project = self.get_project(project_id)
+        if not project:
+            raise ValueError(f"Project not found: {project_id}")
+
+        # Check if project has been compiled
+        compiled_dir = self.projects_dir / project_id / "compiled" / "current"
+        if not compiled_dir.exists():
+            raise ValueError("Project must be compiled before sharing")
+
+        token = secrets.token_urlsafe(32)
+
+        share_info = {
+            "token": token,
+            "language": language,
+            "created_at": datetime.now().isoformat(),
+            "expires_at": None,  # Permanent until revoked
+        }
+
+        project["share"] = share_info
+        project["updated_at"] = datetime.now().isoformat()
+        self._save_project(project_id, project)
+
+        return token
+
+    def get_share_info(self, project_id: str) -> Optional[Dict[str, Any]]:
+        """Get share information for a project.
+
+        Args:
+            project_id: Project identifier
+
+        Returns:
+            Share info dict or None if not shared
+        """
+        project = self.get_project(project_id)
+        if project is None:
+            return None
+        return project.get("share")
+
+    def revoke_share(self, project_id: str) -> bool:
+        """Revoke the share token for a project.
+
+        Args:
+            project_id: Project identifier
+
+        Returns:
+            True if share was revoked, False if no share existed
+        """
+        project = self.get_project(project_id)
+        if project is None or "share" not in project:
+            return False
+
+        # Remove share from project data
+        del project["share"]
+        project["updated_at"] = datetime.now().isoformat()
+        self._save_project(project_id, project)
+
+        return True
+
+    def is_compiled(self, project_id: str) -> bool:
+        """Check if a project has been compiled.
+
+        Args:
+            project_id: Project identifier
+
+        Returns:
+            True if project has compiled content
+        """
+        compiled_dir = self.projects_dir / project_id / "compiled" / "current"
+        return compiled_dir.exists()
 
     # ==================== Private Helpers ====================
 
@@ -935,18 +1026,18 @@ class ProjectStorage:
         with open(project_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
-    def _get_manual_metadata(self, manual_id: str) -> Optional[Dict[str, Any]]:
+    def _get_doc_metadata(self, doc_id: str) -> Optional[Dict[str, Any]]:
         """Get metadata for a manual."""
-        metadata_file = self.manuals_dir / manual_id / "metadata.json"
+        metadata_file = self.docs_dir / doc_id / "metadata.json"
         if not metadata_file.exists():
             return None
 
         with open(metadata_file, "r", encoding="utf-8") as f:
             return json.load(f)
 
-    def _update_manual_metadata(self, manual_id: str, updates: Dict[str, Any]) -> None:
+    def _update_doc_metadata(self, doc_id: str, updates: Dict[str, Any]) -> None:
         """Update manual metadata."""
-        metadata_file = self.manuals_dir / manual_id / "metadata.json"
+        metadata_file = self.docs_dir / doc_id / "metadata.json"
 
         if metadata_file.exists():
             with open(metadata_file, "r", encoding="utf-8") as f:
@@ -962,14 +1053,60 @@ class ProjectStorage:
         with open(metadata_file, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2, ensure_ascii=False)
 
-    def _update_manual_project_ref(
+    def _update_doc_project_ref(
         self,
-        manual_id: str,
+        doc_id: str,
         project_id: Optional[str],
         chapter_id: Optional[str],
     ) -> None:
         """Update project/chapter reference in manual metadata."""
-        self._update_manual_metadata(manual_id, {
+        self._update_doc_metadata(doc_id, {
             "project_id": project_id,
             "chapter_id": chapter_id,
         })
+
+
+def find_project_by_share_token(token: str) -> Optional[Tuple[str, str, Dict[str, Any]]]:
+    """Find a project by its share token across all users.
+
+    This is a module-level function that searches all user directories
+    to find a project with the given share token.
+
+    Args:
+        token: The share token to search for
+
+    Returns:
+        Tuple of (user_id, project_id, share_info) or None if not found
+    """
+    if not USERS_DIR.exists():
+        return None
+
+    for user_dir in USERS_DIR.iterdir():
+        if not user_dir.is_dir():
+            continue
+
+        user_id = user_dir.name
+        projects_dir = user_dir / "projects"
+
+        if not projects_dir.exists():
+            continue
+
+        for project_dir in projects_dir.iterdir():
+            if not project_dir.is_dir():
+                continue
+
+            project_file = project_dir / "project.json"
+            if not project_file.exists():
+                continue
+
+            try:
+                with open(project_file, "r", encoding="utf-8") as f:
+                    project = json.load(f)
+
+                share_info = project.get("share")
+                if share_info and share_info.get("token") == token:
+                    return (user_id, project_dir.name, share_info)
+            except (json.JSONDecodeError, IOError):
+                continue
+
+    return None

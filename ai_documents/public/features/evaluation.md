@@ -1,10 +1,10 @@
-# Manual Evaluation
+# Doc Evaluation
 
 AI-powered quality assessment for your generated documentation.
 
 ## What is Evaluation?
 
-Manual evaluation uses AI to assess your documentation quality across multiple dimensions, providing:
+Doc evaluation uses AI to assess your documentation quality across multiple dimensions, providing:
 - Overall quality score (1-10)
 - Category-specific scores
 - Identified strengths
@@ -13,9 +13,9 @@ Manual evaluation uses AI to assess your documentation quality across multiple d
 
 ## How to Evaluate
 
-1. Go to **Manuals** page (`/dashboard/manuals`)
-2. Find the manual you want to evaluate
-3. Click the **three-dot menu** (⋯) on the manual card
+1. Go to **Docs** page (`/dashboard/docs`)
+2. Find the doc you want to evaluate
+3. Click the **three-dot menu** (⋯) on the doc card
 4. Select **Evaluate Quality**
 5. Choose the **language** to evaluate (if multiple languages exist)
 6. Wait for AI analysis to complete
@@ -29,9 +29,9 @@ Manual evaluation uses AI to assess your documentation quality across multiple d
 
 **Critical for meaningful evaluation:**
 
-When creating a manual from a video, you can specify:
-- **Target Audience** - Who is this manual for? (e.g., "new employees", "IT administrators", "end users")
-- **Manual Objective** - What should readers achieve? (e.g., "complete first-time setup", "troubleshoot common issues")
+When creating a doc from a video, you can specify:
+- **Target Audience** - Who is this doc for? (e.g., "new employees", "IT administrators", "end users")
+- **Doc Objective** - What should readers achieve? (e.g., "complete first-time setup", "troubleshoot common issues")
 
 **The evaluation will check whether the AI-generated content aligns with these targets:**
 - Does the language match the audience's expertise level?
@@ -48,7 +48,7 @@ If no target audience/objective is set, evaluation uses general documentation be
 |----------|-----------------|
 | Clarity & Completeness | Are instructions clear and complete? Any missing steps? |
 | Technical Accuracy | Are UI elements and actions correctly described? |
-| Structure & Flow | Is the manual well-organized with logical progression? |
+| Structure & Flow | Is the doc well-organized with logical progression? |
 
 ### Context-Aware Categories
 
@@ -56,7 +56,7 @@ When **target audience/objective are defined**:
 
 | Category | What It Measures |
 |----------|-----------------|
-| Objective Alignment | Does the manual help achieve the stated objective? |
+| Objective Alignment | Does the doc help achieve the stated objective? |
 | Audience Appropriateness | Is language/depth appropriate for the audience? |
 
 When **no target context**:
@@ -67,7 +67,7 @@ When **no target context**:
 
 ### Format-Specific Categories
 
-For **Step-by-step Manuals**:
+For **Step-by-step Docs**:
 - Step Quality - Are steps sequential with one action each?
 - Procedural Completeness - Can user complete the task?
 
@@ -99,7 +99,7 @@ For **Troubleshooting Guide**:
 
 - **Overall Score**: Single number summarizing quality
 - **Summary**: Brief executive summary of findings
-- **Strengths**: What the manual does well
+- **Strengths**: What the doc does well
 - **Areas for Improvement**: What needs work
 - **Category Scores**: Detailed breakdown by category
 - **Recommendations**: Specific actionable suggestions
@@ -115,7 +115,7 @@ For **Troubleshooting Guide**:
 ## Best Practices
 
 ### Before Evaluating
-- Complete all manual editing first
+- Complete all doc editing first
 - Ensure screenshots are current
 - Define target audience/objective if possible
 

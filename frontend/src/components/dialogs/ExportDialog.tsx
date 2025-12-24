@@ -47,7 +47,7 @@ interface ExportDialogProps {
 }
 
 export interface ExportOptions {
-  format: "pdf" | "word" | "html" | "chunks";
+  format: "pdf" | "word" | "html" | "chunks" | "markdown";
   language: string;
   templateName?: string;
 }
@@ -65,6 +65,12 @@ const FORMAT_OPTIONS = [
     description: "Editable .docx file",
     icon: "📝",
     supportsTemplate: true,
+  },
+  {
+    value: "markdown",
+    label: "Markdown",
+    description: "Portable .md + images",
+    icon: "📋",
   },
   {
     value: "html",
@@ -95,18 +101,28 @@ const LANGUAGE_NAMES: Record<string, string> = {
 
 // Map document formats to their template names
 const FORMAT_TEMPLATE_MAP: Record<string, string> = {
+  // Instructional formats
   "step-manual": "step-manual",
   "quick-guide": "quick-guide",
   "reference": "reference",
   "summary": "summary",
+  // Report formats
+  "incident-report": "incident-report",
+  "inspection-report": "inspection-report",
+  "progress-report": "progress-report",
 };
 
 // Human-readable format names
 const FORMAT_DISPLAY_NAMES: Record<string, string> = {
+  // Instructional formats
   "step-manual": "Step-by-step Manual",
   "quick-guide": "Quick Guide",
   "reference": "Reference Document",
   "summary": "Executive Summary",
+  // Report formats
+  "incident-report": "Incident Report",
+  "inspection-report": "Inspection Report",
+  "progress-report": "Progress Report",
 };
 
 export function ExportDialog({
@@ -123,7 +139,7 @@ export function ExportDialog({
   const tc = useTranslations("common");
   // When showFormat is false, we're doing Word-only export
   const defaultFormat = showFormat ? "pdf" : "word";
-  const [format, setFormat] = useState<"pdf" | "word" | "html" | "chunks">(defaultFormat);
+  const [format, setFormat] = useState<"pdf" | "word" | "html" | "chunks" | "markdown">(defaultFormat);
   const [language, setLanguage] = useState(defaultLanguage || languages[0] || "en");
   const [templateName, setTemplateName] = useState<string>("");
   const [templateList, setTemplateList] = useState<TemplateInfo[]>([]);
@@ -230,7 +246,7 @@ export function ExportDialog({
               <RadioGroup
                 value={format}
                 onValueChange={(v) => setFormat(v as typeof format)}
-                className="grid grid-cols-4 gap-3"
+                className="grid grid-cols-5 gap-3"
               >
                 {FORMAT_OPTIONS.map((option) => (
                   <Label
@@ -298,7 +314,7 @@ export function ExportDialog({
                   </p>
                 </div>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
                   {/* User templates */}
                   {matchingUserTemplates.length > 0 && (
                     <div className="pt-2">

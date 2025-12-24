@@ -35,7 +35,7 @@ import { useSidebar } from "./SidebarContext";
 const navItemsConfig = [
   { href: "/dashboard", labelKey: "dashboard", icon: Home, guideId: "nav-dashboard" },
   { href: "/dashboard/videos", labelKey: "videos", icon: Video, guideId: "nav-videos" },
-  { href: "/dashboard/manuals", labelKey: "manuals", icon: FileText, guideId: "nav-manuals" },
+  { href: "/dashboard/docs", labelKey: "docs", icon: FileText, guideId: "nav-manuals" },
   { href: "/dashboard/projects", labelKey: "projects", icon: FolderKanban, guideId: "nav-projects" },
   { href: "/dashboard/templates", labelKey: "templates", icon: LayoutTemplate, guideId: "nav-templates" },
   { href: "/dashboard/trash", labelKey: "trash", icon: Trash2, guideId: "nav-trash" },

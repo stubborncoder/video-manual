@@ -42,6 +42,9 @@ PAGE_ELEMENT_REGISTRY: dict[str, dict[str, Any]] = {
             "pattern": "video-card-{name}",
             "description": "Video card for '{name}'",
             "data_source": "videos",
+            "also": [
+                {"pattern": "video-process-btn-{name}", "description": "Process button for '{name}'"},
+            ],
         },
     },
     "/dashboard/manuals": {
@@ -114,7 +117,7 @@ def create_guide_tools(user_id: str, user_email: str | None = None) -> list:
         """
         storage = UserStorage(user_id)
         manuals = []
-        for manual_dir in storage.manuals_dir.iterdir():
+        for manual_dir in storage.docs_dir.iterdir():
             if manual_dir.is_dir():
                 metadata_file = manual_dir / "metadata.json"
                 if metadata_file.exists():
@@ -167,19 +170,19 @@ def create_guide_tools(user_id: str, user_email: str | None = None) -> list:
                     ".avi",
                     ".webm",
                 ):
-                    # Check if manuals exist for this video
-                    has_manuals = any(
-                        (storage.manuals_dir / d).exists()
-                        for d in storage.manuals_dir.iterdir()
+                    # Check if docs exist for this video
+                    has_docs = any(
+                        (storage.docs_dir / d).exists()
+                        for d in storage.docs_dir.iterdir()
                         if d.is_dir()
                         and video_file.stem.lower() in d.name.lower()
-                    ) if storage.manuals_dir.exists() else False
+                    ) if storage.docs_dir.exists() else False
 
                     videos.append(
                         {
                             "filename": video_file.name,
                             "size_mb": round(video_file.stat().st_size / (1024 * 1024), 2),
-                            "has_manuals": has_manuals,
+                            "has_docs": has_docs,
                         }
                     )
         return videos
@@ -235,6 +238,7 @@ def create_guide_tools(user_id: str, user_email: str | None = None) -> list:
 
                        Dynamic IDs (based on user data):
                        - video-card-{filename}: Specific video card
+                       - video-process-btn-{filename}: Process button for specific video
                        - manual-card-{id}: Specific manual card
                        - manual-edit-btn-{id}: Edit button for specific manual
                        - project-card-{id}: Specific project card
@@ -323,8 +327,8 @@ def create_guide_tools(user_id: str, user_email: str | None = None) -> list:
 
             elif data_source == "manuals":
                 storage = UserStorage(user_id)
-                if storage.manuals_dir.exists():
-                    for manual_dir in storage.manuals_dir.iterdir():
+                if storage.docs_dir.exists():
+                    for manual_dir in storage.docs_dir.iterdir():
                         if manual_dir.is_dir():
                             metadata_file = manual_dir / "metadata.json"
                             if metadata_file.exists():

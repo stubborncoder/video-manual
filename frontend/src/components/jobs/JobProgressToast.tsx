@@ -38,7 +38,7 @@ export function JobProgressToast({ job, onDismiss }: JobProgressToastProps) {
   const handleViewManual = () => {
     if (job.manual_id) {
       markSeen(job.id);
-      router.push(`/dashboard/manuals/${job.manual_id}/edit`);
+      router.push(`/dashboard/docs/${job.manual_id}/edit`);
       onDismiss();
     }
   };

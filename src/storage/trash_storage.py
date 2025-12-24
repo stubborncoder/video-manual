@@ -9,7 +9,7 @@ from typing import Optional, List, Dict, Any, Literal
 from ..config import USERS_DIR
 
 
-ItemType = Literal["video", "manual", "project"]
+ItemType = Literal["video", "doc", "project"]
 
 
 class TrashItem:
@@ -80,8 +80,8 @@ class TrashStorage:
             manifest.json           - List of all trashed items
             videos/                 - Trashed video files
                 {name}___{timestamp}.{ext}
-            manuals/                - Trashed manual directories
-                {manual_id}___{timestamp}/
+            manuals/                - Trashed doc directories
+                {doc_id}___{timestamp}/
             projects/               - Trashed project directories
                 {project_id}___{timestamp}/
     """
@@ -101,13 +101,13 @@ class TrashStorage:
 
         # Source directories
         self.videos_dir = self.user_dir / "videos"
-        self.manuals_dir = self.user_dir / "manuals"
+        self.docs_dir = self.user_dir / "docs"
         self.projects_dir = self.user_dir / "projects"
 
     def ensure_trash_dirs(self) -> None:
         """Create trash directory structure if it doesn't exist."""
         (self.trash_dir / "videos").mkdir(parents=True, exist_ok=True)
-        (self.trash_dir / "manuals").mkdir(parents=True, exist_ok=True)
+        (self.trash_dir / "docs").mkdir(parents=True, exist_ok=True)
         (self.trash_dir / "projects").mkdir(parents=True, exist_ok=True)
 
     def _load_manifest(self) -> List[Dict[str, Any]]:
@@ -142,7 +142,7 @@ class TrashStorage:
         Args:
             item_type: Type of item ("video", "manual", "project")
             item_name: Name/ID of the item
-            related_items: List of related item IDs (e.g., manuals for a video)
+            related_items: List of related item IDs (e.g., docs for a video)
             cascade_deleted: Whether this was deleted as part of a cascade
             metadata: Additional metadata to store
 
@@ -162,9 +162,9 @@ class TrashStorage:
             stem = Path(item_name).stem
             ext = Path(item_name).suffix
             trash_name = f"{self._generate_trash_name(stem)}{ext}"
-        elif item_type == "manual":
-            source_path = self.manuals_dir / item_name
-            trash_subdir = self.trash_dir / "manuals"
+        elif item_type == "doc":
+            source_path = self.docs_dir / item_name
+            trash_subdir = self.trash_dir / "docs"
             trash_name = self._generate_trash_name(item_name)
         elif item_type == "project":
             source_path = self.projects_dir / item_name
@@ -390,14 +390,14 @@ class TrashStorage:
             Dict with counts for each type
         """
         items = self._load_manifest()
-        stats = {"videos": 0, "manuals": 0, "projects": 0, "total": 0}
+        stats = {"videos": 0, "docs": 0, "projects": 0, "total": 0}
 
         for item in items:
             item_type = item["type"]
             if item_type == "video":
                 stats["videos"] += 1
-            elif item_type == "manual":
-                stats["manuals"] += 1
+            elif item_type == "doc":
+                stats["docs"] += 1
             elif item_type == "project":
                 stats["projects"] += 1
             stats["total"] += 1

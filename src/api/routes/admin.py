@@ -113,7 +113,7 @@ async def get_user_stats(user_id: str, admin_user: AdminUser) -> UserStats:
 
     # Count items
     video_count = len(user_storage.list_videos())
-    manual_count = len(user_storage.list_manuals())
+    manual_count = len(user_storage.list_docs())
     project_count = len(project_storage.list_projects())
     template_count = len(template_storage.list_user_templates())
     trash_count = len(trash_storage.list_trash())

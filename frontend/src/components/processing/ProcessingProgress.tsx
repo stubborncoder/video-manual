@@ -16,13 +16,13 @@ export function ProcessingProgress({ state }: ProcessingProgressProps) {
   const NODE_LABELS: Record<string, string> = {
     analyze_video: t("analyzeVideo"),
     identify_keyframes: t("identifyKeyframes"),
-    generate_manual: t("generateManual"),
+    generate_manual: t("generateDoc"),
   };
 
   const NODE_DESCRIPTIONS: Record<string, string> = {
     analyze_video: t("analyzeVideoDesc"),
     identify_keyframes: t("identifyKeyframesDesc"),
-    generate_manual: t("generateManualDesc"),
+    generate_manual: t("generateDocDesc"),
   };
 
   const nodes = ["analyze_video", "identify_keyframes", "generate_manual"];
@@ -133,7 +133,7 @@ export function ProcessingProgress({ state }: ProcessingProgressProps) {
               <p className="font-medium">{t("success")}</p>
               {getManualId(state.result) && (
                 <p className="text-sm mt-1">
-                  {t("manualId")}: {getManualId(state.result)}
+                  {t("docId")}: {getManualId(state.result)}
                 </p>
               )}
             </div>

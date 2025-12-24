@@ -234,7 +234,7 @@ class WordExporter(BaseExporter):
             manual_id: Manual identifier
         """
         # Resolve image path
-        screenshots_dir = self.user_storage.manuals_dir / manual_id / "screenshots"
+        screenshots_dir = self.user_storage.docs_dir / manual_id / "screenshots"
 
         if img_path.startswith("../screenshots/"):
             filename = img_path.replace("../screenshots/", "")

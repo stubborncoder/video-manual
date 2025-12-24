@@ -14,11 +14,11 @@ Five default templates matching document formats:
 
 | Template | For Document Type |
 |----------|------------------|
-| step-manual | Step-by-step Manual |
+| step-doc | Step-by-step Doc |
 | quick-guide | Quick Guide |
 | reference | Reference Document |
 | summary | Executive Summary |
-| default-manual | Legacy manuals |
+| default-doc | Legacy docs |
 
 ## Template Syntax
 
@@ -32,16 +32,16 @@ Available in every template:
 
 | Variable | Description |
 |----------|-------------|
-| `title` | Manual title |
-| `manual_id` | Manual identifier |
+| `title` | Doc title |
+| `doc_id` | Doc identifier |
 | `language` | Language code (e.g., "en") |
 | `language_upper` | Language uppercase (e.g., "EN") |
 | `generated_at` | Full timestamp (YYYY-MM-DD HH:MM) |
 | `generated_date` | Date only (YYYY-MM-DD) |
 | `generated_time` | Time only (HH:MM) |
 | `target_audience` | Target audience (if set during generation) |
-| `target_objective` | Manual objective (if set during generation) |
-| `document_format` | Format type (step-manual, quick-guide, etc.) |
+| `target_objective` | Doc objective (if set during generation) |
+| `document_format` | Format type (step-doc, quick-guide, etc.) |
 | `video_name` | Source video filename |
 | `video_duration` | Source video duration |
 | `step_count` | Number of steps |
@@ -49,7 +49,7 @@ Available in every template:
 
 ---
 
-## Step-by-step Manual Variables
+## Step-by-step Doc Variables
 
 ### Semantic Steps
 Loop through `semantic_steps`:
@@ -80,7 +80,7 @@ Loop through `notes`:
 ### Example Template
 ```jinja
 {{ title }}
-Step-by-step Manual | {{ generated_date }} | {{ language_upper }}
+Step-by-step Doc | {{ generated_date }} | {{ language_upper }}
 
 {% if introduction %}
 Introduction
@@ -299,7 +299,7 @@ Recommendations
 
 ## Using Templates
 
-When exporting a manual to Word:
+When exporting a doc to Word:
 1. Click Export → Word
 2. Select your template from the dropdown
 3. Export applies your template formatting
@@ -308,6 +308,6 @@ When exporting a manual to Word:
 
 - Use the correct variables for your document format
 - Start from a default template and modify
-- Test templates with different manuals
+- Test templates with different docs
 - Use conditionals (`{% if %}`) to handle optional content
 - Images are InlineImage objects - just use `{{ step.image }}`

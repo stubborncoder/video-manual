@@ -651,16 +651,16 @@ export default function UsagePage() {
             </CardContent>
           </Card>
 
-          {/* Per-Manual Breakdown */}
+          {/* Per-Doc Breakdown */}
           <Card>
             <CardHeader className="py-3">
-              <CardTitle className="text-base">{t("usageByManual") || "Usage by Manual"}</CardTitle>
+              <CardTitle className="text-base">{t("usageByDoc") || "Usage by Doc"}</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Manual ID</TableHead>
+                    <TableHead>Doc ID</TableHead>
                     <TableHead className="text-right">{t("requests")}</TableHead>
                     <TableHead className="text-right">Input</TableHead>
                     <TableHead className="text-right">Output</TableHead>

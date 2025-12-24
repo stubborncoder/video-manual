@@ -18,32 +18,32 @@ logger = logging.getLogger(__name__)
 
 
 class ManualTemplateExporter:
-    """Export individual manuals using Word templates with Jinja2 placeholders.
+    """Export individual docs using Word templates with Jinja2 placeholders.
 
     Templates can include placeholders like:
-    - {{ title }} - Manual title
+    - {{ title }} - Doc title
     - {{ language }} - Language code
     - {{ generated_at }} - Generation timestamp
     - {% for step in steps %} - Loop over steps
     - {{ step.number }}, {{ step.description }}, {{ step.image }}
     """
 
-    def __init__(self, user_id: str, manual_id: str):
+    def __init__(self, user_id: str, doc_id: str):
         """Initialize the exporter.
 
         Args:
             user_id: User identifier
-            manual_id: Manual identifier
+            doc_id: Doc identifier
         """
         self.user_id = user_id
-        self.manual_id = manual_id
+        self.doc_id = doc_id
         self.user_storage = UserStorage(user_id)
         self.template_storage = TemplateStorage(user_id)
 
-        # Verify manual exists
-        manual_dir = self.user_storage.manuals_dir / manual_id
-        if not manual_dir.exists():
-            raise ValueError(f"Manual not found: {manual_id}")
+        # Verify doc exists
+        doc_dir = self.user_storage.docs_dir / doc_id
+        if not doc_dir.exists():
+            raise ValueError(f"Doc not found: {doc_id}")
 
     def export(
         self,
@@ -69,7 +69,7 @@ class ManualTemplateExporter:
             raise ValueError(f"Template not found: {template_path}")
 
         # Get manual content
-        content = self.user_storage.get_manual_content(self.manual_id, language)
+        content = self.user_storage.get_doc_content(self.doc_id, language)
         if not content:
             raise ValueError(f"Manual content not found for language: {language}")
 
@@ -100,11 +100,11 @@ class ManualTemplateExporter:
         Returns:
             Output file path
         """
-        export_dir = self.user_storage.manuals_dir / self.manual_id / "exports"
+        export_dir = self.user_storage.docs_dir / self.doc_id / "exports"
         export_dir.mkdir(parents=True, exist_ok=True)
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{self.manual_id}_{language}_{timestamp}_template.docx"
+        filename = f"{self.doc_id}_{language}_{timestamp}_template.docx"
         return str(export_dir / filename)
 
     def _build_context(
@@ -121,7 +121,7 @@ class ManualTemplateExporter:
             Dictionary with template context variables
         """
         # Get manual metadata
-        metadata = self.user_storage.get_manual_metadata(self.manual_id) or {}
+        metadata = self.user_storage.get_doc_metadata(self.doc_id) or {}
 
         # Parse semantic tags for structured content
         semantic_content = self._parse_semantic_content(doc, content)
@@ -132,11 +132,15 @@ class ManualTemplateExporter:
         # Get title from semantic tags or fallback to metadata
         semantic_title = get_title(content)
 
+        # Create a subdocument with a page break for use in templates
+        page_break_subdoc = doc.new_subdoc()
+        page_break_subdoc.add_page_break()
+
         # Build context
         context = {
             # Metadata
-            "title": semantic_title or metadata.get("title", self.manual_id),
-            "manual_id": self.manual_id,
+            "title": semantic_title or metadata.get("title", self.doc_id),
+            "doc_id": self.doc_id,
             "language": language,
             "language_upper": language.upper(),
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
@@ -147,6 +151,8 @@ class ManualTemplateExporter:
             "target_objective": metadata.get("target_objective", ""),
             # Document format info
             "document_format": metadata.get("document_format", "step-manual"),
+            # Page break subdocument for use in loops
+            "page_break": page_break_subdoc,
             # Semantic content blocks - available for all formats
             **semantic_content,
             # Legacy steps (for backward compatibility)
@@ -190,10 +196,11 @@ class ManualTemplateExporter:
             - findings: List of findings (from <finding> tags)
             - recommendations: List of recommendations (from <recommendation> tags)
         """
-        screenshots_dir = self.user_storage.manuals_dir / self.manual_id / "screenshots"
+        screenshots_dir = self.user_storage.docs_dir / self.doc_id / "screenshots"
         blocks = parse_semantic_tags(content)
 
         result: Dict[str, Any] = {
+            # Common
             "introduction": "",
             "conclusion": "",
             "overview": "",
@@ -207,6 +214,18 @@ class ManualTemplateExporter:
             "examples": [],
             "findings": [],
             "recommendations": [],
+            # Report formats
+            "summary": "",
+            "location": "",
+            "next_steps": "",
+            "status_summary": "",
+            "period": "",
+            "timeline": "",
+            "evidences": [],
+            "severity": {},
+            "inspection_items": [],
+            "accomplishments": [],
+            "issues": [],
         }
 
         for block in blocks:
@@ -292,13 +311,84 @@ class ManualTemplateExporter:
                     "has_image": len(images) > 0,
                 }
                 result["findings"].append(finding_data)
+            elif tag == "findings":
+                # The <findings> tag (with 's') is used in incident-report format
+                # as a singular container for the "Detailed Findings" section
+                # Parse it as a single finding entry
+                finding_data = {
+                    "number": 1,
+                    "title": attrs.get("title", "Detailed Findings"),
+                    "content": self._strip_markdown(processed_content),
+                    "image": images[0] if images else None,
+                    "has_image": len(images) > 0,
+                }
+                result["findings"].append(finding_data)
             elif tag == "recommendation":
                 recommendation_data = {
                     "number": attrs.get("number", len(result["recommendations"]) + 1),
                     "title": attrs.get("title", ""),
+                    "priority": attrs.get("priority", "medium"),
                     "content": self._strip_markdown(processed_content),
                 }
                 result["recommendations"].append(recommendation_data)
+            # Report format tags
+            elif tag == "summary":
+                result["summary"] = self._strip_markdown(processed_content)
+                if images:
+                    result["summary_image"] = images[0]
+            elif tag == "location":
+                result["location"] = self._strip_markdown(processed_content)
+                if images:
+                    result["location_image"] = images[0]
+            elif tag == "next_steps":
+                result["next_steps"] = self._strip_markdown(processed_content)
+            elif tag == "evidence":
+                evidence_data = {
+                    "title": attrs.get("title", f"Evidence {len(result['evidences']) + 1}"),
+                    "content": self._strip_markdown(processed_content),
+                    "image": images[0] if images else None,
+                    "has_image": len(images) > 0,
+                }
+                result["evidences"].append(evidence_data)
+            elif tag == "severity":
+                result["severity"] = {
+                    "level": attrs.get("level", "medium"),
+                    "content": self._strip_markdown(processed_content),
+                }
+            elif tag == "inspection_item":
+                item_data = {
+                    "title": attrs.get("title", ""),
+                    "status": attrs.get("status", "pass"),
+                    "content": self._strip_markdown(processed_content),
+                    "image": images[0] if images else None,
+                    "has_image": len(images) > 0,
+                }
+                result["inspection_items"].append(item_data)
+            elif tag == "status":
+                result["status_summary"] = self._strip_markdown(processed_content)
+            elif tag == "period":
+                result["period"] = self._strip_markdown(processed_content)
+                if images:
+                    result["period_image"] = images[0]
+            elif tag == "accomplishment":
+                accomplishment_data = {
+                    "title": attrs.get("title", ""),
+                    "content": self._strip_markdown(processed_content),
+                    "image": images[0] if images else None,
+                    "has_image": len(images) > 0,
+                }
+                result["accomplishments"].append(accomplishment_data)
+            elif tag == "issue":
+                issue_data = {
+                    "title": attrs.get("title", ""),
+                    "impact": attrs.get("impact", "medium"),
+                    "content": self._strip_markdown(processed_content),
+                    "image": images[0] if images else None,
+                    "has_image": len(images) > 0,
+                }
+                result["issues"].append(issue_data)
+            elif tag == "timeline":
+                result["timeline"] = self._strip_markdown(processed_content)
 
         return result
 
@@ -378,7 +468,7 @@ class ManualTemplateExporter:
         Returns:
             List of step dictionaries
         """
-        screenshots_dir = self.user_storage.manuals_dir / self.manual_id / "screenshots"
+        screenshots_dir = self.user_storage.docs_dir / self.doc_id / "screenshots"
         steps = []
         current_step = None
         step_number = 0
@@ -702,7 +792,7 @@ class ProjectTemplateExporter:
 
             for manual_id in chapter.get("manuals", []):
                 # Get manual content
-                content = self.user_storage.get_manual_content(manual_id, language)
+                content = self.user_storage.get_doc_content(manual_id, language)
                 if not content:
                     continue
 
@@ -711,7 +801,7 @@ class ProjectTemplateExporter:
                 steps = manual_exporter._parse_steps_from_markdown(doc, content)
 
                 # Get manual metadata
-                metadata = self.user_storage.get_manual_metadata(manual_id) or {}
+                metadata = self.user_storage.get_doc_metadata(manual_id) or {}
 
                 chapter_manuals.append(
                     {

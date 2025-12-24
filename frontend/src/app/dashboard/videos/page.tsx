@@ -423,7 +423,7 @@ export default function VideosPage() {
                         <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                       <span className="text-muted-foreground">
-                        {videoList.reduce((acc, v) => acc + (v.manual_count || 0), 0)} {tc("manuals").toLowerCase()}
+                        {videoList.reduce((acc, v) => acc + (v.manual_count || 0), 0)} {tc("docs").toLowerCase()}
                       </span>
                     </div>
                   </div>
@@ -688,7 +688,11 @@ export default function VideosPage() {
                     }}
                   >
                     <DialogTrigger asChild>
-                      <Button size="sm" className="flex-1">
+                      <Button
+                        size="sm"
+                        className="flex-1"
+                        data-guide-id={`video-process-btn-${video.name}`}
+                      >
                         <Wand2 className="mr-2 h-4 w-4" />
                         {t("process")}
                       </Button>
@@ -963,7 +967,7 @@ export default function VideosPage() {
                     <div className="flex items-center gap-2 text-foreground">
                       <AlertTriangle className="h-4 w-4 text-amber-500" />
                       <span className="font-medium">
-                        {t("videoHasManuals", { count: videoManuals.length })}
+                        {t("videoHasDocs", { count: videoManuals.length })}
                       </span>
                     </div>
 
@@ -996,7 +1000,7 @@ export default function VideosPage() {
                         htmlFor="cascade"
                         className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
                       >
-                        {t("alsoDeleteManuals")}
+                        {t("alsoDeleteDocs")}
                       </label>
                     </div>
                   </div>
@@ -1020,7 +1024,7 @@ export default function VideosPage() {
                 <>
                   <Trash2 className="mr-2 h-4 w-4" />
                   {cascadeDelete
-                    ? t("deleteVideoAndManuals", { count: videoManuals.length })
+                    ? t("deleteVideoAndDocs", { count: videoManuals.length })
                     : tc("delete")}
                 </>
               )}
