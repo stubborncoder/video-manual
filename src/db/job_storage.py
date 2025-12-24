@@ -36,7 +36,7 @@ class JobStorage:
         - current_node: str
         - node_index: int
         - total_nodes: int
-        - manual_id: str
+        - doc_id: str
         - error: str
         - completed_at: str (ISO format)
         """
@@ -49,7 +49,7 @@ class JobStorage:
             "current_node",
             "node_index",
             "total_nodes",
-            "manual_id",
+            "doc_id",
             "error",
             "completed_at",
             "seen",
@@ -177,12 +177,12 @@ class JobStorage:
             return cursor.rowcount
 
     @staticmethod
-    def mark_complete(job_id: str, manual_id: str) -> bool:
-        """Mark a job as complete with the resulting manual ID."""
+    def mark_complete(job_id: str, doc_id: str) -> bool:
+        """Mark a job as complete with the resulting doc ID."""
         return JobStorage.update_job(
             job_id,
             status="complete",
-            manual_id=manual_id,
+            doc_id=doc_id,
             completed_at=datetime.now().isoformat(),
         )
 

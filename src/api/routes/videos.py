@@ -127,37 +127,37 @@ async def delete_video(
     if not video_path.exists():
         raise HTTPException(status_code=404, detail="Video not found")
 
-    # Get associated manuals
-    associated_manuals = storage.get_docs_by_video(video_name)
-    manual_ids = [m["manual_id"] for m in associated_manuals]
+    # Get associated docs
+    associated_docs = storage.get_docs_by_video(video_name)
+    doc_ids = [d["doc_id"] for d in associated_docs]
 
-    if cascade and manual_ids:
-        # Delete manuals first (move to trash)
-        for manual_id in manual_ids:
+    if cascade and doc_ids:
+        # Delete docs first (move to trash)
+        for doc_id in doc_ids:
             try:
                 trash.move_to_trash(
                     item_type="manual",
-                    item_name=manual_id,
+                    item_name=doc_id,
                     cascade_deleted=True,
                 )
             except ValueError:
-                pass  # Manual may not exist
+                pass  # Doc may not exist
 
     # Move video to trash
     trash.move_to_trash(
         item_type="video",
         item_name=video_name,
-        related_items=manual_ids,
+        related_items=doc_ids,
     )
 
-    # Update manual metadata to mark video as deleted
+    # Update doc metadata to mark video as deleted
     storage.mark_video_deleted_for_docs(video_name)
 
     return {
         "status": "moved_to_trash",
         "video": video_name,
         "cascade": cascade,
-        "affected_manuals": manual_ids,
+        "affected_docs": doc_ids,
     }
 
 
