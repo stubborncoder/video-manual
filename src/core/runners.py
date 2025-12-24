@@ -29,11 +29,11 @@ from ..db.usage_tracking import UsageTracking
 class UsageTrackingCallback(BaseCallbackHandler):
     """Callback handler to track token usage from LLM calls."""
 
-    def __init__(self, user_id: str, operation: str, manual_id: Optional[str] = None):
+    def __init__(self, user_id: str, operation: str, doc_id: Optional[str] = None):
         super().__init__()
         self.user_id = user_id
         self.operation = operation
-        self.manual_id = manual_id
+        self.doc_id = doc_id
 
     def on_llm_end(self, response: LLMResult, *, run_id: UUID, **kwargs) -> None:
         """Log token usage when LLM call completes."""
@@ -103,7 +103,7 @@ class UsageTrackingCallback(BaseCallbackHandler):
                 cached_tokens=cached_tokens,
                 cache_read_tokens=cache_read_tokens,
                 cache_creation_tokens=cache_creation_tokens,
-                manual_id=self.manual_id,
+                doc_id=self.doc_id,
             )
             logger.info(f"[USAGE CALLBACK] Logged {self.operation}: input={input_tokens}, output={output_tokens}, cached={cached_tokens}, cache_read={cache_read_tokens}, model={model_name}")
 
@@ -643,7 +643,7 @@ class ManualEditorRunner:
         self._usage_callback = UsageTrackingCallback(
             user_id=self.user_id,
             operation="manual_editing",
-            manual_id=self.manual_id
+            doc_id=self.manual_id  # Class still uses manual_id internally
         )
 
         self._config = {

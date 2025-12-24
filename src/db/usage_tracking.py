@@ -137,21 +137,21 @@ class UsageTracking:
         cached_tokens: int = 0,
         cache_creation_tokens: int = 0,
         cache_read_tokens: int = 0,
-        manual_id: Optional[str] = None,
+        doc_id: Optional[str] = None,
         job_id: Optional[str] = None,
     ) -> int:
         """Log an LLM request with token usage.
 
         Args:
             user_id: User identifier
-            operation: Operation type (e.g., 'video_analysis', 'manual_generation')
+            operation: Operation type (e.g., 'video_analysis', 'doc_generation')
             model: Model name
             input_tokens: Number of input tokens
             output_tokens: Number of output tokens
             cached_tokens: Number of cached tokens (Gemini)
             cache_creation_tokens: Number of cache creation tokens (Claude)
             cache_read_tokens: Number of cache read tokens (Claude)
-            manual_id: Optional manual identifier
+            doc_id: Optional doc identifier
             job_id: Optional job identifier
 
         Returns:
@@ -190,7 +190,7 @@ class UsageTracking:
                     cache_creation_tokens,
                     cache_read_tokens,
                     cost_usd,
-                    manual_id,
+                    doc_id,  # DB column is still manual_id for backwards compatibility
                     job_id,
                 ),
             )

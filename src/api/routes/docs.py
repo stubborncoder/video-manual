@@ -2081,7 +2081,7 @@ Provide your evaluation as valid JSON only, with no additional text before or af
                     cached_tokens=cached_tokens,
                     cache_read_tokens=cache_read_tokens,
                     cache_creation_tokens=cache_creation_tokens,
-                    manual_id=doc_id,
+                    doc_id=doc_id,
                 )
         except Exception as usage_error:
             # Don't fail the whole operation if usage tracking fails

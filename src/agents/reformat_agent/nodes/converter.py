@@ -102,7 +102,7 @@ Now convert the above manual to {target_format} format. Start directly with the 
                     cached_tokens=0,  # Gemini only
                     cache_read_tokens=cache_read_tokens,
                     cache_creation_tokens=cache_creation_tokens,
-                    manual_id=manual_id,
+                    doc_id=manual_id,  # Variable still named manual_id from state
                 )
         except Exception as usage_error:
             # Don't fail the whole operation if usage tracking fails
