@@ -514,7 +514,7 @@ async def add_manual_to_project(
 ) -> dict:
     """Add a manual to a project."""
     try:
-        storage.add_manual_to_project(project_id, manual_id, chapter_id)
+        storage.add_doc_to_project(project_id, manual_id, chapter_id)
         return {"status": "added", "manual_id": manual_id, "project_id": project_id}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

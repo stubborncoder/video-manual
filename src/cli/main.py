@@ -247,7 +247,7 @@ def process_with_streaming(
             if project_id and manual_id:
                 project_storage = ProjectStorage(user_id)
                 try:
-                    project_storage.add_manual_to_project(project_id, manual_id, chapter_id)
+                    project_storage.add_doc_to_project(project_id, manual_id, chapter_id)
                     console.print(f"[dim]Added to project: {project_id}[/dim]")
                 except Exception as e:
                     console.print(f"[yellow]Warning: Could not add to project: {e}[/yellow]")
@@ -780,7 +780,7 @@ def project_add_manual(
     storage = ProjectStorage(user)
 
     try:
-        storage.add_manual_to_project(project_id, manual_id, chapter)
+        storage.add_doc_to_project(project_id, manual_id, chapter)
         console.print(f"[green]Manual '{manual_id}' added to project '{project_id}'[/green]")
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]")

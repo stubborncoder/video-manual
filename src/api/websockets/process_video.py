@@ -285,7 +285,7 @@ async def websocket_process_video(
                 # Add to project (always - default project is used if none specified)
                 if doc_id:
                     try:
-                        project_storage.add_manual_to_project(project_id, doc_id, chapter_id)
+                        project_storage.add_doc_to_project(project_id, doc_id, chapter_id)
                         logger.info(f"Doc {doc_id} added to project {project_id}")
                     except Exception as e:
                         logger.error(f"Failed to add doc {doc_id} to project {project_id}: {e}")
