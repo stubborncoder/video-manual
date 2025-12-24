@@ -10,7 +10,7 @@ from typing import Dict, Any, Optional
 from dotenv import load_dotenv
 from langgraph.checkpoint.sqlite import SqliteSaver
 
-from .graph import create_video_manual_graph, AGENT_NAME
+from .graph import create_video_doc_graph, AGENT_NAME
 from .state import VideoDocState
 from .config import DEFAULT_GEMINI_MODEL
 from ...config import get_checkpoint_db_path, ensure_directories
@@ -53,11 +53,11 @@ class VideoDocAgent:
             db_path = get_checkpoint_db_path(AGENT_NAME)
             self._conn = sqlite3.connect(str(db_path), check_same_thread=False)
             self.checkpointer = SqliteSaver(self._conn)
-            self.graph = create_video_manual_graph(checkpointer=self.checkpointer)
+            self.graph = create_video_doc_graph(checkpointer=self.checkpointer)
         else:
             self._conn = None
             self.checkpointer = None
-            self.graph = create_video_manual_graph()
+            self.graph = create_video_doc_graph()
 
     def create_manual(
         self,

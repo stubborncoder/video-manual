@@ -14,8 +14,8 @@ from ...config import get_checkpoint_db_path, ensure_directories
 AGENT_NAME = "video_doc_agent"
 
 
-def create_video_manual_graph(checkpointer=None):
-    """Create the video manual LangGraph workflow.
+def create_video_doc_graph(checkpointer=None):
+    """Create the video doc LangGraph workflow.
 
     The workflow consists of three sequential nodes:
     1. analyze_video - Analyzes video content using Gemini
@@ -49,7 +49,7 @@ def create_video_manual_graph(checkpointer=None):
     return builder.compile()
 
 
-def get_video_manual_graph():
+def get_video_doc_graph():
     """Get graph with agent-specific SQLite checkpointer for persistence.
 
     This is a convenience function that creates a graph with SQLite-based
@@ -63,4 +63,4 @@ def get_video_manual_graph():
     db_path = get_checkpoint_db_path(AGENT_NAME)
     conn = sqlite3.connect(str(db_path), check_same_thread=False)
     checkpointer = SqliteSaver(conn)
-    return create_video_manual_graph(checkpointer=checkpointer)
+    return create_video_doc_graph(checkpointer=checkpointer)
