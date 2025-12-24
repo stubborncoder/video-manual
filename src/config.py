@@ -29,7 +29,9 @@ PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = Path(os.getenv("VDOCS_DATA_DIR", str(PROJECT_ROOT / "data")))
 USERS_DIR = DATA_DIR / "users"
 CHECKPOINTS_DIR = DATA_DIR / "checkpoints"
-TEMPLATES_DIR = PROJECT_ROOT / "templates"  # Default templates (committed to git)
+# Templates: use DATA_DIR/templates in production (Docker), otherwise PROJECT_ROOT/templates for local dev
+_templates_in_data = DATA_DIR / "templates"
+TEMPLATES_DIR = _templates_in_data if _templates_in_data.exists() else PROJECT_ROOT / "templates"
 
 # Database configuration
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{PROJECT_ROOT / 'src' / 'db' / 'vdocs.db'}")
