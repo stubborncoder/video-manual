@@ -488,17 +488,17 @@ class UsageTracking:
             return [dict(row) for row in cursor.fetchall()]
 
     @staticmethod
-    def get_manual_usage(
+    def get_doc_usage(
         start_date: Optional[str] = None, end_date: Optional[str] = None
     ) -> list[dict]:
-        """Get usage summary grouped by manual.
+        """Get usage summary grouped by doc.
 
         Args:
             start_date: Optional start date (YYYY-MM-DD)
             end_date: Optional end date (YYYY-MM-DD)
 
         Returns:
-            List of manual usage summaries
+            List of doc usage summaries
         """
         query = """
             SELECT doc_id,

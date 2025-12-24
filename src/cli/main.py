@@ -802,7 +802,7 @@ def project_remove_manual(
     storage = ProjectStorage(user)
 
     try:
-        storage.remove_manual_from_project(project_id, manual_id)
+        storage.remove_doc_from_project(project_id, manual_id)
         console.print(f"[green]Manual '{manual_id}' removed from project '{project_id}'[/green]")
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -829,7 +829,7 @@ def project_move_manual(
     storage = ProjectStorage(user)
 
     try:
-        storage.move_manual_to_chapter(project_id, manual_id, chapter)
+        storage.move_doc_to_chapter(project_id, manual_id, chapter)
         console.print(f"[green]Manual '{manual_id}' moved to chapter '{chapter}'[/green]")
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]")
