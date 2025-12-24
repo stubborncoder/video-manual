@@ -272,23 +272,23 @@ async def websocket_process_video(
 
             # If complete, handle post-processing
             if event.event_type == EventType.COMPLETE and event.result:
-                manual_id = event.result.get("manual_id")
+                doc_id = event.result.get("doc_id")
 
-                # Mark job complete with manual ID
-                JobStorage.mark_complete(job_id, manual_id)
+                # Mark job complete with doc ID
+                JobStorage.mark_complete(job_id, doc_id)
 
                 # Add tags if specified
-                if tags and manual_id:
+                if tags and doc_id:
                     for tag in tags:
-                        project_storage.add_tag_to_manual(manual_id, tag)
+                        project_storage.add_tag_to_manual(doc_id, tag)
 
                 # Add to project (always - default project is used if none specified)
-                if manual_id:
+                if doc_id:
                     try:
-                        project_storage.add_manual_to_project(project_id, manual_id, chapter_id)
-                        logger.info(f"Manual {manual_id} added to project {project_id}")
+                        project_storage.add_manual_to_project(project_id, doc_id, chapter_id)
+                        logger.info(f"Doc {doc_id} added to project {project_id}")
                     except Exception as e:
-                        logger.error(f"Failed to add manual {manual_id} to project {project_id}: {e}")
+                        logger.error(f"Failed to add doc {doc_id} to project {project_id}: {e}")
 
         thread.join(timeout=5)
 
