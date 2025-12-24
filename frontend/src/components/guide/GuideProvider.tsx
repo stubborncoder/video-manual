@@ -30,9 +30,9 @@ function getSuggestionKeysForPage(pathname: string): string[] {
     return ["projects.create", "projects.organize", "projects.compile"];
   }
   if (pathname.includes("/dashboard")) {
-    return ["dashboard.getStarted", "dashboard.capabilities", "dashboard.createDocs"];
+    return ["dashboard.getStarted", "dashboard.capabilities", "dashboard.createDocs", "dashboard.whatsNew"];
   }
-  return ["default.getStarted", "default.features", "default.tour"];
+  return ["default.getStarted", "default.features", "default.whatsNew"];
 }
 
 /**
@@ -58,8 +58,9 @@ export function GuideProvider({ children }: GuideProviderProps) {
   const router = useRouter();
   const { locale } = useLocale();
   const t = useTranslations("guide");
-  const { addMessage, clearMessages, setPageContext, messages, showHighlight, clearAllHighlights } = useGuideStore();
+  const { addMessage, clearMessages, setPageContext, messages, showHighlight, clearAllHighlights, isOpen } = useGuideStore();
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [whatsNewLabel, setWhatsNewLabel] = useState<string>("");
   // Track if we've triggered any actions during current response
   const hasActionsRef = useRef<boolean>(false);
   // Store current suggestions and translated strings for use in callbacks
@@ -86,97 +87,102 @@ export function GuideProvider({ children }: GuideProviderProps) {
     fallbackGreetingRef.current = t("fallbackGreeting");
     chatClearedRef.current = t("chatCleared");
 
+    // Set "What's new" label - always use the full version
+    setWhatsNewLabel(t("dashboard.whatsNew"));
+
     // Clear highlights when navigating to a new page
     clearAllHighlights();
   }, [pathname, setPageContext, clearAllHighlights, t]);
 
-  // Fetch initial greeting from backend when chat is empty
-  // This allows the guide agent to check user profile and provide personalized greeting
+  // Fetch initial greeting from backend when user opens the guide panel
+  // Only triggers when panel is opened AND chat is empty (first interaction)
   const hasInitialized = useRef(false);
   useEffect(() => {
     const initializeGreeting = async () => {
-      if (messages.length === 0 && !hasInitialized.current) {
-        hasInitialized.current = true;
+      // Only initialize when user explicitly opens the panel and chat is empty
+      if (!isOpen || messages.length > 0 || hasInitialized.current) {
+        return;
+      }
+      hasInitialized.current = true;
 
-        const { setGenerating, addMessage: addMsg } = useGuideStore.getState();
-        setGenerating(true);
+      const { setGenerating, addMessage: addMsg } = useGuideStore.getState();
+      setGenerating(true);
 
-        let greetingContent = "";
-        const greetingMessageId = `msg_${Date.now()}_greeting`;
+      let greetingContent = "";
+      const greetingMessageId = `msg_${Date.now()}_greeting`;
 
-        try {
-          const { streamGuideChat } = await import("@/lib/guide-api");
-          const pageTitle = getPageTitle(pathname);
+      try {
+        const { streamGuideChat } = await import("@/lib/guide-api");
+        const pageTitle = getPageTitle(pathname);
 
-          await streamGuideChat(
-            {
-              message: "Hello",
-              page_context: {
-                currentPage: pathname,
-                pageTitle,
-                availableActions: [],
-                pageState: {},
-              },
-              language: locale,
+        await streamGuideChat(
+          {
+            message: "Hello",
+            page_context: {
+              currentPage: pathname,
+              pageTitle,
+              availableActions: [],
+              pageState: {},
             },
-            (token: string) => {
-              greetingContent += token;
+            language: locale,
+          },
+          (token: string) => {
+            greetingContent += token;
 
-              const { messages: currentMessages } = useGuideStore.getState();
-              const existingMessage = currentMessages.find((m) => m.id === greetingMessageId);
+            const { messages: currentMessages } = useGuideStore.getState();
+            const existingMessage = currentMessages.find((m) => m.id === greetingMessageId);
 
-              if (existingMessage) {
-                useGuideStore.setState({
-                  messages: currentMessages.map((m) =>
-                    m.id === greetingMessageId
-                      ? { ...m, content: greetingContent }
-                      : m
-                  ),
-                });
-              } else {
-                addMsg({
-                  id: greetingMessageId,
-                  role: "assistant",
-                  content: greetingContent,
-                  timestamp: new Date(),
-                  suggestions: suggestionsRef.current,
-                });
-              }
-            },
-            () => {}, // onAction - ignore actions during greeting
-            () => {
-              setGenerating(false);
-            },
-            (error: Error) => {
-              console.error("Failed to get greeting:", error);
-              setGenerating(false);
-              // Fallback to static greeting if backend fails
+            if (existingMessage) {
+              useGuideStore.setState({
+                messages: currentMessages.map((m) =>
+                  m.id === greetingMessageId
+                    ? { ...m, content: greetingContent }
+                    : m
+                ),
+              });
+            } else {
               addMsg({
                 id: greetingMessageId,
                 role: "assistant",
-                content: fallbackGreetingRef.current,
+                content: greetingContent,
                 timestamp: new Date(),
                 suggestions: suggestionsRef.current,
               });
             }
-          );
-        } catch (error) {
-          console.error("Failed to initialize guide:", error);
-          setGenerating(false);
-          // Fallback to static greeting
-          addMsg({
-            id: `msg_${Date.now()}_greeting`,
-            role: "assistant",
-            content: fallbackGreetingRef.current,
-            timestamp: new Date(),
-            suggestions: suggestionsRef.current,
-          });
-        }
+          },
+          () => {}, // onAction - ignore actions during greeting
+          () => {
+            setGenerating(false);
+          },
+          (error: Error) => {
+            console.error("Failed to get greeting:", error);
+            setGenerating(false);
+            // Fallback to static greeting if backend fails
+            addMsg({
+              id: greetingMessageId,
+              role: "assistant",
+              content: fallbackGreetingRef.current,
+              timestamp: new Date(),
+              suggestions: suggestionsRef.current,
+            });
+          }
+        );
+      } catch (error) {
+        console.error("Failed to initialize guide:", error);
+        setGenerating(false);
+        // Fallback to static greeting
+        addMsg({
+          id: `msg_${Date.now()}_greeting`,
+          role: "assistant",
+          content: fallbackGreetingRef.current,
+          timestamp: new Date(),
+          suggestions: suggestionsRef.current,
+        });
       }
     };
 
     initializeGreeting();
-  }, []); // Only run once on mount
+  }, [isOpen]); // Run when panel is opened
 
   const handleSendMessage = useCallback(
     async (content: string) => {
@@ -319,6 +325,7 @@ export function GuideProvider({ children }: GuideProviderProps) {
         onSendMessage={handleSendMessage}
         onClearChat={handleClearChat}
         suggestions={suggestions}
+        whatsNewLabel={whatsNewLabel}
       />
       <HighlightOverlay />
     </TooltipProvider>

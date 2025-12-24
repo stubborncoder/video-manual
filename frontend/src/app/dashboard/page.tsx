@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Video, FileText, FolderKanban, Upload, Sparkles, Download, Bot, Compass, BookOpen, MessageCircle, ChevronRight, Pencil } from "lucide-react";
-import { videos, manuals, projects } from "@/lib/api";
+import { videos, docs, projects } from "@/lib/api";
 import { SidebarToggle } from "@/components/layout/SidebarToggle";
 import { AlphaBadge } from "@/components/ui/alpha-badge";
 import { VDocsText } from "@/components/ui/vdocs-text";
@@ -26,13 +26,13 @@ export default function DashboardPage() {
       try {
         const [videosRes, manualsRes, projectsRes] = await Promise.all([
           videos.list(),
-          manuals.list(),
+          docs.list(),
           projects.list(),
         ]);
 
         setStats({
           videoCount: videosRes.videos.length,
-          manualCount: manualsRes.manuals.length,
+          manualCount: manualsRes.docs.length,
           projectCount: projectsRes.projects.length,
         });
       } catch (e) {
@@ -163,7 +163,7 @@ export default function DashboardPage() {
         </Link>
 
         {/* Manuals Card */}
-        <Link href="/dashboard/manuals" className="group">
+        <Link href="/dashboard/docs" className="group">
           <Card className="relative overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-0.5 cursor-pointer border-0 bg-gradient-to-r from-card to-primary/[0.03]">
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
@@ -181,9 +181,9 @@ export default function DashboardPage() {
                     <span className="font-display text-3xl font-bold tracking-tight">
                       {loading ? "..." : stats.manualCount}
                     </span>
-                    <span className="font-medium text-sm text-muted-foreground">{t("stats.manuals")}</span>
+                    <span className="font-medium text-sm text-muted-foreground">{t("stats.docs")}</span>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">{t("stats.manualsDesc")}</p>
+                  <p className="text-xs text-muted-foreground truncate">{t("stats.docsDesc")}</p>
                 </div>
 
                 {/* Arrow */}

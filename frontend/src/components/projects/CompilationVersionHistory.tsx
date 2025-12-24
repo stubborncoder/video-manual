@@ -771,7 +771,7 @@ export function CompilationVersionHistory({ projectId }: CompilationVersionHisto
                               key={idx}
                               className="flex items-center justify-between py-2 px-3 bg-muted/50 rounded-lg"
                             >
-                              <span className="font-medium">{manual.manual_id}</span>
+                              <span className="font-medium">{manual.doc_id}</span>
                               <Badge variant="outline" className="font-mono">
                                 v{manual.version}
                               </Badge>

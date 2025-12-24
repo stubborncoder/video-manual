@@ -14,18 +14,18 @@ Reference documentation for navigating and operating vDocs.
 Use `navigate_to_page(path)` to move users between pages:
 - `/dashboard` - Main dashboard
 - `/dashboard/videos` - Videos page
-- `/dashboard/manuals` - Manuals page
+- `/dashboard/docs` - Docs page
 - `/dashboard/projects` - Projects page
 
 ### Highlight Commands
 Use `highlight_element(element_id, duration_ms)` to highlight UI elements:
 - `upload-video-btn` - Upload button on videos page
 - `create-project-btn` - Create button on projects page
-- `first-manual-edit-btn` - Edit button on manuals page
+- `first-doc-edit-btn` - Edit button on docs page
 
 ### Data Query Commands
 Use these tools to understand user context:
 - `get_user_videos()` - List uploaded videos
-- `get_user_manuals()` - List created manuals
+- `get_user_docs()` - List created docs
 - `get_user_projects()` - List projects
 - `get_page_elements(page)` - Get highlightable elements for a page

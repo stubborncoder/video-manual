@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { FrameStrip, type FrameCandidate } from "./FrameStrip";
-import { manuals, type ManualVideosResponse, type AdditionalVideoInfo, type PrimaryVideoInfo } from "@/lib/api";
+import { docs, type DocVideosResponse, type AdditionalVideoInfo, type PrimaryVideoInfo } from "@/lib/api";
 
 interface VideoOption {
   id: string;
@@ -110,7 +110,7 @@ export function VideoDrawer({
   const loadAvailableVideos = useCallback(async () => {
     setLoadingVideos(true);
     try {
-      const response = await manuals.listVideos(manualId);
+      const response = await docs.listVideos(manualId);
       const videos: VideoOption[] = [];
 
       // Add primary video
@@ -129,7 +129,7 @@ export function VideoDrawer({
           videos.push({
             id: v.id,
             label: v.label || v.filename,
-            url: manuals.getVideoStreamUrl(manualId, v.id),
+            url: docs.getVideoStreamUrl(manualId, v.id),
             duration: v.duration_seconds || 0,
           });
         }
@@ -206,7 +206,7 @@ export function VideoDrawer({
     setLoadingFrames(true);
     try {
       const response = await fetch(
-        `/api/manuals/${manualId}/frames?timestamp=${timestamp}&window=10&count=15&video_id=${vid}`
+        `/api/docs/${manualId}/frames?timestamp=${timestamp}&window=10&count=15&video_id=${vid}`
       );
       if (response.ok) {
         const data = await response.json();
@@ -326,7 +326,7 @@ export function VideoDrawer({
     const videoLabel = availableVideos.find((v) => v.id === selectedVideoId)?.label;
     setDeletingVideo(true);
     try {
-      await manuals.deleteVideo(manualId, selectedVideoId);
+      await docs.deleteVideo(manualId, selectedVideoId);
       // Switch back to primary video
       setInternalSelectedVideoId("primary");
       onVideoChange?.("primary");

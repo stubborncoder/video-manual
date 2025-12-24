@@ -43,11 +43,11 @@ def analyze_project(project_id: str, user_id: str, language: str) -> Dict[str, A
 
     for chapter in project.get("chapters", []):
         for manual_id in chapter.get("manuals", []):
-            content = user_storage.get_manual_content(manual_id, language)
+            content = user_storage.get_doc_content(manual_id, language)
             vs = VersionStorage(user_id, manual_id)
 
             # Get all available languages for this manual
-            available_languages = user_storage.list_manual_languages(manual_id)
+            available_languages = user_storage.list_doc_languages(manual_id)
 
             # Count sections in content
             section_count = 0
@@ -129,7 +129,7 @@ def compile_manuals(
 
     for chapter in project.get("chapters", []):
         for manual_id in chapter.get("manuals", []):
-            content = user_storage.get_manual_content(manual_id, language)
+            content = user_storage.get_doc_content(manual_id, language)
             vs = VersionStorage(user_id, manual_id)
             manual_version = vs.get_current_version()
 
@@ -141,7 +141,7 @@ def compile_manuals(
                 })
 
                 # Copy screenshots from this manual to compiled folder
-                manual_screenshots_dir = user_storage.manuals_dir / manual_id / "screenshots"
+                manual_screenshots_dir = user_storage.docs_dir / manual_id / "screenshots"
                 if manual_screenshots_dir.exists():
                     for img_file in manual_screenshots_dir.glob("*"):
                         if img_file.is_file():

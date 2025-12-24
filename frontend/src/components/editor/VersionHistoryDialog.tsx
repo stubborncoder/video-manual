@@ -34,7 +34,7 @@ import {
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { manuals, type VersionInfo } from "@/lib/api";
+import { docs, type VersionInfo } from "@/lib/api";
 
 interface VersionHistoryDialogProps {
   open: boolean;
@@ -103,7 +103,7 @@ export function VersionHistoryDialog({
     if (!manualId) return;
     setLoading(true);
     try {
-      const data = await manuals.listVersions(manualId, language);
+      const data = await docs.listVersions(manualId, language);
       setVersions(data.versions);
       setCurrentVersion(data.current_version);
     } catch (e) {
@@ -139,11 +139,11 @@ export function VersionHistoryDialog({
     try {
       if (version.is_current) {
         // Fetch current content from the regular API
-        const data = await manuals.get(manualId, language);
+        const data = await docs.get(manualId, language);
         setPreviewContent(data.content);
       } else {
         // Fetch historical version content
-        const data = await manuals.getVersionContent(manualId, version.version, language);
+        const data = await docs.getVersionContent(manualId, version.version, language);
         setPreviewContent(data.content);
       }
     } catch (e) {
@@ -165,7 +165,7 @@ export function VersionHistoryDialog({
 
     setRestoring(true);
     try {
-      await manuals.restoreVersion(manualId, versionToRestore.version, language);
+      await docs.restoreVersion(manualId, versionToRestore.version, language);
       toast.success(t("restored", { version: versionToRestore.version }));
       setRestoreDialogOpen(false);
       onOpenChange(false);
@@ -293,8 +293,8 @@ export function VersionHistoryDialog({
                             // Use version-specific endpoint for historical versions
                             const isCurrentVersion = versions.find(v => v.version === previewVersion)?.is_current;
                             const apiUrl = isCurrentVersion
-                              ? `/api/manuals/${manualId}/screenshots/${filename}`
-                              : `/api/manuals/${manualId}/versions/${previewVersion}/screenshots/${filename}`;
+                              ? `/api/docs/${manualId}/screenshots/${filename}`
+                              : `/api/docs/${manualId}/versions/${previewVersion}/screenshots/${filename}`;
                             return (
                               <span className="block my-4">
                                 <img

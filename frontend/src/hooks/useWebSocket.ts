@@ -50,7 +50,7 @@ export function useVideoProcessing() {
         id: jobId,
         user_id: "", // Will be filled by backend
         video_name: videoName,
-        manual_id: null,
+        doc_id: null,
         status: "processing",
         current_node: null,
         node_index: null,
@@ -87,7 +87,7 @@ export function useVideoProcessing() {
         const result = event.data.result as Record<string, unknown>;
         updateJob(jobId, {
           status: "complete",
-          manual_id: result?.manual_id as string,
+          doc_id: result?.doc_id as string,
           completed_at: new Date().toISOString(),
         });
       }

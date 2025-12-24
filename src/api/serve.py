@@ -17,12 +17,15 @@ logging.basicConfig(
 
 def main():
     """Run the API server with uvicorn."""
+    import os
+
     import uvicorn
 
     # Parse simple CLI args
     host = "0.0.0.0"
     port = 8000
     reload = False
+    workers = int(os.getenv("UVICORN_WORKERS", "1"))
 
     args = sys.argv[1:]
     i = 0
@@ -33,6 +36,9 @@ def main():
         elif args[i] in ("--port", "-p") and i + 1 < len(args):
             port = int(args[i + 1])
             i += 2
+        elif args[i] in ("--workers", "-w") and i + 1 < len(args):
+            workers = int(args[i + 1])
+            i += 2
         elif args[i] in ("--reload", "-r"):
             reload = True
             i += 1
@@ -42,15 +48,22 @@ def main():
             print("Usage: vdocs-api [options]")
             print()
             print("Options:")
-            print("  --host, -h HOST    Host to bind to (default: 0.0.0.0)")
-            print("  --port, -p PORT    Port to bind to (default: 8000)")
-            print("  --reload, -r       Enable auto-reload for development")
-            print("  --help             Show this help message")
+            print("  --host, -h HOST       Host to bind to (default: 0.0.0.0)")
+            print("  --port, -p PORT       Port to bind to (default: 8000)")
+            print("  --workers, -w NUM     Number of worker processes (default: 1, or UVICORN_WORKERS env)")
+            print("  --reload, -r          Enable auto-reload for development (disables workers)")
+            print("  --help                Show this help message")
             return
         else:
             i += 1
 
+    # Workers are incompatible with reload mode
+    if reload:
+        workers = None
+
     print(f"Starting vDocs API server on {host}:{port}")
+    if workers and workers > 1:
+        print(f"Running with {workers} worker processes")
     print(f"API docs available at http://{host}:{port}/docs")
     print()
 
@@ -59,6 +72,7 @@ def main():
         host=host,
         port=port,
         reload=reload,
+        workers=workers if not reload else None,
     )
 
 

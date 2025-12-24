@@ -23,25 +23,25 @@ class VersionStorage:
     - Manual: User can bump minor/major versions explicitly
 
     Version snapshots are stored as full copies:
-        manuals/{manual_id}/versions/v{version}/
+        manuals/{doc_id}/versions/v{version}/
             metadata_snapshot.json
             {lang}/manual.md
             screenshots/  (only if changed)
     """
 
-    def __init__(self, user_id: str, manual_id: str):
+    def __init__(self, user_id: str, doc_id: str):
         """Initialize version storage.
 
         Args:
             user_id: User identifier
-            manual_id: Manual identifier
+            doc_id: Doc identifier
         """
         self.user_id = user_id
-        self.manual_id = manual_id
+        self.doc_id = doc_id
         self.user_dir = USERS_DIR / user_id
-        self.manual_dir = self.user_dir / "manuals" / manual_id
-        self.versions_dir = self.manual_dir / "versions"
-        self.metadata_path = self.manual_dir / "metadata.json"
+        self.doc_dir = self.user_dir / "docs" / doc_id
+        self.versions_dir = self.doc_dir / "versions"
+        self.metadata_path = self.doc_dir / "metadata.json"
 
     def _load_metadata(self) -> Dict[str, Any]:
         """Load manual metadata."""
@@ -114,7 +114,7 @@ class VersionStorage:
         snapshot_dir.mkdir(parents=True, exist_ok=True)
 
         # Copy language folders (containing manual.md files)
-        for item in self.manual_dir.iterdir():
+        for item in self.doc_dir.iterdir():
             if item.is_dir() and item.name not in ("versions", "screenshots"):
                 # This is a language folder
                 manual_file = item / "manual.md"
@@ -124,9 +124,9 @@ class VersionStorage:
                     shutil.copy2(manual_file, dest_dir / "manual.md")
 
         # Use content-addressable storage for screenshots (deduplication)
-        screenshots_dir = self.manual_dir / "screenshots"
+        screenshots_dir = self.doc_dir / "screenshots"
         if screenshots_dir.exists() and any(screenshots_dir.iterdir()):
-            store = ScreenshotStore(self.manual_dir)
+            store = ScreenshotStore(self.doc_dir)
             mapping = store.create_snapshot_mapping(screenshots_dir)
 
             # Save mapping instead of copying files
@@ -165,7 +165,7 @@ class VersionStorage:
         """
         # Check if there's existing content to preserve
         has_content = False
-        for item in self.manual_dir.iterdir():
+        for item in self.doc_dir.iterdir():
             if item.is_dir() and item.name not in ("versions", "screenshots"):
                 if (item / "manual.md").exists():
                     has_content = True
@@ -306,7 +306,7 @@ class VersionStorage:
         # Restore language folder
         source_lang_dir = snapshot_dir / language
         if source_lang_dir.exists():
-            dest_lang_dir = self.manual_dir / language
+            dest_lang_dir = self.doc_dir / language
             dest_lang_dir.mkdir(exist_ok=True)
 
             source_manual = source_lang_dir / "manual.md"
@@ -314,7 +314,7 @@ class VersionStorage:
                 shutil.copy2(source_manual, dest_lang_dir / "manual.md")
 
         # Restore screenshots - check for new hash-based format first
-        dest_screenshots = self.manual_dir / "screenshots"
+        dest_screenshots = self.doc_dir / "screenshots"
         mapping_path = snapshot_dir / "screenshots.json"
 
         if mapping_path.exists():
@@ -322,7 +322,7 @@ class VersionStorage:
             with open(mapping_path, "r", encoding="utf-8") as f:
                 mapping = json.load(f)
 
-            store = ScreenshotStore(self.manual_dir)
+            store = ScreenshotStore(self.doc_dir)
 
             # Clear existing screenshots
             if dest_screenshots.exists():
@@ -388,7 +388,7 @@ class VersionStorage:
 
         if version == current_version:
             # Get current content
-            manual_path = self.manual_dir / language / "manual.md"
+            manual_path = self.doc_dir / language / "manual.md"
             if manual_path.exists():
                 return manual_path.read_text(encoding="utf-8")
             return None
@@ -423,7 +423,7 @@ class VersionStorage:
             version = self.get_current_version()
 
         # Create evaluations directory
-        evaluations_dir = self.manual_dir / "evaluations"
+        evaluations_dir = self.doc_dir / "evaluations"
         evaluations_dir.mkdir(parents=True, exist_ok=True)
 
         # Add version and storage metadata
@@ -460,7 +460,7 @@ class VersionStorage:
         if version is None:
             version = self.get_current_version()
 
-        eval_file = self.manual_dir / "evaluations" / f"v{version}_{language}.json"
+        eval_file = self.doc_dir / "evaluations" / f"v{version}_{language}.json"
         if not eval_file.exists():
             return None
 
@@ -470,9 +470,9 @@ class VersionStorage:
 
             if validate:
                 # Import here to avoid circular imports
-                from ..api.schemas import ManualEvaluation
+                from ..api.schemas import DocEvaluation
                 # Validate with Pydantic schema - this will raise ValidationError if invalid
-                ManualEvaluation(**data)
+                DocEvaluation(**data)
 
             return data
 
@@ -492,7 +492,7 @@ class VersionStorage:
         Returns:
             List of evaluation summaries (version, language, score, date)
         """
-        evaluations_dir = self.manual_dir / "evaluations"
+        evaluations_dir = self.doc_dir / "evaluations"
         if not evaluations_dir.exists():
             return []
 
@@ -528,7 +528,7 @@ class VersionStorage:
         if version is None:
             version = self.get_current_version()
 
-        eval_file = self.manual_dir / "evaluations" / f"v{version}_{language}.json"
+        eval_file = self.doc_dir / "evaluations" / f"v{version}_{language}.json"
         if eval_file.exists():
             eval_file.unlink()
             return True

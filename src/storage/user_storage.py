@@ -1,10 +1,11 @@
-"""User storage management for videos and manuals."""
+"""User storage management for videos and docs."""
 
 import json
 import re
+import secrets
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Tuple
 import uuid
 
 from ..config import USERS_DIR
@@ -30,18 +31,18 @@ def slugify(text: str) -> str:
     # Strip leading/trailing hyphens
     text = text.strip('-')
     # Limit length
-    return text[:50] if text else "manual"
+    return text[:50] if text else "doc"
 
 
 class UserStorage:
-    """Manages user folder structure for videos and manuals.
+    """Manages user folder structure for videos and docs.
 
     Each user has an isolated folder structure:
         users/{user_id}/
             videos/          - Uploaded video files
-            manuals/         - Generated manuals
-                {manual_id}/
-                    manual.md
+            docs/            - Generated docs
+                {doc_id}/
+                    doc.md
                     screenshots/
     """
 
@@ -54,66 +55,66 @@ class UserStorage:
         self.user_id = user_id
         self.user_dir = USERS_DIR / user_id
         self.videos_dir = self.user_dir / "videos"
-        self.manuals_dir = self.user_dir / "manuals"
+        self.docs_dir = self.user_dir / "docs"
 
     def ensure_user_folders(self) -> None:
         """Create user folder structure if it doesn't exist."""
         self.videos_dir.mkdir(parents=True, exist_ok=True)
-        self.manuals_dir.mkdir(parents=True, exist_ok=True)
+        self.docs_dir.mkdir(parents=True, exist_ok=True)
 
-    def find_existing_manual(self, video_name: str) -> Optional[str]:
-        """Find an existing manual for a video name.
+    def find_existing_doc(self, video_name: str) -> Optional[str]:
+        """Find an existing doc for a video name.
 
         Args:
             video_name: Video filename to search for
 
         Returns:
-            manual_id if found, None otherwise
+            doc_id if found, None otherwise
         """
         base_name = Path(video_name).stem
-        manual_id = slugify(base_name)
+        doc_id = slugify(base_name)
 
-        # Check if manual exists
-        if (self.manuals_dir / manual_id).exists():
-            return manual_id
+        # Check if doc exists
+        if (self.docs_dir / doc_id).exists():
+            return doc_id
         return None
 
-    def get_manual_dir(
+    def get_doc_dir(
         self,
-        manual_id: Optional[str] = None,
+        doc_id: Optional[str] = None,
         video_name: Optional[str] = None,
         create_new: bool = False,
     ) -> tuple[Path, str]:
-        """Get or create a manual output directory.
+        """Get or create a doc output directory.
 
         Args:
-            manual_id: Optional manual ID. If not provided, derives from video_name or generates UUID.
-            video_name: Optional video filename to derive manual ID from.
-            create_new: If True, always create a new manual (append -2, -3, etc.)
-                       If False, reuse existing manual if found.
+            doc_id: Optional doc ID. If not provided, derives from video_name or generates UUID.
+            video_name: Optional video filename to derive doc ID from.
+            create_new: If True, always create a new doc (append -2, -3, etc.)
+                       If False, reuse existing doc if found.
 
         Returns:
-            Tuple of (manual directory path, manual_id)
+            Tuple of (doc directory path, doc_id)
         """
-        if manual_id is None:
+        if doc_id is None:
             if video_name:
                 # Create slug from video name (without extension)
                 base_name = Path(video_name).stem
-                manual_id = slugify(base_name)
+                doc_id = slugify(base_name)
 
                 # If slug already exists and we want a new one, append a number
-                if create_new and (self.manuals_dir / manual_id).exists():
+                if create_new and (self.docs_dir / doc_id).exists():
                     counter = 2
-                    while (self.manuals_dir / f"{manual_id}-{counter}").exists():
+                    while (self.docs_dir / f"{doc_id}-{counter}").exists():
                         counter += 1
-                    manual_id = f"{manual_id}-{counter}"
+                    doc_id = f"{doc_id}-{counter}"
             else:
-                manual_id = str(uuid.uuid4())[:8]
+                doc_id = str(uuid.uuid4())[:8]
 
-        manual_dir = self.manuals_dir / manual_id
-        manual_dir.mkdir(parents=True, exist_ok=True)
-        # Note: screenshots folder is created by manual_generator.py when needed
-        return manual_dir, manual_id
+        doc_dir = self.docs_dir / doc_id
+        doc_dir.mkdir(parents=True, exist_ok=True)
+        # Note: screenshots folder is created by doc_generator.py when needed
+        return doc_dir, doc_id
 
     def get_video_path(self, filename: str) -> Path:
         """Get path for a user's video file.
@@ -126,73 +127,84 @@ class UserStorage:
         """
         return self.videos_dir / filename
 
-    def get_manual_path(self, manual_id: str) -> Path:
-        """Get the path to a manual directory.
+    def get_doc_path(self, doc_id: str) -> Path:
+        """Get the path to a doc directory.
 
         Args:
-            manual_id: ID of the manual
+            doc_id: ID of the doc
 
         Returns:
-            Path to the manual directory
+            Path to the doc directory
         """
-        return self.manuals_dir / manual_id
+        return self.docs_dir / doc_id
 
-    def list_manuals(self) -> List[str]:
-        """List all manual IDs for this user.
+    def list_docs(self) -> List[str]:
+        """List all doc IDs for this user.
 
         Returns:
-            List of manual directory names (manual IDs)
+            List of doc directory names (doc IDs)
         """
-        if not self.manuals_dir.exists():
+        if not self.docs_dir.exists():
             return []
-        return [d.name for d in self.manuals_dir.iterdir() if d.is_dir()]
+        return [d.name for d in self.docs_dir.iterdir() if d.is_dir()]
 
-    def list_manual_languages(self, manual_id: str) -> List[str]:
-        """List available language versions for a manual.
+    def list_doc_languages(self, doc_id: str) -> List[str]:
+        """List available language versions for a doc.
 
         Args:
-            manual_id: ID of the manual
+            doc_id: ID of the doc
 
         Returns:
             List of language codes (e.g., ["en", "es"])
         """
-        manual_dir = self.manuals_dir / manual_id
-        if not manual_dir.exists():
+        doc_dir = self.docs_dir / doc_id
+        if not doc_dir.exists():
             return []
 
         languages = []
-        for item in manual_dir.iterdir():
-            if item.is_dir() and (item / "manual.md").exists():
+        for item in doc_dir.iterdir():
+            # Support both new (doc.md) and legacy (manual.md) filenames
+            if item.is_dir() and ((item / "doc.md").exists() or (item / "manual.md").exists()):
                 languages.append(item.name)
         return sorted(languages)
 
-    def get_manual_content(self, manual_id: str, language_code: str = "en") -> Optional[str]:
-        """Read the content of a manual in a specific language.
+    def get_doc_content(self, doc_id: str, language_code: str = "en") -> Optional[str]:
+        """Read the content of a doc in a specific language.
 
         Args:
-            manual_id: ID of the manual to read
+            doc_id: ID of the doc to read
             language_code: Language code (default: "en")
 
         Returns:
-            Manual content as string, or None if not found
+            Doc content as string, or None if not found
         """
-        # Try language-specific path first (new structure)
-        lang_manual_path = self.manuals_dir / manual_id / language_code / "manual.md"
+        # Try language-specific path first (new structure with doc.md)
+        lang_doc_path = self.docs_dir / doc_id / language_code / "doc.md"
+        if lang_doc_path.exists():
+            return lang_doc_path.read_text(encoding="utf-8")
+
+        # Try legacy filename (manual.md) in language-specific folder
+        lang_manual_path = self.docs_dir / doc_id / language_code / "manual.md"
         if lang_manual_path.exists():
             return lang_manual_path.read_text(encoding="utf-8")
 
-        # Fallback to old structure (manual_id/manual.md) for backwards compatibility
-        legacy_path = self.manuals_dir / manual_id / "manual.md"
+        # Fallback to old structure (doc_id/doc.md) for very old data
+        legacy_path = self.docs_dir / doc_id / "doc.md"
         if legacy_path.exists():
             return legacy_path.read_text(encoding="utf-8")
 
+        # Fallback to legacy manual.md at root level
+        legacy_manual_path = self.docs_dir / doc_id / "manual.md"
+        if legacy_manual_path.exists():
+            return legacy_manual_path.read_text(encoding="utf-8")
+
         return None
 
-    def save_manual_content(self, manual_id: str, content: str, language_code: str = "en") -> Path:
-        """Save manual content to disk.
+    def save_doc_content(self, doc_id: str, content: str, language_code: str = "en") -> Path:
+        """Save doc content to disk.
 
         Args:
-            manual_id: ID of the manual
+            doc_id: ID of the doc
             content: Markdown content to save
             language_code: Language code (default: "en")
 
@@ -200,49 +212,54 @@ class UserStorage:
             Path to the saved file
 
         Raises:
-            FileNotFoundError: If manual directory doesn't exist
+            FileNotFoundError: If doc directory doesn't exist
         """
-        manual_dir = self.manuals_dir / manual_id
-        if not manual_dir.exists():
-            raise FileNotFoundError(f"Manual directory not found: {manual_id}")
+        doc_dir = self.docs_dir / doc_id
+        if not doc_dir.exists():
+            raise FileNotFoundError(f"Doc directory not found: {doc_id}")
 
         # Use language-specific path (new structure)
-        lang_dir = manual_dir / language_code
+        lang_dir = doc_dir / language_code
         lang_dir.mkdir(parents=True, exist_ok=True)
 
-        manual_path = lang_dir / "manual.md"
-        manual_path.write_text(content, encoding="utf-8")
+        doc_path = lang_dir / "doc.md"
+        doc_path.write_text(content, encoding="utf-8")
 
-        return manual_path
+        return doc_path
 
-    def list_screenshots(self, manual_id: str) -> List[Path]:
-        """List all screenshots for a manual.
+    def list_screenshots(self, doc_id: str) -> List[Path]:
+        """List all screenshots for a doc.
 
-        Screenshots are stored in a shared folder at {manual}/screenshots/,
+        Screenshots are stored in a shared folder at {doc}/screenshots/,
         not per-language.
 
         Args:
-            manual_id: ID of the manual
+            doc_id: ID of the doc
 
         Returns:
             List of screenshot file paths
         """
-        screenshots_dir = self.manuals_dir / manual_id / "screenshots"
+        screenshots_dir = self.docs_dir / doc_id / "screenshots"
         if screenshots_dir.exists():
-            return sorted(screenshots_dir.glob("*.png"))
+            # Support common image formats
+            image_extensions = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.gif"]
+            all_images: List[Path] = []
+            for ext in image_extensions:
+                all_images.extend(screenshots_dir.glob(ext))
+            return sorted(all_images)
         return []
 
-    def get_manual_videos_dir(self, manual_id: str, create: bool = True) -> Path:
-        """Get the videos subfolder for a manual (additional video sources).
+    def get_doc_videos_dir(self, doc_id: str, create: bool = True) -> Path:
+        """Get the videos subfolder for a doc (additional video sources).
 
         Args:
-            manual_id: ID of the manual
+            doc_id: ID of the doc
             create: If True, create the directory if it doesn't exist
 
         Returns:
             Path to the videos subfolder
         """
-        videos_dir = self.manuals_dir / manual_id / "videos"
+        videos_dir = self.docs_dir / doc_id / "videos"
         if create:
             videos_dir.mkdir(parents=True, exist_ok=True)
         return videos_dir
@@ -265,28 +282,28 @@ class UserStorage:
 
         return sorted(videos, key=lambda p: p.stat().st_mtime, reverse=True)
 
-    # ==================== Video-Manual Relationship ====================
+    # ==================== Video-Doc Relationship ====================
 
-    def get_manuals_by_video(self, video_name: str) -> List[Dict[str, Any]]:
-        """Find all manuals created from a specific video.
+    def get_docs_by_video(self, video_name: str) -> List[Dict[str, Any]]:
+        """Find all docs created from a specific video.
 
         Args:
             video_name: Name of the video file
 
         Returns:
-            List of dicts with manual_id and metadata
+            List of dicts with doc_id and metadata
         """
-        if not self.manuals_dir.exists():
+        if not self.docs_dir.exists():
             return []
 
-        matching_manuals = []
+        matching_docs = []
         video_path_str = str(self.videos_dir / video_name)
 
-        for manual_dir in self.manuals_dir.iterdir():
-            if not manual_dir.is_dir():
+        for doc_dir in self.docs_dir.iterdir():
+            if not doc_dir.is_dir():
                 continue
 
-            metadata_file = manual_dir / "metadata.json"
+            metadata_file = doc_dir / "metadata.json"
             if not metadata_file.exists():
                 continue
 
@@ -294,14 +311,18 @@ class UserStorage:
                 with open(metadata_file, "r", encoding="utf-8") as f:
                     metadata = json.load(f)
 
-                # Check if this manual was created from the video
+                # Check if this doc was created from the video
                 stored_path = metadata.get("video_path", "")
                 stored_name = Path(stored_path).name if stored_path else ""
 
-                # Match by path or by filename
-                if stored_path == video_path_str or stored_name == video_name:
-                    matching_manuals.append({
-                        "manual_id": manual_dir.name,
+                # Also check video_metadata.filename as fallback
+                video_metadata = metadata.get("video_metadata", {})
+                metadata_filename = video_metadata.get("filename", "") if video_metadata else ""
+
+                # Match by path, filename from path, or video_metadata.filename
+                if stored_path == video_path_str or stored_name == video_name or metadata_filename == video_name:
+                    matching_docs.append({
+                        "doc_id": doc_dir.name,
                         "video_path": stored_path,
                         "languages": metadata.get("languages_generated", []),
                         "created_at": metadata.get("created_at"),
@@ -311,18 +332,18 @@ class UserStorage:
             except (json.JSONDecodeError, IOError):
                 continue
 
-        return matching_manuals
+        return matching_docs
 
-    def get_manual_metadata(self, manual_id: str) -> Optional[Dict[str, Any]]:
-        """Get metadata for a specific manual.
+    def get_doc_metadata(self, doc_id: str) -> Optional[Dict[str, Any]]:
+        """Get metadata for a specific doc.
 
         Args:
-            manual_id: Manual identifier
+            doc_id: Doc identifier
 
         Returns:
             Metadata dict or None if not found
         """
-        metadata_file = self.manuals_dir / manual_id / "metadata.json"
+        metadata_file = self.docs_dir / doc_id / "metadata.json"
         if not metadata_file.exists():
             return None
 
@@ -332,14 +353,14 @@ class UserStorage:
         except (json.JSONDecodeError, IOError):
             return None
 
-    def update_manual_metadata(self, manual_id: str, updates: Dict[str, Any]) -> None:
-        """Update metadata for a manual.
+    def update_doc_metadata(self, doc_id: str, updates: Dict[str, Any]) -> None:
+        """Update metadata for a doc.
 
         Args:
-            manual_id: Manual identifier
+            doc_id: Doc identifier
             updates: Fields to update
         """
-        metadata_file = self.manuals_dir / manual_id / "metadata.json"
+        metadata_file = self.docs_dir / doc_id / "metadata.json"
 
         if metadata_file.exists():
             with open(metadata_file, "r", encoding="utf-8") as f:
@@ -356,23 +377,23 @@ class UserStorage:
         with open(metadata_file, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2, ensure_ascii=False)
 
-    def update_manual_video_status(
+    def update_doc_video_status(
         self,
-        manual_id: str,
+        doc_id: str,
         video_exists: bool,
         deleted_at: Optional[str] = None,
     ) -> None:
-        """Update source video status in manual metadata.
+        """Update source video status in doc metadata.
 
         Called when a video is deleted or restored to update
-        all associated manuals.
+        all associated docs.
 
         Args:
-            manual_id: Manual identifier
+            doc_id: Doc identifier
             video_exists: Whether the source video exists
             deleted_at: ISO timestamp when video was deleted (None if exists)
         """
-        metadata = self.get_manual_metadata(manual_id)
+        metadata = self.get_doc_metadata(doc_id)
         if metadata is None:
             return
 
@@ -387,83 +408,83 @@ class UserStorage:
             "deleted_at": deleted_at,
         })
 
-        self.update_manual_metadata(manual_id, {"source_video": source_video})
+        self.update_doc_metadata(doc_id, {"source_video": source_video})
 
-    def mark_video_deleted_for_manuals(self, video_name: str) -> List[str]:
-        """Mark source video as deleted for all associated manuals.
+    def mark_video_deleted_for_docs(self, video_name: str) -> List[str]:
+        """Mark source video as deleted for all associated docs.
 
         Args:
             video_name: Name of the deleted video
 
         Returns:
-            List of affected manual IDs
+            List of affected doc IDs
         """
-        manuals = self.get_manuals_by_video(video_name)
+        docs = self.get_docs_by_video(video_name)
         deleted_at = datetime.now().isoformat()
 
         affected_ids = []
-        for manual_info in manuals:
-            manual_id = manual_info["manual_id"]
-            self.update_manual_video_status(manual_id, video_exists=False, deleted_at=deleted_at)
-            affected_ids.append(manual_id)
+        for doc_info in docs:
+            doc_id = doc_info["doc_id"]
+            self.update_doc_video_status(doc_id, video_exists=False, deleted_at=deleted_at)
+            affected_ids.append(doc_id)
 
         return affected_ids
 
-    def mark_video_restored_for_manuals(self, video_name: str) -> List[str]:
-        """Mark source video as restored for all associated manuals.
+    def mark_video_restored_for_docs(self, video_name: str) -> List[str]:
+        """Mark source video as restored for all associated docs.
 
         Args:
             video_name: Name of the restored video
 
         Returns:
-            List of affected manual IDs
+            List of affected doc IDs
         """
-        manuals = self.get_manuals_by_video(video_name)
+        docs = self.get_docs_by_video(video_name)
 
         affected_ids = []
-        for manual_info in manuals:
-            manual_id = manual_info["manual_id"]
-            self.update_manual_video_status(manual_id, video_exists=True, deleted_at=None)
-            affected_ids.append(manual_id)
+        for doc_info in docs:
+            doc_id = doc_info["doc_id"]
+            self.update_doc_video_status(doc_id, video_exists=True, deleted_at=None)
+            affected_ids.append(doc_id)
 
         return affected_ids
 
-    # ==================== Clone Manual ====================
+    # ==================== Clone Doc ====================
 
-    def clone_manual(
+    def clone_doc(
         self,
-        source_manual_id: str,
+        source_doc_id: str,
         target_format: str,
         title: Optional[str] = None,
         content: Optional[str] = None,
     ) -> tuple[str, Path]:
-        """Clone a manual to a new document format.
+        """Clone a doc to a new document format.
 
-        Creates a complete copy of the manual with:
-        - New unique manual ID (based on source ID + format)
+        Creates a complete copy of the doc with:
+        - New unique doc ID (based on source ID + format)
         - Copies all screenshots (symlinked to save disk space)
         - Uses provided content or copies original content
         - New metadata with updated document_format and cloned_from reference
 
         Args:
-            source_manual_id: ID of the manual to clone
+            source_doc_id: ID of the doc to clone
             target_format: Target document format (step-manual, quick-guide, reference, summary)
             title: Optional custom title (defaults to "Original Title (Format)")
             content: Optional reformatted content (if None, copies original)
 
         Returns:
-            Tuple of (new_manual_id, new_manual_path)
+            Tuple of (new_doc_id, new_doc_path)
 
         Raises:
-            FileNotFoundError: If source manual doesn't exist
+            FileNotFoundError: If source doc doesn't exist
             ValueError: If target format is invalid
         """
         import shutil
 
         # Validate source exists
-        source_dir = self.manuals_dir / source_manual_id
+        source_dir = self.docs_dir / source_doc_id
         if not source_dir.exists():
-            raise FileNotFoundError(f"Source manual not found: {source_manual_id}")
+            raise FileNotFoundError(f"Source doc not found: {source_doc_id}")
 
         # Human-readable format names for titles
         format_names = {
@@ -476,20 +497,20 @@ class UserStorage:
         if target_format not in format_names:
             raise ValueError(f"Invalid target format: {target_format}")
 
-        # Generate new manual ID
-        base_id = f"{source_manual_id}-{target_format}"
-        new_manual_id = base_id
+        # Generate new doc ID
+        base_id = f"{source_doc_id}-{target_format}"
+        new_doc_id = base_id
         counter = 2
-        while (self.manuals_dir / new_manual_id).exists():
-            new_manual_id = f"{base_id}-{counter}"
+        while (self.docs_dir / new_doc_id).exists():
+            new_doc_id = f"{base_id}-{counter}"
             counter += 1
 
-        # Create new manual directory
-        new_manual_dir = self.manuals_dir / new_manual_id
-        new_manual_dir.mkdir(parents=True, exist_ok=True)
+        # Create new doc directory
+        new_doc_dir = self.docs_dir / new_doc_id
+        new_doc_dir.mkdir(parents=True, exist_ok=True)
 
         # Get source metadata
-        source_metadata = self.get_manual_metadata(source_manual_id) or {}
+        source_metadata = self.get_doc_metadata(source_doc_id) or {}
 
         # Determine title
         if title:
@@ -500,13 +521,13 @@ class UserStorage:
             if not original_title:
                 # Derive from video name if no explicit title
                 video_path = source_metadata.get("video_path", "")
-                original_title = Path(video_path).stem if video_path else source_manual_id
+                original_title = Path(video_path).stem if video_path else source_doc_id
             new_title = f"{original_title} ({format_names[target_format]})"
 
         # Copy screenshots directory (use hard links to save space if possible)
         source_screenshots = source_dir / "screenshots"
         if source_screenshots.exists():
-            new_screenshots = new_manual_dir / "screenshots"
+            new_screenshots = new_doc_dir / "screenshots"
             new_screenshots.mkdir(exist_ok=True)
 
             for screenshot in source_screenshots.glob("*.png"):
@@ -519,34 +540,33 @@ class UserStorage:
                     shutil.copy2(screenshot, dest)
 
         # Copy or create content for each language
-        source_languages = self.list_manual_languages(source_manual_id)
+        source_languages = self.list_doc_languages(source_doc_id)
         if not source_languages:
-            # Legacy structure - check for direct manual.md
-            legacy_path = source_dir / "manual.md"
-            if legacy_path.exists():
+            # Legacy structure - check for direct doc.md or manual.md
+            if (source_dir / "doc.md").exists() or (source_dir / "manual.md").exists():
                 source_languages = ["en"]
 
         for lang in source_languages:
-            lang_dir = new_manual_dir / lang
+            lang_dir = new_doc_dir / lang
             lang_dir.mkdir(exist_ok=True)
 
             if content and lang == source_languages[0]:
                 # Use provided reformatted content for primary language
-                (lang_dir / "manual.md").write_text(content, encoding="utf-8")
+                (lang_dir / "doc.md").write_text(content, encoding="utf-8")
             else:
                 # Copy original content
-                source_content = self.get_manual_content(source_manual_id, lang)
+                source_content = self.get_doc_content(source_doc_id, lang)
                 if source_content:
-                    (lang_dir / "manual.md").write_text(source_content, encoding="utf-8")
+                    (lang_dir / "doc.md").write_text(source_content, encoding="utf-8")
 
-        # Create metadata for cloned manual
+        # Create metadata for cloned doc
         new_metadata = {
             "title": new_title,
             "document_format": target_format,
             "video_path": source_metadata.get("video_path", ""),
             "source_video": source_metadata.get("source_video", {}),
             "cloned_from": {
-                "manual_id": source_manual_id,
+                "doc_id": source_doc_id,
                 "source_format": source_metadata.get("document_format", "step-manual"),
                 "cloned_at": datetime.now().isoformat(),
             },
@@ -557,8 +577,127 @@ class UserStorage:
         }
 
         # Save metadata
-        metadata_path = new_manual_dir / "metadata.json"
+        metadata_path = new_doc_dir / "metadata.json"
         with open(metadata_path, "w", encoding="utf-8") as f:
             json.dump(new_metadata, f, indent=2, ensure_ascii=False)
 
-        return new_manual_id, new_manual_dir
+        return new_doc_id, new_doc_dir
+
+    # ========== Share Token Methods ==========
+
+    def create_share_token(self, doc_id: str, language: str = "en") -> str:
+        """Create a share token for a doc.
+
+        Generates a unique, cryptographically secure token that can be used
+        to access the doc without authentication.
+
+        Args:
+            doc_id: Doc identifier
+            language: Language code for the shared version
+
+        Returns:
+            The generated share token
+        """
+        token = secrets.token_urlsafe(32)
+
+        share_info = {
+            "token": token,
+            "language": language,
+            "created_at": datetime.now().isoformat(),
+            "expires_at": None,  # Permanent until revoked
+        }
+
+        self.update_doc_metadata(doc_id, {"share": share_info})
+        return token
+
+    def get_share_info(self, doc_id: str) -> Optional[Dict[str, Any]]:
+        """Get share information for a doc.
+
+        Args:
+            doc_id: Doc identifier
+
+        Returns:
+            Share info dict or None if not shared
+        """
+        metadata = self.get_doc_metadata(doc_id)
+        if metadata is None:
+            return None
+        return metadata.get("share")
+
+    def revoke_share(self, doc_id: str) -> bool:
+        """Revoke the share token for a doc.
+
+        Args:
+            doc_id: Doc identifier
+
+        Returns:
+            True if share was revoked, False if no share existed
+        """
+        metadata = self.get_doc_metadata(doc_id)
+        if metadata is None or "share" not in metadata:
+            return False
+
+        # Remove share from metadata
+        del metadata["share"]
+        metadata["updated_at"] = datetime.now().isoformat()
+
+        metadata_file = self.docs_dir / doc_id / "metadata.json"
+        with open(metadata_file, "w", encoding="utf-8") as f:
+            json.dump(metadata, f, indent=2, ensure_ascii=False)
+
+        return True
+
+
+def find_doc_by_share_token(token: str) -> Optional[Tuple[str, str, Dict[str, Any]]]:
+    """Find a doc by its share token across all users.
+
+    This is a module-level function that searches all user directories
+    to find a doc with the given share token.
+
+    Args:
+        token: The share token to search for
+
+    Returns:
+        Tuple of (user_id, doc_id, share_info) or None if not found
+    """
+    from ..config import USERS_DIR
+
+    if not USERS_DIR.exists():
+        return None
+
+    for user_dir in USERS_DIR.iterdir():
+        if not user_dir.is_dir():
+            continue
+
+        user_id = user_dir.name
+        docs_dir = user_dir / "docs"
+
+        if not docs_dir.exists():
+            continue
+
+        for doc_dir in docs_dir.iterdir():
+            if not doc_dir.is_dir():
+                continue
+
+            metadata_file = doc_dir / "metadata.json"
+            if not metadata_file.exists():
+                continue
+
+            try:
+                with open(metadata_file, "r", encoding="utf-8") as f:
+                    metadata = json.load(f)
+
+                share_info = metadata.get("share")
+                if share_info and share_info.get("token") == token:
+                    # Check if token is expired
+                    expires_at = share_info.get("expires_at")
+                    if expires_at:
+                        expiry = datetime.fromisoformat(expires_at)
+                        if datetime.now() > expiry:
+                            continue  # Token expired
+
+                    return (user_id, doc_dir.name, share_info)
+            except (json.JSONDecodeError, IOError):
+                continue
+
+    return None

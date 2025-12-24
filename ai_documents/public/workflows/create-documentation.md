@@ -6,7 +6,7 @@ Complete guide to creating documentation from a video.
 
 1. Upload video
 2. Process video
-3. Edit manual
+3. Edit doc
 4. Export result
 
 ## Step 1: Upload Video
@@ -34,12 +34,12 @@ Complete guide to creating documentation from a video.
 - Instructions are generated
 - Status changes to "Completed" when done
 
-## Step 3: Edit Manual
+## Step 3: Edit Doc
 
 **Open the editor**
-- Navigate to **Manuals** page (`nav-manuals`)
-- Find your newly created manual
-- Click **Edit** button (`first-manual-edit-btn`)
+- Navigate to **Docs** page (`nav-docs`)
+- Find your newly created doc
+- Click **Edit** button (`first-doc-edit-btn`)
 
 **Review and refine**
 - Check generated screenshots
@@ -66,7 +66,7 @@ Complete guide to creating documentation from a video.
 
 - [ ] Video uploaded successfully
 - [ ] Processing completed without errors
-- [ ] Manual content reviewed and edited
+- [ ] Doc content reviewed and edited
 - [ ] Final export downloaded
 
 ## Troubleshooting

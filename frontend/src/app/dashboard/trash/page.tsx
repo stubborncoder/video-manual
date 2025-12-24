@@ -165,7 +165,7 @@ export default function TrashPage() {
                       <div className="flex h-6 w-6 items-center justify-center rounded-md bg-muted">
                         <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
-                      <span className="text-muted-foreground">{stats.manuals} {t("manuals").toLowerCase()}</span>
+                      <span className="text-muted-foreground">{stats.manuals} {t("docs").toLowerCase()}</span>
                     </div>
                     <div className="w-px h-4 bg-border" />
                     <div className="flex items-center gap-2 text-sm">
@@ -275,7 +275,7 @@ export default function TrashPage() {
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/10">
                     <FileText className="h-4 w-4 text-primary" />
                   </div>
-                  <span className="font-display">{t("manuals")} ({groupedItems.manual.length})</span>
+                  <span className="font-display">{t("docs")} ({groupedItems.manual.length})</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>

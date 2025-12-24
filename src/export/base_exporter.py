@@ -206,7 +206,7 @@ class BaseExporter(ABC):
         Strips semantic tags from the content so that exported documents
         contain clean markdown without XML-like tags.
         """
-        content = self.user_storage.get_manual_content(manual_id, language)
+        content = self.user_storage.get_doc_content(manual_id, language)
         if content:
             # Strip semantic tags (e.g., <step>, <note>, <introduction>) for clean export
             content = strip_semantic_tags(content)
@@ -222,7 +222,7 @@ class BaseExporter(ABC):
         Returns:
             Content with fixed image paths
         """
-        screenshots_dir = self.user_storage.manuals_dir / manual_id / "screenshots"
+        screenshots_dir = self.user_storage.docs_dir / manual_id / "screenshots"
 
         def replace_path(match):
             # Normalize alt text (may span multiple lines)

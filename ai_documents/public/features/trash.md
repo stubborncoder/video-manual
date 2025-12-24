@@ -10,7 +10,7 @@ The Trash page (`/dashboard/trash`) shows all deleted items organized by type.
 
 - **Header**: Title and "Empty Trash" button (shows item count)
 - **Videos Section**: Deleted videos grouped together
-- **Manuals Section**: Deleted manuals grouped together
+- **Docs Section**: Deleted docs grouped together
 - **Projects Section**: Deleted projects grouped together
 
 Each section only appears if there are items of that type in the trash.
@@ -27,7 +27,7 @@ Each trash item shows:
 
 | Field | Description |
 |-------|-------------|
-| Icon | Type indicator (video, manual, project) |
+| Icon | Type indicator (video, doc, project) |
 | Name | Original item name |
 | Deleted date | When the item was deleted |
 | Days left | Time until automatic permanent deletion |
@@ -36,7 +36,7 @@ Each trash item shows:
 ### Cascade Deletion
 
 Some items show a "Cascade deleted" badge. This means the item was deleted because its parent was deleted:
-- Manual deleted when its parent project was deleted (with "Delete manuals" option)
+- Doc deleted when its parent project was deleted (with "Delete docs" option)
 - Related items deleted together
 
 ## Actions
@@ -50,8 +50,8 @@ Each item has a **Restore** button:
 
 **What gets restored:**
 - **Video**: Video file returns to Videos page
-- **Manual**: Manual returns to Manuals page (and its original project if still exists)
-- **Project**: Project returns to Projects page (without its manuals if they were deleted separately)
+- **Doc**: Doc returns to Docs page (and its original project if still exists)
+- **Project**: Project returns to Projects page (without its docs if they were deleted separately)
 
 ### Delete Permanently
 
@@ -73,18 +73,18 @@ The **Empty Trash** button in the header permanently deletes all items:
 
 ### From Videos Page
 - Video moves to Trash
-- Associated manuals are NOT deleted
-- Manuals may show "Source video deleted" warning
+- Associated docs are NOT deleted
+- Docs may show "Source video deleted" warning
 
-### From Manuals Page
-- Manual (all languages) moves to Trash
+### From Docs Page
+- Doc (all languages) moves to Trash
 - Source video is NOT deleted
 - Project assignment is removed (but project kept)
 
 ### From Projects Page
 Depends on user choice in deletion dialog:
-- **Keep manuals**: Manuals move to "My Manuals" project, project moves to Trash
-- **Delete manuals**: Both manuals and project move to Trash (cascade)
+- **Keep docs**: Docs move to "My Docs" project, project moves to Trash
+- **Delete docs**: Both docs and project move to Trash (cascade)
 
 ## Automatic Cleanup
 

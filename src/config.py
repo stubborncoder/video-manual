@@ -61,7 +61,7 @@ def get_checkpoint_db_path(agent_name: str) -> Path:
     Each agent has its own independent SQLite database for checkpointing.
 
     Args:
-        agent_name: Name of the agent (e.g., "video_manual_agent")
+        agent_name: Name of the agent (e.g., "video_doc_agent")
 
     Returns:
         Path to the agent's checkpoint database

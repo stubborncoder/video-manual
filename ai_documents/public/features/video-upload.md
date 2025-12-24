@@ -10,7 +10,7 @@ The Videos page (`/dashboard/videos`) shows all uploaded videos.
 
 Each video card has three buttons:
 - **Show Video** - Preview the video
-- **Process** - Generate a manual from the video
+- **Process** - Generate a doc from the video
 - **Delete** - Move video to trash (30 days)
 
 ## Supported Formats
@@ -42,29 +42,38 @@ Click **Process** on a video card to open the generation window.
 
 ### Center: Generation Settings
 
-**Document Format** (dropdown):
-- Step-by-step Manual - Detailed numbered instructions
-- Quick Guide - Condensed overview
-- Reference Document - Technical reference
-- Executive Summary - High-level overview
+**Document Format** (dropdown) - Choose based on your video content:
+
+*Instructional Formats:*
+- **Step-by-Step Doc** - Detailed numbered instructions for tutorials
+- **Quick Guide** - Condensed overview for quick reference
+- **Reference Document** - Technical reference with definitions
+- **Executive Summary** - High-level overview for decision-makers
+
+*Report Formats:*
+- **Incident Report** - Document issues, damage, or problems
+- **Inspection Report** - Condition assessments and compliance checks
+- **Progress Report** - Project status and milestones
+
+**Tip**: The format affects how AI analyzes your video. Tutorials look for actions/steps; reports look for evidence/conditions.
 
 **Language**: Enter language name (converted to ISO format automatically)
 
-**Project**: Assign to a project (defaults to "My Manuals")
+**Project**: Assign to a project (defaults to "My Docs")
 
 ### Right: Context Settings (Recommended)
 
 Two optional text areas with checkboxes to enable:
 
 **Target Audience** (up to 500 characters):
-- Who is this manual for?
+- Who is this doc for?
 - Examples: "junior developers", "general users", "technical personnel", "new employees"
 
-**Manual Objective**:
+**Doc Objective**:
 - What should readers achieve?
-- Example: "The manual will show the ingestion process for the agentic RAG pipeline"
+- Example: "The doc will show the ingestion process for the agentic RAG pipeline"
 
-**Important:** These context settings are used during **manual evaluation**. Providing target audience and objective helps the AI generate more appropriate content and results in better evaluation scores.
+**Important:** These context settings are used during **doc evaluation**. Providing target audience and objective helps the AI generate more appropriate content and results in better evaluation scores.
 
 ### Starting Generation
 
@@ -78,7 +87,7 @@ Two optional text areas with checkboxes to enable:
 
 Once uploaded, your video will appear in the video list. From there you can:
 
-1. **Process** - Start AI analysis to generate a manual
+1. **Process** - Start AI analysis to generate a doc
 2. **Delete** - Remove the video (moves to Trash for 30 days)
 3. **View** - Preview the video content
 
@@ -104,7 +113,7 @@ Once uploaded, your video will appear in the video list. From there you can:
 |--------|---------|
 | Uploaded | Ready for processing |
 | Processing | AI is analyzing the video |
-| Completed | Manual has been generated |
+| Completed | Doc has been generated |
 | Failed | Processing encountered an error |
 
 ## Troubleshooting

@@ -184,7 +184,7 @@ class CompilationVersionStorage:
                     "created_at": datetime.now().isoformat(),
                     "folder": None,  # Current, not in versions folder
                     "languages": self._detect_languages(self.current_dir),
-                    "source_manuals": [],  # Unknown for legacy
+                    "source_docs": [],  # Unknown for legacy
                     "notes": "Migrated from legacy structure",
                     "tags": [],
                 }],
@@ -263,7 +263,7 @@ class CompilationVersionStorage:
     def save_compilation(
         self,
         languages: List[str],
-        source_manuals: List[Dict[str, str]],
+        source_docs: List[Dict[str, str]],
         merge_plan: Dict[str, Any],
         notes: str = "",
         tags: Optional[List[str]] = None,
@@ -272,7 +272,7 @@ class CompilationVersionStorage:
 
         Args:
             languages: List of language codes compiled
-            source_manuals: List of {"manual_id": str, "version": str} dicts
+            source_docs: List of {"doc_id": str, "version": str} dicts
             merge_plan: The merge plan used for compilation
             notes: Optional notes about this compilation
             tags: Optional tags for this version
@@ -293,7 +293,7 @@ class CompilationVersionStorage:
             "created_at": datetime.now().isoformat(),
             "folder": None,  # Current version, not yet in versions folder
             "languages": languages,
-            "source_manuals": source_manuals,
+            "source_docs": source_docs,
             "merge_plan_summary": {
                 "chapter_count": len(merge_plan.get("chapters", [])),
                 "duplicates_detected": len(merge_plan.get("duplicates_detected", [])),
@@ -339,7 +339,7 @@ class CompilationVersionStorage:
                 "version": v.get("version"),
                 "created_at": v.get("created_at"),
                 "languages": v.get("languages", []),
-                "source_manual_count": len(v.get("source_manuals", [])),
+                "source_doc_count": len(v.get("source_docs", [])),
                 "notes": v.get("notes", ""),
                 "tags": v.get("tags", []),
                 "is_current": is_current,
@@ -469,7 +469,7 @@ class CompilationVersionStorage:
             "created_at": datetime.now().isoformat(),
             "folder": None,
             "languages": version_info.get("languages", []),
-            "source_manuals": version_info.get("source_manuals", []),
+            "source_docs": version_info.get("source_docs", []),
             "merge_plan_summary": version_info.get("merge_plan_summary", {}),
             "notes": f"Restored from version {version}",
             "tags": version_info.get("tags", []),

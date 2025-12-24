@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
-import { X, Send, Loader2, Trash2, Bot, ChevronUp, ChevronDown, Minimize2 } from "lucide-react";
+import { X, Send, Loader2, Trash2, Bot, ChevronUp, ChevronDown, Minimize2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useGuideStore } from "@/stores/guideStore";
 import { useSidebar } from "@/components/layout/SidebarContext";
+import ReactMarkdown from "react-markdown";
 import { GuideMessageComponent } from "./GuideMessage";
 import { GuideSuggestions } from "./GuideSuggestions";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,7 @@ interface GuidePanelProps {
   onSendMessage: (content: string) => void;
   onClearChat?: () => void;
   suggestions?: string[];
+  whatsNewLabel?: string;
 }
 
 /**
@@ -45,6 +47,7 @@ export function GuidePanel({
   onSendMessage,
   onClearChat,
   suggestions = [],
+  whatsNewLabel,
 }: GuidePanelProps) {
   const pathname = usePathname();
   const {
@@ -196,6 +199,28 @@ export function GuidePanel({
                   {pageContext.pageTitle}
                 </Badge>
               )}
+              {/* What's New badge */}
+              {whatsNewLabel && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "text-xs cursor-pointer ml-1 gap-1",
+                        "bg-gradient-to-r from-amber-500/10 to-orange-500/10",
+                        "border-amber-500/30 text-amber-600 dark:text-amber-400",
+                        "hover:border-amber-500/50 hover:from-amber-500/15 hover:to-orange-500/15",
+                        "transition-all duration-200"
+                      )}
+                      onClick={() => !isGenerating && onSendMessage(whatsNewLabel)}
+                    >
+                      <Sparkles className="h-3 w-3" />
+                      New
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent>{whatsNewLabel}</TooltipContent>
+                </Tooltip>
+              )}
             </div>
             <div className="flex items-center gap-1 shrink-0">
               {/* Clear chat - only in full mode */}
@@ -280,9 +305,11 @@ export function GuidePanel({
             >
               <div className="px-4 py-3">
                 {lastAssistantMessage ? (
-                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {lastAssistantMessage.content}
-                  </p>
+                  <div className="text-sm text-muted-foreground prose prose-sm dark:prose-invert prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 max-w-none">
+                    <ReactMarkdown>
+                      {lastAssistantMessage.content}
+                    </ReactMarkdown>
+                  </div>
                 ) : (
                   <p className="text-sm text-muted-foreground italic">
                     Click to expand...

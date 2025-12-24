@@ -11,7 +11,7 @@ dependencies = [
     "google-genai>=1.0.0", # For Gemini Files API (newer SDK)
     "langgraph>=0.5.0",
     "langgraph-checkpoint-sqlite>=1.0.0",
-    "langsmith>=0.3.0",  # LangSmith tracing
+    "langsmith>=0.3.0", # LangSmith tracing
     # Environment
     "python-dotenv>=1.0.0",
     # DeepAgents - for compiler agent
@@ -33,7 +33,7 @@ dependencies = [
     "markdown>=3.5.0",
     "pygments>=2.17.0",
     "python-docx>=1.2.0",
-    "docxtpl>=0.18.0",  # Word template engine (Jinja2)
+    "docxtpl>=0.18.0", # Word template engine (Jinja2)
     # Web API
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
@@ -44,6 +44,7 @@ dependencies = [
     # Assistant UI streaming
     "assistant-stream[langgraph]>=0.0.31",
     "aiosqlite>=0.21.0",
+    "docxcompose>=1.4.0",
 ]
 
 [project.scripts]

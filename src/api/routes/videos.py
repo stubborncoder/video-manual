@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 
 from ..schemas import VideoInfo, VideoListResponse, VideoWithManuals
 from ..dependencies import CurrentUser, UserStorageDep, TrashStorageDep
-from ...agents.video_manual_agent.prompts import list_formats
+from ...agents.video_doc_agent.prompts import list_formats
 
 router = APIRouter(prefix="/videos", tags=["videos"])
 
@@ -97,7 +97,7 @@ async def get_video_manuals(
     if not video_path.exists():
         raise HTTPException(status_code=404, detail="Video not found")
 
-    manuals = storage.get_manuals_by_video(video_name)
+    manuals = storage.get_docs_by_video(video_name)
     return {
         "video_name": video_name,
         "manual_count": len(manuals),
@@ -128,7 +128,7 @@ async def delete_video(
         raise HTTPException(status_code=404, detail="Video not found")
 
     # Get associated manuals
-    associated_manuals = storage.get_manuals_by_video(video_name)
+    associated_manuals = storage.get_docs_by_video(video_name)
     manual_ids = [m["manual_id"] for m in associated_manuals]
 
     if cascade and manual_ids:
@@ -151,7 +151,7 @@ async def delete_video(
     )
 
     # Update manual metadata to mark video as deleted
-    storage.mark_video_deleted_for_manuals(video_name)
+    storage.mark_video_deleted_for_docs(video_name)
 
     return {
         "status": "moved_to_trash",

@@ -7,8 +7,8 @@ AI-powered documentation from video. A full-stack platform for generating profes
 vDocs provides:
 - **Video Analysis** - Gemini 2.5 Pro analyzes video content to identify key instructional moments
 - **Smart Keyframe Selection** - Automatically identifies the best frames to capture as screenshots
-- **Documentation Generation** - Claude generates clear, professional Markdown manuals with embedded screenshots
-- **Web Dashboard** - Modern React UI for managing videos, manuals, and projects
+- **Documentation Generation** - Claude generates clear, professional Markdown documents with embedded screenshots
+- **Web Dashboard** - Modern React UI for managing videos, documents, and projects
 - **Async Processing** - Non-blocking video processing with real-time progress tracking
 
 ## Tech Stack
@@ -17,7 +17,7 @@ vDocs provides:
 - **Python 3.12+** with FastAPI
 - **LangGraph** for AI workflow orchestration
 - **Google Gemini 2.5 Pro** for video understanding
-- **Anthropic Claude** for manual generation
+- **Anthropic Claude** for document generation
 - **Supabase** for authentication and PostgreSQL database
 - **SQLite** for job persistence
 - **FFmpeg** for video processing
@@ -44,13 +44,13 @@ vDocs/
 │   ├── api/                      # FastAPI application
 │   │   ├── routes/               # REST endpoints
 │   │   │   ├── jobs.py           # Job tracking API
-│   │   │   ├── manuals.py        # Manual CRUD
+│   │   │   ├── docs.py           # Document CRUD
 │   │   │   ├── videos.py         # Video management
 │   │   │   └── projects.py       # Project organization
 │   │   └── websockets/           # WebSocket handlers
 │   │       └── process_video.py  # Real-time processing
 │   ├── agents/
-│   │   └── video_manual_agent/   # LangGraph workflow
+│   │   └── video_doc_agent/      # LangGraph workflow
 │   │       ├── graph.py          # StateGraph definition
 │   │       ├── nodes/            # Processing nodes
 │   │       └── prompts/          # AI prompts
@@ -71,14 +71,14 @@ vDocs/
 └── data/                         # Runtime data (gitignored)
     └── users/{user_id}/
         ├── videos/               # Uploaded videos
-        └── manuals/{manual_id}/  # Generated manuals
+        └── docs/{doc_id}/        # Generated documents
 ```
 
 ### Processing Pipeline
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    VideoManualGraph                          │
+│                      VideoDocGraph                           │
 ├─────────────────────────────────────────────────────────────┤
 │  START                                                       │
 │    │                                                         │
@@ -95,7 +95,7 @@ vDocs/
 │           │                                                  │
 │           ▼                                                  │
 │  ┌──────────────────┐                                       │
-│  │ generate_manual  │  ← Claude: create Markdown manual     │
+│  │   generate_doc   │  ← Claude: create Markdown document   │
 │  └────────┬─────────┘                                       │
 │           │                                                  │
 │           ▼                                                  │
@@ -238,9 +238,9 @@ Then open http://localhost:3000 in your browser.
 
 ```bash
 # Process a video directly
-uv run vdocs process /path/to/video.mp4 --output my-manual
+uv run vdocs process /path/to/video.mp4 --output my-doc
 
-# List manuals
+# List documents
 uv run vdocs list
 
 # Get help
@@ -250,19 +250,19 @@ uv run vdocs --help
 ### Programmatic Usage
 
 ```python
-from src.agents.video_manual_agent import VideoManualAgent
+from src.agents.video_doc_agent import VideoDocAgent
 
-agent = VideoManualAgent()
+agent = VideoDocAgent()
 
-result = agent.create_manual(
+result = agent.create_doc(
     video_path="/path/to/tutorial.mp4",
     user_id="user_123",
-    output_filename="my_manual",
+    output_filename="my_doc",
     use_scene_detection=True,
     output_language="English",
 )
 
-print(f"Manual saved to: {result['manual_path']}")
+print(f"Document saved to: {result['doc_path']}")
 ```
 
 ## API Endpoints
@@ -272,12 +272,12 @@ print(f"Manual saved to: {result['manual_path']}")
 - `POST /api/videos/upload` - Upload a video
 - `DELETE /api/videos/{name}` - Delete a video
 
-### Manuals
-- `GET /api/manuals` - List user's manuals
-- `GET /api/manuals/{id}` - Get manual content
-- `PUT /api/manuals/{id}/content` - Update manual content
-- `POST /api/manuals/{id}/evaluate` - AI quality evaluation
-- `POST /api/manuals/{id}/export/{format}` - Export to PDF/Word/HTML
+### Documents
+- `GET /api/docs` - List user's documents
+- `GET /api/docs/{id}` - Get document content
+- `PUT /api/docs/{id}/content` - Update document content
+- `POST /api/docs/{id}/evaluate` - AI quality evaluation
+- `POST /api/docs/{id}/export/{format}` - Export to PDF/Word/HTML
 
 ### Jobs
 - `GET /api/jobs` - List processing jobs
@@ -322,7 +322,7 @@ CORS_ORIGINS=            # Allowed CORS origins (comma-separated)
 
 ### Agent Configuration
 
-See `src/agents/video_manual_agent/config.py`:
+See `src/agents/video_doc_agent/config.py`:
 
 ```python
 DEFAULT_GEMINI_MODEL = "gemini-2.5-pro"
@@ -337,17 +337,17 @@ SCREENSHOT_MAX_WIDTH = 1920
 data/users/{user_id}/
 ├── videos/
 │   └── tutorial.mp4
-└── manuals/
-    └── my-manual/
+└── docs/
+    └── my-doc/
         ├── en/
-        │   └── manual.md          # English manual
+        │   └── doc.md             # English document
         ├── es/
-        │   └── manual.md          # Spanish manual (if generated)
+        │   └── doc.md             # Spanish document (if generated)
         ├── screenshots/
         │   ├── figure_01_t15s.png  # Screenshot at 15s
         │   ├── figure_02_t42s.png  # Screenshot at 42s
         │   └── ...
-        └── metadata.json          # Manual metadata
+        └── metadata.json          # Document metadata
 ```
 
 ## Features
@@ -357,17 +357,18 @@ data/users/{user_id}/
 - Automatic video optimization for AI processing
 - Scene detection for intelligent keyframe selection
 
-### Manual Generation
+### Document Generation
+- **7 document types**: Step-by-step manuals, quick guides, reference docs, executive summaries, incident reports, inspection reports, progress reports
 - Multi-language support
 - Markdown output with embedded screenshots
 - AI-powered quality evaluation
 - Version history with restore capability
 
 ### Project Organization
-- Group manuals into projects
+- Group documents into projects
 - Organize with chapters
 - Tag-based filtering
-- Compile project documentation
+- Compile and share project documentation
 
 ### Editor
 - Live Markdown preview

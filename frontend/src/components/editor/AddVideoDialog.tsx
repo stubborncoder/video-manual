@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
-import { manuals, type UploadProgress, type AdditionalVideoUploadResponse } from "@/lib/api";
+import { docs, type UploadProgress, type AdditionalVideoUploadResponse } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 // Common UI languages
@@ -136,7 +136,7 @@ export function AddVideoDialog({
     setUploadProgress(0);
 
     try {
-      const result = await manuals.uploadVideo(
+      const result = await docs.uploadVideo(
         manualId,
         file,
         label || undefined,

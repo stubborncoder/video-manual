@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
 
-from .routes import auth_router, videos_router, manuals_router, projects_router, trash_router, compile_stream_router, jobs_router, admin_router, templates_router, guide_router, bugs_router
+from .routes import auth_router, videos_router, docs_router, projects_router, trash_router, compile_stream_router, jobs_router, admin_router, templates_router, guide_router, bugs_router, share_router, share_view_router, project_share_router, project_share_view_router
 from .websockets import process_video_router, compile_project_router, editor_copilot_router
 from ..config import ensure_directories, CORS_ORIGINS
 from ..db import init_db
@@ -58,7 +58,7 @@ def create_app(
     # REST API routes
     app.include_router(auth_router, prefix="/api")
     app.include_router(videos_router, prefix="/api")
-    app.include_router(manuals_router, prefix="/api")
+    app.include_router(docs_router, prefix="/api")
     app.include_router(projects_router, prefix="/api")
     app.include_router(trash_router, prefix="/api")
     app.include_router(jobs_router, prefix="/api")
@@ -67,6 +67,10 @@ def create_app(
     app.include_router(bugs_router, prefix="/api")
     app.include_router(admin_router)  # Admin routes already have /api/admin prefix
     app.include_router(compile_stream_router, prefix="/api/assistant")
+    app.include_router(share_router, prefix="/api")  # Share management (authenticated)
+    app.include_router(share_view_router, prefix="/api")  # Public share view (no auth required)
+    app.include_router(project_share_router, prefix="/api")  # Project share management (authenticated)
+    app.include_router(project_share_view_router, prefix="/api")  # Public project share view (no auth required)
 
     # WebSocket routes
     app.include_router(process_video_router, prefix="/api")

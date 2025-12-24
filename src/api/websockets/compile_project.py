@@ -96,7 +96,7 @@ async def websocket_compile_project(
                         })
                         continue
 
-                    manuals = storage.get_project_manuals(project_id)
+                    manuals = storage.get_project_docs(project_id)
                     if not manuals:
                         await websocket.send_json({
                             "event_type": "error",

@@ -26,7 +26,7 @@ highlight_element("upload-video-btn", 5000)
 | Element ID | Description | Use When |
 |------------|-------------|----------|
 | `nav-videos` | Videos navigation link | User wants to go to videos |
-| `nav-manuals` | Manuals navigation link | User wants to see manuals |
+| `nav-docs` | Docs navigation link | User wants to see docs |
 | `nav-projects` | Projects navigation link | User wants to see projects |
 | `nav-bugs` | Bug Tracker navigation link | User wants to report or view issues |
 
@@ -36,24 +36,24 @@ highlight_element("upload-video-btn", 5000)
 | `upload-video-btn` | Upload Video button | User wants to upload |
 | `nav-videos` | Videos navigation link | Show current section |
 
-### /dashboard/manuals
+### /dashboard/docs
 | Element ID | Description | Use When |
 |------------|-------------|----------|
-| `first-manual-card` | First manual card | User wants to select a manual |
-| `first-manual-edit-btn` | Edit button on first manual | User wants to edit |
-| `nav-manuals` | Manuals navigation link | Show current section |
+| `first-doc-card` | First doc card | User wants to select a doc |
+| `first-doc-edit-btn` | Edit button on first doc | User wants to edit |
+| `nav-docs` | Docs navigation link | Show current section |
 
-**Manual Card Buttons** (not all highlightable):
-- **View** - Preview the manual (read-only)
-- **Edit** - Open the manual editor (highlightable: `first-manual-edit-btn`)
+**Doc Card Buttons** (not all highlightable):
+- **View** - Preview the doc (read-only)
+- **Edit** - Open the doc editor (highlightable: `first-doc-edit-btn`)
 - **⋯ Menu** - Opens dropdown with:
-  - Export Manual
+  - Export Doc
   - Add Language
   - Clone to Format *(experimental)*
   - Evaluate Quality
   - Assign to Project
   - Manage Tags
-  - Delete Manual
+  - Delete doc
 
 ### /dashboard/projects
 | Element ID | Description | Use When |
@@ -89,7 +89,7 @@ Returns:
 ### DO highlight for:
 - "Where is the upload button?" → `highlight_element("upload-video-btn")`
 - "How do I create a project?" → `highlight_element("create-project-btn")`
-- "Show me where to edit" → `highlight_element("first-manual-edit-btn")`
+- "Show me where to edit" → `highlight_element("first-doc-edit-btn")`
 
 ### DON'T highlight for:
 - "What formats are supported?" → Just answer, no highlight
@@ -118,4 +118,4 @@ When user asks about something on a different page:
 Elements use `data-guide-id` attribute with these patterns:
 - `{action}-{noun}-btn` - Action buttons (upload-video-btn)
 - `nav-{page}` - Navigation links (nav-videos)
-- `first-{type}-{action}` - First item actions (first-manual-edit-btn)
+- `first-{type}-{action}` - First item actions (first-doc-edit-btn)

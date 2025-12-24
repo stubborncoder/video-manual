@@ -333,7 +333,7 @@ export default function UserDetailPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {[
               { icon: Video, label: t("videos"), value: stats.video_count, color: "blue" },
-              { icon: FileText, label: t("manuals"), value: stats.manual_count, color: "emerald" },
+              { icon: FileText, label: t("docs"), value: stats.manual_count, color: "emerald" },
               { icon: FolderOpen, label: t("projects"), value: stats.project_count, color: "violet" },
               { icon: Layout, label: t("templates"), value: stats.template_count, color: "amber" },
               { icon: Trash2, label: t("trash"), value: stats.trash_count, color: "red" },

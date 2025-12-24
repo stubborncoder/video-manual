@@ -114,7 +114,7 @@ export interface UploadProgress {
 }
 
 export interface VideoManualInfo {
-  manual_id: string;
+  doc_id: string;
   video_path: string;
   languages: string[];
   created_at: string | null;
@@ -205,7 +205,7 @@ export interface LanguageEvaluation {
   evaluated: boolean;
 }
 
-export interface ManualSummary {
+export interface DocSummary {
   id: string;
   title: string;
   created_at: string | null;
@@ -219,7 +219,7 @@ export interface ManualSummary {
   document_format?: string;
 }
 
-export interface ManualDetail {
+export interface DocDetail {
   id: string;
   title: string;
   content: string;
@@ -249,7 +249,7 @@ export interface PrimaryVideoInfo {
   exists: boolean;
 }
 
-export interface ManualVideosResponse {
+export interface DocVideosResponse {
   primary: PrimaryVideoInfo;
   additional: AdditionalVideoInfo[];
 }
@@ -276,8 +276,8 @@ export interface EvaluationScoreCategory {
   explanation: string;
 }
 
-export interface ManualEvaluation {
-  manual_id: string;
+export interface DocEvaluation {
+  doc_id: string;
   language: string;
   target_audience?: string;
   target_objective?: string;
@@ -302,98 +302,98 @@ export interface ManualEvaluation {
   };
 }
 
-export const manuals = {
-  list: () => request<{ manuals: ManualSummary[] }>("/api/manuals"),
+export const docs = {
+  list: () => request<{ docs: DocSummary[] }>("/api/docs"),
 
-  get: (manualId: string, language = "en") =>
-    request<ManualDetail>(`/api/manuals/${manualId}`, { params: { language } }),
+  get: (docId: string, language = "en") =>
+    request<DocDetail>(`/api/docs/${docId}`, { params: { language } }),
 
-  getLanguages: (manualId: string) =>
-    request<{ manual_id: string; languages: string[] }>(
-      `/api/manuals/${manualId}/languages`
+  getLanguages: (docId: string) =>
+    request<{ doc_id: string; languages: string[] }>(
+      `/api/docs/${docId}/languages`
     ),
 
-  updateContent: (manualId: string, content: string, language = "en") =>
-    request<{ status: string; manual_id: string; language: string; path: string }>(
-      `/api/manuals/${manualId}/content`,
+  updateContent: (docId: string, content: string, language = "en") =>
+    request<{ status: string; doc_id: string; language: string; path: string }>(
+      `/api/docs/${docId}/content`,
       { method: "PUT", body: JSON.stringify({ content, language }) }
     ),
 
-  updateTitle: (manualId: string, title: string) =>
-    request<{ status: string; manual_id: string; title: string }>(
-      `/api/manuals/${manualId}/title`,
+  updateTitle: (docId: string, title: string) =>
+    request<{ status: string; doc_id: string; title: string }>(
+      `/api/docs/${docId}/title`,
       { method: "PUT", body: JSON.stringify({ title }) }
     ),
 
-  delete: (manualId: string) =>
-    request<{ status: string }>(`/api/manuals/${manualId}`, { method: "DELETE" }),
+  delete: (docId: string) =>
+    request<{ status: string }>(`/api/docs/${docId}`, { method: "DELETE" }),
 
-  getTags: (manualId: string) =>
-    request<{ manual_id: string; tags: string[] }>(`/api/manuals/${manualId}/tags`),
+  getTags: (docId: string) =>
+    request<{ doc_id: string; tags: string[] }>(`/api/docs/${docId}/tags`),
 
-  addTags: (manualId: string, tags: string[]) =>
-    request<{ manual_id: string; added_tags: string[] }>(
-      `/api/manuals/${manualId}/tags`,
+  addTags: (docId: string, tags: string[]) =>
+    request<{ doc_id: string; added_tags: string[] }>(
+      `/api/docs/${docId}/tags`,
       { method: "POST", body: JSON.stringify(tags) }
     ),
 
-  removeTag: (manualId: string, tag: string) =>
-    request<{ manual_id: string; removed_tag: string }>(
-      `/api/manuals/${manualId}/tags/${encodeURIComponent(tag)}`,
+  removeTag: (docId: string, tag: string) =>
+    request<{ doc_id: string; removed_tag: string }>(
+      `/api/docs/${docId}/tags/${encodeURIComponent(tag)}`,
       { method: "DELETE" }
     ),
 
   // Version history
-  listVersions: (manualId: string, language?: string) =>
+  listVersions: (docId: string, language?: string) =>
     request<{
-      manual_id: string;
+      doc_id: string;
       current_version: string;
       versions: VersionInfo[];
-    }>(`/api/manuals/${manualId}/versions${language ? `?language=${language}` : ""}`),
+    }>(`/api/docs/${docId}/versions${language ? `?language=${language}` : ""}`),
 
-  getVersionContent: (manualId: string, version: string, language = "en") =>
+  getVersionContent: (docId: string, version: string, language = "en") =>
     request<{
-      manual_id: string;
+      doc_id: string;
       version: string;
       language: string;
       content: string;
-    }>(`/api/manuals/${manualId}/versions/${version}/content`, {
+    }>(`/api/docs/${docId}/versions/${version}/content`, {
       params: { language },
     }),
 
-  restoreVersion: (manualId: string, version: string, language = "en") =>
+  restoreVersion: (docId: string, version: string, language = "en") =>
     request<{
-      manual_id: string;
+      doc_id: string;
       restored_version: string;
       language: string;
       new_current_version: string;
-    }>(`/api/manuals/${manualId}/versions/${version}/restore`, {
+    }>(`/api/docs/${docId}/versions/${version}/restore`, {
       method: "POST",
       params: { language },
     }),
 
-  createVersionSnapshot: (manualId: string, bumpType: "minor" | "major" = "minor", notes = "") =>
+  createVersionSnapshot: (docId: string, bumpType: "minor" | "major" = "minor", notes = "") =>
     request<{
-      manual_id: string;
+      doc_id: string;
       new_version: string;
       bump_type: string;
       notes: string;
-    }>(`/api/manuals/${manualId}/versions/snapshot`, {
+    }>(`/api/docs/${docId}/versions/snapshot`, {
       method: "POST",
       params: { bump_type: bumpType, notes },
     }),
 
   // Export manual to various formats
   export: (
-    manualId: string,
-    format: "pdf" | "word" | "html" | "chunks" = "pdf",
+    docId: string,
+    format: "pdf" | "word" | "html" | "chunks" | "markdown" = "pdf",
     language = "en",
     embedImages = true,
     templateName?: string
   ) =>
     request<{
       status: string;
-      manual_id: string;
+      doc_id: string;
       format: string;
       language: string;
       template: string | null;
@@ -401,7 +401,7 @@ export const manuals = {
       download_url: string;
       size_bytes: number;
       created_at: string;
-    }>(`/api/manuals/${manualId}/export`, {
+    }>(`/api/docs/${docId}/export`, {
       method: "POST",
       body: JSON.stringify({
         format,
@@ -411,9 +411,9 @@ export const manuals = {
       }),
     }),
 
-  listExports: (manualId: string) =>
+  listExports: (docId: string) =>
     request<{
-      manual_id: string;
+      doc_id: string;
       exports: Array<{
         filename: string;
         format: string;
@@ -422,18 +422,18 @@ export const manuals = {
         size_bytes: number;
         created_at: string;
       }>;
-    }>(`/api/manuals/${manualId}/exports`),
+    }>(`/api/docs/${docId}/exports`),
 
-  evaluate: (manualId: string, language = "en", userLanguage?: string) =>
-    request<ManualEvaluation>(`/api/manuals/${manualId}/evaluate`, {
+  evaluate: (docId: string, language = "en", userLanguage?: string) =>
+    request<DocEvaluation>(`/api/docs/${docId}/evaluate`, {
       method: "POST",
       body: JSON.stringify({ language, user_language: userLanguage }),
     }),
 
   // Stored evaluations
-  listEvaluations: (manualId: string) =>
+  listEvaluations: (docId: string) =>
     request<{
-      manual_id: string;
+      doc_id: string;
       evaluations: Array<{
         version: string;
         language: string;
@@ -441,21 +441,21 @@ export const manuals = {
         evaluated_at: string;
         stored_at: string;
       }>;
-    }>(`/api/manuals/${manualId}/evaluations`),
+    }>(`/api/docs/${docId}/evaluations`),
 
-  getEvaluation: (manualId: string, version: string, language = "en") =>
-    request<ManualEvaluation>(`/api/manuals/${manualId}/evaluations/${version}`, {
+  getEvaluation: (docId: string, version: string, language = "en") =>
+    request<DocEvaluation>(`/api/docs/${docId}/evaluations/${version}`, {
       params: { language },
     }),
 
   // Clone manual to different document format
   clone: (
-    manualId: string,
+    docId: string,
     documentFormat: string,
     title?: string,
     reformatContent = false
   ) =>
-    request<ManualSummary>(`/api/manuals/${manualId}/clone`, {
+    request<DocSummary>(`/api/docs/${docId}/clone`, {
       method: "POST",
       body: JSON.stringify({
         document_format: documentFormat,
@@ -465,11 +465,11 @@ export const manuals = {
     }),
 
   // Additional video sources for screenshot replacement
-  listVideos: (manualId: string) =>
-    request<ManualVideosResponse>(`/api/manuals/${manualId}/videos`),
+  listVideos: (docId: string) =>
+    request<DocVideosResponse>(`/api/docs/${docId}/videos`),
 
   uploadVideo: async (
-    manualId: string,
+    docId: string,
     file: File,
     label?: string,
     language?: string,
@@ -487,7 +487,7 @@ export const manuals = {
     // Upload directly to backend to bypass Next.js 10MB proxy limit
     // In production, this should be configured via environment variable
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    const url = `${backendUrl}/api/manuals/${manualId}/videos${queryString ? `?${queryString}` : ""}`;
+    const url = `${backendUrl}/api/docs/${docId}/videos${queryString ? `?${queryString}` : ""}`;
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -522,29 +522,131 @@ export const manuals = {
     });
   },
 
-  deleteVideo: (manualId: string, videoId: string) =>
+  deleteVideo: (docId: string, videoId: string) =>
     request<{ status: string; video_id: string }>(
-      `/api/manuals/${manualId}/videos/${videoId}`,
+      `/api/docs/${docId}/videos/${videoId}`,
       { method: "DELETE" }
     ),
 
-  getVideoStreamUrl: (manualId: string, videoId: string) =>
-    `/api/manuals/${manualId}/videos/${videoId}/stream`,
+  getVideoStreamUrl: (docId: string, videoId: string) =>
+    `/api/docs/${docId}/videos/${videoId}/stream`,
 };
 
 // Manual project assignment
-export const manualProject = {
-  assign: (manualId: string, projectId: string, chapterId?: string) =>
-    request<{ manual_id: string; project_id: string; chapter_id: string | null }>(
-      `/api/manuals/${manualId}/project`,
+export const docProject = {
+  assign: (docId: string, projectId: string, chapterId?: string) =>
+    request<{ doc_id: string; project_id: string; chapter_id: string | null }>(
+      `/api/docs/${docId}/project`,
       { method: "PUT", body: JSON.stringify({ project_id: projectId, chapter_id: chapterId }) }
     ),
 
-  remove: (manualId: string) =>
-    request<{ manual_id: string; removed_from_project: string }>(
-      `/api/manuals/${manualId}/project`,
+  remove: (docId: string) =>
+    request<{ doc_id: string; removed_from_project: string }>(
+      `/api/docs/${docId}/project`,
       { method: "DELETE" }
     ),
+};
+
+// Share link management
+export interface ShareInfo {
+  doc_id: string;
+  token: string;
+  language: string;
+  share_url: string;
+  created_at: string;
+  expires_at: string | null;
+}
+
+export interface ShareStatus {
+  doc_id: string;
+  is_shared: boolean;
+  share_info: ShareInfo | null;
+}
+
+export const docShare = {
+  create: (docId: string, language: string = "en") =>
+    request<ShareInfo>(`/api/docs/${docId}/share`, {
+      method: "POST",
+      body: JSON.stringify({ language }),
+    }),
+
+  getStatus: (docId: string) =>
+    request<ShareStatus>(`/api/docs/${docId}/share`),
+
+  revoke: (docId: string) =>
+    request<{ status: string; message: string }>(`/api/docs/${docId}/share`, {
+      method: "DELETE",
+    }),
+};
+
+// Public share view (no auth required)
+export interface SharedDocInfo {
+  title: string;
+  language: string;
+  content_html: string;
+  created_at: string | null;
+  updated_at: string | null;
+  version: string | null;
+  document_format: string | null;
+}
+
+export const publicShare = {
+  getDoc: (token: string) =>
+    request<SharedDocInfo>(`/api/share/${token}`),
+};
+
+// Project sharing
+export interface ProjectShareInfo {
+  project_id: string;
+  token: string;
+  language: string;
+  share_url: string;
+  created_at: string;
+  expires_at: string | null;
+}
+
+export interface ProjectShareStatus {
+  project_id: string;
+  is_shared: boolean;
+  is_compiled: boolean;
+  share_info: ProjectShareInfo | null;
+}
+
+export interface TocItem {
+  id: string;
+  title: string;
+  level: number;
+}
+
+export interface SharedProjectInfo {
+  title: string;
+  description: string;
+  language: string;
+  content_html: string;
+  toc: TocItem[];
+  updated_at: string | null;
+  version: string | null;
+}
+
+export const projectShare = {
+  create: (projectId: string, language: string = "en") =>
+    request<ProjectShareInfo>(`/api/projects/${projectId}/share`, {
+      method: "POST",
+      body: JSON.stringify({ language }),
+    }),
+
+  getStatus: (projectId: string) =>
+    request<ProjectShareStatus>(`/api/projects/${projectId}/share`),
+
+  revoke: (projectId: string) =>
+    request<{ status: string; message: string }>(`/api/projects/${projectId}/share`, {
+      method: "DELETE",
+    }),
+};
+
+export const publicProjectShare = {
+  getProject: (token: string) =>
+    request<SharedProjectInfo>(`/api/share/project/${token}`),
 };
 
 // Projects
@@ -588,7 +690,7 @@ export interface ProjectDetail {
   is_default?: boolean;
   sections: SectionInfo[];
   chapters: ChapterInfo[];
-  manuals: { manual_id: string; chapter_id: string | null; order: number }[];
+  manuals: { doc_id: string; chapter_id: string | null; order: number }[];
   videos: ProjectVideoInfo[];
 }
 
@@ -678,21 +780,21 @@ export const projects = {
       { method: "DELETE" }
     ),
 
-  addManual: (projectId: string, manualId: string, chapterId?: string) =>
+  addManual: (projectId: string, docId: string, chapterId?: string) =>
     request<{ status: string }>(
-      `/api/projects/${projectId}/manuals/${manualId}`,
+      `/api/projects/${projectId}/manuals/${docId}`,
       { method: "POST", params: chapterId ? { chapter_id: chapterId } : undefined }
     ),
 
-  removeManual: (projectId: string, manualId: string) =>
+  removeManual: (projectId: string, docId: string) =>
     request<{ status: string }>(
-      `/api/projects/${projectId}/manuals/${manualId}`,
+      `/api/projects/${projectId}/manuals/${docId}`,
       { method: "DELETE" }
     ),
 
-  moveManualToChapter: (projectId: string, manualId: string, chapterId: string) =>
+  moveManualToChapter: (projectId: string, docId: string, chapterId: string) =>
     request<{ status: string }>(
-      `/api/projects/${projectId}/manuals/${manualId}/chapter`,
+      `/api/projects/${projectId}/manuals/${docId}/chapter`,
       { method: "PUT", params: { chapter_id: chapterId } }
     ),
 
@@ -704,7 +806,7 @@ export const projects = {
 
   export: (
     projectId: string,
-    format: "pdf" | "word" | "html" | "chunks" = "pdf",
+    format: "pdf" | "word" | "html" | "chunks" | "markdown" = "pdf",
     language = "en",
     templateName?: string
   ) =>
@@ -752,7 +854,7 @@ export interface CompilationVersionSummary {
 }
 
 export interface CompilationVersionDetail extends CompilationVersionSummary {
-  source_manuals: { manual_id: string; version: string }[];
+  source_manuals: { doc_id: string; version: string }[];
   merge_plan_summary: {
     chapter_count: number;
     duplicates_detected: number;
@@ -848,7 +950,7 @@ export interface JobInfo {
   id: string;
   user_id: string;
   video_name: string;
-  manual_id: string | null;
+  doc_id: string | null;
   status: "pending" | "processing" | "complete" | "error";
   current_node: string | null;
   node_index: number | null;
@@ -968,4 +1070,4 @@ export const templates = {
     ),
 };
 
-export default { auth, videos, manuals, manualProject, projects, compilations, exports, jobs, trash, templates };
+export default { auth, videos, docs, docProject, projects, compilations, exports, jobs, trash, templates };

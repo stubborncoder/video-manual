@@ -103,7 +103,7 @@ async def websocket_process_video(
         # Determine video path and output filename based on flow type
         if manual_id:
             # Add-language flow: get video path from existing manual's metadata
-            metadata = user_storage.get_manual_metadata(manual_id)
+            metadata = user_storage.get_doc_metadata(manual_id)
             if not metadata:
                 await websocket.send_json({
                     "event_type": "error",
@@ -133,7 +133,7 @@ async def websocket_process_video(
 
             # Check for duplicate: video already has manual with same format in target project
             video_name = video_path.name
-            existing_manuals = user_storage.get_manuals_by_video(video_name)
+            existing_manuals = user_storage.get_docs_by_video(video_name)
             for existing in existing_manuals:
                 # Only block if same project AND both have explicit document_format AND formats match
                 # Legacy manuals without document_format are ignored (no false positives)

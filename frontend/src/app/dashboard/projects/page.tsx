@@ -90,18 +90,20 @@ import {
   Layers,
   FolderTree,
   ArrowLeft,
+  Link2,
 } from "lucide-react";
 import { SidebarToggle } from "@/components/layout/SidebarToggle";
 import { AlphaBadge } from "@/components/ui/alpha-badge";
 import { useSidebar } from "@/components/layout/SidebarContext";
 import {
   projects,
-  manuals,
+  docs,
   type ProjectSummary,
   type ProjectDetail,
-  type ManualDetail,
+  type DocDetail,
 } from "@/lib/api";
 import { ExportDialog, type ExportOptions } from "@/components/dialogs/ExportDialog";
+import { ShareDialog } from "@/components/dialogs/ShareDialog";
 import { useProjectCompiler } from "@/hooks/useWebSocket";
 import { CompileSettingsDialog } from "@/components/dialogs/CompileSettingsDialog";
 import { CompilerView } from "@/components/compiler/CompilerView";
@@ -225,12 +227,13 @@ export default function ProjectsPage() {
 
   // Manual viewer state
   const [viewManualOpen, setViewManualOpen] = useState(false);
-  const [selectedManual, setSelectedManual] = useState<ManualDetail | null>(null);
+  const [selectedManual, setSelectedManual] = useState<DocDetail | null>(null);
   const [loadingManual, setLoadingManual] = useState(false);
 
   // Export state
-  const [exporting, setExporting] = useState<"pdf" | "word" | "html" | "chunks" | null>(null);
+  const [exporting, setExporting] = useState<"pdf" | "word" | "html" | "chunks" | "markdown" | null>(null);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   // Project filter state
   const [filterProjectId, setFilterProjectId] = useState<string>("__all__");
@@ -397,7 +400,7 @@ export default function ProjectsPage() {
       await projects.delete(projectToDelete.id, deleteManuals);
       toast.success(t("movedToTrash"), {
         description: deleteManuals
-          ? `${getProjectDisplayName(projectToDelete)} + ${projectToDelete.manual_count} ${t("manuals")}`
+          ? `${getProjectDisplayName(projectToDelete)} + ${projectToDelete.manual_count} ${t("docs")}`
           : getProjectDisplayName(projectToDelete),
       });
       setDeleteDialogOpen(false);
@@ -538,7 +541,7 @@ export default function ProjectsPage() {
 
     try {
       await projects.moveManualToChapter(selectedProject.id, manualToMove.manualId, targetChapterId);
-      toast.success(t("manualMovedToChapter"));
+      toast.success(t("docMovedToChapter"));
       setMoveManualDialogOpen(false);
       setManualToMove(null);
       // Refresh project detail
@@ -546,7 +549,7 @@ export default function ProjectsPage() {
       setSelectedProject(detail);
     } catch (e) {
       console.error("Failed to move manual:", e);
-      toast.error(t("manualMoveFailed"), {
+      toast.error(t("docMoveFailed"), {
         description: e instanceof Error ? e.message : tc("error"),
       });
     }
@@ -734,13 +737,13 @@ export default function ProjectsPage() {
 
     try {
       await projects.removeManual(selectedProject.id, manualId);
-      toast.success(t("manualRemovedFromProject"));
+      toast.success(t("docRemovedFromProject"));
       // Refresh project detail
       const detail = await projects.get(selectedProject.id);
       setSelectedProject(detail);
     } catch (e) {
       console.error("Failed to remove manual from project:", e);
-      toast.error(t("manualRemoveFailed"), {
+      toast.error(t("docRemoveFailed"), {
         description: e instanceof Error ? e.message : tc("error"),
       });
     }
@@ -821,7 +824,7 @@ export default function ProjectsPage() {
   async function handleViewManual(manualId: string) {
     setLoadingManual(true);
     try {
-      const manual = await manuals.get(manualId);
+      const manual = await docs.get(manualId);
       setSelectedManual(manual);
       setViewManualOpen(true);
     } catch (e) {
@@ -907,7 +910,7 @@ export default function ProjectsPage() {
                         <FileText className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                       <span className="text-muted-foreground">
-                        {projectList.reduce((acc, p) => acc + p.manual_count, 0)} {tc("manuals").toLowerCase()}
+                        {projectList.reduce((acc, p) => acc + p.manual_count, 0)} {tc("docs").toLowerCase()}
                       </span>
                     </div>
                   </div>
@@ -1123,7 +1126,7 @@ export default function ProjectsPage() {
                     </div>
                     <div className="flex flex-col">
                       <span className="text-lg font-semibold leading-none">{project.manual_count}</span>
-                      <span className="text-xs text-muted-foreground">{t("manuals")}</span>
+                      <span className="text-xs text-muted-foreground">{t("docs")}</span>
                     </div>
                   </div>
 
@@ -1167,7 +1170,7 @@ export default function ProjectsPage() {
                               title: ch.title,
                               manuals: detail.manuals
                                 .filter(m => m.chapter_id === ch.id)
-                                .map(m => m.manual_id),
+                                .map(m => m.doc_id),
                             })),
                           });
                         } catch {
@@ -1222,7 +1225,7 @@ export default function ProjectsPage() {
                   <Button
                     onClick={() => handleCompile(selectedProject.id, selectedProject.name)}
                     disabled={selectedProject.manuals.length < 2}
-                    title={selectedProject.manuals.length < 2 ? t("compilationRequires2Manuals") : undefined}
+                    title={selectedProject.manuals.length < 2 ? t("compilationRequires2Docs") : undefined}
                   >
                     <Wand2 className="h-4 w-4 mr-2" />
                     {t("compile")}
@@ -1274,7 +1277,7 @@ export default function ProjectsPage() {
                             title: ch.title,
                             manuals: selectedProject.manuals
                               .filter(m => m.chapter_id === ch.id)
-                              .map(m => m.manual_id),
+                              .map(m => m.doc_id),
                           })),
                         })}
                       >
@@ -1295,7 +1298,7 @@ export default function ProjectsPage() {
                     </TabsTrigger>
                     <TabsTrigger value="manuals">
                       <FileText className="h-4 w-4 mr-2" />
-                      {t("manualsTab")} ({selectedProject.manuals.length})
+                      {t("docsTab")} ({selectedProject.manuals.length})
                     </TabsTrigger>
                     <TabsTrigger value="videos">
                       <Video className="h-4 w-4 mr-2" />
@@ -1430,7 +1433,7 @@ export default function ProjectsPage() {
                                               {sectionChapters.length} {sectionChapters.length === 1 ? t("chapter") : t("chapters")}
                                             </Badge>
                                             <Badge variant="secondary" className="shrink-0">
-                                              {totalManualsInSection} {totalManualsInSection === 1 ? t("manual") : t("manuals")}
+                                              {totalManualsInSection} {totalManualsInSection === 1 ? t("doc") : t("docs")}
                                             </Badge>
                                             <Button
                                               size="icon"
@@ -1548,7 +1551,7 @@ export default function ProjectsPage() {
                                                                 </div>
                                                                 <div className="flex items-center gap-2 ml-3" onClick={(e) => e.stopPropagation()}>
                                                                   <Badge variant="secondary" className="shrink-0 text-xs">
-                                                                    {chapterManuals.length} {chapterManuals.length === 1 ? t("manual") : t("manuals")}
+                                                                    {chapterManuals.length} {chapterManuals.length === 1 ? t("doc") : t("docs")}
                                                                   </Badge>
                                                                   <DropdownMenu>
                                                                     <DropdownMenuTrigger asChild>
@@ -1589,19 +1592,19 @@ export default function ProjectsPage() {
                                                                   <div className="p-3 space-y-2">
                                                                     {chapterManuals.map((m) => (
                                                                       <div
-                                                                        key={m.manual_id}
+                                                                        key={m.doc_id}
                                                                         className="flex items-center justify-between p-2 bg-background rounded-lg border hover:border-primary/50 transition-colors group"
                                                                       >
                                                                         <div className="flex items-center gap-2 min-w-0 flex-1">
                                                                           <FileText className="h-4 w-4 text-primary shrink-0" />
-                                                                          <span className="text-sm truncate">{m.manual_id}</span>
+                                                                          <span className="text-sm truncate">{m.doc_id}</span>
                                                                         </div>
                                                                         <div className="flex items-center gap-1 ml-2">
                                                                           <Button
                                                                             size="sm"
                                                                             variant="ghost"
                                                                             className="h-7 shrink-0 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                            onClick={() => handleViewManual(m.manual_id)}
+                                                                            onClick={() => handleViewManual(m.doc_id)}
                                                                           >
                                                                             <Eye className="h-3 w-3 mr-1" />
                                                                             {t("view")}
@@ -1613,12 +1616,12 @@ export default function ProjectsPage() {
                                                                               </Button>
                                                                             </DropdownMenuTrigger>
                                                                             <DropdownMenuContent align="end">
-                                                                              <DropdownMenuItem onClick={() => openMoveManualDialog(m.manual_id, ch.id)}>
+                                                                              <DropdownMenuItem onClick={() => openMoveManualDialog(m.doc_id, ch.id)}>
                                                                                 <MoveHorizontal className="h-4 w-4 mr-2" />
                                                                                 {t("moveToChapter")}
                                                                               </DropdownMenuItem>
                                                                               <DropdownMenuItem
-                                                                                onClick={() => handleRemoveManualFromProject(m.manual_id)}
+                                                                                onClick={() => handleRemoveManualFromProject(m.doc_id)}
                                                                                 className="text-destructive"
                                                                               >
                                                                                 <X className="h-4 w-4 mr-2" />
@@ -1637,7 +1640,7 @@ export default function ProjectsPage() {
                                                               {isChapterExpanded && chapterManuals.length === 0 && (
                                                                 <div className="border-t bg-muted/10 p-6 text-center">
                                                                   <FileText className="h-6 w-6 text-muted-foreground/50 mx-auto mb-2" />
-                                                                  <p className="text-xs text-muted-foreground">{t("noManualsInChapter")}</p>
+                                                                  <p className="text-xs text-muted-foreground">{t("noDocsInChapter")}</p>
                                                                 </div>
                                                               )}
                                                             </>
@@ -1748,7 +1751,7 @@ export default function ProjectsPage() {
                                           </div>
                                           <div className="flex items-center gap-2 ml-3" onClick={(e) => e.stopPropagation()}>
                                             <Badge variant="secondary" className="shrink-0">
-                                              {chapterManuals.length} {chapterManuals.length === 1 ? t("manual") : t("manuals")}
+                                              {chapterManuals.length} {chapterManuals.length === 1 ? t("doc") : t("docs")}
                                             </Badge>
                                             {selectedProject.sections && selectedProject.sections.length > 0 && (
                                               <Button
@@ -1793,20 +1796,20 @@ export default function ProjectsPage() {
                                             <div className="p-4 space-y-2">
                                               {chapterManuals.map((m) => (
                                                 <div
-                                                  key={m.manual_id}
+                                                  key={m.doc_id}
                                                   className="flex items-center justify-between p-3 bg-background rounded-lg border hover:border-primary/50 transition-colors group"
                                                 >
                                                   <div className="flex items-center gap-3 min-w-0 flex-1">
                                                     <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                     <FileText className="h-4 w-4 text-primary shrink-0" />
-                                                    <span className="text-sm font-medium truncate">{m.manual_id}</span>
+                                                    <span className="text-sm font-medium truncate">{m.doc_id}</span>
                                                   </div>
                                                   <div className="flex items-center gap-1 ml-2">
                                                     <Button
                                                       size="sm"
                                                       variant="ghost"
                                                       className="h-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                      onClick={() => handleViewManual(m.manual_id)}
+                                                      onClick={() => handleViewManual(m.doc_id)}
                                                     >
                                                       <Eye className="h-3.5 w-3.5 mr-1" />
                                                       {t("view")}
@@ -1822,12 +1825,12 @@ export default function ProjectsPage() {
                                                         </Button>
                                                       </DropdownMenuTrigger>
                                                       <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem onClick={() => openMoveManualDialog(m.manual_id, ch.id)}>
+                                                        <DropdownMenuItem onClick={() => openMoveManualDialog(m.doc_id, ch.id)}>
                                                           <MoveHorizontal className="h-4 w-4 mr-2" />
                                                           {t("moveToChapter")}
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem
-                                                          onClick={() => handleRemoveManualFromProject(m.manual_id)}
+                                                          onClick={() => handleRemoveManualFromProject(m.doc_id)}
                                                           className="text-destructive"
                                                         >
                                                           <X className="h-4 w-4 mr-2" />
@@ -1846,8 +1849,8 @@ export default function ProjectsPage() {
                                         {isExpanded && chapterManuals.length === 0 && (
                                           <div className="border-t bg-muted/10 p-8 text-center">
                                             <FileText className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
-                                            <p className="text-sm text-muted-foreground">{t("noManualsInChapter")}</p>
-                                            <p className="text-xs text-muted-foreground mt-1">{t("addManualsFromManualsTab")}</p>
+                                            <p className="text-sm text-muted-foreground">{t("noDocsInChapter")}</p>
+                                            <p className="text-xs text-muted-foreground mt-1">{t("addDocsFromDocsTab")}</p>
                                           </div>
                                         )}
                                       </>
@@ -1867,7 +1870,7 @@ export default function ProjectsPage() {
                   {selectedProject.manuals.length === 0 ? (
                     <div className="text-center py-16 text-muted-foreground border-2 border-dashed rounded-lg">
                       <FileText className="mx-auto h-12 w-12 mb-4 opacity-50" />
-                      <p className="text-lg font-medium">{t("noManualsInProject")}</p>
+                      <p className="text-lg font-medium">{t("noDocsInProject")}</p>
                       <p className="text-sm mt-1">{t("processVideoToGenerate")}</p>
                     </div>
                   ) : (
@@ -1877,12 +1880,12 @@ export default function ProjectsPage() {
                           (ch) => ch.id === m.chapter_id
                         );
                         return (
-                          <Card key={m.manual_id} className="overflow-hidden group hover:border-primary/50 transition-colors">
+                          <Card key={m.doc_id} className="overflow-hidden group hover:border-primary/50 transition-colors">
                             <CardContent className="p-4">
                               <div className="flex items-start gap-3 min-w-0">
                                 <FileText className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                                 <div className="min-w-0 flex-1">
-                                  <p className="font-medium truncate">{m.manual_id}</p>
+                                  <p className="font-medium truncate">{m.doc_id}</p>
                                   {chapter && (
                                     <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
                                       <BookOpen className="h-3 w-3" />
@@ -1895,7 +1898,7 @@ export default function ProjectsPage() {
                                 <Button
                                   size="sm"
                                   className="flex-1"
-                                  onClick={() => handleViewManual(m.manual_id)}
+                                  onClick={() => handleViewManual(m.doc_id)}
                                   disabled={loadingManual}
                                 >
                                   {loadingManual ? (
@@ -1912,12 +1915,12 @@ export default function ProjectsPage() {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => openMoveManualDialog(m.manual_id, m.chapter_id)}>
+                                    <DropdownMenuItem onClick={() => openMoveManualDialog(m.doc_id, m.chapter_id)}>
                                       <MoveHorizontal className="h-4 w-4 mr-2" />
                                       {t("moveToChapter")}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                      onClick={() => handleRemoveManualFromProject(m.manual_id)}
+                                      onClick={() => handleRemoveManualFromProject(m.doc_id)}
                                       className="text-destructive"
                                     >
                                       <X className="h-4 w-4 mr-2" />
@@ -2061,6 +2064,13 @@ export default function ProjectsPage() {
                           )}
                           {exporting === "chunks" ? "Exporting..." : t("semanticChunks")}
                         </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setShareDialogOpen(true)}
+                        >
+                          <Link2 className="h-4 w-4 mr-2" />
+                          {t("share")}
+                        </Button>
                       </div>
                     </div>
                   </div>
@@ -2178,7 +2188,7 @@ export default function ProjectsPage() {
           {manualToMove && selectedProject && (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>{t("manual")}</Label>
+                <Label>{t("doc")}</Label>
                 <div className="flex items-center gap-2 p-2 border rounded-md bg-muted/50">
                   <FileText className="h-4 w-4 text-primary" />
                   <span className="text-sm font-medium">{manualToMove.manualId}</span>
@@ -2217,7 +2227,7 @@ export default function ProjectsPage() {
             </Button>
             <Button onClick={handleMoveManual} disabled={!targetChapterId}>
               <MoveHorizontal className="h-4 w-4 mr-2" />
-              {t("moveManual")}
+              {t("moveDoc")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2509,7 +2519,7 @@ export default function ProjectsPage() {
                       img: ({ src, alt }) => {
                         const srcStr = typeof src === "string" ? src : "";
                         const filename = srcStr.split("/").pop() || srcStr;
-                        const apiUrl = `/api/manuals/${selectedManual.id}/screenshots/${filename}`;
+                        const apiUrl = `/api/docs/${selectedManual.id}/screenshots/${filename}`;
                         return (
                           <span className="block my-4">
                             <img
@@ -2577,7 +2587,7 @@ export default function ProjectsPage() {
                   {selectedManual.screenshots.map((screenshot, idx) => (
                     <div key={idx} className="border rounded-lg overflow-hidden shadow-sm">
                       <img
-                        src={`/api/manuals/${selectedManual.id}/screenshots/${screenshot.split("/").pop()}`}
+                        src={`/api/docs/${selectedManual.id}/screenshots/${screenshot.split("/").pop()}`}
                         alt={`Screenshot ${idx + 1}`}
                         className="w-full"
                       />
@@ -2604,6 +2614,18 @@ export default function ProjectsPage() {
           onExport={handleExportWithOptions}
           defaultLanguage="en"
           showFormat={false}
+        />
+      )}
+
+      {/* Share Dialog */}
+      {selectedProject && (
+        <ShareDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          projectId={selectedProject.id}
+          projectTitle={selectedProject.name}
+          languages={["en"]}
+          defaultLanguage="en"
         />
       )}
     </div>

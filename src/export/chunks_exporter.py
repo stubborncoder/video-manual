@@ -16,28 +16,28 @@ from .tag_parser import parse_semantic_tags, get_title
 
 
 class ManualChunksExporter:
-    """Export manual as semantic chunks for RAG pipelines.
+    """Export doc as semantic chunks for RAG pipelines.
 
     Creates a ZIP archive containing:
     - chunks.json: Structured chunk data with metadata
     - images/: Folder with referenced screenshots
     """
 
-    def __init__(self, user_id: str, manual_id: str):
+    def __init__(self, user_id: str, doc_id: str):
         """Initialize the exporter.
 
         Args:
             user_id: User identifier
-            manual_id: Manual identifier
+            doc_id: Doc identifier
         """
         self.user_id = user_id
-        self.manual_id = manual_id
+        self.doc_id = doc_id
         self.user_storage = UserStorage(user_id)
 
-        # Verify manual exists
-        manual_dir = self.user_storage.manuals_dir / manual_id
-        if not manual_dir.exists():
-            raise ValueError(f"Manual not found: {manual_id}")
+        # Verify doc exists
+        doc_dir = self.user_storage.docs_dir / doc_id
+        if not doc_dir.exists():
+            raise ValueError(f"Doc not found: {doc_id}")
 
     def export(
         self,
@@ -54,12 +54,12 @@ class ManualChunksExporter:
             Path to the generated ZIP file
         """
         # Get manual content
-        content = self.user_storage.get_manual_content(self.manual_id, language)
+        content = self.user_storage.get_doc_content(self.doc_id, language)
         if not content:
             raise ValueError(f"Manual content not found for language: {language}")
 
         # Get metadata
-        metadata = self.user_storage.get_manual_metadata(self.manual_id) or {}
+        metadata = self.user_storage.get_doc_metadata(self.doc_id) or {}
 
         # Parse semantic tags into chunks
         chunks = self._parse_chunks(content)
@@ -67,8 +67,8 @@ class ManualChunksExporter:
         # Build the export structure
         export_data = {
             "manual": {
-                "id": self.manual_id,
-                "title": metadata.get("title") or get_title(content) or self.manual_id,
+                "id": self.doc_id,
+                "title": metadata.get("title") or get_title(content) or self.doc_id,
                 "language": language,
                 "format": metadata.get("document_format", "step-manual"),
                 "target_audience": metadata.get("target_audience"),
@@ -97,11 +97,11 @@ class ManualChunksExporter:
         Returns:
             Output file path
         """
-        export_dir = self.user_storage.manuals_dir / self.manual_id / "exports"
+        export_dir = self.user_storage.docs_dir / self.doc_id / "exports"
         export_dir.mkdir(parents=True, exist_ok=True)
 
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"{self.manual_id}_{language}_{timestamp}_chunks.zip"
+        filename = f"{self.doc_id}_{language}_{timestamp}_chunks.zip"
         return str(export_dir / filename)
 
     def _parse_chunks(self, content: str) -> List[Dict[str, Any]]:
@@ -261,7 +261,7 @@ class ManualChunksExporter:
             output_path: Path for the ZIP file
             chunks: List of chunks (to extract image references)
         """
-        screenshots_dir = self.user_storage.manuals_dir / self.manual_id / "screenshots"
+        screenshots_dir = self.user_storage.docs_dir / self.doc_id / "screenshots"
 
         # Collect all referenced images
         referenced_images = set()
@@ -283,17 +283,17 @@ class ManualChunksExporter:
                     zf.write(img_path, f"images/{img_filename}")
 
 
-def create_chunks_exporter(user_id: str, manual_id: str) -> ManualChunksExporter:
+def create_chunks_exporter(user_id: str, doc_id: str) -> ManualChunksExporter:
     """Factory function to create chunks exporter.
 
     Args:
         user_id: User identifier
-        manual_id: Manual identifier
+        doc_id: Doc identifier
 
     Returns:
         ManualChunksExporter instance
     """
-    return ManualChunksExporter(user_id, manual_id)
+    return ManualChunksExporter(user_id, doc_id)
 
 
 class ProjectChunksExporter:
@@ -341,7 +341,7 @@ class ProjectChunksExporter:
             Path to the generated ZIP file
         """
         # Get all manuals in the project
-        project_manuals = self.project_storage.get_project_manuals(self.project_id)
+        project_manuals = self.project_storage.get_project_docs(self.project_id)
 
         if not project_manuals:
             raise ValueError("Project has no manuals to export")
@@ -426,19 +426,19 @@ class ProjectChunksExporter:
             Manual chunk data
         """
         # Get manual content
-        content = self.user_storage.get_manual_content(manual_id, language)
+        content = self.user_storage.get_doc_content(manual_id, language)
         if not content:
             raise ValueError(f"Manual content not found: {manual_id}")
 
         # Get metadata
-        metadata = self.user_storage.get_manual_metadata(manual_id) or {}
+        metadata = self.user_storage.get_doc_metadata(manual_id) or {}
 
         # Create a temporary exporter to parse chunks
         exporter = ManualChunksExporter(self.user_id, manual_id)
         chunks = exporter._parse_chunks(content)
 
         # Collect images for this manual
-        screenshots_dir = self.user_storage.manuals_dir / manual_id / "screenshots"
+        screenshots_dir = self.user_storage.docs_dir / manual_id / "screenshots"
         for chunk in chunks:
             for img_path in chunk.get("images", []):
                 filename = img_path.replace("images/", "")
