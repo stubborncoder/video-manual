@@ -231,7 +231,7 @@ export default function ProjectsPage() {
   const [loadingManual, setLoadingManual] = useState(false);
 
   // Export state
-  const [exporting, setExporting] = useState<"pdf" | "word" | "html" | "chunks" | null>(null);
+  const [exporting, setExporting] = useState<"pdf" | "word" | "html" | "chunks" | "markdown" | null>(null);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
@@ -1170,7 +1170,7 @@ export default function ProjectsPage() {
                               title: ch.title,
                               manuals: detail.manuals
                                 .filter(m => m.chapter_id === ch.id)
-                                .map(m => m.manual_id),
+                                .map(m => m.doc_id),
                             })),
                           });
                         } catch {
@@ -1277,7 +1277,7 @@ export default function ProjectsPage() {
                             title: ch.title,
                             manuals: selectedProject.manuals
                               .filter(m => m.chapter_id === ch.id)
-                              .map(m => m.manual_id),
+                              .map(m => m.doc_id),
                           })),
                         })}
                       >
@@ -1592,19 +1592,19 @@ export default function ProjectsPage() {
                                                                   <div className="p-3 space-y-2">
                                                                     {chapterManuals.map((m) => (
                                                                       <div
-                                                                        key={m.manual_id}
+                                                                        key={m.doc_id}
                                                                         className="flex items-center justify-between p-2 bg-background rounded-lg border hover:border-primary/50 transition-colors group"
                                                                       >
                                                                         <div className="flex items-center gap-2 min-w-0 flex-1">
                                                                           <FileText className="h-4 w-4 text-primary shrink-0" />
-                                                                          <span className="text-sm truncate">{m.manual_id}</span>
+                                                                          <span className="text-sm truncate">{m.doc_id}</span>
                                                                         </div>
                                                                         <div className="flex items-center gap-1 ml-2">
                                                                           <Button
                                                                             size="sm"
                                                                             variant="ghost"
                                                                             className="h-7 shrink-0 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                            onClick={() => handleViewManual(m.manual_id)}
+                                                                            onClick={() => handleViewManual(m.doc_id)}
                                                                           >
                                                                             <Eye className="h-3 w-3 mr-1" />
                                                                             {t("view")}
@@ -1616,12 +1616,12 @@ export default function ProjectsPage() {
                                                                               </Button>
                                                                             </DropdownMenuTrigger>
                                                                             <DropdownMenuContent align="end">
-                                                                              <DropdownMenuItem onClick={() => openMoveManualDialog(m.manual_id, ch.id)}>
+                                                                              <DropdownMenuItem onClick={() => openMoveManualDialog(m.doc_id, ch.id)}>
                                                                                 <MoveHorizontal className="h-4 w-4 mr-2" />
                                                                                 {t("moveToChapter")}
                                                                               </DropdownMenuItem>
                                                                               <DropdownMenuItem
-                                                                                onClick={() => handleRemoveManualFromProject(m.manual_id)}
+                                                                                onClick={() => handleRemoveManualFromProject(m.doc_id)}
                                                                                 className="text-destructive"
                                                                               >
                                                                                 <X className="h-4 w-4 mr-2" />
@@ -1796,20 +1796,20 @@ export default function ProjectsPage() {
                                             <div className="p-4 space-y-2">
                                               {chapterManuals.map((m) => (
                                                 <div
-                                                  key={m.manual_id}
+                                                  key={m.doc_id}
                                                   className="flex items-center justify-between p-3 bg-background rounded-lg border hover:border-primary/50 transition-colors group"
                                                 >
                                                   <div className="flex items-center gap-3 min-w-0 flex-1">
                                                     <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                     <FileText className="h-4 w-4 text-primary shrink-0" />
-                                                    <span className="text-sm font-medium truncate">{m.manual_id}</span>
+                                                    <span className="text-sm font-medium truncate">{m.doc_id}</span>
                                                   </div>
                                                   <div className="flex items-center gap-1 ml-2">
                                                     <Button
                                                       size="sm"
                                                       variant="ghost"
                                                       className="h-8 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                      onClick={() => handleViewManual(m.manual_id)}
+                                                      onClick={() => handleViewManual(m.doc_id)}
                                                     >
                                                       <Eye className="h-3.5 w-3.5 mr-1" />
                                                       {t("view")}
@@ -1825,12 +1825,12 @@ export default function ProjectsPage() {
                                                         </Button>
                                                       </DropdownMenuTrigger>
                                                       <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem onClick={() => openMoveManualDialog(m.manual_id, ch.id)}>
+                                                        <DropdownMenuItem onClick={() => openMoveManualDialog(m.doc_id, ch.id)}>
                                                           <MoveHorizontal className="h-4 w-4 mr-2" />
                                                           {t("moveToChapter")}
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem
-                                                          onClick={() => handleRemoveManualFromProject(m.manual_id)}
+                                                          onClick={() => handleRemoveManualFromProject(m.doc_id)}
                                                           className="text-destructive"
                                                         >
                                                           <X className="h-4 w-4 mr-2" />
@@ -1880,12 +1880,12 @@ export default function ProjectsPage() {
                           (ch) => ch.id === m.chapter_id
                         );
                         return (
-                          <Card key={m.manual_id} className="overflow-hidden group hover:border-primary/50 transition-colors">
+                          <Card key={m.doc_id} className="overflow-hidden group hover:border-primary/50 transition-colors">
                             <CardContent className="p-4">
                               <div className="flex items-start gap-3 min-w-0">
                                 <FileText className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                                 <div className="min-w-0 flex-1">
-                                  <p className="font-medium truncate">{m.manual_id}</p>
+                                  <p className="font-medium truncate">{m.doc_id}</p>
                                   {chapter && (
                                     <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
                                       <BookOpen className="h-3 w-3" />
@@ -1898,7 +1898,7 @@ export default function ProjectsPage() {
                                 <Button
                                   size="sm"
                                   className="flex-1"
-                                  onClick={() => handleViewManual(m.manual_id)}
+                                  onClick={() => handleViewManual(m.doc_id)}
                                   disabled={loadingManual}
                                 >
                                   {loadingManual ? (
@@ -1915,12 +1915,12 @@ export default function ProjectsPage() {
                                     </Button>
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
-                                    <DropdownMenuItem onClick={() => openMoveManualDialog(m.manual_id, m.chapter_id)}>
+                                    <DropdownMenuItem onClick={() => openMoveManualDialog(m.doc_id, m.chapter_id)}>
                                       <MoveHorizontal className="h-4 w-4 mr-2" />
                                       {t("moveToChapter")}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
-                                      onClick={() => handleRemoveManualFromProject(m.manual_id)}
+                                      onClick={() => handleRemoveManualFromProject(m.doc_id)}
                                       className="text-destructive"
                                     >
                                       <X className="h-4 w-4 mr-2" />

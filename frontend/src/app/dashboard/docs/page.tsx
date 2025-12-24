@@ -183,12 +183,12 @@ function ManualsPageContent() {
   const { state: processingState, startProcessing, reset: resetProcessing } = useVideoProcessing();
   const { suppressJob, unsuppressJob, jobs } = useJobsStore();
 
-  // Get set of manual IDs that are currently being processed
-  const processingManualIds = useMemo(() => {
+  // Get set of doc IDs that are currently being processed
+  const processingDocIds = useMemo(() => {
     const ids = new Set<string>();
     Object.values(jobs).forEach((job) => {
-      if ((job.status === "pending" || job.status === "processing") && job.manual_id) {
-        ids.add(job.manual_id);
+      if ((job.status === "pending" || job.status === "processing") && job.doc_id) {
+        ids.add(job.doc_id);
       }
     });
     return ids;
@@ -1030,7 +1030,7 @@ function ManualsPageContent() {
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
               {/* Processing overlay */}
-              {processingManualIds.has(manual.id) && (
+              {processingDocIds.has(manual.id) && (
                 <div className="absolute inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center z-10">
                   <div className="flex flex-col items-center gap-2">
                     <Loader2 className="h-8 w-8 animate-spin text-primary" />

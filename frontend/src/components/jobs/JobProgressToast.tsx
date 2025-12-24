@@ -35,10 +35,10 @@ export function JobProgressToast({ job, onDismiss }: JobProgressToastProps) {
     ? NODE_LABELS[job.current_node] || job.current_node
     : "Starting...";
 
-  const handleViewManual = () => {
-    if (job.manual_id) {
+  const handleViewDoc = () => {
+    if (job.doc_id) {
       markSeen(job.id);
-      router.push(`/dashboard/docs/${job.manual_id}/edit`);
+      router.push(`/dashboard/docs/${job.doc_id}/edit`);
       onDismiss();
     }
   };
@@ -97,9 +97,9 @@ export function JobProgressToast({ job, onDismiss }: JobProgressToastProps) {
 
       {job.status === "complete" && (
         <div className="space-y-2">
-          <p className="text-sm text-green-600">Manual ready!</p>
-          <Button size="sm" className="w-full gap-2" onClick={handleViewManual}>
-            View Manual
+          <p className="text-sm text-green-600">Document ready!</p>
+          <Button size="sm" className="w-full gap-2" onClick={handleViewDoc}>
+            View Document
             <ExternalLink className="h-3 w-3" />
           </Button>
         </div>

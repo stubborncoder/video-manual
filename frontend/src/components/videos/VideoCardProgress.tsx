@@ -50,9 +50,9 @@ export function VideoCardProgress({ job, onDismiss }: VideoCardProgressProps) {
     return labelMap[node] || node;
   };
 
-  const handleViewManual = async () => {
-    if (!job.manual_id) {
-      console.warn("No manual_id available for job:", job.id);
+  const handleViewDoc = async () => {
+    if (!job.doc_id) {
+      console.warn("No doc_id available for job:", job.id);
       return;
     }
 
@@ -63,7 +63,7 @@ export function VideoCardProgress({ job, onDismiss }: VideoCardProgressProps) {
       console.error("Failed to mark job as seen:", error);
     }
 
-    router.push(`/dashboard/docs/${job.manual_id}/edit`);
+    router.push(`/dashboard/docs/${job.doc_id}/edit`);
   };
 
   const handleDismiss = async () => {
@@ -244,7 +244,7 @@ export function VideoCardProgress({ job, onDismiss }: VideoCardProgressProps) {
             </p>
 
             <Button
-              onClick={handleViewManual}
+              onClick={handleViewDoc}
               className="gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-lg shadow-emerald-500/20"
             >
               {tc("viewManual")}

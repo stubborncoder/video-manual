@@ -974,11 +974,11 @@ export default function VideosPage() {
                     <div className="text-sm space-y-1 max-h-32 overflow-y-auto custom-scrollbar">
                       {videoManuals.map((manual) => (
                         <div
-                          key={manual.manual_id}
+                          key={manual.doc_id}
                           className="flex items-center gap-2 py-1"
                         >
                           <FileText className="h-3 w-3 text-muted-foreground" />
-                          <span className="truncate">{manual.manual_id}</span>
+                          <span className="truncate">{manual.doc_id}</span>
                           {manual.languages.length > 0 && (
                             <span className="text-xs text-muted-foreground">
                               ({manual.languages.join(", ")})

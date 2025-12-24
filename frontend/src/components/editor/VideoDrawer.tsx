@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { FrameStrip, type FrameCandidate } from "./FrameStrip";
-import { docs, type ManualVideosResponse, type AdditionalVideoInfo, type PrimaryVideoInfo } from "@/lib/api";
+import { docs, type DocVideosResponse, type AdditionalVideoInfo, type PrimaryVideoInfo } from "@/lib/api";
 
 interface VideoOption {
   id: string;
