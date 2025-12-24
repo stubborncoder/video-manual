@@ -64,7 +64,7 @@ import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, 
 import { SidebarToggle } from "@/components/layout/SidebarToggle";
 import { AlphaBadge } from "@/components/ui/alpha-badge";
 import { useSidebar } from "@/components/layout/SidebarContext";
-import { docs, docProject, projects, type ManualSummary, type ManualDetail, type ProjectSummary, type DocEvaluation } from "@/lib/api";
+import { docs, docProject, projects, type DocSummary, type DocDetail, type ProjectSummary, type DocEvaluation } from "@/lib/api";
 import { ExportDialog, type ExportOptions } from "@/components/dialogs/ExportDialog";
 import { CloneManualDialog } from "@/components/dialogs/CloneManualDialog";
 import { ShareDialog } from "@/components/dialogs/ShareDialog";
@@ -76,7 +76,7 @@ import { useGuideStore } from "@/stores/guideStore";
 import { SUPPORTED_LANGUAGES, getScoreColorByRaw, getScoreColorByPercentage, getScoreLevel, SCORE_LEVEL_DESCRIPTIONS } from "@/lib/constants";
 
 // Extended manual info with additional data
-interface ManualWithProject extends ManualSummary {
+interface DocWithProject extends DocSummary {
   project_name?: string;
   project_is_default?: boolean;
   tags?: string[];
@@ -100,15 +100,15 @@ function ManualsPageContent() {
   };
 
   // Helper to get display name for manual's project
-  const getManualProjectDisplayName = (manual: ManualWithProject) => {
+  const getManualProjectDisplayName = (manual: DocWithProject) => {
     if (!manual.project_name) return undefined;
     return manual.project_is_default ? tp("defaultProjectName") : manual.project_name;
   };
   const searchParams = useSearchParams();
 
-  const [manualList, setManualList] = useState<ManualWithProject[]>([]);
+  const [manualList, setManualList] = useState<DocWithProject[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedManual, setSelectedManual] = useState<ManualDetail | null>(null);
+  const [selectedManual, setSelectedManual] = useState<DocDetail | null>(null);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [viewingLanguage, setViewingLanguage] = useState<string>("en");
   const [viewingManualId, setViewingManualId] = useState<string | null>(null);
@@ -160,24 +160,24 @@ function ManualsPageContent() {
 
   // Delete dialog state
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [manualToDelete, setManualToDelete] = useState<ManualWithProject | null>(null);
+  const [manualToDelete, setManualToDelete] = useState<DocWithProject | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   // Assign to project dialog state
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-  const [manualToAssign, setManualToAssign] = useState<ManualWithProject | null>(null);
+  const [manualToAssign, setManualToAssign] = useState<DocWithProject | null>(null);
   const [assignProjectId, setAssignProjectId] = useState<string>("");
   const [assigning, setAssigning] = useState(false);
 
   // Tags management state
   const [tagsDialogOpen, setTagsDialogOpen] = useState(false);
-  const [manualForTags, setManualForTags] = useState<ManualWithProject | null>(null);
+  const [manualForTags, setManualForTags] = useState<DocWithProject | null>(null);
   const [manualTags, setManualTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
 
   // Generate language state
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
-  const [manualToGenerate, setManualToGenerate] = useState<ManualWithProject | null>(null);
+  const [manualToGenerate, setManualToGenerate] = useState<DocWithProject | null>(null);
   const [generateLanguage, setGenerateLanguage] = useState("English");
   const [overrideWarningOpen, setOverrideWarningOpen] = useState(false);
   const { state: processingState, startProcessing, reset: resetProcessing } = useVideoProcessing();
@@ -196,7 +196,7 @@ function ManualsPageContent() {
 
   // Evaluation state
   const [evaluateDialogOpen, setEvaluateDialogOpen] = useState(false);
-  const [manualToEvaluate, setManualToEvaluate] = useState<ManualWithProject | null>(null);
+  const [manualToEvaluate, setManualToEvaluate] = useState<DocWithProject | null>(null);
   const [evaluating, setEvaluating] = useState(false);
   const [evaluationResult, setEvaluationResult] = useState<DocEvaluation | null>(null);
   const [storedEvaluations, setStoredEvaluations] = useState<Array<{
@@ -224,15 +224,15 @@ function ManualsPageContent() {
 
   // Export dialog state
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [manualToExport, setManualToExport] = useState<ManualWithProject | null>(null);
+  const [manualToExport, setManualToExport] = useState<DocWithProject | null>(null);
 
   // Share dialog state
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [manualToShare, setManualToShare] = useState<ManualWithProject | null>(null);
+  const [manualToShare, setManualToShare] = useState<DocWithProject | null>(null);
 
   // Clone dialog state
   const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
-  const [manualToClone, setManualToClone] = useState<ManualWithProject | null>(null);
+  const [manualToClone, setManualToClone] = useState<DocWithProject | null>(null);
 
   // Abort controller ref for cancelling in-flight evaluation requests
   const evalAbortControllerRef = useRef<AbortController | null>(null);
@@ -266,7 +266,7 @@ function ManualsPageContent() {
       projectsRes.projects.forEach((p) => projectMap.set(p.id, { name: p.name, is_default: p.is_default ?? false }));
 
       // Backend now returns source_video and project_id directly
-      const manualsWithProjects: ManualWithProject[] = res.docs.map((m) => {
+      const manualsWithProjects: DocWithProject[] = res.docs.map((m) => {
         const projectInfo = m.project_id ? projectMap.get(m.project_id) : undefined;
         return {
           ...m,
@@ -408,7 +408,7 @@ function ManualsPageContent() {
     }
   }
 
-  function openDeleteDialog(manual: ManualWithProject) {
+  function openDeleteDialog(manual: DocWithProject) {
     setManualToDelete(manual);
     setDeleteDialogOpen(true);
   }
@@ -431,7 +431,7 @@ function ManualsPageContent() {
     }
   }
 
-  function openAssignDialog(manual: ManualWithProject) {
+  function openAssignDialog(manual: DocWithProject) {
     setManualToAssign(manual);
     setAssignProjectId(manual.project_id || "");
     setAssignDialogOpen(true);
@@ -455,7 +455,7 @@ function ManualsPageContent() {
     }
   }
 
-  async function handleRemoveFromProject(manual: ManualWithProject) {
+  async function handleRemoveFromProject(manual: DocWithProject) {
     try {
       await docProject.remove(manual.id);
       toast.success("Manual removed from project");
@@ -466,7 +466,7 @@ function ManualsPageContent() {
     }
   }
 
-  async function openTagsDialog(manual: ManualWithProject) {
+  async function openTagsDialog(manual: DocWithProject) {
     setManualForTags(manual);
     setManualTags(manual.tags || []);
     setNewTag("");
@@ -511,7 +511,7 @@ function ManualsPageContent() {
   }
 
   // Generate language functions
-  function openGenerateDialog(manual: ManualWithProject) {
+  function openGenerateDialog(manual: DocWithProject) {
     // Close guide panel so user can focus on generation
     closeGuidePanel();
 
@@ -565,12 +565,12 @@ function ManualsPageContent() {
   }
 
   // Open export dialog
-  function openExportDialog(manual: ManualWithProject) {
+  function openExportDialog(manual: DocWithProject) {
     setManualToExport(manual);
     setExportDialogOpen(true);
   }
 
-  function openShareDialog(manual: ManualWithProject) {
+  function openShareDialog(manual: DocWithProject) {
     setManualToShare(manual);
     setShareDialogOpen(true);
   }
@@ -612,7 +612,7 @@ function ManualsPageContent() {
   }
 
   // Quick export (PDF/HTML without dialog)
-  async function handleQuickExport(manual: ManualWithProject, format: "pdf" | "html") {
+  async function handleQuickExport(manual: DocWithProject, format: "pdf" | "html") {
     if (exportingManual === manual.id) return;
 
     setExportingManual(manual.id);
@@ -640,14 +640,14 @@ function ManualsPageContent() {
   }
 
   // Clone manual to different format
-  function openCloneDialog(manual: ManualWithProject) {
+  function openCloneDialog(manual: DocWithProject) {
     setManualToClone(manual);
     setCloneDialogOpen(true);
   }
 
-  function handleCloneSuccess(newManual: ManualSummary) {
+  function handleCloneSuccess(newManual: DocSummary) {
     // Add the new manual to the list
-    const manualWithProject: ManualWithProject = {
+    const manualWithProject: DocWithProject = {
       ...newManual,
       tags: [],
     };
@@ -658,7 +658,7 @@ function ManualsPageContent() {
   }
 
   // Evaluate manual
-  async function openEvaluateDialog(manual: ManualWithProject, preferredLanguage?: string) {
+  async function openEvaluateDialog(manual: DocWithProject, preferredLanguage?: string) {
     // Close guide panel so user can focus on evaluation
     closeGuidePanel();
 

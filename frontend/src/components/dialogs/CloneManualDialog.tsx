@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { docs, ManualSummary } from "@/lib/api";
+import { docs, DocSummary } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -30,8 +30,8 @@ import { cn } from "@/lib/utils";
 interface CloneManualDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  manual: ManualSummary;
-  onSuccess: (newManual: ManualSummary) => void;
+  manual: DocSummary;
+  onSuccess: (newManual: DocSummary) => void;
 }
 
 const DOCUMENT_FORMATS = [

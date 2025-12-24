@@ -100,7 +100,7 @@ import {
   docs,
   type ProjectSummary,
   type ProjectDetail,
-  type ManualDetail,
+  type DocDetail,
 } from "@/lib/api";
 import { ExportDialog, type ExportOptions } from "@/components/dialogs/ExportDialog";
 import { ShareDialog } from "@/components/dialogs/ShareDialog";
@@ -227,7 +227,7 @@ export default function ProjectsPage() {
 
   // Manual viewer state
   const [viewManualOpen, setViewManualOpen] = useState(false);
-  const [selectedManual, setSelectedManual] = useState<ManualDetail | null>(null);
+  const [selectedManual, setSelectedManual] = useState<DocDetail | null>(null);
   const [loadingManual, setLoadingManual] = useState(false);
 
   // Export state
