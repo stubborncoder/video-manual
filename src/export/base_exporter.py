@@ -88,8 +88,8 @@ class BaseExporter(ABC):
         if chapters:
             for chapter in chapters:
                 if chapter.get("manuals"):
-                    first_manual_id = chapter["manuals"][0]
-                    vs = VersionStorage(self.user_id, first_manual_id)
+                    first_doc_id = chapter["manuals"][0]
+                    vs = VersionStorage(self.user_id, first_doc_id)
                     version = vs.get_current_version()
                     break
 
@@ -137,21 +137,21 @@ class BaseExporter(ABC):
                 sections.append(cover)
 
             # Chapter manuals
-            for manual_id in chapter.get("manuals", []):
-                manual_content = self._get_manual_content(manual_id, language)
-                if manual_content:
+            for doc_id in chapter.get("manuals", []):
+                doc_content = self._get_doc_content(doc_id, language)
+                if doc_content:
                     # Add manual section with anchor
-                    anchor = slugify(manual_id)
+                    anchor = slugify(doc_id)
                     sections.append(f'<a name="{anchor}"></a>\n')
                     sections.append('<div class="manual-section" markdown="1">\n')
 
                     # Fix image paths to be absolute
-                    manual_content = self._fix_image_paths(manual_content, manual_id)
-                    sections.append(manual_content)
+                    doc_content = self._fix_image_paths(doc_content, doc_id)
+                    sections.append(doc_content)
 
                     sections.append('\n</div>\n')
                 else:
-                    sections.append(f"\n## {manual_id}\n")
+                    sections.append(f"\n## {doc_id}\n")
                     sections.append(f"*Manual not found for language: {language}*\n")
 
         return "\n".join(sections)
@@ -167,17 +167,17 @@ class BaseExporter(ABC):
             chapter_anchor = slugify(chapter["id"])
             lines.append(f'<li class="chapter"><a href="#{chapter_anchor}">{chapter["title"]}</a></li>\n')
 
-            for manual_id in chapter.get("manuals", []):
-                manual_anchor = slugify(manual_id)
+            for doc_id in chapter.get("manuals", []):
+                doc_anchor = slugify(doc_id)
                 # Get manual title from metadata if available
-                metadata = self.project_storage._get_manual_metadata(manual_id)
-                title = manual_id
+                metadata = self.project_storage._get_doc_metadata(doc_id)
+                title = doc_id
                 if metadata and metadata.get("video_metadata"):
-                    title = metadata["video_metadata"].get("filename", manual_id)
+                    title = metadata["video_metadata"].get("filename", doc_id)
                     # Remove extension
                     title = Path(title).stem
 
-                lines.append(f'<li class="manual"><a href="#{manual_anchor}">{title}</a></li>\n')
+                lines.append(f'<li class="manual"><a href="#{doc_anchor}">{title}</a></li>\n')
 
         lines.append("</ul>\n")
         lines.append("</div>\n")
@@ -200,29 +200,29 @@ class BaseExporter(ABC):
 
         return "".join(lines)
 
-    def _get_manual_content(self, manual_id: str, language: str) -> Optional[str]:
+    def _get_doc_content(self, doc_id: str, language: str) -> Optional[str]:
         """Get manual content for a specific language.
 
         Strips semantic tags from the content so that exported documents
         contain clean markdown without XML-like tags.
         """
-        content = self.user_storage.get_doc_content(manual_id, language)
+        content = self.user_storage.get_doc_content(doc_id, language)
         if content:
             # Strip semantic tags (e.g., <step>, <note>, <introduction>) for clean export
             content = strip_semantic_tags(content)
         return content
 
-    def _fix_image_paths(self, content: str, manual_id: str) -> str:
+    def _fix_image_paths(self, content: str, doc_id: str) -> str:
         """Fix relative image paths to absolute paths.
 
         Args:
             content: Markdown content
-            manual_id: Manual identifier
+            doc_id: Manual identifier
 
         Returns:
             Content with fixed image paths
         """
-        screenshots_dir = self.user_storage.docs_dir / manual_id / "screenshots"
+        screenshots_dir = self.user_storage.docs_dir / doc_id / "screenshots"
 
         def replace_path(match):
             # Normalize alt text (may span multiple lines)

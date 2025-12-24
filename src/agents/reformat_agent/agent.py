@@ -53,7 +53,7 @@ class ReformatAgent:
 
     def reformat(
         self,
-        source_manual_id: str,
+        source_doc_id: str,
         user_id: str,
         source_format: str,
         target_format: str,
@@ -63,7 +63,7 @@ class ReformatAgent:
         """Convert a manual to a different document format.
 
         Args:
-            source_manual_id: ID of the manual to convert
+            source_doc_id: ID of the manual to convert
             user_id: User identifier
             source_format: Current format (step-manual, quick-guide, reference, summary)
             target_format: Target format to convert to
@@ -93,7 +93,7 @@ class ReformatAgent:
 
         # Prepare initial state
         initial_state: ReformatState = {
-            "source_manual_id": source_manual_id,
+            "source_doc_id": source_doc_id,
             "user_id": user_id,
             "source_format": source_format,
             "target_format": target_format,
@@ -105,7 +105,7 @@ class ReformatAgent:
         }
 
         # Run graph
-        config = {"configurable": {"thread_id": thread_id or f"{user_id}_{source_manual_id}"}}
+        config = {"configurable": {"thread_id": thread_id or f"{user_id}_{source_doc_id}"}}
         result = self.graph.invoke(initial_state, config=config)
 
         return result
@@ -129,7 +129,7 @@ def create_reformat_agent(use_checkpointer: bool = True) -> ReformatAgent:
 
 
 def reformat_manual_content(
-    source_manual_id: str,
+    source_doc_id: str,
     user_id: str,
     source_format: str,
     target_format: str,
@@ -140,7 +140,7 @@ def reformat_manual_content(
     Creates a temporary agent, runs the conversion, and returns the result.
 
     Args:
-        source_manual_id: ID of the manual to convert
+        source_doc_id: ID of the manual to convert
         user_id: User identifier
         source_format: Current format
         target_format: Target format
@@ -152,7 +152,7 @@ def reformat_manual_content(
     agent = create_reformat_agent(use_checkpointer=False)
     try:
         return agent.reformat(
-            source_manual_id=source_manual_id,
+            source_doc_id=source_doc_id,
             user_id=user_id,
             source_format=source_format,
             target_format=target_format,

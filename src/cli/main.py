@@ -247,7 +247,7 @@ def process_with_streaming(
             if project_id and manual_id:
                 project_storage = ProjectStorage(user_id)
                 try:
-                    project_storage.add_manual_to_project(project_id, manual_id, chapter_id)
+                    project_storage.add_doc_to_project(project_id, manual_id, chapter_id)
                     console.print(f"[dim]Added to project: {project_id}[/dim]")
                 except Exception as e:
                     console.print(f"[yellow]Warning: Could not add to project: {e}[/yellow]")
@@ -780,7 +780,7 @@ def project_add_manual(
     storage = ProjectStorage(user)
 
     try:
-        storage.add_manual_to_project(project_id, manual_id, chapter)
+        storage.add_doc_to_project(project_id, manual_id, chapter)
         console.print(f"[green]Manual '{manual_id}' added to project '{project_id}'[/green]")
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -802,7 +802,7 @@ def project_remove_manual(
     storage = ProjectStorage(user)
 
     try:
-        storage.remove_manual_from_project(project_id, manual_id)
+        storage.remove_doc_from_project(project_id, manual_id)
         console.print(f"[green]Manual '{manual_id}' removed from project '{project_id}'[/green]")
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -829,7 +829,7 @@ def project_move_manual(
     storage = ProjectStorage(user)
 
     try:
-        storage.move_manual_to_chapter(project_id, manual_id, chapter)
+        storage.move_doc_to_chapter(project_id, manual_id, chapter)
         console.print(f"[green]Manual '{manual_id}' moved to chapter '{chapter}'[/green]")
     except ValueError as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -1280,7 +1280,7 @@ def tag_list(
 
     if manual_id:
         # Show tags for specific manual
-        metadata = storage._get_manual_metadata(manual_id)
+        metadata = storage._get_doc_metadata(manual_id)
         if metadata is None:
             console.print(f"[red]Manual not found: {manual_id}[/red]")
             raise typer.Exit(1)

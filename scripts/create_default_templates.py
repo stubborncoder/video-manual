@@ -546,8 +546,9 @@ def main():
     """Create all default templates."""
     script_dir = Path(__file__).parent
     project_root = script_dir.parent
-    templates_dir = project_root / "data" / "templates"
 
+    # Output to root /templates/ (committed to git)
+    templates_dir = project_root / "templates"
     templates_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"Creating default templates in: {templates_dir}\n")

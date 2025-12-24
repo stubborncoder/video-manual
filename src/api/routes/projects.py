@@ -261,7 +261,7 @@ async def delete_project(
     else:
         # Remove project reference from manuals but keep them
         for manual in manuals:
-            storage.remove_manual_from_project(project_id, manual["id"])
+            storage.remove_doc_from_project(project_id, manual["id"])
 
     # Move project to trash
     trash.move_to_trash(
@@ -514,7 +514,7 @@ async def add_manual_to_project(
 ) -> dict:
     """Add a manual to a project."""
     try:
-        storage.add_manual_to_project(project_id, manual_id, chapter_id)
+        storage.add_doc_to_project(project_id, manual_id, chapter_id)
         return {"status": "added", "manual_id": manual_id, "project_id": project_id}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -529,7 +529,7 @@ async def remove_manual_from_project(
 ) -> dict:
     """Remove a manual from a project (keeps the manual)."""
     try:
-        storage.remove_manual_from_project(project_id, manual_id)
+        storage.remove_doc_from_project(project_id, manual_id)
         return {"status": "removed", "manual_id": manual_id, "project_id": project_id}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -545,7 +545,7 @@ async def move_manual_to_chapter(
 ) -> dict:
     """Move a manual to a different chapter."""
     try:
-        storage.move_manual_to_chapter(project_id, manual_id, chapter_id)
+        storage.move_doc_to_chapter(project_id, manual_id, chapter_id)
         return {"status": "moved", "manual_id": manual_id, "chapter_id": chapter_id}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))

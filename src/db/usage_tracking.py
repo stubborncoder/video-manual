@@ -137,21 +137,21 @@ class UsageTracking:
         cached_tokens: int = 0,
         cache_creation_tokens: int = 0,
         cache_read_tokens: int = 0,
-        manual_id: Optional[str] = None,
+        doc_id: Optional[str] = None,
         job_id: Optional[str] = None,
     ) -> int:
         """Log an LLM request with token usage.
 
         Args:
             user_id: User identifier
-            operation: Operation type (e.g., 'video_analysis', 'manual_generation')
+            operation: Operation type (e.g., 'video_analysis', 'doc_generation')
             model: Model name
             input_tokens: Number of input tokens
             output_tokens: Number of output tokens
             cached_tokens: Number of cached tokens (Gemini)
             cache_creation_tokens: Number of cache creation tokens (Claude)
             cache_read_tokens: Number of cache read tokens (Claude)
-            manual_id: Optional manual identifier
+            doc_id: Optional doc identifier
             job_id: Optional job identifier
 
         Returns:
@@ -174,7 +174,7 @@ class UsageTracking:
                     user_id, timestamp, operation, model,
                     input_tokens, output_tokens, total_tokens,
                     cached_tokens, cache_creation_tokens, cache_read_tokens,
-                    cost_usd, manual_id, job_id
+                    cost_usd, doc_id, job_id
                 )
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
@@ -190,7 +190,7 @@ class UsageTracking:
                     cache_creation_tokens,
                     cache_read_tokens,
                     cost_usd,
-                    manual_id,
+                    doc_id,
                     job_id,
                 ),
             )
@@ -305,7 +305,7 @@ class UsageTracking:
             SELECT id, user_id, timestamp, operation, model,
                    input_tokens, output_tokens, total_tokens,
                    cached_tokens, cache_creation_tokens, cache_read_tokens,
-                   cost_usd, manual_id, job_id
+                   cost_usd, doc_id, job_id
             FROM llm_requests
             WHERE user_id = ?
         """
@@ -488,20 +488,20 @@ class UsageTracking:
             return [dict(row) for row in cursor.fetchall()]
 
     @staticmethod
-    def get_manual_usage(
+    def get_doc_usage(
         start_date: Optional[str] = None, end_date: Optional[str] = None
     ) -> list[dict]:
-        """Get usage summary grouped by manual.
+        """Get usage summary grouped by doc.
 
         Args:
             start_date: Optional start date (YYYY-MM-DD)
             end_date: Optional end date (YYYY-MM-DD)
 
         Returns:
-            List of manual usage summaries
+            List of doc usage summaries
         """
         query = """
-            SELECT manual_id,
+            SELECT doc_id,
                    COUNT(*) as total_requests,
                    SUM(input_tokens) as total_input_tokens,
                    SUM(output_tokens) as total_output_tokens,
@@ -511,7 +511,7 @@ class UsageTracking:
                    MIN(timestamp) as first_request,
                    MAX(timestamp) as last_request
             FROM llm_requests
-            WHERE manual_id IS NOT NULL
+            WHERE doc_id IS NOT NULL
         """
         params = []
 
@@ -523,7 +523,7 @@ class UsageTracking:
             query += " AND date(timestamp) <= ?"
             params.append(end_date)
 
-        query += " GROUP BY manual_id ORDER BY total_cost_usd DESC"
+        query += " GROUP BY doc_id ORDER BY total_cost_usd DESC"
 
         with get_connection() as conn:
             cursor = conn.execute(query, params)

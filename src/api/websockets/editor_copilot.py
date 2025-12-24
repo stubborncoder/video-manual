@@ -25,19 +25,19 @@ class EditorCopilotSession:
         self,
         websocket: WebSocket,
         user_id: str,
-        manual_id: str,
+        doc_id: str,
         language: str,
     ):
         self.websocket = websocket
         self.user_id = user_id
-        self.manual_id = manual_id
+        self.doc_id = doc_id
         self.language = language
         self.storage = UserStorage(user_id)
         self.is_generating = False
         self.should_cancel = False
 
         # Load manual metadata for context
-        metadata = self.storage.get_doc_metadata(manual_id) or {}
+        metadata = self.storage.get_doc_metadata(doc_id) or {}
         self.target_audience = metadata.get("target_audience")
         self.target_objective = metadata.get("target_objective")
         self.manual_title = metadata.get("title", "")
@@ -45,7 +45,7 @@ class EditorCopilotSession:
         # Create the editor runner with context
         self.runner = ManualEditorRunner(
             user_id=user_id,
-            manual_id=manual_id,
+            doc_id=doc_id,
             language=language,
             target_audience=self.target_audience,
             target_objective=self.target_objective,
@@ -84,7 +84,7 @@ class EditorCopilotSession:
                 return
 
         self.runner_initialized = True
-        logger.info(f"Editor runner initialized for manual {self.manual_id}")
+        logger.info(f"Editor runner initialized for manual {self.doc_id}")
 
     async def handle_chat_message(self, payload: dict):
         """Handle an incoming chat message from the user."""
@@ -333,7 +333,7 @@ async def websocket_editor_copilot(
     session = EditorCopilotSession(
         websocket=websocket,
         user_id=auth_user_id,
-        manual_id=manual_id,
+        doc_id=manual_id,  # manual_id from URL path
         language=language,
     )
 

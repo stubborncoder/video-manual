@@ -75,9 +75,13 @@ export function ProcessingProgress({ state }: ProcessingProgressProps) {
         )}
 
         <div className="space-y-3">
-          {nodes.map((node) => {
-            const isComplete = state.nodeDetails[node] !== undefined;
-            const isCurrent = state.currentNode === node;
+          {nodes.map((node, index) => {
+            // A node is complete if it has details OR if a later node has started OR if processing is complete
+            const hasDetails = state.nodeDetails[node] !== undefined;
+            const laterNodeStarted = state.nodeIndex !== undefined && index < state.nodeIndex;
+            const processingComplete = state.status === "complete";
+            const isComplete = hasDetails || laterNodeStarted || (processingComplete && index <= nodes.indexOf(state.currentNode || ""));
+            const isCurrent = state.currentNode === node && state.status === "processing";
             const details = state.nodeDetails[node];
 
             return (
@@ -131,9 +135,9 @@ export function ProcessingProgress({ state }: ProcessingProgressProps) {
             <CheckCircle2 className="h-5 w-5 flex-shrink-0 mt-0.5" />
             <div>
               <p className="font-medium">{t("success")}</p>
-              {getManualId(state.result) && (
+              {getDocId(state.result) && (
                 <p className="text-sm mt-1">
-                  {t("docId")}: {getManualId(state.result)}
+                  {t("docId")}: {getDocId(state.result)}
                 </p>
               )}
             </div>
@@ -144,8 +148,8 @@ export function ProcessingProgress({ state }: ProcessingProgressProps) {
   );
 }
 
-function getManualId(result: Record<string, unknown>): string | null {
-  const id = result.manual_id;
+function getDocId(result: Record<string, unknown>): string | null {
+  const id = result.doc_id;
   return typeof id === "string" ? id : null;
 }
 

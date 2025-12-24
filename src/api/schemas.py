@@ -171,7 +171,7 @@ class SectionInfo(BaseModel):
 
 
 class ProjectManualInfo(BaseModel):
-    manual_id: str
+    doc_id: str
     chapter_id: Optional[str] = None
     order: int
 
@@ -216,7 +216,7 @@ class JobInfo(BaseModel):
     id: str
     user_id: str
     video_name: str
-    doc_id: Optional[str] = Field(default=None, validation_alias="manual_id")
+    doc_id: Optional[str] = None
     status: str  # 'pending', 'processing', 'complete', 'error'
     current_node: Optional[str] = None
     node_index: Optional[int] = None
@@ -425,7 +425,7 @@ class UsageRecord(BaseModel):
     input_tokens: int
     output_tokens: int
     cost_usd: float
-    manual_id: Optional[str] = None
+    doc_id: Optional[str] = None
 
 
 class DailyUsage(BaseModel):

@@ -207,13 +207,13 @@ async def get_model_usage(
     return UsageTracking.get_model_summary(start_date, end_date)
 
 
-@router.get("/usage/manuals")
-async def get_manual_usage(
+@router.get("/usage/docs")
+async def get_doc_usage(
     admin_user: AdminUser,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
 ) -> list[dict]:
-    """Get usage breakdown by manual.
+    """Get usage breakdown by doc.
 
     Requires admin role.
 
@@ -221,7 +221,7 @@ async def get_manual_usage(
         start_date: Optional start date (YYYY-MM-DD)
         end_date: Optional end date (YYYY-MM-DD)
     """
-    return UsageTracking.get_manual_usage(start_date, end_date)
+    return UsageTracking.get_doc_usage(start_date, end_date)
 
 
 @router.post("/users/{user_id}/role")

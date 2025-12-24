@@ -730,14 +730,35 @@ Impact: {{ issue.impact|title }}
     print(f"Created: {output_path}")
 
 
+def create_template_metadata(template_path: Path, document_format: str) -> None:
+    """Create metadata JSON file for a template."""
+    import json
+    meta_path = template_path.with_suffix(".json")
+    metadata = {
+        "document_format": document_format,
+        "is_default": True,
+    }
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(metadata, f, indent=2)
+
+
 def main():
     """Generate all report templates."""
-    templates_dir = Path(__file__).parent.parent / "data" / "templates"
+    # Output to root /templates/ (committed to git)
+    templates_dir = Path(__file__).parent.parent / "templates"
     templates_dir.mkdir(parents=True, exist_ok=True)
 
-    create_incident_report_template(templates_dir / "incident-report.docx")
-    create_inspection_report_template(templates_dir / "inspection-report.docx")
-    create_progress_report_template(templates_dir / "progress-report.docx")
+    # Map template names to their creation functions and document formats
+    templates = {
+        "incident-report": (create_incident_report_template, "incident-report"),
+        "inspection-report": (create_inspection_report_template, "inspection-report"),
+        "progress-report": (create_progress_report_template, "progress-report"),
+    }
+
+    for name, (create_func, doc_format) in templates.items():
+        template_path = templates_dir / f"{name}.docx"
+        create_func(template_path)
+        create_template_metadata(template_path, doc_format)
 
     print("\nAll report templates created successfully!")
 

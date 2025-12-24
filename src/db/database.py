@@ -37,7 +37,7 @@ def init_db() -> None:
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL,
                 video_name TEXT NOT NULL,
-                manual_id TEXT,
+                doc_id TEXT,
                 status TEXT NOT NULL DEFAULT 'pending',
                 current_node TEXT,
                 node_index INTEGER,
@@ -64,7 +64,7 @@ def init_db() -> None:
                 cache_creation_tokens INTEGER DEFAULT 0,
                 cache_read_tokens INTEGER DEFAULT 0,
                 cost_usd REAL,
-                manual_id TEXT,
+                doc_id TEXT,
                 job_id TEXT
             )
         """)
