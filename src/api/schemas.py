@@ -216,7 +216,7 @@ class JobInfo(BaseModel):
     id: str
     user_id: str
     video_name: str
-    manual_id: Optional[str] = None
+    doc_id: Optional[str] = Field(default=None, validation_alias="manual_id")
     status: str  # 'pending', 'processing', 'complete', 'error'
     current_node: Optional[str] = None
     node_index: Optional[int] = None

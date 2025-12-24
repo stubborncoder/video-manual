@@ -62,6 +62,8 @@ SEMANTIC TAGS TO USE:
 <title>Clear, descriptive title of what this manual teaches</title>
 
 <introduction>
+## Introduction
+
 1-2 paragraphs explaining:
 - What task/process this manual covers
 - What the user will be able to do after completing it
@@ -92,6 +94,8 @@ Additional context or explanation that helps understanding.
 </note>
 
 <conclusion>
+## Conclusion
+
 Summary of what was accomplished and optional next steps.
 </conclusion>
 
@@ -142,6 +146,8 @@ SEMANTIC TAGS TO USE:
 <title>Quick Guide: [Topic Name]</title>
 
 <overview>
+## Overview
+
 Brief 2-3 sentence summary of what this covers and when to use it.
 
 ![Overview screenshot if applicable](../screenshots/figure_XX_tYYs.png)

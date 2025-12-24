@@ -282,8 +282,8 @@ class VideoManualRunner:
 
                 # Emit completion - use doc_id from initial state since we already know it
                 result = {
-                    "manual_id": initial_state.get("doc_id"),  # Use from initial state, not final
-                    "manual_path": self._final_state.get("doc_path") if self._final_state else None,
+                    "doc_id": initial_state.get("doc_id"),  # Use from initial state, not final
+                    "doc_path": self._final_state.get("doc_path") if self._final_state else None,
                     "screenshots": self._final_state.get("screenshots", []) if self._final_state else [],
                     "output_directory": self._final_state.get("output_directory") if self._final_state else None,
                 }
