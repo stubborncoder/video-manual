@@ -19,7 +19,7 @@ interface AlphaBadgeProps {
  */
 export function AlphaBadge({ className }: AlphaBadgeProps) {
   const t = useTranslations("common");
-  const version = "0.2.0-alpha.1";
+  const version = "0.2.1-alpha.1";
 
   return (
     <Tooltip>
