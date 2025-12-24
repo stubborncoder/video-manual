@@ -57,7 +57,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
-import { docs, type ManualDetail } from "@/lib/api";
+import { docs, type DocDetail } from "@/lib/api";
 import { transformSemanticTagsForPreview } from "@/lib/tag-utils";
 import { useUndoRedo } from "@/hooks/useUndoRedo";
 import { useAutoSave } from "@/hooks/useAutoSave";
@@ -100,7 +100,7 @@ export default function ManualEditorPage() {
 
   // Document state
   const [loading, setLoading] = useState(true);
-  const [manual, setManual] = useState<ManualDetail | null>(null);
+  const [manual, setManual] = useState<DocDetail | null>(null);
   const [originalContent, setOriginalContent] = useState("");
   const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
 

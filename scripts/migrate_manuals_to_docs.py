@@ -55,10 +55,10 @@ def create_backup(users_dir: Path, backup_dir: Path) -> bool:
     print(f"[INFO] Creating backup at {backup_dir}")
     try:
         if backup_dir.exists():
-            print(f"[WARN] Backup directory already exists, removing old backup")
+            print("[WARN] Backup directory already exists, removing old backup")
             shutil.rmtree(backup_dir)
         shutil.copytree(users_dir, backup_dir)
-        print(f"[OK] Backup created successfully")
+        print("[OK] Backup created successfully")
         return True
     except Exception as e:
         print(f"[ERROR] Failed to create backup: {e}")
@@ -263,14 +263,14 @@ def rollback(backup_name: str = None) -> bool:
     try:
         # Remove current users directory
         if USERS_DIR.exists():
-            print(f"[INFO] Removing current users directory")
+            print("[INFO] Removing current users directory")
             shutil.rmtree(USERS_DIR)
 
         # Restore from backup
-        print(f"[INFO] Restoring from backup")
+        print("[INFO] Restoring from backup")
         shutil.copytree(backup_dir, USERS_DIR)
 
-        print(f"[OK] Rollback successful")
+        print("[OK] Rollback successful")
         return True
     except Exception as e:
         print(f"[ERROR] Rollback failed: {e}")
