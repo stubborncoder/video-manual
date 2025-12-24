@@ -20,9 +20,22 @@ const NODE_LABELS: Record<string, string> = {
   generate_manual: "Generating manual",
 };
 
+const AUTO_DISMISS_MS = 15000; // Auto-dismiss completed toasts after 15 seconds
+
 export function JobProgressToast({ job, onDismiss }: JobProgressToastProps) {
   const router = useRouter();
   const { markSeen } = useJobsStore();
+
+  // Auto-dismiss completed or error toasts after timeout
+  useEffect(() => {
+    if (job.status === "complete" || job.status === "error") {
+      const timer = setTimeout(() => {
+        markSeen(job.id);
+        onDismiss();
+      }, AUTO_DISMISS_MS);
+      return () => clearTimeout(timer);
+    }
+  }, [job.status, job.id, markSeen, onDismiss]);
 
   // Calculate progress: node_index is 0-based, so add 1 for display
   // Progress shows how far along we are (node 0 of 3 = 33%, node 1 of 3 = 66%, etc.)
