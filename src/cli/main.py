@@ -1280,7 +1280,7 @@ def tag_list(
 
     if manual_id:
         # Show tags for specific manual
-        metadata = storage._get_manual_metadata(manual_id)
+        metadata = storage._get_doc_metadata(manual_id)
         if metadata is None:
             console.print(f"[red]Manual not found: {manual_id}[/red]")
             raise typer.Exit(1)

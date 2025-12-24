@@ -608,13 +608,13 @@ class ManualEditorRunner:
     def __init__(
         self,
         user_id: str,
-        manual_id: str,
+        doc_id: str,
         language: str = "en",
         target_audience: Optional[str] = None,
         target_objective: Optional[str] = None,
     ):
         self.user_id = user_id
-        self.manual_id = manual_id
+        self.doc_id = doc_id
         self.language = language
         self.target_audience = target_audience
         self.target_objective = target_objective
@@ -643,11 +643,11 @@ class ManualEditorRunner:
         self._usage_callback = UsageTrackingCallback(
             user_id=self.user_id,
             operation="manual_editing",
-            doc_id=self.manual_id  # Class still uses manual_id internally
+            doc_id=self.doc_id
         )
 
         self._config = {
-            "configurable": {"thread_id": f"editor_{self.manual_id}_{session_id}"},
+            "configurable": {"thread_id": f"editor_{self.doc_id}_{session_id}"},
             "callbacks": [self._usage_callback]
         }
 
@@ -806,7 +806,7 @@ Please analyze this image to help answer the user's question.""")
                 # The URL is a relative API path, we need to read from local storage
                 from ..storage.user_storage import UserStorage
                 storage = UserStorage(self.user_id)
-                screenshot_path = storage.docs_dir / self.manual_id / "screenshots" / image.get('name', '')
+                screenshot_path = storage.docs_dir / self.doc_id / "screenshots" / image.get('name', '')
 
                 if screenshot_path.exists():
                     with open(screenshot_path, 'rb') as f:

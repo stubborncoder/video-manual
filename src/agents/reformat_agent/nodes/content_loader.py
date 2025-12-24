@@ -12,7 +12,7 @@ def load_content(state: ReformatState) -> Dict[str, Any]:
     Reads the markdown file for the specified language from the manual directory.
 
     Args:
-        state: Current workflow state with source_manual_id, user_id, and language
+        state: Current workflow state with source_doc_id, user_id, and language
 
     Returns:
         Dict with source_content and updated status
@@ -22,7 +22,7 @@ def load_content(state: ReformatState) -> Dict[str, Any]:
     try:
         storage = UserStorage(state["user_id"])
         # get_manual_dir returns (path, manual_id) tuple
-        manual_dir, _ = storage.get_doc_dir(state["source_manual_id"])
+        manual_dir, _ = storage.get_doc_dir(state["source_doc_id"])
 
         # Read the markdown for the specified language
         language = state["language"]

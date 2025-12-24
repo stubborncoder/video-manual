@@ -6,12 +6,12 @@ from typing import TypedDict, Optional
 class ReformatState(TypedDict):
     """State for the reformat workflow.
 
-    This state is passed through the LangGraph nodes as the manual
+    This state is passed through the LangGraph nodes as the doc
     is loaded and converted to a different document format.
     """
 
     # Inputs
-    source_manual_id: str
+    source_doc_id: str
     user_id: str
     source_format: str      # "step-manual", "quick-guide", "reference", "summary"
     target_format: str      # "step-manual", "quick-guide", "reference", "summary"

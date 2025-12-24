@@ -83,7 +83,7 @@ Now convert the above manual to {target_format} format. Start directly with the 
             usage = response.usage_metadata if hasattr(response, 'usage_metadata') else {}
             if usage:
                 user_id = state.get("user_id")
-                manual_id = state.get("source_manual_id")
+                doc_id = state.get("source_doc_id")
 
                 # Extract cache tokens for Claude
                 cache_read_tokens = 0
@@ -95,14 +95,14 @@ Now convert the above manual to {target_format} format. Start directly with the 
 
                 UsageTracking.log_request(
                     user_id=user_id,
-                    operation="manual_reformat",
+                    operation="doc_reformat",
                     model=model_name,
                     input_tokens=usage.get("input_tokens", 0),
                     output_tokens=usage.get("output_tokens", 0),
                     cached_tokens=0,  # Gemini only
                     cache_read_tokens=cache_read_tokens,
                     cache_creation_tokens=cache_creation_tokens,
-                    doc_id=manual_id,  # Variable still named manual_id from state
+                    doc_id=doc_id,
                 )
         except Exception as usage_error:
             # Don't fail the whole operation if usage tracking fails
