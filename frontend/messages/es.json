@@ -275,7 +275,7 @@
     "newTag": "Nueva etiqueta",
     "add": "Agregar",
     "done": "Listo",
-    "generateLanguage": "Generar Idioma",
+    "generateLanguage": "Generar vDoc en {language}",
     "existing": "Existentes:",
     "outputLanguage": "Idioma de Salida",
     "generateManual": "Generar Doc",

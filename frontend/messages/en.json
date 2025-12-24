@@ -275,7 +275,7 @@
     "newTag": "New tag",
     "add": "Add",
     "done": "Done",
-    "generateLanguage": "Generate Language",
+    "generateLanguage": "Generate vDoc in {language}",
     "existing": "Existing:",
     "outputLanguage": "Output Language",
     "generateManual": "Generate Doc",
