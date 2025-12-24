@@ -94,10 +94,13 @@ def _derive_title_from_video(video_path: str) -> str:
 
     Removes file extension and returns the base name.
     Example: "Visualizar documento contable.mp4" -> "Visualizar documento contable"
+
+    Returns "Untitled Document" for invalid or empty inputs.
     """
-    if not video_path:
-        return ""
-    return Path(video_path).stem
+    if not video_path or not isinstance(video_path, str):
+        return "Untitled Document"
+    stem = Path(video_path).stem
+    return stem if stem else "Untitled Document"
 
 
 def _get_doc_title(metadata: dict, doc_id: str) -> str:

@@ -94,9 +94,9 @@ def migrate_default_project(user_dir: Path, dry_run: bool = False) -> bool:
 
             if not dry_run:
                 project_data["name"] = new_name
-                # Also update description if it mentions manuals
+                # Also update description if it mentions manual/manuals (case-insensitive)
                 desc = project_data.get("description", "")
-                if "manuals" in desc.lower():
+                if "manual" in desc.lower():  # Catches "manual", "manuals", "Manual", etc.
                     project_data["description"] = "Default project for new docs"
                 with open(default_project_file, "w") as f:
                     json.dump(project_data, f, indent=2)

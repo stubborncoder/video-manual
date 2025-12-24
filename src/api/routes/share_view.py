@@ -24,6 +24,40 @@ CUSTOM_TAGS = [
 ]
 
 
+ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
+
+
+def validate_image_filename(filename: str) -> str:
+    """Validate and sanitize image filename to prevent path traversal.
+
+    Args:
+        filename: The filename to validate
+
+    Returns:
+        Sanitized filename (basename only)
+
+    Raises:
+        HTTPException: If filename is invalid or contains path traversal attempts
+    """
+    # Get only the basename to prevent path traversal
+    safe_name = Path(filename).name
+
+    # Reject if basename differs from original (path traversal attempt)
+    if safe_name != filename or not filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    # Check for path separators that might have been encoded
+    if "/" in filename or "\\" in filename or ".." in filename:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    # Validate extension
+    suffix = Path(safe_name).suffix.lower()
+    if suffix not in ALLOWED_IMAGE_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Invalid image type")
+
+    return safe_name
+
+
 def strip_custom_tags(content: str) -> str:
     """Remove custom XML-like tags from content while preserving inner content.
 
@@ -166,6 +200,9 @@ async def get_shared_image(token: str, filename: str):
 
     This is a public endpoint - no authentication required.
     """
+    # Validate filename to prevent path traversal
+    safe_filename = validate_image_filename(filename)
+
     # Find doc by token
     result = find_doc_by_share_token(token)
 
@@ -175,7 +212,12 @@ async def get_shared_image(token: str, filename: str):
     user_id, doc_id, share_info = result
 
     # Build path to image
-    image_path = USERS_DIR / user_id / "docs" / doc_id / "screenshots" / filename
+    screenshots_dir = USERS_DIR / user_id / "docs" / doc_id / "screenshots"
+    image_path = (screenshots_dir / safe_filename).resolve()
+
+    # Verify resolved path is still within the screenshots directory (defense in depth)
+    if not str(image_path).startswith(str(screenshots_dir.resolve())):
+        raise HTTPException(status_code=400, detail="Invalid filename")
 
     if not image_path.exists():
         raise HTTPException(status_code=404, detail="Image not found")
@@ -194,5 +236,5 @@ async def get_shared_image(token: str, filename: str):
     return FileResponse(
         path=image_path,
         media_type=content_type,
-        filename=filename,
+        filename=safe_filename,
     )
