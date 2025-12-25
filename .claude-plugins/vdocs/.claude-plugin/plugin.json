@@ -1,0 +1,8 @@
+{
+  "name": "vdocs",
+  "version": "0.1.0",
+  "description": "Project management plugin for vDocs - SSH deployment, Docker, Supabase, GitHub CI/CD, and development workflows",
+  "author": {
+    "name": "vDocs Team"
+  }
+}

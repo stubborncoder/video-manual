@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { useLocale } from "@/components/providers/I18nProvider";
-import { adminApi, UsageSummary, DailyUsage, ModelUsage, ManualUsage, UserInfo } from "@/lib/api/admin";
+import { adminApi, UsageSummary, DailyUsage, ModelUsage, DocUsage, UserInfo } from "@/lib/api/admin";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlphaBadge } from "@/components/ui/alpha-badge";
@@ -63,7 +63,7 @@ export default function UsagePage() {
   const [summary, setSummary] = useState<UsageSummaryWithUser[]>([]);
   const [dailyUsage, setDailyUsage] = useState<DailyUsage[]>([]);
   const [modelUsage, setModelUsage] = useState<ModelUsage[]>([]);
-  const [manualUsage, setManualUsage] = useState<ManualUsage[]>([]);
+  const [docUsage, setDocUsage] = useState<DocUsage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -100,12 +100,12 @@ export default function UsagePage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [usersData, summaryData, dailyData, modelData, manualData] = await Promise.all([
+      const [usersData, summaryData, dailyData, modelData, docData] = await Promise.all([
         adminApi.listUsers(),
         adminApi.getUsageSummary(startDate, endDate),
         adminApi.getDailyUsage(startDate, endDate),
         adminApi.getModelUsage(startDate, endDate),
-        adminApi.getManualUsage(startDate, endDate),
+        adminApi.getDocUsage(startDate, endDate),
       ]);
 
       setUsers(usersData);
@@ -121,7 +121,7 @@ export default function UsagePage() {
       setSummary(summaryWithUsers);
       setDailyUsage(dailyData);
       setModelUsage(modelData);
-      setManualUsage(manualData);
+      setDocUsage(docData);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load usage data");
@@ -669,16 +669,16 @@ export default function UsagePage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {manualUsage.length === 0 ? (
+                  {docUsage.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-muted-foreground">
                         {t("noData")}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    manualUsage.map((m) => (
-                      <TableRow key={m.manual_id}>
-                        <TableCell className="font-mono text-xs">{m.manual_id}</TableCell>
+                    docUsage.map((m) => (
+                      <TableRow key={m.doc_id}>
+                        <TableCell className="font-mono text-xs">{m.doc_id}</TableCell>
                         <TableCell className="text-right">
                           {formatNumber(m.total_requests)}
                         </TableCell>
