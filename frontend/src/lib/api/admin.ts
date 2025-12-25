@@ -83,8 +83,8 @@ export interface ModelUsage {
   total_cost_usd: number;
 }
 
-export interface ManualUsage {
-  manual_id: string;
+export interface DocUsage {
+  doc_id: string;
   total_requests: number;
   total_input_tokens: number;
   total_output_tokens: number;
@@ -180,13 +180,13 @@ export const adminApi = {
   },
 
   /**
-   * Get usage breakdown by manual
+   * Get usage breakdown by document
    */
-  getManualUsage: (startDate?: string, endDate?: string) => {
+  getDocUsage: (startDate?: string, endDate?: string) => {
     const params: Record<string, string> = {};
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
-    return request<ManualUsage[]>("/api/admin/usage/manuals", { params });
+    return request<DocUsage[]>("/api/admin/usage/docs", { params });
   },
 
   /**
