@@ -29,7 +29,7 @@ PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = Path(os.getenv("VDOCS_DATA_DIR", str(PROJECT_ROOT / "data")))
 USERS_DIR = DATA_DIR / "users"
 CHECKPOINTS_DIR = DATA_DIR / "checkpoints"
-TEMPLATES_DIR = PROJECT_ROOT / "templates"  # Default templates (committed to git)
+TEMPLATES_DIR = PROJECT_ROOT / "templates"  # System templates (in app directory)
 
 # Database configuration
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{PROJECT_ROOT / 'src' / 'db' / 'vdocs.db'}")

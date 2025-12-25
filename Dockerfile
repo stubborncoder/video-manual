@@ -45,10 +45,10 @@ COPY src/ ./src/
 COPY ai_documents/ ./ai_documents/
 
 # Create data directories
-RUN mkdir -p /data/users /data/checkpoints /data/templates /app/ai_documents/user_memories
+RUN mkdir -p /data/users /data/checkpoints /app/ai_documents/user_memories
 
-# Copy global Word templates
-COPY templates/ /data/templates/
+# Copy system Word templates to app directory
+COPY templates/ ./templates/
 
 # Set data directory
 ENV VDOCS_DATA_DIR=/data
