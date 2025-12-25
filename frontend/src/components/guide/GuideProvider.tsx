@@ -9,7 +9,9 @@ import { useLocale } from "@/components/providers/I18nProvider";
 import { GuideButton } from "./GuideButton";
 import { GuidePanel } from "./GuidePanel";
 import { HighlightOverlay } from "./HighlightOverlay";
-import type { GuideMessage, PageContext } from "@/stores/guideStore";
+import { GuideModal } from "./GuideModal";
+import { WorkflowOverlay } from "./WorkflowOverlay";
+import type { GuideMessage, PageContext, WorkflowStep } from "@/stores/guideStore";
 import type { GuideEvent } from "@/lib/guide-api";
 
 interface GuideProviderProps {
@@ -244,21 +246,57 @@ export function GuideProvider({ children }: GuideProviderProps) {
           },
           // onAction - handle action events
           (event: GuideEvent) => {
+            const store = useGuideStore.getState();
+
             if (event.action === "highlight" && event.target) {
               hasActionsRef.current = true;
               // Store pending highlight, will be applied after panel resize animation
-              useGuideStore.getState().setPendingHighlight({
+              store.setPendingHighlight({
                 target: event.target,
                 duration: event.duration || 5000,
               });
-              useGuideStore.getState().setCompact();
+              store.setCompact();
             } else if (event.action === "navigate" && event.to) {
               hasActionsRef.current = true;
               // First minimize panel, then navigate
-              useGuideStore.getState().setCompact();
+              store.setCompact();
               setTimeout(() => {
                 router.push(event.to!);
               }, 500);
+            } else if (event.action === "show_dropdown" && event.target) {
+              hasActionsRef.current = true;
+              store.setCompact();
+              // Click the dropdown trigger to open it
+              store.clickElement(event.target);
+              // Auto-close after duration if specified
+              if (event.duration && event.duration > 0) {
+                setTimeout(() => {
+                  // Click again to close (toggle behavior)
+                  // Or just let it close naturally when user clicks elsewhere
+                }, event.duration);
+              }
+            } else if (event.action === "show_modal" && event.title) {
+              hasActionsRef.current = true;
+              store.setMedium();
+              store.showModal(
+                event.title,
+                event.content || "",
+                event.modal_type || "info",
+                event.auto_close || 0
+              );
+            } else if (event.action === "click_element" && event.target) {
+              hasActionsRef.current = true;
+              store.clickElement(event.target);
+            } else if (event.action === "start_workflow" && event.steps) {
+              hasActionsRef.current = true;
+              // Convert event steps to WorkflowStep format
+              const workflowSteps: WorkflowStep[] = event.steps.map(step => ({
+                title: step.title,
+                description: step.description,
+                highlight: step.highlight,
+                navigate: step.navigate,
+              }));
+              store.startWorkflow(event.title || "Guided Tour", workflowSteps);
             }
           },
           // onComplete
@@ -328,6 +366,8 @@ export function GuideProvider({ children }: GuideProviderProps) {
         whatsNewLabel={whatsNewLabel}
       />
       <HighlightOverlay />
+      <GuideModal />
+      <WorkflowOverlay />
     </TooltipProvider>
   );
 }

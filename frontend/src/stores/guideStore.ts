@@ -38,6 +38,31 @@ export interface PendingHighlight {
 
 export type PanelSize = "full" | "medium" | "compact";
 
+// Modal state for informational modals shown by the guide
+export interface GuideModalState {
+  isOpen: boolean;
+  title: string;
+  content: string;
+  type: "info" | "tip" | "warning" | "success";
+  autoClose?: number; // ms, 0 = manual close
+}
+
+// Workflow/tour step
+export interface WorkflowStep {
+  title: string;
+  description: string;
+  highlight?: string; // Element ID to highlight
+  navigate?: string; // Page path to navigate to
+}
+
+// Workflow/tour state
+export interface WorkflowState {
+  isActive: boolean;
+  title: string;
+  steps: WorkflowStep[];
+  currentStepIndex: number;
+}
+
 interface GuideStore {
   // UI State
   isOpen: boolean;
@@ -59,6 +84,12 @@ interface GuideStore {
   // Highlights
   activeHighlights: GuideHighlight[];
   pendingHighlight: PendingHighlight | null; // Highlight waiting for animation to complete
+
+  // Modal state (for show_modal action)
+  modal: GuideModalState | null;
+
+  // Workflow/tour state (for start_workflow action)
+  workflow: WorkflowState | null;
 
   // Actions
   toggle: () => void;
@@ -82,6 +113,19 @@ interface GuideStore {
   clearAllHighlights: () => void;
   setPendingHighlight: (highlight: PendingHighlight | null) => void;
   applyPendingHighlight: () => void; // Apply pending highlight after animation
+
+  // Modal actions
+  showModal: (title: string, content: string, type?: "info" | "tip" | "warning" | "success", autoClose?: number) => void;
+  hideModal: () => void;
+
+  // Workflow actions
+  startWorkflow: (title: string, steps: WorkflowStep[]) => void;
+  nextWorkflowStep: () => void;
+  previousWorkflowStep: () => void;
+  cancelWorkflow: () => void;
+
+  // Element interaction
+  clickElement: (elementId: string) => void;
 }
 
 export const useGuideStore = create<GuideStore>()(
@@ -99,6 +143,8 @@ export const useGuideStore = create<GuideStore>()(
       isGenerating: false,
       activeHighlights: [],
       pendingHighlight: null,
+      modal: null,
+      workflow: null,
 
       // Actions
       toggle: () => {
@@ -203,6 +249,80 @@ export const useGuideStore = create<GuideStore>()(
             ],
             pendingHighlight: null,
           });
+        }
+      },
+
+      // Modal actions
+      showModal: (title: string, content: string, type: "info" | "tip" | "warning" | "success" = "info", autoClose?: number) => {
+        set({
+          modal: {
+            isOpen: true,
+            title,
+            content,
+            type,
+            autoClose,
+          },
+        });
+      },
+
+      hideModal: () => {
+        set({ modal: null });
+      },
+
+      // Workflow actions
+      startWorkflow: (title: string, steps: WorkflowStep[]) => {
+        set({
+          workflow: {
+            isActive: true,
+            title,
+            steps,
+            currentStepIndex: 0,
+          },
+          panelSize: "medium", // Resize panel to make room for workflow overlay
+        });
+      },
+
+      nextWorkflowStep: () => {
+        const { workflow } = get();
+        if (!workflow) return;
+
+        const nextIndex = workflow.currentStepIndex + 1;
+        if (nextIndex >= workflow.steps.length) {
+          // Workflow complete
+          set({ workflow: null });
+          return;
+        }
+
+        set({
+          workflow: {
+            ...workflow,
+            currentStepIndex: nextIndex,
+          },
+        });
+      },
+
+      previousWorkflowStep: () => {
+        const { workflow } = get();
+        if (!workflow || workflow.currentStepIndex === 0) return;
+
+        set({
+          workflow: {
+            ...workflow,
+            currentStepIndex: workflow.currentStepIndex - 1,
+          },
+        });
+      },
+
+      cancelWorkflow: () => {
+        set({ workflow: null });
+      },
+
+      // Element interaction
+      clickElement: (elementId: string) => {
+        // Find and click the element by data-guide-id
+        const element = document.querySelector(`[data-guide-id="${elementId}"]`) as HTMLElement;
+        if (element && element.click) {
+          element.click();
         }
       },
     }),
