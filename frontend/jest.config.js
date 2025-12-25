@@ -21,7 +21,9 @@ const customJestConfig = {
   ],
   testPathIgnorePatterns: [
     '/node_modules/',
-    '/.next/'
+    '/.next/',
+    '/__tests__/utils/mocks\\.ts$',
+    '/__tests__/utils/test-utils\\.tsx$',
   ],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
