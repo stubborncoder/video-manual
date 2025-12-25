@@ -14,6 +14,22 @@ os.environ["ENVIRONMENT"] = "test"
 
 
 @pytest.fixture
+def test_db_path(tmp_data_dir: Path) -> Path:
+    """Create a temporary database path for tests."""
+    db_path = tmp_data_dir / "test.db"
+    return db_path
+
+
+@pytest.fixture
+def init_test_db(test_db_path: Path):
+    """Initialize test database with required tables."""
+    with patch("src.db.database.DATABASE_PATH", test_db_path):
+        from src.db.database import init_db
+        init_db()
+        yield test_db_path
+
+
+@pytest.fixture
 def auth_headers(test_user_id: str) -> dict[str, str]:
     """Return authentication headers for API tests."""
     return {"Cookie": f"session_user_id={test_user_id}"}
@@ -35,6 +51,7 @@ async def client(
     users_dir = tmp_data_dir / "users"
     checkpoints_dir = tmp_data_dir / "checkpoints"
     templates_dir = tmp_data_dir / "templates"
+    db_path = tmp_data_dir / "test.db"
 
     # Create templates dir
     templates_dir.mkdir(exist_ok=True)
@@ -45,6 +62,8 @@ async def client(
         patch("src.config.USERS_DIR", users_dir),
         patch("src.config.CHECKPOINTS_DIR", checkpoints_dir),
         patch("src.config.TEMPLATES_DIR", templates_dir),
+        # Patch database path for job storage
+        patch("src.db.database.DATABASE_PATH", db_path),
         # Patch at storage module level (they use `from ..config import USERS_DIR`)
         patch("src.storage.user_storage.USERS_DIR", users_dir),
         patch("src.storage.project_storage.USERS_DIR", users_dir),
@@ -58,6 +77,10 @@ async def client(
     # Apply all patches
     for p in patches:
         p.start()
+
+    # Initialize test database with tables
+    from src.db.database import init_db
+    init_db()
 
     try:
         from src.api.main import app
@@ -81,11 +104,13 @@ async def unauthenticated_client(tmp_data_dir: Path) -> AsyncGenerator[AsyncClie
     users_dir = tmp_data_dir / "users"
     checkpoints_dir = tmp_data_dir / "checkpoints"
     templates_dir = tmp_data_dir / "templates"
+    db_path = tmp_data_dir / "test.db"
 
     patches = [
         patch("src.config.DATA_DIR", tmp_data_dir),
         patch("src.config.USERS_DIR", users_dir),
         patch("src.config.CHECKPOINTS_DIR", checkpoints_dir),
+        patch("src.db.database.DATABASE_PATH", db_path),
         patch("src.storage.user_storage.USERS_DIR", users_dir),
         patch("src.storage.project_storage.USERS_DIR", users_dir),
         patch("src.storage.trash_storage.USERS_DIR", users_dir),
@@ -96,6 +121,9 @@ async def unauthenticated_client(tmp_data_dir: Path) -> AsyncGenerator[AsyncClie
 
     for p in patches:
         p.start()
+
+    from src.db.database import init_db
+    init_db()
 
     try:
         from src.api.main import app
@@ -120,11 +148,13 @@ async def admin_client(
     users_dir = tmp_data_dir / "users"
     checkpoints_dir = tmp_data_dir / "checkpoints"
     templates_dir = tmp_data_dir / "templates"
+    db_path = tmp_data_dir / "test.db"
 
     patches = [
         patch("src.config.DATA_DIR", tmp_data_dir),
         patch("src.config.USERS_DIR", users_dir),
         patch("src.config.CHECKPOINTS_DIR", checkpoints_dir),
+        patch("src.db.database.DATABASE_PATH", db_path),
         patch("src.storage.user_storage.USERS_DIR", users_dir),
         patch("src.storage.project_storage.USERS_DIR", users_dir),
         patch("src.storage.trash_storage.USERS_DIR", users_dir),
@@ -135,6 +165,9 @@ async def admin_client(
 
     for p in patches:
         p.start()
+
+    from src.db.database import init_db
+    init_db()
 
     try:
         from src.api.main import app
