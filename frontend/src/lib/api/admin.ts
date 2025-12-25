@@ -180,13 +180,13 @@ export const adminApi = {
   },
 
   /**
-   * Get usage breakdown by manual
+   * Get usage breakdown by document
    */
   getManualUsage: (startDate?: string, endDate?: string) => {
     const params: Record<string, string> = {};
     if (startDate) params.start_date = startDate;
     if (endDate) params.end_date = endDate;
-    return request<ManualUsage[]>("/api/admin/usage/manuals", { params });
+    return request<ManualUsage[]>("/api/admin/usage/docs", { params });
   },
 
   /**
