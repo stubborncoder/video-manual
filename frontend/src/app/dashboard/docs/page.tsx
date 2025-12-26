@@ -59,6 +59,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
   DropdownMenuLabel,
+  ControllableDropdownMenu,
 } from "@/components/ui/dropdown-menu";
 import { Eye, Trash2, FileText, Image as ImageIcon, FolderKanban, Plus, X, Tag, Loader2, Video, AlertCircle, ArrowUpRight, Pencil, Check, ChevronsUpDown, Globe, ChevronDown, Wand2, Download, FileDown, ClipboardCheck, Users, Target, History, Clock, MoreHorizontal, HelpCircle, Expand, Copy, ArrowLeft, Link2 } from "lucide-react";
 import { SidebarToggle } from "@/components/layout/SidebarToggle";
@@ -1217,12 +1218,13 @@ function ManualsPageContent() {
                       <Pencil className="h-4 w-4" />
                     </Button>
                   </Link>
-                  <DropdownMenu>
+                  <ControllableDropdownMenu guideId={`doc-actions-btn-${manual.id}`}>
                     <DropdownMenuTrigger asChild>
                       <Button
                         size="sm"
                         variant="outline"
                         title="More actions"
+                        data-guide-id={`doc-actions-btn-${manual.id}`}
                       >
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
@@ -1282,7 +1284,7 @@ function ManualsPageContent() {
                         {t("deleteDoc")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
-                  </DropdownMenu>
+                  </ControllableDropdownMenu>
                 </div>
               </CardContent>
             </Card>

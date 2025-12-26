@@ -5,11 +5,39 @@ import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu"
 import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { registerDropdown } from "@/lib/guide-registry"
 
 function DropdownMenu({
   ...props
 }: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
   return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />
+}
+
+function ControllableDropdownMenu({
+  guideId,
+  children,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Root> & {
+  guideId: string
+}) {
+  const [open, setOpen] = React.useState(false)
+
+  React.useEffect(() => {
+    console.log("[ControllableDropdownMenu] Registering:", guideId)
+    return registerDropdown(guideId, setOpen)
+  }, [guideId])
+
+  return (
+    <DropdownMenuPrimitive.Root
+      data-slot="dropdown-menu"
+      data-guide-id={guideId}
+      open={open}
+      onOpenChange={setOpen}
+      {...props}
+    >
+      {children}
+    </DropdownMenuPrimitive.Root>
+  )
 }
 
 function DropdownMenuPortal({
@@ -240,6 +268,7 @@ function DropdownMenuSubContent({
 
 export {
   DropdownMenu,
+  ControllableDropdownMenu,
   DropdownMenuPortal,
   DropdownMenuTrigger,
   DropdownMenuContent,

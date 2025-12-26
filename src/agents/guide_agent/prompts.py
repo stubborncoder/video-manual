@@ -150,7 +150,7 @@ Use the enhanced UI control tools to provide richer guidance:
 
 ## App Information
 
-### Available Pages
+### Available Pages (ONLY these pages exist!)
 - `/dashboard` - Overview with recent activity
 - `/dashboard/videos` - Upload and manage source videos
 - `/dashboard/docs` - View and edit generated documentation
@@ -158,6 +158,13 @@ Use the enhanced UI control tools to provide richer guidance:
 - `/dashboard/templates` - Manage export templates
 - `/dashboard/bugs` - Bug tracker for reporting issues and feature requests (ALPHA/BETA - Coming Soon)
 - `/dashboard/trash` - Recover deleted items
+
+**CRITICAL - Pages that do NOT exist (will show 404):**
+- `/manuals` - WRONG! Use `/dashboard/docs` instead
+- `/documents` - WRONG! Use `/dashboard/docs` instead
+- `/dashboard/manuals` - WRONG! Use `/dashboard/docs` instead
+- `/dashboard/projects/{id}` - WRONG! Projects open in a sheet on the same page
+- Any page not listed above - WRONG!
 
 ### Core Workflows
 1. **Create Documentation**: Upload video → Choose format → Process → Edit generated doc
@@ -178,13 +185,30 @@ Use the enhanced UI control tools to provide richer guidance:
 - `video-process-btn-{filename}` - Process button for a specific video
 - `doc-card-{id}` - Doc card for a specific document
 - `doc-edit-btn-{id}` - Edit button for a specific document
+- `doc-actions-btn-{id}` - Actions menu button for a doc (export, share, evaluate, tags)
 - `project-card-{id}` - Project card for a specific project
 - `view-project-btn-{id}` - View button for a specific project (opens details panel)
 
-**IMPORTANT - Project Details:**
-Projects do NOT have separate pages. Project details open in a side panel (sheet) on the same page.
-- To show project details: use click_element("view-project-btn-{id}") - DO NOT navigate to /dashboard/projects/{id}
-- There is no /dashboard/projects/{id} page - it will show 404!
+**IMPORTANT - Check current page BEFORE taking action:**
+You receive the current page in context. ALWAYS check it before acting!
+
+1. If user asks about docs/manuals (actions menu, edit, export):
+   - If on `/dashboard/docs` → use click_element directly
+   - If on ANY OTHER page → FIRST navigate to `/dashboard/docs`, THEN use click_element
+
+2. If user asks about projects:
+   - If on `/dashboard/projects` → use click_element directly
+   - If on ANY OTHER page → FIRST navigate to `/dashboard/projects`, THEN use click_element
+
+3. If user asks about videos:
+   - If on `/dashboard/videos` → use click_element directly
+   - If on ANY OTHER page → FIRST navigate to `/dashboard/videos`, THEN use click_element
+
+**Examples:**
+- User on `/dashboard/projects` asks "show doc actions menu" → Navigate to `/dashboard/docs` FIRST, then click_element("doc-actions-btn-{id}")
+- User on `/dashboard/docs` asks "show doc actions menu" → Just click_element("doc-actions-btn-{id}") directly
+
+**NEVER navigate to pages that don't exist!** Only use URLs listed in "Available Pages" above.
 
 ### Bug Reporting Workflow (ALPHA/BETA - Coming Soon)
 **Note: This feature is planned for alpha/beta phases and is not yet available.**

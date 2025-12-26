@@ -1,12 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { Button, ButtonProps } from "./button";
+import { Button, buttonVariants } from "./button";
 import { registerButton } from "@/lib/guide-registry";
+import type { VariantProps } from "class-variance-authority";
 
-export interface ControllableButtonProps extends ButtonProps {
+export interface ControllableButtonProps
+  extends React.ComponentProps<"button">,
+    VariantProps<typeof buttonVariants> {
   guideId: string;
-  onClick?: () => void;
+  asChild?: boolean;
 }
 
 /**
@@ -28,7 +31,7 @@ export function ControllableButton({
     console.log("[ControllableButton] Registering:", guideId);
     const handler = () => {
       console.log("[ControllableButton] Handler called for:", guideId);
-      onClickRef.current?.();
+      onClickRef.current?.(undefined as unknown as React.MouseEvent<HTMLButtonElement>);
     };
     return registerButton(guideId, handler);
   }, [guideId]);

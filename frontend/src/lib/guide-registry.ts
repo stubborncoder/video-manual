@@ -8,7 +8,7 @@ const dropdownRegistry = new Map<string, (open: boolean) => void>();
 
 export function registerDropdown(id: string, setOpen: (open: boolean) => void) {
   dropdownRegistry.set(id, setOpen);
-  return () => dropdownRegistry.delete(id);
+  return () => { dropdownRegistry.delete(id); };
 }
 
 export function openDropdown(id: string): boolean {
@@ -26,7 +26,7 @@ let navigateFunction: ((url: string) => void) | null = null;
 
 export function registerLink(id: string, href: string) {
   linkRegistry.set(id, href);
-  return () => linkRegistry.delete(id);
+  return () => { linkRegistry.delete(id); };
 }
 
 export function setNavigateFunction(fn: (url: string) => void) {
@@ -47,7 +47,7 @@ const dialogRegistry = new Map<string, (open: boolean) => void>();
 
 export function registerDialog(id: string, setOpen: (open: boolean) => void) {
   dialogRegistry.set(id, setOpen);
-  return () => dialogRegistry.delete(id);
+  return () => { dialogRegistry.delete(id); };
 }
 
 export function openDialog(id: string): boolean {
@@ -64,7 +64,7 @@ const buttonRegistry = new Map<string, () => void>();
 
 export function registerButton(id: string, onClick: () => void) {
   buttonRegistry.set(id, onClick);
-  return () => buttonRegistry.delete(id);
+  return () => { buttonRegistry.delete(id); };
 }
 
 export function clickButton(id: string): boolean {
