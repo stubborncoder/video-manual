@@ -319,11 +319,24 @@ export const useGuideStore = create<GuideStore>()(
 
       // Element interaction
       clickElement: (elementId: string) => {
-        // Find and click the element by data-guide-id
-        const element = document.querySelector(`[data-guide-id="${elementId}"]`) as HTMLElement;
-        if (element && element.click) {
-          element.click();
-        }
+        console.log("[guideStore] clickElement called with:", elementId);
+        // First try the guide registry for controlled components
+        import("@/lib/guide-registry").then(({ handleGuideClick }) => {
+          console.log("[guideStore] Trying handleGuideClick for:", elementId);
+          if (handleGuideClick(elementId)) {
+            console.log("[guideStore] Registry handled:", elementId);
+            return; // Registry handled it
+          }
+          console.log("[guideStore] Falling back to DOM click for:", elementId);
+          // Fallback: Find and click the element by data-guide-id
+          const element = document.querySelector(`[data-guide-id="${elementId}"]`) as HTMLElement;
+          if (element && element.click) {
+            console.log("[guideStore] Found element, clicking:", elementId);
+            element.click();
+          } else {
+            console.log("[guideStore] Element not found:", elementId);
+          }
+        });
       },
     }),
     {

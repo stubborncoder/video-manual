@@ -1137,6 +1137,16 @@ User: {message}"""
         """Stream agent execution and yield events."""
         from .events import GuideActionEvent
 
+        # Action tools that should be forwarded to the frontend
+        ACTION_TOOLS = (
+            "highlight_element",
+            "navigate_to_page",
+            "click_element",
+            "show_dropdown",
+            "show_modal",
+            "start_workflow",
+        )
+
         try:
             is_first_token = True
             chunk_count = 0
@@ -1198,7 +1208,7 @@ User: {message}"""
                         tool_name = getattr(msg, "name", "")
 
                         # Check if this is an action tool result
-                        if tool_name in ("highlight_element", "navigate_to_page"):
+                        if tool_name in ACTION_TOOLS:
                             try:
                                 import json
                                 if isinstance(content, str):
@@ -1227,7 +1237,7 @@ User: {message}"""
                                     tool_name = getattr(msg, "name", "") if hasattr(msg, "name") else ""
                                     content = getattr(msg, "content", None) if hasattr(msg, "content") else None
 
-                                    if tool_name in ("highlight_element", "navigate_to_page") and content:
+                                    if tool_name in ACTION_TOOLS and content:
                                         try:
                                             import json
                                             if isinstance(content, str):

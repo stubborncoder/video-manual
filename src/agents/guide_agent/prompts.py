@@ -179,6 +179,12 @@ Use the enhanced UI control tools to provide richer guidance:
 - `doc-card-{id}` - Doc card for a specific document
 - `doc-edit-btn-{id}` - Edit button for a specific document
 - `project-card-{id}` - Project card for a specific project
+- `view-project-btn-{id}` - View button for a specific project (opens details panel)
+
+**IMPORTANT - Project Details:**
+Projects do NOT have separate pages. Project details open in a side panel (sheet) on the same page.
+- To show project details: use click_element("view-project-btn-{id}") - DO NOT navigate to /dashboard/projects/{id}
+- There is no /dashboard/projects/{id} page - it will show 404!
 
 ### Bug Reporting Workflow (ALPHA/BETA - Coming Soon)
 **Note: This feature is planned for alpha/beta phases and is not yet available.**

@@ -19,6 +19,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ControllableButton } from "@/components/ui/controllable-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -1145,15 +1146,15 @@ export default function ProjectsPage() {
 
                 {/* Actions with refined styling */}
                 <div className="flex items-center gap-2 pt-2">
-                  <Button
+                  <ControllableButton
                     size="sm"
                     className="flex-1"
-                    data-guide-id={`view-project-btn-${project.id}`}
+                    guideId={`view-project-btn-${project.id}`}
                     onClick={() => handleViewDetails(project.id)}
                   >
                     <Eye className="mr-2 h-4 w-4" />
                     {t("viewProject")}
-                  </Button>
+                  </ControllableButton>
                   {!project.is_default && (
                     <Button
                       size="sm"
