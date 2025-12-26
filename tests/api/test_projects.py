@@ -210,3 +210,59 @@ async def test_section_flow(client: AsyncClient):
 
     # Cleanup
     await client.delete(f"/api/projects/{project_id}")
+
+
+@pytest.mark.asyncio
+async def test_get_project_with_manuals(client: AsyncClient, tmp_data_dir, test_user_id: str):
+    """Test getting a project that has manuals returns correct schema.
+
+    This tests the doc_id field in ProjectManualInfo schema.
+    Regression test for manual_id -> doc_id rename.
+    """
+    import json
+    from pathlib import Path
+
+    # Create a project
+    project_response = await client.post(
+        "/api/projects",
+        json={"name": "Project With Manuals", "description": ""},
+    )
+    assert project_response.status_code == 200
+    project_id = project_response.json()["id"]
+
+    # Create a doc directly in storage (simulating a processed video)
+    doc_id = "test-manual-001"
+    users_dir = tmp_data_dir / "users"
+    doc_dir = users_dir / test_user_id / "docs" / doc_id
+    doc_dir.mkdir(parents=True)
+
+    # Write minimal metadata
+    metadata = {
+        "id": doc_id,
+        "title": "Test Manual",
+        "created_at": "2024-01-01T00:00:00Z",
+        "language": "en",
+    }
+    (doc_dir / "metadata.json").write_text(json.dumps(metadata))
+    (doc_dir / "en.md").write_text("# Test Manual\n\nContent here.")
+
+    # Add the doc to the project via API
+    add_response = await client.post(f"/api/projects/{project_id}/manuals/{doc_id}")
+    assert add_response.status_code == 200
+
+    # Get the project - this should return manuals with doc_id field
+    get_response = await client.get(f"/api/projects/{project_id}")
+    assert get_response.status_code == 200
+
+    data = get_response.json()
+    assert "manuals" in data
+    assert len(data["manuals"]) == 1
+
+    # Verify the schema uses doc_id (not manual_id)
+    manual = data["manuals"][0]
+    assert "doc_id" in manual, "Response should use 'doc_id' not 'manual_id'"
+    assert manual["doc_id"] == doc_id
+    assert "order" in manual
+
+    # Cleanup
+    await client.delete(f"/api/projects/{project_id}")

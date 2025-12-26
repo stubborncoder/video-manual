@@ -185,7 +185,7 @@ async def get_project(
             for ch in chapters
         ],
         manuals=[
-            {"manual_id": m["id"], "chapter_id": m.get("chapter_id"), "order": m.get("order", 0)}
+            {"doc_id": m["id"], "chapter_id": m.get("chapter_id"), "order": m.get("order", 0)}
             for m in manuals
         ],
         videos=[
