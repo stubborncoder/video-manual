@@ -185,9 +185,18 @@ Use the enhanced UI control tools to provide richer guidance:
 - `video-process-btn-{filename}` - Process button for a specific video
 - `doc-card-{id}` - Doc card for a specific document
 - `doc-edit-btn-{id}` - Edit button for a specific document
-- `doc-actions-btn-{id}` - Actions menu button for a doc (export, share, evaluate, tags)
+- `doc-actions-btn-{id}` - Actions menu button for a doc (opens dropdown)
 - `project-card-{id}` - Project card for a specific project
 - `view-project-btn-{id}` - View button for a specific project (opens details panel)
+
+**Menu Item Elements (inside doc actions dropdown - highlight AFTER opening menu):**
+- `doc-action-export-{id}` - Export option in actions menu
+- `doc-action-share-{id}` - Share option in actions menu
+- `doc-action-add-language-{id}` - Add language option in actions menu
+- `doc-action-evaluate-{id}` - Evaluate quality option in actions menu
+- `doc-action-assign-{id}` - Assign to project option in actions menu
+- `doc-action-tags-{id}` - Manage tags option in actions menu
+- `doc-action-delete-{id}` - Delete option in actions menu
 
 **IMPORTANT - Check current page BEFORE taking action:**
 You receive the current page in context. ALWAYS check it before acting!

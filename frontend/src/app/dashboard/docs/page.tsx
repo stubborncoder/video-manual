@@ -1236,6 +1236,7 @@ function ManualsPageContent() {
                       <DropdownMenuItem
                         onClick={() => openExportDialog(manual)}
                         disabled={exportingManual === manual.id}
+                        data-guide-id={`doc-action-export-${manual.id}`}
                       >
                         {exportingManual === manual.id ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1244,13 +1245,19 @@ function ManualsPageContent() {
                         )}
                         {t("export")}...
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => openShareDialog(manual)}>
+                      <DropdownMenuItem
+                        onClick={() => openShareDialog(manual)}
+                        data-guide-id={`doc-action-share-${manual.id}`}
+                      >
                         <Link2 className="mr-2 h-4 w-4" />
                         Share...
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuLabel className="text-xs text-muted-foreground">{t("generate")}</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => openGenerateDialog(manual)}>
+                      <DropdownMenuItem
+                        onClick={() => openGenerateDialog(manual)}
+                        data-guide-id={`doc-action-add-language-${manual.id}`}
+                      >
                         <Wand2 className="mr-2 h-4 w-4" />
                         {t("addLanguage")}
                       </DropdownMenuItem>
@@ -1261,17 +1268,26 @@ function ManualsPageContent() {
                           Soon
                         </Badge>
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => openEvaluateDialog(manual)}>
+                      <DropdownMenuItem
+                        onClick={() => openEvaluateDialog(manual)}
+                        data-guide-id={`doc-action-evaluate-${manual.id}`}
+                      >
                         <ClipboardCheck className="mr-2 h-4 w-4" />
                         {t("evaluateQuality")}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuLabel className="text-xs text-muted-foreground">{t("organize")}</DropdownMenuLabel>
-                      <DropdownMenuItem onClick={() => openAssignDialog(manual)}>
+                      <DropdownMenuItem
+                        onClick={() => openAssignDialog(manual)}
+                        data-guide-id={`doc-action-assign-${manual.id}`}
+                      >
                         <FolderKanban className="mr-2 h-4 w-4" />
                         {t("assignToProject")}
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => openTagsDialog(manual)}>
+                      <DropdownMenuItem
+                        onClick={() => openTagsDialog(manual)}
+                        data-guide-id={`doc-action-tags-${manual.id}`}
+                      >
                         <Tag className="mr-2 h-4 w-4" />
                         {t("manageTags")}
                       </DropdownMenuItem>
@@ -1279,6 +1295,7 @@ function ManualsPageContent() {
                       <DropdownMenuItem
                         onClick={() => openDeleteDialog(manual)}
                         className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                        data-guide-id={`doc-action-delete-${manual.id}`}
                       >
                         <Trash2 className="mr-2 h-4 w-4" />
                         {t("deleteDoc")}
