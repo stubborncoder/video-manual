@@ -716,7 +716,7 @@ describe('guideStore', () => {
   });
 
   describe('clickElement action', () => {
-    it('should call click on element with matching data-guide-id', () => {
+    it('should call click on element with matching data-guide-id', async () => {
       // Create a mock element
       const mockElement = document.createElement('button');
       mockElement.setAttribute('data-guide-id', 'test-button');
@@ -725,6 +725,9 @@ describe('guideStore', () => {
 
       const { clickElement } = useGuideStore.getState();
       clickElement('test-button');
+
+      // Wait for async import and click to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       expect(mockElement.click).toHaveBeenCalled();
 
