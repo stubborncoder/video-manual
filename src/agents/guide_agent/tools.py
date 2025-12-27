@@ -688,6 +688,160 @@ def create_guide_tools(user_id: str, user_email: str | None = None) -> list:
             logger.error(f"Failed to get issue details #{issue_number}: {str(e)}")
             return {"error": "Failed to get issue details. Please try again later."}
 
+    # ===========================================
+    # Enhanced UI Control Tools (Read-Only)
+    # ===========================================
+
+    @tool
+    def show_dropdown(element_id: str, duration_ms: int = 5000) -> dict[str, Any]:
+        """Open a dropdown menu to show available options.
+
+        Use this to help users understand what actions are available
+        in a menu without them needing to click it themselves.
+        The menu will automatically close after the duration.
+
+        Args:
+            element_id: The data-guide-id of the dropdown trigger element.
+                       IMPORTANT: Use EXACT element IDs as listed below!
+                       Common dropdown triggers:
+                       - doc-actions-btn-{doc_id}: Actions menu on a doc card (e.g., "doc-actions-btn-error-loging-in-sap")
+                       - video-actions-btn-{filename}: Actions menu on a video card
+                       - project-actions-btn-{project_id}: Actions menu on a project card
+            duration_ms: How long to keep the menu open (default 5000ms)
+
+        Returns:
+            Action object for frontend to execute
+
+        Example use cases:
+        - "What can I do with this doc?" → show_dropdown("doc-actions-btn-{doc_id}")
+        - "Show me the actions menu for my doc" → show_dropdown("doc-actions-btn-{doc_id}")
+        """
+        return {
+            "action": "show_dropdown",
+            "target": element_id,
+            "duration": duration_ms,
+        }
+
+    @tool
+    def show_modal(
+        title: str,
+        content: str,
+        modal_type: str = "info",
+        auto_close_ms: int = 0
+    ) -> dict[str, Any]:
+        """Display an informational modal to the user.
+
+        Use this to show explanations, tips, workflow guidance, or
+        detailed information without navigating away from the current page.
+        This is READ-ONLY - it cannot trigger any actions.
+
+        Args:
+            title: Modal heading (keep short, 3-6 words)
+            content: Modal body text (supports markdown formatting):
+                    - Use **bold** for emphasis
+                    - Use bullet lists for steps
+                    - Use code blocks for technical info
+            modal_type: Visual style of the modal:
+                       - "info": Blue, general information
+                       - "tip": Amber, helpful tips and suggestions
+                       - "warning": Orange, important notices
+                       - "success": Green, confirmations
+            auto_close_ms: Auto-close after this duration (0 = manual close only)
+
+        Returns:
+            Action object for frontend to execute
+
+        Example use cases:
+        - Explaining a workflow: show_modal("How Processing Works", "1. Upload video\\n2. Choose format...")
+        - Showing tips: show_modal("Pro Tip", "You can drag to reorder chapters", "tip")
+        - Warning about actions: show_modal("Before You Export", "Make sure to save changes", "warning")
+        """
+        return {
+            "action": "show_modal",
+            "title": title,
+            "content": content,
+            "modal_type": modal_type,
+            "auto_close": auto_close_ms,
+        }
+
+    @tool
+    def click_element(element_id: str) -> dict[str, Any]:
+        """Programmatically click an element to open menus or reveal content.
+
+        Use this to open nested menus, expand sections, or trigger
+        UI interactions that help demonstrate features to the user.
+
+        IMPORTANT: This is READ-ONLY. Only use for demonstrating UI,
+        NEVER use this to trigger actions that create, delete, or modify content.
+        Safe uses: opening menus, expanding sections, showing tooltips.
+
+        Args:
+            element_id: The data-guide-id of the element to click.
+                       Safe elements to click:
+                       - Menu triggers (dropdowns, context menus)
+                       - Accordion/collapsible headers
+                       - Tab buttons
+                       - Tooltip triggers
+
+        Returns:
+            Action object for frontend to execute
+        """
+        return {
+            "action": "click_element",
+            "target": element_id,
+        }
+
+    @tool
+    def start_workflow(
+        workflow_title: str,
+        steps: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """Start a step-by-step guided workflow/tour.
+
+        Use this when the user wants to learn a complete process.
+        Each step shows instructions and can highlight relevant UI elements.
+        The user controls progression through Next/Previous buttons.
+
+        Args:
+            workflow_title: Name of the workflow (e.g., "Create Your First Documentation")
+            steps: List of step objects. Each step has:
+                - title (str): Step heading
+                - description (str): Step instructions (markdown supported)
+                - highlight (str, optional): Element ID to highlight
+                - navigate (str, optional): Page path to navigate to first
+
+        Returns:
+            Action object for frontend to execute
+
+        Example:
+            start_workflow(
+                "Process a Video",
+                [
+                    {
+                        "title": "Go to Videos",
+                        "description": "First, navigate to the **Videos** page",
+                        "navigate": "/dashboard/videos",
+                        "highlight": "nav-videos"
+                    },
+                    {
+                        "title": "Upload Your Video",
+                        "description": "Click the **Upload Video** button to select a file",
+                        "highlight": "upload-video-btn"
+                    },
+                    {
+                        "title": "Start Processing",
+                        "description": "After uploading, click **Process** to generate documentation",
+                        "highlight": "video-process-btn-{filename}"
+                    }
+                ]
+            )
+        """
+        return {
+            "action": "start_workflow",
+            "title": workflow_title,
+            "steps": steps,
+        }
+
     return [
         get_user_manuals,
         get_user_videos,
@@ -695,6 +849,11 @@ def create_guide_tools(user_id: str, user_email: str | None = None) -> list:
         highlight_element,
         navigate_to_page,
         get_page_elements,
+        # Enhanced UI control tools (read-only)
+        show_dropdown,
+        show_modal,
+        click_element,
+        start_workflow,
         # GitHub issue tools
         create_github_issue,
         get_issues,

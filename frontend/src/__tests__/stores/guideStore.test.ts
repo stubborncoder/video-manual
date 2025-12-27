@@ -2,7 +2,7 @@
  * Tests for guideStore - Zustand store for Guide Agent state management.
  */
 
-import { useGuideStore, GuideMessage, PageContext, PanelSize } from '@/stores/guideStore';
+import { useGuideStore, GuideMessage, PageContext, PanelSize, GuideModalState, WorkflowStep, WorkflowState } from '@/stores/guideStore';
 
 describe('guideStore', () => {
   beforeEach(() => {
@@ -19,6 +19,8 @@ describe('guideStore', () => {
       isGenerating: false,
       activeHighlights: [],
       pendingHighlight: null,
+      modal: null,
+      workflow: null,
     });
   });
 
@@ -37,6 +39,8 @@ describe('guideStore', () => {
       expect(state.isGenerating).toBe(false);
       expect(state.activeHighlights).toEqual([]);
       expect(state.pendingHighlight).toBeNull();
+      expect(state.modal).toBeNull();
+      expect(state.workflow).toBeNull();
     });
 
     it('should have all required methods', () => {
@@ -59,6 +63,16 @@ describe('guideStore', () => {
       expect(typeof state.clearAllHighlights).toBe('function');
       expect(typeof state.setPendingHighlight).toBe('function');
       expect(typeof state.applyPendingHighlight).toBe('function');
+      // Modal actions
+      expect(typeof state.showModal).toBe('function');
+      expect(typeof state.hideModal).toBe('function');
+      // Workflow actions
+      expect(typeof state.startWorkflow).toBe('function');
+      expect(typeof state.nextWorkflowStep).toBe('function');
+      expect(typeof state.previousWorkflowStep).toBe('function');
+      expect(typeof state.cancelWorkflow).toBe('function');
+      // Element interaction
+      expect(typeof state.clickElement).toBe('function');
     });
   });
 
@@ -494,6 +508,253 @@ describe('guideStore', () => {
       const state = useGuideStore.getState();
       expect(state.activeHighlights).toHaveLength(1);
       expect(state.activeHighlights[0].duration).toBe(5000);
+    });
+  });
+
+  describe('modal actions', () => {
+    it('should show a modal with default type', () => {
+      const { showModal } = useGuideStore.getState();
+      showModal('Test Title', 'Test content');
+
+      const state = useGuideStore.getState();
+      expect(state.modal).not.toBeNull();
+      expect(state.modal?.isOpen).toBe(true);
+      expect(state.modal?.title).toBe('Test Title');
+      expect(state.modal?.content).toBe('Test content');
+      expect(state.modal?.type).toBe('info');
+      expect(state.modal?.autoClose).toBeUndefined();
+    });
+
+    it('should show a modal with custom type', () => {
+      const { showModal } = useGuideStore.getState();
+      showModal('Warning Title', 'Warning content', 'warning');
+
+      const state = useGuideStore.getState();
+      expect(state.modal?.type).toBe('warning');
+    });
+
+    it('should show a modal with all types', () => {
+      const types: Array<'info' | 'tip' | 'warning' | 'success'> = ['info', 'tip', 'warning', 'success'];
+
+      types.forEach(type => {
+        const { showModal } = useGuideStore.getState();
+        showModal('Title', 'Content', type);
+        expect(useGuideStore.getState().modal?.type).toBe(type);
+      });
+    });
+
+    it('should show a modal with autoClose', () => {
+      const { showModal } = useGuideStore.getState();
+      showModal('Auto Close', 'Will close soon', 'info', 5000);
+
+      const state = useGuideStore.getState();
+      expect(state.modal?.autoClose).toBe(5000);
+    });
+
+    it('should hide the modal', () => {
+      useGuideStore.setState({
+        modal: {
+          isOpen: true,
+          title: 'Test',
+          content: 'Test content',
+          type: 'info',
+        },
+      });
+
+      const { hideModal } = useGuideStore.getState();
+      hideModal();
+
+      expect(useGuideStore.getState().modal).toBeNull();
+    });
+
+    it('should replace existing modal when showing new one', () => {
+      const { showModal } = useGuideStore.getState();
+      showModal('First Modal', 'First content');
+      showModal('Second Modal', 'Second content', 'tip');
+
+      const state = useGuideStore.getState();
+      expect(state.modal?.title).toBe('Second Modal');
+      expect(state.modal?.content).toBe('Second content');
+      expect(state.modal?.type).toBe('tip');
+    });
+  });
+
+  describe('workflow actions', () => {
+    const testSteps: WorkflowStep[] = [
+      {
+        title: 'Step 1',
+        description: 'First step description',
+        highlight: 'element-1',
+      },
+      {
+        title: 'Step 2',
+        description: 'Second step description',
+        navigate: '/dashboard/videos',
+      },
+      {
+        title: 'Step 3',
+        description: 'Third step description',
+        highlight: 'element-2',
+        navigate: '/dashboard/manuals',
+      },
+    ];
+
+    it('should start a workflow', () => {
+      const { startWorkflow } = useGuideStore.getState();
+      startWorkflow('Test Workflow', testSteps);
+
+      const state = useGuideStore.getState();
+      expect(state.workflow).not.toBeNull();
+      expect(state.workflow?.isActive).toBe(true);
+      expect(state.workflow?.title).toBe('Test Workflow');
+      expect(state.workflow?.steps).toEqual(testSteps);
+      expect(state.workflow?.currentStepIndex).toBe(0);
+    });
+
+    it('should set panel size to medium when starting workflow', () => {
+      const { startWorkflow } = useGuideStore.getState();
+      startWorkflow('Test Workflow', testSteps);
+
+      expect(useGuideStore.getState().panelSize).toBe('medium');
+    });
+
+    it('should go to next step', () => {
+      useGuideStore.setState({
+        workflow: {
+          isActive: true,
+          title: 'Test',
+          steps: testSteps,
+          currentStepIndex: 0,
+        },
+      });
+
+      const { nextWorkflowStep } = useGuideStore.getState();
+      nextWorkflowStep();
+
+      expect(useGuideStore.getState().workflow?.currentStepIndex).toBe(1);
+    });
+
+    it('should complete workflow when advancing past last step', () => {
+      useGuideStore.setState({
+        workflow: {
+          isActive: true,
+          title: 'Test',
+          steps: testSteps,
+          currentStepIndex: 2, // Last step
+        },
+      });
+
+      const { nextWorkflowStep } = useGuideStore.getState();
+      nextWorkflowStep();
+
+      expect(useGuideStore.getState().workflow).toBeNull();
+    });
+
+    it('should go to previous step', () => {
+      useGuideStore.setState({
+        workflow: {
+          isActive: true,
+          title: 'Test',
+          steps: testSteps,
+          currentStepIndex: 2,
+        },
+      });
+
+      const { previousWorkflowStep } = useGuideStore.getState();
+      previousWorkflowStep();
+
+      expect(useGuideStore.getState().workflow?.currentStepIndex).toBe(1);
+    });
+
+    it('should not go below first step', () => {
+      useGuideStore.setState({
+        workflow: {
+          isActive: true,
+          title: 'Test',
+          steps: testSteps,
+          currentStepIndex: 0,
+        },
+      });
+
+      const { previousWorkflowStep } = useGuideStore.getState();
+      previousWorkflowStep();
+
+      expect(useGuideStore.getState().workflow?.currentStepIndex).toBe(0);
+    });
+
+    it('should cancel workflow', () => {
+      useGuideStore.setState({
+        workflow: {
+          isActive: true,
+          title: 'Test',
+          steps: testSteps,
+          currentStepIndex: 1,
+        },
+      });
+
+      const { cancelWorkflow } = useGuideStore.getState();
+      cancelWorkflow();
+
+      expect(useGuideStore.getState().workflow).toBeNull();
+    });
+
+    it('should handle nextWorkflowStep with no workflow', () => {
+      const { nextWorkflowStep } = useGuideStore.getState();
+      nextWorkflowStep();
+
+      // Should not throw, workflow stays null
+      expect(useGuideStore.getState().workflow).toBeNull();
+    });
+
+    it('should handle previousWorkflowStep with no workflow', () => {
+      const { previousWorkflowStep } = useGuideStore.getState();
+      previousWorkflowStep();
+
+      // Should not throw, workflow stays null
+      expect(useGuideStore.getState().workflow).toBeNull();
+    });
+  });
+
+  describe('clickElement action', () => {
+    it('should call click on element with matching data-guide-id', async () => {
+      // Create a mock element
+      const mockElement = document.createElement('button');
+      mockElement.setAttribute('data-guide-id', 'test-button');
+      mockElement.click = jest.fn();
+      document.body.appendChild(mockElement);
+
+      const { clickElement } = useGuideStore.getState();
+      clickElement('test-button');
+
+      // Wait for async import and click to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      expect(mockElement.click).toHaveBeenCalled();
+
+      // Cleanup
+      document.body.removeChild(mockElement);
+    });
+
+    it('should not throw when element not found', () => {
+      const { clickElement } = useGuideStore.getState();
+
+      // Should not throw
+      expect(() => clickElement('non-existent-element')).not.toThrow();
+    });
+
+    it('should handle element without click method', () => {
+      // Create an element and remove its click method
+      const mockElement = document.createElement('div');
+      mockElement.setAttribute('data-guide-id', 'no-click-element');
+      document.body.appendChild(mockElement);
+
+      const { clickElement } = useGuideStore.getState();
+
+      // Should not throw
+      expect(() => clickElement('no-click-element')).not.toThrow();
+
+      // Cleanup
+      document.body.removeChild(mockElement);
     });
   });
 });

@@ -19,17 +19,33 @@ interface GuideChatRequest {
 }
 
 /**
+ * Step in a guided workflow/tour.
+ */
+export interface WorkflowStep {
+  title: string;
+  description: string;
+  highlight?: string; // Element ID to highlight
+  navigate?: string; // Page path to navigate to
+}
+
+/**
  * Structured event from the guide agent.
  */
 export interface GuideEvent {
   type: "token" | "action" | "error";
   // Token event
   content?: string;
-  // Action event
-  action?: "highlight" | "navigate";
-  target?: string; // for highlight
-  duration?: number; // for highlight (ms)
+  // Action event - expanded to include new action types
+  action?: "highlight" | "navigate" | "show_dropdown" | "show_modal" | "click_element" | "start_workflow";
+  target?: string; // for highlight, show_dropdown, click_element
+  duration?: number; // for highlight, show_dropdown (ms)
   to?: string; // for navigate
+  // show_modal specific
+  title?: string;
+  modal_type?: "info" | "tip" | "warning" | "success";
+  auto_close?: number; // ms, 0 = manual close
+  // start_workflow specific
+  steps?: WorkflowStep[];
   // Error event
   message?: string;
 }

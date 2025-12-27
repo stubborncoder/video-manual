@@ -4,12 +4,13 @@ Release history and new features for vDocs. This page helps you discover what's 
 
 ## Current Version
 
-**v0.2.0-alpha.1** - Multi-Content Release (December 2024)
+**v0.3.0-alpha.1** - Enhanced Guide Agent (December 2024)
 
 ## Version History
 
 | Version | Name | Date | Highlights |
 |---------|------|------|------------|
+| [v0.3.0-alpha.1](v0.3.0-alpha.1.md) | Enhanced Guide Agent | Dec 2024 | **Guide Agent UI control**, menu highlighting, guided workflows |
 | [v0.2.0-alpha.1](v0.2.0-alpha.1.md) | Multi-Content | Dec 2024 | **7 document types** (manuals + reports), projects, compilation, sharing |
 | [v0.1.0-alpha.1](v0.1.0-alpha.1.md) | Initial Release | Nov 2024 | Video-to-manual workflow, single document type |
 
