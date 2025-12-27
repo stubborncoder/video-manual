@@ -320,23 +320,35 @@ export const useGuideStore = create<GuideStore>()(
       // Element interaction
       clickElement: (elementId: string) => {
         console.log("[guideStore] clickElement called with:", elementId);
-        // First try the guide registry for controlled components
-        import("@/lib/guide-registry").then(({ handleGuideClick }) => {
-          console.log("[guideStore] Trying handleGuideClick for:", elementId);
-          if (handleGuideClick(elementId)) {
-            console.log("[guideStore] Registry handled:", elementId);
-            return; // Registry handled it
-          }
-          console.log("[guideStore] Falling back to DOM click for:", elementId);
-          // Fallback: Find and click the element by data-guide-id
-          const element = document.querySelector(`[data-guide-id="${elementId}"]`) as HTMLElement;
-          if (element && element.click) {
-            console.log("[guideStore] Found element, clicking:", elementId);
-            element.click();
-          } else {
-            console.log("[guideStore] Element not found:", elementId);
-          }
-        });
+
+        const tryClick = (retriesLeft: number) => {
+          import("@/lib/guide-registry").then(({ handleGuideClick }) => {
+            console.log("[guideStore] Trying handleGuideClick for:", elementId, "retries left:", retriesLeft);
+            if (handleGuideClick(elementId)) {
+              console.log("[guideStore] Registry handled:", elementId);
+              return; // Registry handled it
+            }
+
+            // Fallback: Find and click the element by data-guide-id
+            const element = document.querySelector(`[data-guide-id="${elementId}"]`) as HTMLElement;
+            if (element && element.click) {
+              console.log("[guideStore] Found element, clicking:", elementId);
+              element.click();
+              return;
+            }
+
+            // Element not found - retry after delay (component may not have mounted yet)
+            if (retriesLeft > 0) {
+              console.log("[guideStore] Element not found, retrying in 500ms:", elementId);
+              setTimeout(() => tryClick(retriesLeft - 1), 500);
+            } else {
+              console.log("[guideStore] Element not found after retries:", elementId);
+            }
+          });
+        };
+
+        // Start with 5 retries (2.5 seconds total wait time)
+        tryClick(5);
       },
     }),
     {

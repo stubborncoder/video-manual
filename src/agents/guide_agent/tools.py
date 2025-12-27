@@ -702,21 +702,19 @@ def create_guide_tools(user_id: str, user_email: str | None = None) -> list:
 
         Args:
             element_id: The data-guide-id of the dropdown trigger element.
+                       IMPORTANT: Use EXACT element IDs as listed below!
                        Common dropdown triggers:
-                       - manual-actions-{id}: Actions menu on a manual card
-                       - video-actions-{name}: Actions menu on a video card
-                       - project-actions-{id}: Actions menu on a project card
-                       - export-format-selector: Export format dropdown
-                       - language-selector: Language selection dropdown
+                       - doc-actions-btn-{doc_id}: Actions menu on a doc card (e.g., "doc-actions-btn-error-loging-in-sap")
+                       - video-actions-btn-{filename}: Actions menu on a video card
+                       - project-actions-btn-{project_id}: Actions menu on a project card
             duration_ms: How long to keep the menu open (default 5000ms)
 
         Returns:
             Action object for frontend to execute
 
         Example use cases:
-        - "What can I do with this manual?" → Show actions dropdown
-        - "What export formats are available?" → Show export dropdown
-        - "How do I change the language?" → Show language selector
+        - "What can I do with this doc?" → show_dropdown("doc-actions-btn-{doc_id}")
+        - "Show me the actions menu for my doc" → show_dropdown("doc-actions-btn-{doc_id}")
         """
         return {
             "action": "show_dropdown",
